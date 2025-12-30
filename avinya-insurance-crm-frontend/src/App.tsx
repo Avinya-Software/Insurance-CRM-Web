@@ -1,0 +1,44 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ProtectedRoute from "./auth/ProtectedRoute";
+import AppLayout from "./layout/AppLayout";
+
+import Dashboard from "./pages/Dashboard";
+import Customers from "./pages/Customers";
+import Policies from "./pages/Policies";
+import Renewals from "./pages/Renewals";
+import Claims from "./pages/Claims";
+import Settings from "./pages/Settings";
+import Lead from "./pages/Lead";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* PUBLIC */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* PROTECTED + LAYOUT */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/leads" element={<Lead />} />
+          <Route path="/customers" element={<Customers />} />
+          <Route path="/policies" element={<Policies />} />
+          <Route path="/renewals" element={<Renewals />} />
+          <Route path="/claims" element={<Claims />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
