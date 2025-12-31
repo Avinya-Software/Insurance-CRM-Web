@@ -4,12 +4,7 @@ import { X } from "lucide-react";
 import { useUpsertLead } from "../../hooks/lead/useUpsertLead";
 import { useLeadStatuses } from "../../hooks/lead/useLeadStatuses";
 import { useLeadSources } from "../../hooks/lead/useLeadSources";
-import {
-  getCustomerDropdownApi,
-  getCustomersApi,
-} from "../../api/customer.api";
-
-/* ================= TYPES ================= */
+import { getCustomerDropdownApi } from "../../api/customer.api";
 
 interface Props {
   open: boolean;
@@ -18,10 +13,12 @@ interface Props {
   advisorId: string | null;
 }
 
-interface CustomerDropdown {
+interface Customer {
   customerId: string;
   fullName: string;
   email: string;
+  primaryMobile?: string;
+  address?: string;
 }
 
 const LeadUpsertSheet = ({
@@ -34,18 +31,24 @@ const LeadUpsertSheet = ({
   const { data: statuses } = useLeadStatuses();
   const { data: sources } = useLeadSources();
 
-  /* ================= CUSTOMER STATE ================= */
+  /* ---------------- LOCK BODY SCROLL ---------------- */
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "unset";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [open]);
 
-  const [customers, setCustomers] = useState<CustomerDropdown[]>([]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  /* ---------------- CUSTOMER DROPDOWN ---------------- */
 
-  const isExistingCustomer = !!selectedCustomerId;
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
 
   useEffect(() => {
     getCustomerDropdownApi().then(setCustomers);
   }, []);
 
-  /* ================= FORM STATE ================= */
+  /* ---------------- FORM STATE ---------------- */
 
   const initialForm = {
     customerId: null as string | null,
@@ -61,20 +64,40 @@ const LeadUpsertSheet = ({
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  /* ================= PREFILL (EDIT MODE) ================= */
+  /* ---------------- PREFILL (EDIT MODE) ---------------- */
 
   useEffect(() => {
     if (!open) return;
 
     if (lead) {
+      // 🔥 MAP VALUE → ID FOR STATUS
+      const mappedStatusId =
+        lead.leadStatusId ||
+        statuses?.find(
+          (s: any) =>
+            s.name?.toLowerCase() ===
+            lead.leadStatus?.toLowerCase()
+        )?.id ||
+        "";
+
+      // 🔥 MAP VALUE → ID FOR SOURCE
+      const mappedSourceId =
+        lead.leadSourceId ||
+        sources?.find(
+          (s: any) =>
+            s.name?.toLowerCase() ===
+            lead.leadSource?.toLowerCase()
+        )?.id ||
+        "";
+
       setForm({
         customerId: lead.customerId ?? null,
         fullName: lead.fullName ?? "",
         email: lead.email ?? "",
         mobile: lead.mobile ?? "",
         address: lead.address ?? "",
-        leadStatusId: lead.leadStatusId ?? "",
-        leadSourceId: lead.leadSourceId ?? "",
+        leadStatusId: mappedStatusId,
+        leadSourceId: mappedSourceId,
         notes: lead.notes ?? "",
       });
 
@@ -85,66 +108,52 @@ const LeadUpsertSheet = ({
     }
 
     setErrors({});
-  }, [open, lead]);
+  }, [open, lead, statuses, sources]);
 
-  /* ================= CUSTOMER SELECT ================= */
+  /* ---------------- CUSTOMER SELECT ---------------- */
 
-  const handleCustomerSelect = async (customerId: string) => {
-    // 🔄 De-select → New Customer
+  const handleCustomerSelect = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+
     if (!customerId) {
-      setSelectedCustomerId("");
       setForm(initialForm);
-      setErrors({});
       return;
     }
 
-    setSelectedCustomerId(customerId);
-
-    // 🔥 Call SEARCH API (single customer)
-    const res = await getCustomersApi({
-      pageNumber: 1,
-      pageSize: 1,
-      search: customerId,
-    });
-
-    const customer = res.customers?.[0];
+    const customer = customers.find(
+      (c) => c.customerId === customerId
+    );
     if (!customer) return;
 
-    setForm({
-      ...form,
+    setForm((f) => ({
+      ...f,
       customerId: customer.customerId,
       fullName: customer.fullName,
       email: customer.email,
-      mobile: customer.primaryMobile,
+      mobile: customer.primaryMobile ?? "",
       address: customer.address ?? "",
-    });
-
-    setErrors({});
+    }));
   };
 
-  /* ================= VALIDATION ================= */
+  /* ---------------- VALIDATION ---------------- */
 
   const validate = () => {
     const e: Record<string, string> = {};
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const mobileRegex = /^[6-9]\d{9}$/;
 
-    // 🔥 Skip manual validation for existing customer
-    if (!isExistingCustomer) {
-      if (!form.fullName.trim())
-        e.fullName = "Full name is required";
+    if (!form.fullName.trim())
+      e.fullName = "Full name is required";
 
-      if (!form.email.trim())
-        e.email = "Email is required";
-      else if (!emailRegex.test(form.email))
-        e.email = "Invalid email address";
+    if (!form.email.trim())
+      e.email = "Email is required";
+    else if (!emailRegex.test(form.email))
+      e.email = "Invalid email";
 
-      if (!form.mobile.trim())
-        e.mobile = "Mobile number is required";
-      else if (!mobileRegex.test(form.mobile))
-        e.mobile = "Invalid mobile number";
-    }
+    if (!form.mobile.trim())
+      e.mobile = "Mobile is required";
+    else if (!mobileRegex.test(form.mobile))
+      e.mobile = "Invalid mobile number";
 
     if (!form.leadSourceId)
       e.leadSourceId = "Lead source is required";
@@ -153,7 +162,7 @@ const LeadUpsertSheet = ({
     return Object.keys(e).length === 0;
   };
 
-  /* ================= SAVE ================= */
+  /* ---------------- SAVE ---------------- */
 
   const handleSave = () => {
     if (!validate()) return;
@@ -173,14 +182,17 @@ const LeadUpsertSheet = ({
 
   if (!open) return null;
 
-  /* ================= UI ================= */
+  /* =================== UI =================== */
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/30" onClick={onClose} />
+    <>
+      <div
+        className="fixed inset-0 bg-black/40 z-[60]"
+        onClick={onClose}
+      />
 
-      <div className="w-96 bg-white h-full shadow-xl flex flex-col">
-        {/* ---------- HEADER ---------- */}
+      <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl animate-slideInRight flex flex-col">
+        {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between">
           <h2 className="font-semibold">
             {lead ? "Edit Lead" : "Add Lead"}
@@ -190,27 +202,21 @@ const LeadUpsertSheet = ({
           </button>
         </div>
 
-        {/* ---------- BODY ---------- */}
+        {/* BODY */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-
-          {/* EXISTING CUSTOMER (OPTIONAL) */}
           <Select
             label="Existing Customer (optional)"
             value={selectedCustomerId}
-            options={[
-              { id: "", name: "— New Customer —" },
-              ...customers.map((c) => ({
-                id: c.customerId,
-                name: `${c.fullName} (${c.email})`,
-              })),
-            ]}
+            options={customers.map((c) => ({
+              id: c.customerId,
+              name: `${c.fullName} (${c.email})`,
+            }))}
             onChange={handleCustomerSelect}
           />
 
           <Input
             label="Full Name"
             required
-            disabled={isExistingCustomer}
             value={form.fullName}
             error={errors.fullName}
             onChange={(v) =>
@@ -221,7 +227,6 @@ const LeadUpsertSheet = ({
           <Input
             label="Email"
             required
-            disabled={isExistingCustomer}
             value={form.email}
             error={errors.email}
             onChange={(v) =>
@@ -232,7 +237,6 @@ const LeadUpsertSheet = ({
           <Input
             label="Mobile"
             required
-            disabled={isExistingCustomer}
             value={form.mobile}
             error={errors.mobile}
             onChange={(v) =>
@@ -242,7 +246,6 @@ const LeadUpsertSheet = ({
 
           <Input
             label="Address"
-            disabled={isExistingCustomer}
             value={form.address}
             onChange={(v) =>
               setForm({ ...form, address: v })
@@ -278,7 +281,7 @@ const LeadUpsertSheet = ({
           />
         </div>
 
-        {/* ---------- FOOTER ---------- */}
+        {/* FOOTER */}
         <div className="px-6 py-4 border-t flex gap-3">
           <button
             className="flex-1 border rounded-lg py-2"
@@ -295,31 +298,21 @@ const LeadUpsertSheet = ({
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
 export default LeadUpsertSheet;
 
-/* ================= HELPERS ================= */
+/* ---------------- HELPERS ---------------- */
 
-const Input = ({
-  label,
-  required,
-  value,
-  error,
-  disabled,
-  onChange,
-}: any) => (
+const Input = ({ label, required, value, error, onChange }: any) => (
   <div>
     <label className="text-sm font-medium">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <input
-      disabled={disabled}
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      } ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
+      className={`input w-full ${error ? "border-red-500" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />
@@ -342,13 +335,12 @@ const Select = ({
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <select
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      }`}
+      className={`input w-full ${error ? "border-red-500" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
-      {options.map((o: any) => (
+      <option value="">Select</option>
+      {options?.map((o: any) => (
         <option key={o.id} value={o.id}>
           {o.name}
         </option>

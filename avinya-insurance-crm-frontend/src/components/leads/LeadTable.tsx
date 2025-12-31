@@ -15,7 +15,7 @@ interface LeadTableProps {
 }
 
 const LeadTable = ({
-  data=[],
+  data = [],
   onEdit,
   onAdd,
   onCreateFollowUp,
@@ -48,6 +48,12 @@ const LeadTable = ({
     });
 
     setOpenLead(lead);
+  };
+
+  /* 🔥 SAFE ACTION HANDLER */
+  const handleAction = (cb: () => void) => {
+    setOpenLead(null);
+    setTimeout(cb, 0);
   };
 
   return (
@@ -90,46 +96,49 @@ const LeadTable = ({
         </tbody>
       </table>
 
-      {/* 🔥 SMART DROPDOWN */}
+      {/* 🔥 DROPDOWN */}
       {openLead && (
         <div
           ref={dropdownRef}
           className="fixed z-50 w-[210px] bg-white border rounded-lg shadow-lg overflow-hidden"
-          style={{
-            top: style.top,
-            left: style.left,
-          }}
+          style={{ top: style.top, left: style.left }}
         >
-          <MenuItem
-            label="Edit Lead"
-            onClick={() => {
-              onEdit(openLead);
-              setOpenLead(null);
-            }}
-          />
+          {openLead.leadStatus !== "Lost" &&
+            openLead.leadStatus !== "Converted" && (
+              <>
+                <MenuItem
+                  label="Edit Lead"
+                  onClick={() =>
+                    handleAction(() => onEdit(openLead))
+                  }
+                />
 
-          <MenuItem
-            label="Add Lead"
-            onClick={() => {
-              onAdd();
-              setOpenLead(null);
-            }}
+                {/* <MenuItem
+                  label="Add Lead"
+                  onClick={() =>
+                    handleAction(() => onAdd())
+                  }
+                /> */}
+                <MenuItem
+                  label="Create Follow Up"
+                  onClick={() =>
+                    handleAction(() =>
+                      onCreateFollowUp?.(openLead)
+              )
+            }
           />
+              </>
+          )}
 
-          <MenuItem
-            label="Create Follow Up"
-            onClick={() => {
-              onCreateFollowUp?.(openLead);
-              setOpenLead(null);
-            }}
-          />
+          
 
           <MenuItem
             label="View Follow Ups"
-            onClick={() => {
-              onViewFollowUps?.(openLead);
-              setOpenLead(null);
-            }}
+            onClick={() =>
+              handleAction(() =>
+                onViewFollowUps?.(openLead)
+              )
+            }
           />
         </div>
       )}

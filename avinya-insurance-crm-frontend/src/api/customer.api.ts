@@ -29,6 +29,5 @@ export const getCustomersApi = async (params: {
   const res = await api.get("/Customer", {
     params,
   });
-
   return res.data.data; 
 };

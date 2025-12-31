@@ -11,6 +11,7 @@ import Renewals from "./pages/Renewals";
 import Claims from "./pages/Claims";
 import Settings from "./pages/Settings";
 import Lead from "./pages/Lead";
+import Insurer from "./pages/Insurer";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/leads" element={<Lead />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/policies" element={<Policies />} />
+          <Route path="/insurer" element={<Insurer />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />

@@ -37,7 +37,7 @@ const LeadFilterSheet = ({ open, onClose, filters, onApply, onClear }: Props) =>
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/30" onClick={onClose} />
 
-      <div className="w-96 bg-white h-full shadow-xl flex flex-col">
+      <div className="w-96 bg-white h-full shadow-xl flex flex-col ">
         {/* Header */}
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-lg">Filter Leads</h2>

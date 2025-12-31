@@ -42,6 +42,7 @@ const LeadFollowUpCreateSheet = ({
           bg-white
           z-50
           shadow-2xl
+          animate-slideInRight
           flex flex-col
         "
       >
