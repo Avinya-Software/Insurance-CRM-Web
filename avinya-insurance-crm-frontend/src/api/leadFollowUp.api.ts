@@ -4,7 +4,7 @@ import api from "./axios";
 export interface CreateFollowUpRequest {
   leadId: string;
   followUpDate: string;
-  nextFollowUpDate: string;
+  nextFollowUpDate: string | null;
   remark: string;
 }
 
@@ -16,7 +16,7 @@ export const createFollowUpApi = async (
 };
 export const getFollowUpsByLeadId = async (leadId: string) => {
   const response = await api.get(
-    `/api/lead-followups/by-lead/${leadId}`
+    `/lead-followups/by-lead/${leadId}`
   );
   return response.data;
 };

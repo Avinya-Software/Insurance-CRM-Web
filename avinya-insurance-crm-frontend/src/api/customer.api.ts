@@ -17,3 +17,18 @@ export const createCustomerApi = async (data: CreateCustomerRequest) => {
   const res = await api.post<CustomerResponse>("/Customer", formData);
   return res.data;
 };
+export const getCustomerDropdownApi = async () => {
+  const res = await api.get("/Customer/dropdown");
+  return res.data;
+};
+export const getCustomersApi = async (params: {
+  pageNumber: number;
+  pageSize: number;
+  search?: string;
+}) => {
+  const res = await api.get("/Customer", {
+    params,
+  });
+
+  return res.data.data; 
+};
