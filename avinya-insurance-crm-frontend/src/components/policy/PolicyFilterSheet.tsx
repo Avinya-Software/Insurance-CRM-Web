@@ -102,11 +102,11 @@ const PolicyFilterSheet = ({
         </div>
 
         <div className="px-6 py-4 border-t flex gap-3">
-          <button className="flex-1 border" onClick={onClear}>
+          <button className="flex-1 border rounded-lg py-2 hover:bg-gray-50" onClick={onClear}>
             Clear All
           </button>
           <button
-            className="flex-1 bg-blue-600 text-white"
+            className="flex-1 bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700"
             onClick={() => {
               onApply(local);
               onClose();

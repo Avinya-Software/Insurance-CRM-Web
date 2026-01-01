@@ -87,14 +87,25 @@ const CustomerUpsertSheet = ({
     else if (!mobileRegex.test(form.primaryMobile))
       e.primaryMobile = "Invalid mobile number";
 
-    if (form.email && !emailRegex.test(form.email))
-      e.email = "Invalid email";
+    /* 🔥 EMAIL REQUIRED + REGEX */
+    if (!form.email.trim())
+      e.email = "Email is required";
+    else if (!emailRegex.test(form.email))
+      e.email = "Invalid email address";
 
     setErrors(e);
-    return Object.keys(e).length === 0;
+
+    if (Object.keys(e).length > 0) {
+      toast.error("Please fix validation errors", {
+        duration: 3000,
+      });
+      return false;
+    }
+
+    return true;
   };
 
-  /* ---------------- SAVE (ADD + EDIT) ---------------- */
+  /* ---------------- SAVE ---------------- */
 
   const handleSave = async () => {
     if (!validate()) return;
@@ -109,12 +120,15 @@ const CustomerUpsertSheet = ({
       onClose();
       onSuccess();
     } catch (error: any) {
-      // 🔥 HANDLE 400 ERROR FOR DUPLICATE MOBILE/EMAIL
       if (error.response?.status === 400) {
-        const errorMessage = error.response?.data?.message || "Validation error";
+        const errorMessage =
+          error.response?.data?.message ||
+          "Validation error";
         toast.error(errorMessage);
       } else {
-        toast.error("Something went wrong. Please try again.");
+        toast.error(
+          "Something went wrong. Please try again."
+        );
       }
     } finally {
       setSaving(false);
@@ -134,7 +148,7 @@ const CustomerUpsertSheet = ({
       />
 
       {/* SHEET */}
-      <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl animate-slideInRight flex flex-col">
+      <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl flex flex-col">
         {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between">
           <h2 className="font-semibold">
@@ -171,12 +185,16 @@ const CustomerUpsertSheet = ({
             label="Secondary Mobile"
             value={form.secondaryMobile}
             onChange={(v) =>
-              setForm({ ...form, secondaryMobile: v })
+              setForm({
+                ...form,
+                secondaryMobile: v,
+              })
             }
           />
 
           <Input
             label="Email"
+            required
             value={form.email}
             error={errors.email}
             onChange={(v) =>
@@ -206,7 +224,10 @@ const CustomerUpsertSheet = ({
             type="date"
             value={form.anniversary}
             onChange={(v) =>
-              setForm({ ...form, anniversary: v })
+              setForm({
+                ...form,
+                anniversary: v,
+              })
             }
           />
 
@@ -237,7 +258,8 @@ const CustomerUpsertSheet = ({
               className="block mt-1 text-sm"
             />
             <p className="text-xs text-slate-500 mt-1">
-              Uploading files will mark KYC as <b>Uploaded</b>
+              Uploading files will mark KYC as{" "}
+              <b>Uploaded</b>
             </p>
           </div>
         </div>
@@ -277,7 +299,10 @@ const Input = ({
 }: any) => (
   <div>
     <label className="text-sm font-medium">
-      {label} {required && <span className="text-red-500">*</span>}
+      {label}{" "}
+      {required && (
+        <span className="text-red-500">*</span>
+      )}
     </label>
     <input
       type={type}
@@ -288,14 +313,18 @@ const Input = ({
       onChange={(e) => onChange(e.target.value)}
     />
     {error && (
-      <p className="text-xs text-red-600 mt-1">{error}</p>
+      <p className="text-xs text-red-600 mt-1">
+        {error}
+      </p>
     )}
   </div>
 );
 
 const Textarea = ({ label, value, onChange }: any) => (
   <div>
-    <label className="text-sm font-medium">{label}</label>
+    <label className="text-sm font-medium">
+      {label}
+    </label>
     <textarea
       className="input w-full h-24"
       value={value}
