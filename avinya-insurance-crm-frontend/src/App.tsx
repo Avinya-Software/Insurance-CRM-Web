@@ -11,6 +11,7 @@ import Renewals from "./pages/Renewals";
 import Claims from "./pages/Claims";
 import Settings from "./pages/Settings";
 import Lead from "./pages/Lead";
+import Product from "./pages/Product";
 import Insurer from "./pages/Insurer";
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/products" element={<Product />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -71,6 +71,11 @@ const Sidebar = () => {
           label="Policies"
         />
         <NavItem
+          to="/products"
+          icon={<FileText size={18} />}
+          label="Products"
+        />
+        <NavItem
           to="/renewals"
           icon={<RefreshCcw size={18} />}
           label="Renewals"

@@ -12,6 +12,7 @@ interface LeadTableProps {
   onAdd: () => void;
   onCreateFollowUp?: (lead: Lead) => void;
   onViewFollowUps?: (lead: Lead) => void;
+  onRowClick?: (lead: Lead) => void; // ✅ NEW
 }
 
 const LeadTable = ({
@@ -20,6 +21,7 @@ const LeadTable = ({
   onAdd,
   onCreateFollowUp,
   onViewFollowUps,
+  onRowClick,
 }: LeadTableProps) => {
   const [openLead, setOpenLead] = useState<Lead | null>(null);
   const [style, setStyle] = useState<{ top: number; left: number }>({
@@ -34,6 +36,7 @@ const LeadTable = ({
     e: React.MouseEvent<HTMLButtonElement>,
     lead: Lead
   ) => {
+    e.stopPropagation(); // 🔥 IMPORTANT
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
 
@@ -74,14 +77,24 @@ const LeadTable = ({
 
         <tbody>
           {data.map((lead) => (
-            <tr key={lead.leadId} className="border-t h-[52px]">
+            <tr
+              key={lead.leadId}
+              onClick={() =>
+                onRowClick
+                  ? onRowClick(lead)
+                  : onViewFollowUps?.(lead)
+              } // ✅ ROW CLICK = VIEW FOLLOW UPS
+              className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
+            >
               <Td>{lead.leadNo}</Td>
               <Td>{lead.fullName}</Td>
               <Td>{lead.email}</Td>
               <Td>{lead.mobile}</Td>
               <Td>{lead.leadStatus}</Td>
               <Td>{lead.leadSource}</Td>
-              <Td>{new Date(lead.createdAt).toLocaleDateString()}</Td>
+              <Td>
+                {new Date(lead.createdAt).toLocaleDateString()}
+              </Td>
 
               <Td className="text-right">
                 <button
@@ -100,6 +113,7 @@ const LeadTable = ({
       {openLead && (
         <div
           ref={dropdownRef}
+          onClick={(e) => e.stopPropagation()} // 🔥 IMPORTANT
           className="fixed z-50 w-[210px] bg-white border rounded-lg shadow-lg overflow-hidden"
           style={{ top: style.top, left: style.left }}
         >
@@ -113,24 +127,16 @@ const LeadTable = ({
                   }
                 />
 
-                {/* <MenuItem
-                  label="Add Lead"
-                  onClick={() =>
-                    handleAction(() => onAdd())
-                  }
-                /> */}
                 <MenuItem
                   label="Create Follow Up"
                   onClick={() =>
                     handleAction(() =>
                       onCreateFollowUp?.(openLead)
-              )
-            }
-          />
+                    )
+                  }
+                />
               </>
-          )}
-
-          
+            )}
 
           <MenuItem
             label="View Follow Ups"
@@ -168,7 +174,10 @@ const MenuItem = ({
   onClick: () => void;
 }) => (
   <button
-    onClick={onClick}
+    onClick={(e) => {
+      e.stopPropagation(); // 🔥 PREVENT ROW CLICK
+      onClick();
+    }}
     className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100"
   >
     {label}
@@ -176,3 +185,4 @@ const MenuItem = ({
 );
 
 export default LeadTable;
+

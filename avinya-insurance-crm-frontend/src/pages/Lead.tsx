@@ -21,13 +21,11 @@ const Leads = () => {
     search: "",
   });
 
-  // 🔥 SAME PATTERN AS CUSTOMERS
   const [openLeadSheet, setOpenLeadSheet] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
 
   const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
-  // FOLLOW UPS
   const [viewFollowUpLead, setViewFollowUpLead] = useState<{
     leadId: string;
     leadName?: string;
@@ -44,11 +42,19 @@ const Leads = () => {
 
   const { data, isLoading, isFetching } = useLeads(filters);
 
-  /* ---------------- HANDLERS ---------------- */
+  /* ---------------- COMMON HANDLERS ---------------- */
 
   const closeAllSheets = () => {
     setViewFollowUpLead(null);
     setCreateFollowUpLead(null);
+  };
+
+  const openViewFollowUps = (lead: any) => {
+    closeAllSheets();
+    setViewFollowUpLead({
+      leadId: lead.leadId,
+      leadName: lead.fullName,
+    });
   };
 
   const handleAddLead = () => {
@@ -63,15 +69,12 @@ const Leads = () => {
     setOpenLeadSheet(true);
   };
 
-  if (isLoading) return <p>Loading leads...</p>;
-
   return (
     <>
       <div className="bg-white rounded-lg border">
         {/* ================= HEADER ================= */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
-            {/* LEFT - TITLE + COUNT */}
             <div>
               <h1 className="text-4xl font-serif font-semibold text-slate-900">
                 Leads
@@ -81,7 +84,6 @@ const Leads = () => {
               </p>
             </div>
 
-            {/* RIGHT - ADD LEAD BUTTON */}
             <div className="text-right">
               <button
                 className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm font-medium"
@@ -92,7 +94,6 @@ const Leads = () => {
               </button>
             </div>
 
-            {/* LEFT - SEARCH */}
             <div>
               <div className="relative w-[360px]">
                 <input
@@ -106,7 +107,7 @@ const Leads = () => {
                       pageNumber: 1,
                     })
                   }
-                  className="w-full h-10 pl-10 pr-3 border rounded text-sm text-slate-700 placeholder-slate-400"
+                  className="w-full h-10 pl-10 pr-3 border rounded text-sm"
                 />
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                   🔍
@@ -114,7 +115,6 @@ const Leads = () => {
               </div>
             </div>
 
-            {/* RIGHT - FILTER BUTTON */}
             <div className="text-right">
               <button
                 onClick={() => setOpenFilterSheet(true)}
@@ -127,9 +127,10 @@ const Leads = () => {
           </div>
         </div>
 
-        {isFetching && (
+        {/* ================= INLINE LOADING ================= */}
+        {(isLoading || isFetching) && (
           <div className="px-4 py-2 text-sm text-slate-500">
-            Updating...
+            {isLoading ? "Loading..." : "Updating..."}
           </div>
         )}
 
@@ -138,15 +139,10 @@ const Leads = () => {
           data={data?.data ?? []}
           onAdd={handleAddLead}
           onEdit={handleEditLead}
-          onViewFollowUps={(lead) => {
-            setCreateFollowUpLead(null);
-            setViewFollowUpLead({
-              leadId: lead.leadId,
-              leadName: lead.fullName,
-            });
-          }}
+          onRowClick={openViewFollowUps}          // ✅ NEW
+          onViewFollowUps={openViewFollowUps}     // existing
           onCreateFollowUp={(lead) => {
-            setViewFollowUpLead(null);
+            closeAllSheets();
             setCreateFollowUpLead({
               leadId: lead.leadId,
               leadName: lead.fullName,
@@ -166,7 +162,7 @@ const Leads = () => {
         </div>
       </div>
 
-      {/* ================= FILTER SHEET ================= */}
+      {/* ================= SHEETS ================= */}
       <LeadFilterSheet
         open={openFilterSheet}
         onClose={() => setOpenFilterSheet(false)}
@@ -179,7 +175,6 @@ const Leads = () => {
         }
       />
 
-      {/* ================= ADD / EDIT LEAD ================= */}
       <LeadUpsertSheet
         open={openLeadSheet}
         onClose={() => {
@@ -190,7 +185,6 @@ const Leads = () => {
         advisorId={advisorId}
       />
 
-      {/* ================= VIEW FOLLOW UPS ================= */}
       <LeadFollowUpBottomSheet
         open={!!viewFollowUpLead}
         leadId={viewFollowUpLead?.leadId || null}
@@ -198,7 +192,6 @@ const Leads = () => {
         onClose={() => setViewFollowUpLead(null)}
       />
 
-      {/* ================= CREATE FOLLOW UP ================= */}
       <LeadFollowUpCreateSheet
         open={!!createFollowUpLead}
         leadId={createFollowUpLead?.leadId || null}

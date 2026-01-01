@@ -23,3 +23,10 @@ export const getInsurerPortalPasswordApi = async (insurerId: string) => {
   );
   return res.data;
 };
+export const getInsurerDropdownApi = async () => {
+  const res = await api.get<
+    { insurerId: string; insurerName: string }[]
+  >("/Insurer/dropdown");
+
+  return res.data;
+};
