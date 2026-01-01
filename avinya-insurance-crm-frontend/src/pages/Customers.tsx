@@ -1,7 +1,10 @@
 import { useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
+
 import { useCustomers } from "../hooks/customer/useCustomers";
 import CustomerTable from "../components/customer/CustomerTable";
 import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
+import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
 import type { Customer } from "../interfaces/customer.interface";
 
 const Customers = () => {
@@ -9,35 +12,61 @@ const Customers = () => {
   const [pageSize] = useState(10);
   const [search, setSearch] = useState("");
 
+  /* ---------------- CUSTOMER SHEET ---------------- */
   const [openCustomerSheet, setOpenCustomerSheet] = useState(false);
   const [selectedCustomer, setSelectedCustomer] =
     useState<Customer | null>(null);
 
-  // 🔥 IMPORTANT: get refetch
+  /* ---------------- POLICY SHEET ---------------- */
+  const [openPolicySheet, setOpenPolicySheet] = useState(false);
+
+  /* ---------------- API ---------------- */
   const { data, isLoading, refetch } = useCustomers(
     pageNumber,
     pageSize,
     search
   );
 
-  const handleAdd = () => {
+  /* ---------------- HANDLERS ---------------- */
+
+  const handleAddCustomer = () => {
     setSelectedCustomer(null);
     setOpenCustomerSheet(true);
   };
 
-  const handleEdit = (customer: Customer) => {
+  const handleEditCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setOpenCustomerSheet(true);
   };
 
-  const handleSuccess = () => {
-    refetch(); // 🔥 REFRESH LIST AFTER ADD / EDIT
+  const handleAddPolicy = (customer: Customer) => {
+    setSelectedCustomer(customer); // 👈 ONLY customerId will be used
+    setOpenPolicySheet(true);
   };
+
+  const handleCustomerSuccess = (isEdit: boolean) => {
+    setOpenCustomerSheet(false);
+    refetch(); // 🔥 refresh customer list
+    toast.success(
+      isEdit ? "Customer Saved successfully!" : "Customer Saved successfully!"
+    );
+  };
+
+  const handlePolicySuccess = () => {
+    setOpenPolicySheet(false);
+    setSelectedCustomer(null);
+    toast.success("Policy added successfully!");
+  };
+
+  /* ================= UI ================= */
 
   return (
     <>
+      {/* 🔔 TOASTER */}
+      <Toaster position="top-right" reverseOrder={false} />
+
       <div className="bg-white rounded-lg border">
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             {/* LEFT */}
@@ -54,7 +83,7 @@ const Customers = () => {
             <div className="text-right">
               <button
                 className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm font-medium"
-                onClick={handleAdd}
+                onClick={handleAddCustomer}
               >
                 <span className="text-lg leading-none">+</span>
                 Add Customer
@@ -84,13 +113,14 @@ const Customers = () => {
           </div>
         </div>
 
-        {/* TABLE */}
+        {/* ================= TABLE ================= */}
         <CustomerTable
           data={data?.customers || []}
-          onEdit={handleEdit}
+          onEdit={handleEditCustomer}
+          onAddPolicy={handleAddPolicy}
         />
 
-        {/* PAGINATION */}
+        {/* ================= PAGINATION ================= */}
         <div className="flex items-center justify-end gap-4 px-4 py-3 border-t text-sm">
           <button
             disabled={pageNumber === 1}
@@ -118,12 +148,23 @@ const Customers = () => {
         )}
       </div>
 
-      {/* ADD / EDIT SHEET */}
+      {/* ================= CUSTOMER UPSERT ================= */}
       <CustomerUpsertSheet
         open={openCustomerSheet}
         customer={selectedCustomer}
         onClose={() => setOpenCustomerSheet(false)}
-        onSuccess={handleSuccess} // 🔥 REQUIRED
+        onSuccess={handleCustomerSuccess}
+      />
+
+      {/* ================= POLICY UPSERT ================= */}
+      <PolicyUpsertSheet
+        open={openPolicySheet}
+        customerId={selectedCustomer?.customerId}
+        onClose={() => {
+          setOpenPolicySheet(false);
+          setSelectedCustomer(null);
+        }}
+        onSuccess={handlePolicySuccess}
       />
     </>
   );

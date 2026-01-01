@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import toast from "react-hot-toast";
 import { createCustomerApi } from "../../api/customer.api";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   customer?: any;
-  onSuccess: () => void; // 🔥 REQUIRED FOR REFRESH
+  onSuccess: () => void;
 }
 
 const CustomerUpsertSheet = ({
@@ -106,7 +107,15 @@ const CustomerUpsertSheet = ({
       });
 
       onClose();
-      onSuccess(); // 🔥 REFRESH CUSTOMER LIST
+      onSuccess();
+    } catch (error: any) {
+      // 🔥 HANDLE 400 ERROR FOR DUPLICATE MOBILE/EMAIL
+      if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.message || "Validation error";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Something went wrong. Please try again.");
+      }
     } finally {
       setSaving(false);
     }

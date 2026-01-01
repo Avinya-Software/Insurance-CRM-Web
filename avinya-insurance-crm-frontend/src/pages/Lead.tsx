@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Filter } from "lucide-react";
 import { useSelector } from "react-redux";
+import { Toaster } from "react-hot-toast";
 
 import { useLeads } from "../hooks/lead/useLeads";
 import LeadTable from "../components/leads/LeadTable";
@@ -71,6 +72,9 @@ const Leads = () => {
 
   return (
     <>
+      {/* 🔔 TOASTER (UI ONLY – does NOT trigger toast) */}
+      <Toaster position="top-right" reverseOrder={false} />
+
       <div className="bg-white rounded-lg border">
         {/* ================= HEADER ================= */}
         <div className="px-4 py-5 border-b bg-gray-100">
@@ -139,8 +143,8 @@ const Leads = () => {
           data={data?.data ?? []}
           onAdd={handleAddLead}
           onEdit={handleEditLead}
-          onRowClick={openViewFollowUps}          // ✅ NEW
-          onViewFollowUps={openViewFollowUps}     // existing
+          onRowClick={openViewFollowUps}
+          onViewFollowUps={openViewFollowUps}
           onCreateFollowUp={(lead) => {
             closeAllSheets();
             setCreateFollowUpLead({

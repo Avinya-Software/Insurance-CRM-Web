@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+import { Toaster, toast } from "react-hot-toast";
+
 import InsurerTable from "../components/insurer/InsurerTable";
 import InsurerUpsertSheet from "../components/insurer/InsurerUpsertSheet";
+import ProductUpsertSheet from "../components/product/ProductUpsertSheet";
 import { getInsurersApi } from "../api/insurer.api";
 
 const Insurers = () => {
@@ -11,7 +14,9 @@ const Insurers = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const [openSheet, setOpenSheet] = useState(false);
+  const [openInsurerSheet, setOpenInsurerSheet] = useState(false);
+  const [openProductSheet, setOpenProductSheet] = useState(false);
+
   const [selectedInsurer, setSelectedInsurer] = useState<any | null>(null);
 
   /* ---------------- FETCH DATA ---------------- */
@@ -21,6 +26,11 @@ const Insurers = () => {
     try {
       const res = await getInsurersApi(pageNumber, pageSize, search);
       setData(res);
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to load insurers"
+      );
     } finally {
       setLoading(false);
     }
@@ -32,30 +42,42 @@ const Insurers = () => {
 
   /* ---------------- HANDLERS ---------------- */
 
-  const handleAdd = () => {
+  const handleAddInsurer = () => {
     setSelectedInsurer(null);
-    setOpenSheet(true);
+    setOpenInsurerSheet(true);
   };
 
-  const handleEdit = (insurer: any) => {
+  const handleEditInsurer = (insurer: any) => {
     setSelectedInsurer(insurer);
-    setOpenSheet(true);
+    setOpenInsurerSheet(true);
   };
 
-  const handleSuccess = () => {
-    // 🔥 REFRESH AFTER ADD / EDIT
+  const handleAddProduct = (insurer: any) => {
+    setSelectedInsurer(insurer);
+    setOpenProductSheet(true);
+  };
+
+  // ✅ NO TOAST HERE
+  const handleInsurerSuccess = () => {
+    setOpenInsurerSheet(false);
     loadData();
   };
 
-  /* =================== UI =================== */
+  // ✅ NO TOAST HERE
+  const handleProductSuccess = () => {
+    setOpenProductSheet(false);
+    setSelectedInsurer(null);
+  };
 
   return (
     <>
+      {/* 🔔 TOASTER (renders UI only) */}
+      <Toaster position="top-right" reverseOrder={false} />
+
       <div className="bg-white rounded-lg border">
         {/* HEADER */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
-            {/* LEFT */}
             <div>
               <h1 className="text-4xl font-serif font-semibold text-slate-900">
                 Insurers
@@ -65,17 +87,15 @@ const Insurers = () => {
               </p>
             </div>
 
-            {/* RIGHT */}
             <div className="text-right">
               <button
                 className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm font-medium"
-                onClick={handleAdd}
+                onClick={handleAddInsurer}
               >
                 + Add Insurer
               </button>
             </div>
 
-            {/* SEARCH */}
             <div>
               <input
                 type="text"
@@ -96,7 +116,8 @@ const Insurers = () => {
         {/* TABLE */}
         <InsurerTable
           data={data?.data || []}
-          onEdit={handleEdit}
+          onEdit={handleEditInsurer}
+          onAddProduct={handleAddProduct}
         />
 
         {/* PAGINATION */}
@@ -127,12 +148,23 @@ const Insurers = () => {
         )}
       </div>
 
-      {/* ADD / EDIT SHEET */}
+      {/* INSURER UPSERT */}
       <InsurerUpsertSheet
-        open={openSheet}
+        open={openInsurerSheet}
         insurer={selectedInsurer}
-        onClose={() => setOpenSheet(false)}
-        onSuccess={handleSuccess}   // 🔥 IMPORTANT
+        onClose={() => setOpenInsurerSheet(false)}
+        onSuccess={handleInsurerSuccess}
+      />
+
+      {/* PRODUCT UPSERT */}
+      <ProductUpsertSheet
+        open={openProductSheet}
+        insurerId={selectedInsurer?.insurerId}
+        onClose={() => {
+          setOpenProductSheet(false);
+          setSelectedInsurer(null);
+        }}
+        onSuccess={handleProductSuccess}
       />
     </>
   );

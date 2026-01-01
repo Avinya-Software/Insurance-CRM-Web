@@ -9,6 +9,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   product?: any;
+  insurerId?: string; // ✅ NEW
   onSuccess: () => void;
 }
 
@@ -26,6 +27,7 @@ const ProductUpsertSheet = ({
   open,
   onClose,
   product,
+  insurerId,
   onSuccess,
 }: Props) => {
   /* ---------------- API HOOKS ---------------- */
@@ -54,6 +56,7 @@ const ProductUpsertSheet = ({
   useEffect(() => {
     if (!open) return;
 
+    // EDIT MODE
     if (product && categories) {
       const matchedCategory = categories.find(
         (c) => c.name === product.productCategory
@@ -69,12 +72,17 @@ const ProductUpsertSheet = ({
         commissionRules: product.commissionRules ?? "",
         isActive: product.isActive ?? true,
       });
-    } else {
-      setForm(initialForm);
+    }
+    // ADD MODE (FROM INSURER)
+    else {
+      setForm({
+        ...initialForm,
+        insurerId: insurerId || "", // ✅ FORCE FROM INSURER TABLE
+      });
     }
 
     setErrors({});
-  }, [open, product, categories]);
+  }, [open, product, categories, insurerId]);
 
   /* ---------------- VALIDATION ---------------- */
 
@@ -107,9 +115,7 @@ const ProductUpsertSheet = ({
 
     if (!form.commissionRules)
       e.commissionRules = "Commission rules required";
-    else if (
-      !regex.commissionRules.test(form.commissionRules)
-    )
+    else if (!regex.commissionRules.test(form.commissionRules))
       e.commissionRules =
         "Min 3 characters, no special symbols";
 
@@ -138,8 +144,6 @@ const ProductUpsertSheet = ({
 
   if (!open) return null;
 
-  /* ================= UI ================= */
-
   return (
     <>
       {/* OVERLAY */}
@@ -149,7 +153,7 @@ const ProductUpsertSheet = ({
       />
 
       {/* SHEET */}
-      <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl flex flex-col">
+      <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl flex flex-col animate-slideInRight">
         {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-lg">
@@ -172,6 +176,7 @@ const ProductUpsertSheet = ({
             options={insurers}
             valueKey="insurerId"
             labelKey="insurerName"
+            disabled={!!insurerId} // 🔒 DISABLED
           />
 
           <Select
@@ -332,15 +337,17 @@ const Select = ({
   valueKey,
   labelKey,
   error,
+  disabled = false,
 }: any) => (
   <div>
     <label className="text-sm font-medium">
       {label}
     </label>
     <select
+      disabled={disabled}
       className={`input w-full ${
         error ? "border-red-500" : ""
-      }`}
+      } disabled:bg-gray-100`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >

@@ -12,6 +12,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   policy?: any;
+  customerId?: string; // ✅ NEW
   onSuccess: () => void;
 }
 
@@ -19,6 +20,7 @@ const PolicyUpsertSheet = ({
   open,
   onClose,
   policy,
+  customerId,
   onSuccess,
 }: Props) => {
   /* ---------------- FORM STATE ---------------- */
@@ -58,28 +60,34 @@ const PolicyUpsertSheet = ({
   const { data: policyTypes } = usePolicyTypesDropdown();
   const { data: policyStatuses } = usePolicyStatusesDropdown();
 
-  /* ---------------- PREFILL (EDIT MODE) ---------------- */
+  /* ---------------- PREFILL ---------------- */
 
   useEffect(() => {
     if (!open) return;
 
     if (policy) {
+      // EDIT MODE
       setForm({
         ...initialForm,
         ...policy,
         policyId: policy.policyId ?? null,
+        customerId: policy.customerId,
         startDate: policy.startDate?.split("T")[0] ?? "",
         endDate: policy.endDate?.split("T")[0] ?? "",
         paymentDueDate: policy.paymentDueDate?.split("T")[0] ?? "",
         renewalDate: policy.renewalDate?.split("T")[0] ?? "",
       });
     } else {
-      setForm(initialForm);
+      // ADD MODE
+      setForm({
+        ...initialForm,
+        customerId: customerId || "", // ✅ FORCE CUSTOMER
+      });
       setFiles([]);
     }
 
     setErrors({});
-  }, [open, policy]);
+  }, [open, policy, customerId]);
 
   /* ---------------- RESET PRODUCT ON INSURER CHANGE ---------------- */
 
@@ -139,7 +147,6 @@ const PolicyUpsertSheet = ({
     const formData = new FormData();
 
     Object.entries(form).forEach(([key, value]) => {
-      // ❗ Do NOT send policyId when creating
       if (
         value !== null &&
         value !== undefined &&
@@ -193,7 +200,7 @@ const PolicyUpsertSheet = ({
       />
 
       {/* SHEET */}
-      <div className="fixed top-0 right-0 w-[420px] h-screen bg-white z-[70] shadow-xl flex flex-col">
+      <div className="fixed top-0 right-0 w-[420px] h-screen bg-white z-[70] shadow-xl flex flex-col animate-slideInRight">
         {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between">
           <h2 className="font-semibold">
@@ -213,6 +220,7 @@ const PolicyUpsertSheet = ({
             options={customers}
             valueKey="customerId"
             labelKey="fullName"
+            disabled={!!customerId} // 🔒 DISABLED
             onChange={(v) =>
               setForm({ ...form, customerId: v })
             }
@@ -298,10 +306,7 @@ const PolicyUpsertSheet = ({
             value={form.premiumNet}
             error={errors.premiumNet}
             onChange={(v) =>
-              setForm({
-                ...form,
-                premiumNet: Number(v),
-              })
+              setForm({ ...form, premiumNet: Number(v) })
             }
           />
 
@@ -311,10 +316,7 @@ const PolicyUpsertSheet = ({
             value={form.premiumGross}
             error={errors.premiumGross}
             onChange={(v) =>
-              setForm({
-                ...form,
-                premiumGross: Number(v),
-              })
+              setForm({ ...form, premiumGross: Number(v) })
             }
           />
 
@@ -332,10 +334,7 @@ const PolicyUpsertSheet = ({
             label="Payment Due Date"
             value={form.paymentDueDate}
             onChange={(v) =>
-              setForm({
-                ...form,
-                paymentDueDate: v,
-              })
+              setForm({ ...form, paymentDueDate: v })
             }
           />
 
@@ -344,10 +343,7 @@ const PolicyUpsertSheet = ({
             label="Renewal Date"
             value={form.renewalDate}
             onChange={(v) =>
-              setForm({
-                ...form,
-                renewalDate: v,
-              })
+              setForm({ ...form, renewalDate: v })
             }
           />
 
@@ -419,16 +415,12 @@ const Input = ({
     <label className="text-sm font-medium">{label}</label>
     <input
       type={type}
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      }`}
+      className={`input w-full ${error ? "border-red-500" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />
     {error && (
-      <p className="text-xs text-red-500 mt-1">
-        {error}
-      </p>
+      <p className="text-xs text-red-500 mt-1">{error}</p>
     )}
   </div>
 );
@@ -447,9 +439,7 @@ const Select = ({
     <label className="text-sm font-medium">{label}</label>
     <select
       disabled={disabled}
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      } disabled:bg-gray-100`}
+      className={`input w-full ${error ? "border-red-500" : ""} disabled:bg-gray-100`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -461,9 +451,7 @@ const Select = ({
       ))}
     </select>
     {error && (
-      <p className="text-xs text-red-500 mt-1">
-        {error}
-      </p>
+      <p className="text-xs text-red-500 mt-1">{error}</p>
     )}
   </div>
 );

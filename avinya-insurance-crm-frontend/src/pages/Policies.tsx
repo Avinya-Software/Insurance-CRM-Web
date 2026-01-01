@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import { Filter } from "lucide-react";
 
 import { usePolicies } from "../hooks/policy/usePolicies";
@@ -27,8 +28,44 @@ const Policies = () => {
 
   const { data, isLoading, isFetching } = usePolicies(filters);
 
+  /* ---------------- HANDLERS ---------------- */
+
+  const handleAddPolicy = () => {
+    setSelectedPolicy(null);
+    setOpenPolicySheet(true);
+  };
+
+  const handleEditPolicy = (policy: any) => {
+    setSelectedPolicy(policy);
+    setOpenPolicySheet(true);
+  };
+
+  const handlePolicySuccess = (isEdit: boolean) => {
+    setOpenPolicySheet(false);
+    setSelectedPolicy(null);
+    toast.success(
+      isEdit ? "Policy Saved successfully!" : "Policy Saved successfully!"
+    );
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      pageNumber: 1,
+      pageSize: 10,
+      search: "",
+      policyStatusId: null,
+      policyTypeId: null,
+      customerId: null,
+      insurerId: null,
+      productId: null,
+    });
+    toast.success("Filters cleared");
+  };
+
   return (
     <>
+      <Toaster position="top-right" reverseOrder={false} />
+
       <div className="bg-white rounded-lg border">
         {/* ================= HEADER ================= */}
         <div className="px-4 py-5 border-b bg-gray-100">
@@ -45,10 +82,7 @@ const Policies = () => {
             <div className="text-right">
               <button
                 className="bg-blue-900 text-white px-4 py-2 rounded text-sm"
-                onClick={() => {
-                  setSelectedPolicy(null);
-                  setOpenPolicySheet(true);
-                }}
+                onClick={handleAddPolicy}
               >
                 + Add Policy
               </button>
@@ -98,10 +132,7 @@ const Policies = () => {
         {/* TABLE */}
         <PolicyTable
           data={data?.data ?? []}
-          onEdit={(policy) => {
-            setSelectedPolicy(policy);
-            setOpenPolicySheet(true);
-          }}
+          onEdit={handleEditPolicy}
         />
 
         {/* PAGINATION */}
@@ -121,21 +152,11 @@ const Policies = () => {
         open={openFilterSheet}
         filters={filters}
         onClose={() => setOpenFilterSheet(false)}
-        onApply={(f) =>
-          setFilters({ ...f, pageNumber: 1 })
-        }
-        onClear={() =>
-          setFilters({
-            pageNumber: 1,
-            pageSize: 10,
-            search: "",
-            policyStatusId: null,
-            policyTypeId: null,
-            customerId: null,
-            insurerId: null,
-            productId: null,
-          })
-        }
+        onApply={(f) => {
+          setFilters({ ...f, pageNumber: 1 });
+          toast.success("Filters applied");
+        }}
+        onClear={handleClearFilters}
       />
 
       {/* UPSERT */}
@@ -146,10 +167,7 @@ const Policies = () => {
           setOpenPolicySheet(false);
           setSelectedPolicy(null);
         }}
-        onSuccess={() => {
-          setOpenPolicySheet(false);
-          setSelectedPolicy(null);
-        }}
+        onSuccess={handlePolicySuccess}
       />
     </>
   );

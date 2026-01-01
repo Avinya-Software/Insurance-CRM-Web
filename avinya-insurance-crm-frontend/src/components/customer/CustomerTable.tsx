@@ -9,9 +9,14 @@ const DROPDOWN_WIDTH = 180;
 interface CustomerTableProps {
   data: Customer[];
   onEdit: (customer: Customer) => void;
+  onAddPolicy: (customer: Customer) => void; // ✅ REQUIRED
 }
 
-const CustomerTable = ({ data = [], onEdit }: CustomerTableProps) => {
+const CustomerTable = ({
+  data = [],
+  onEdit,
+  onAddPolicy, // ✅ FIX: destructured here
+}: CustomerTableProps) => {
   const [openCustomer, setOpenCustomer] =
     useState<Customer | null>(null);
 
@@ -19,6 +24,8 @@ const CustomerTable = ({ data = [], onEdit }: CustomerTableProps) => {
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => setOpenCustomer(null));
+
+  /* ---------------- DROPDOWN POSITION ---------------- */
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -40,12 +47,23 @@ const CustomerTable = ({ data = [], onEdit }: CustomerTableProps) => {
     setOpenCustomer(customer);
   };
 
+  /* ---------------- ACTIONS ---------------- */
+
   const handleEdit = () => {
     if (!openCustomer) return;
     const customer = openCustomer;
     setOpenCustomer(null);
     setTimeout(() => onEdit(customer), 0);
   };
+
+  const handleAddPolicy = () => {
+    if (!openCustomer) return;
+    const customer = openCustomer;
+    setOpenCustomer(null);
+    setTimeout(() => onAddPolicy(customer), 0);
+  };
+
+  /* ================= UI ================= */
 
   return (
     <div className="relative overflow-x-auto">
@@ -92,7 +110,7 @@ const CustomerTable = ({ data = [], onEdit }: CustomerTableProps) => {
         </tbody>
       </table>
 
-      {/* DROPDOWN */}
+      {/* ================= DROPDOWN ================= */}
       {openCustomer && (
         <div
           ref={dropdownRef}
@@ -100,6 +118,7 @@ const CustomerTable = ({ data = [], onEdit }: CustomerTableProps) => {
           style={style}
         >
           <MenuItem label="Edit Customer" onClick={handleEdit} />
+          <MenuItem label="Add Policy" onClick={handleAddPolicy} />
         </div>
       )}
     </div>

@@ -8,9 +8,14 @@ const DROPDOWN_WIDTH = 180;
 interface Props {
   data: any[];
   onEdit: (insurer: any) => void;
+  onAddProduct: (insurer: any) => void; // ✅ NEW
 }
 
-const InsurerTable = ({ data = [], onEdit }: Props) => {
+const InsurerTable = ({
+  data = [],
+  onEdit,
+  onAddProduct, // ✅ IMPORTANT
+}: Props) => {
   const [openInsurer, setOpenInsurer] = useState<any | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
@@ -29,6 +34,22 @@ const InsurerTable = ({ data = [], onEdit }: Props) => {
     setOpenInsurer(insurer);
   };
 
+  /* ---------------- ACTIONS ---------------- */
+
+  const handleEdit = () => {
+    if (!openInsurer) return;
+    const insurer = openInsurer;
+    setOpenInsurer(null);
+    setTimeout(() => onEdit(insurer), 0);
+  };
+
+  const handleAddProduct = () => {
+    if (!openInsurer) return;
+    const insurer = openInsurer;
+    setOpenInsurer(null);
+    setTimeout(() => onAddProduct(insurer), 0);
+  };
+
   return (
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
@@ -37,7 +58,7 @@ const InsurerTable = ({ data = [], onEdit }: Props) => {
             <Th>Name</Th>
             <Th>Short Code</Th>
             <Th>Portal</Th>
-            <Th> UseNmae</Th>
+            <Th>Username</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
@@ -51,9 +72,9 @@ const InsurerTable = ({ data = [], onEdit }: Props) => {
               <Td>{i.insurerName}</Td>
               <Td>{i.shortCode}</Td>
               <Td>{i.portalUrl}</Td>
-                
-                <Td>{i.portalUsername}</Td>
-              <Td className="text-left">
+              <Td>{i.portalUsername}</Td>
+
+              <Td className="text-center">
                 <button
                   onClick={(e) => openDropdown(e, i)}
                   className="p-2 rounded hover:bg-slate-200"
@@ -66,7 +87,7 @@ const InsurerTable = ({ data = [], onEdit }: Props) => {
 
           {!data.length && (
             <tr>
-              <td colSpan={4} className="text-center py-6 text-slate-500">
+              <td colSpan={5} className="text-center py-6 text-slate-500">
                 No insurers found
               </td>
             </tr>
@@ -74,24 +95,24 @@ const InsurerTable = ({ data = [], onEdit }: Props) => {
         </tbody>
       </table>
 
+      {/* ================= DROPDOWN ================= */}
       {openInsurer && (
         <div
           ref={dropdownRef}
           className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg"
           style={style}
         >
-          <MenuItem
-            label="Edit Insurer"
-            onClick={() => {
-              setOpenInsurer(null);
-              onEdit(openInsurer);
-            }}
-          />
+          <MenuItem label="Edit Insurer" onClick={handleEdit} />
+          <MenuItem label="Add Product" onClick={handleAddProduct} />
         </div>
       )}
     </div>
   );
 };
+
+export default InsurerTable;
+
+/* ---------- HELPERS ---------- */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold text-slate-700">
@@ -103,7 +124,13 @@ const Td = ({ children, className = "" }: any) => (
   <td className={`px-4 py-3 ${className}`}>{children}</td>
 );
 
-const MenuItem = ({ label, onClick }: any) => (
+const MenuItem = ({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) => (
   <button
     onClick={onClick}
     className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100"
@@ -111,5 +138,3 @@ const MenuItem = ({ label, onClick }: any) => (
     {label}
   </button>
 );
-
-export default InsurerTable;

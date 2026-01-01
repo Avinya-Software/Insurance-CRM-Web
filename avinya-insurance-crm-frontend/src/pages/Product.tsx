@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Toaster } from "react-hot-toast";
+
 import { useProducts } from "../hooks/product/useProducts";
 import { useProductCategoryDropdown } from "../hooks/product/useProductCategoryDropdown";
 import ProductTable from "../components/product/ProductTable";
@@ -9,10 +11,12 @@ const Products = () => {
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize] = useState(10);
   const [search, setSearch] = useState("");
-  const [productCategoryId, setProductCategoryId] = useState<number | undefined>();
+  const [productCategoryId, setProductCategoryId] =
+    useState<number | undefined>();
 
   const [openSheet, setOpenSheet] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] =
+    useState<Product | null>(null);
 
   /* 🔥 API CALL */
   const { data, isLoading, refetch } = useProducts({
@@ -27,6 +31,8 @@ const Products = () => {
   const products = data?.data?.products || [];
   const totalRecords = data?.data?.totalRecords || 0;
 
+  /* ---------------- HANDLERS ---------------- */
+
   const handleAdd = () => {
     setSelectedProduct(null);
     setOpenSheet(true);
@@ -38,16 +44,21 @@ const Products = () => {
   };
 
   const handleSuccess = () => {
+    // ✅ ONLY refetch here
     refetch();
+    setOpenSheet(false);
+    setSelectedProduct(null);
   };
 
   return (
     <>
+      {/* 🔔 SINGLE TOASTER FOR THIS PAGE */}
+      <Toaster position="top-right" reverseOrder={false} />
+
       <div className="bg-white rounded-lg border">
         {/* HEADER */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
-            {/* LEFT */}
             <div>
               <h1 className="text-4xl font-serif font-semibold">
                 Products
@@ -57,7 +68,6 @@ const Products = () => {
               </p>
             </div>
 
-            {/* RIGHT */}
             <div className="text-right">
               <button
                 className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm"
@@ -91,7 +101,9 @@ const Products = () => {
                 value={productCategoryId ?? ""}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setProductCategoryId(value ? Number(value) : undefined);
+                  setProductCategoryId(
+                    value ? Number(value) : undefined
+                  );
                   setPageNumber(1);
                 }}
               >
