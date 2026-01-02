@@ -84,14 +84,19 @@ const Sidebar = () => {
           label="Products"
         />
         <NavItem
-          to="/renewals"
-          icon={<RefreshCcw size={18} />}
-          label="Renewals"
-        />
-        <NavItem
           to="/claims"
           icon={<AlertTriangle size={18} />}
           label="Claims"
+        />
+         <NavItem
+          to="/Campaign"
+          icon={<AlertTriangle size={18} />}
+          label="Campaign"
+        />
+        <NavItem
+          to="/renewals"
+          icon={<RefreshCcw size={18} />}
+          label="Renewals"
         />
         <NavItem
           to="/settings"
