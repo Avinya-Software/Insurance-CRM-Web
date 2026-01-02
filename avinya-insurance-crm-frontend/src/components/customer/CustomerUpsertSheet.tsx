@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import toast from "react-hot-toast";
+
 import { createCustomerApi } from "../../api/customer.api";
+import Spinner from "../common/Spinner";
 
 interface Props {
   open: boolean;
@@ -87,7 +89,6 @@ const CustomerUpsertSheet = ({
     else if (!mobileRegex.test(form.primaryMobile))
       e.primaryMobile = "Invalid mobile number";
 
-    /* 🔥 EMAIL REQUIRED + REGEX */
     if (!form.email.trim())
       e.email = "Email is required";
     else if (!emailRegex.test(form.email))
@@ -95,10 +96,8 @@ const CustomerUpsertSheet = ({
 
     setErrors(e);
 
-    if (Object.keys(e).length > 0) {
-      toast.error("Please fix validation errors", {
-        duration: 3000,
-      });
+    if (Object.keys(e).length) {
+      toast.error("Please fix validation errors");
       return false;
     }
 
@@ -121,14 +120,11 @@ const CustomerUpsertSheet = ({
       onSuccess();
     } catch (error: any) {
       if (error.response?.status === 400) {
-        const errorMessage =
-          error.response?.data?.message ||
-          "Validation error";
-        toast.error(errorMessage);
-      } else {
         toast.error(
-          "Something went wrong. Please try again."
+          error.response?.data?.message || "Validation error"
         );
+      } else {
+        toast.error("Something went wrong. Please try again.");
       }
     } finally {
       setSaving(false);
@@ -144,22 +140,22 @@ const CustomerUpsertSheet = ({
       {/* OVERLAY */}
       <div
         className="fixed inset-0 bg-black/40 z-[60]"
-        onClick={onClose}
+        onClick={saving ? undefined : onClose}
       />
 
       {/* SHEET */}
       <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl flex flex-col">
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
         <div className="px-6 py-4 border-b flex justify-between">
           <h2 className="font-semibold">
             {customer ? "Edit Customer" : "Add Customer"}
           </h2>
-          <button onClick={onClose}>
+          <button onClick={onClose} disabled={saving}>
             <X />
           </button>
         </div>
 
-        {/* BODY */}
+        {/* ================= BODY ================= */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           <Input
             label="Full Name"
@@ -256,27 +252,27 @@ const CustomerUpsertSheet = ({
                 )
               }
               className="block mt-1 text-sm"
+              disabled={saving}
             />
-            <p className="text-xs text-slate-500 mt-1">
-              Uploading files will mark KYC as{" "}
-              <b>Uploaded</b>
-            </p>
           </div>
         </div>
 
-        {/* FOOTER */}
+        {/* ================= FOOTER ================= */}
         <div className="px-6 py-4 border-t flex gap-3">
           <button
             className="flex-1 border rounded-lg py-2"
             onClick={onClose}
+            disabled={saving}
           >
             Cancel
           </button>
+
           <button
             disabled={saving}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2"
+            className="flex-1 bg-blue-600 text-white rounded-lg py-2 flex items-center justify-center gap-2"
             onClick={handleSave}
           >
+            {saving && <Spinner />}
             {saving ? "Saving..." : "Save"}
           </button>
         </div>

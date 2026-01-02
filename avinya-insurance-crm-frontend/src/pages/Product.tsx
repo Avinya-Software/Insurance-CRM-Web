@@ -18,15 +18,21 @@ const Products = () => {
   const [selectedProduct, setSelectedProduct] =
     useState<Product | null>(null);
 
-  /* 🔥 API CALL */
-  const { data, isLoading, refetch } = useProducts({
+  /* ---------------- API ---------------- */
+  const {
+    data,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useProducts({
     pageNumber,
     pageSize,
     search,
     productCategoryId,
   });
 
-  const { data: categories } = useProductCategoryDropdown();
+  const { data: categories } =
+    useProductCategoryDropdown();
 
   const products = data?.data?.products || [];
   const totalRecords = data?.data?.totalRecords || 0;
@@ -44,7 +50,6 @@ const Products = () => {
   };
 
   const handleSuccess = () => {
-    // ✅ ONLY refetch here
     refetch();
     setOpenSheet(false);
     setSelectedProduct(null);
@@ -52,11 +57,11 @@ const Products = () => {
 
   return (
     <>
-      {/* 🔔 SINGLE TOASTER FOR THIS PAGE */}
+      {/* 🔔 TOASTER */}
       <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
@@ -77,7 +82,7 @@ const Products = () => {
               </button>
             </div>
 
-            {/* SEARCH */}
+            {/* SEARCH + FILTER */}
             <div className="flex gap-4">
               <div className="relative w-[280px]">
                 <input
@@ -95,7 +100,6 @@ const Products = () => {
                 </span>
               </div>
 
-              {/* CATEGORY FILTER */}
               <select
                 className="h-10 border rounded px-3 text-sm"
                 value={productCategoryId ?? ""}
@@ -120,13 +124,14 @@ const Products = () => {
           </div>
         </div>
 
-        {/* TABLE */}
+        {/* ================= TABLE ================= */}
         <ProductTable
           data={products}
+          loading={isLoading || isFetching} // ✅ IMPORTANT
           onEdit={handleEdit}
         />
 
-        {/* PAGINATION */}
+        {/* ================= PAGINATION ================= */}
         <div className="flex items-center justify-end gap-4 px-4 py-3 border-t text-sm">
           <button
             disabled={pageNumber === 1}
@@ -146,15 +151,9 @@ const Products = () => {
             Next
           </button>
         </div>
-
-        {isLoading && (
-          <div className="px-4 py-2 text-sm text-slate-500">
-            Loading...
-          </div>
-        )}
       </div>
 
-      {/* ADD / EDIT SHEET */}
+      {/* ================= ADD / EDIT SHEET ================= */}
       <ProductUpsertSheet
         open={openSheet}
         product={selectedProduct}

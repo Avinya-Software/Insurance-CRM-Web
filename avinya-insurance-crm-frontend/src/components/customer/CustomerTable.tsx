@@ -2,20 +2,23 @@ import { useState, useRef } from "react";
 import { MoreVertical } from "lucide-react";
 import type { Customer } from "../../interfaces/customer.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import TableSkeleton from "../common/TableSkeleton";
 
 const DROPDOWN_HEIGHT = 80;
 const DROPDOWN_WIDTH = 180;
 
 interface CustomerTableProps {
   data: Customer[];
+  loading?: boolean; // ✅ NEW
   onEdit: (customer: Customer) => void;
-  onAddPolicy: (customer: Customer) => void; // ✅ REQUIRED
+  onAddPolicy: (customer: Customer) => void;
 }
 
 const CustomerTable = ({
   data = [],
+  loading = false,
   onEdit,
-  onAddPolicy, // ✅ FIX: destructured here
+  onAddPolicy,
 }: CustomerTableProps) => {
   const [openCustomer, setOpenCustomer] =
     useState<Customer | null>(null);
@@ -25,12 +28,11 @@ const CustomerTable = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => setOpenCustomer(null));
 
-  /* ---------------- DROPDOWN POSITION ---------------- */
-
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
     customer: Customer
   ) => {
+    e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
 
@@ -47,23 +49,19 @@ const CustomerTable = ({
     setOpenCustomer(customer);
   };
 
-  /* ---------------- ACTIONS ---------------- */
-
   const handleEdit = () => {
     if (!openCustomer) return;
-    const customer = openCustomer;
+    const c = openCustomer;
     setOpenCustomer(null);
-    setTimeout(() => onEdit(customer), 0);
+    setTimeout(() => onEdit(c), 0);
   };
 
   const handleAddPolicy = () => {
     if (!openCustomer) return;
-    const customer = openCustomer;
+    const c = openCustomer;
     setOpenCustomer(null);
-    setTimeout(() => onAddPolicy(customer), 0);
+    setTimeout(() => onAddPolicy(c), 0);
   };
-
-  /* ================= UI ================= */
 
   return (
     <div className="relative overflow-x-auto">
@@ -78,36 +76,44 @@ const CustomerTable = ({
           </tr>
         </thead>
 
-        <tbody>
-          {data.map((c) => (
-            <tr
-              key={c.customerId}
-              className="border-t h-[52px] hover:bg-slate-50"
-            >
-              <Td>{c.fullName}</Td>
-              <Td>{c.email || "-"}</Td>
-              <Td>{c.primaryMobile}</Td>
-              <Td>{c.address || "-"}</Td>
-
-              <Td className="text-center">
-                <button
-                  onClick={(e) => openDropdown(e, c)}
-                  className="p-2 rounded hover:bg-slate-200"
+        {/* ================= BODY ================= */}
+        {loading ? (
+          <TableSkeleton rows={6} columns={5} />
+        ) : (
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="text-center py-12 text-slate-500"
                 >
-                  <MoreVertical size={16} />
-                </button>
-              </Td>
-            </tr>
-          ))}
+                  No customers found
+                </td>
+              </tr>
+            ) : (
+              data.map((c) => (
+                <tr
+                  key={c.customerId}
+                  className="border-t h-[52px] hover:bg-slate-50"
+                >
+                  <Td>{c.fullName}</Td>
+                  <Td>{c.email || "-"}</Td>
+                  <Td>{c.primaryMobile}</Td>
+                  <Td>{c.address || "-"}</Td>
 
-          {!data.length && (
-            <tr>
-              <td colSpan={5} className="text-center py-6 text-slate-500">
-                No customers found
-              </td>
-            </tr>
-          )}
-        </tbody>
+                  <Td className="text-center">
+                    <button
+                      onClick={(e) => openDropdown(e, c)}
+                      className="p-2 rounded hover:bg-slate-200"
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                  </Td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        )}
       </table>
 
       {/* ================= DROPDOWN ================= */}

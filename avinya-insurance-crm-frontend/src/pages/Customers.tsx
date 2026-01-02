@@ -21,11 +21,12 @@ const Customers = () => {
   const [openPolicySheet, setOpenPolicySheet] = useState(false);
 
   /* ---------------- API ---------------- */
-  const { data, isLoading, refetch } = useCustomers(
-    pageNumber,
-    pageSize,
-    search
-  );
+  const {
+    data,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useCustomers(pageNumber, pageSize, search);
 
   /* ---------------- HANDLERS ---------------- */
 
@@ -40,16 +41,14 @@ const Customers = () => {
   };
 
   const handleAddPolicy = (customer: Customer) => {
-    setSelectedCustomer(customer); // 👈 ONLY customerId will be used
+    setSelectedCustomer(customer);
     setOpenPolicySheet(true);
   };
 
-  const handleCustomerSuccess = (isEdit: boolean) => {
+  const handleCustomerSuccess = () => {
     setOpenCustomerSheet(false);
-    refetch(); // 🔥 refresh customer list
-    toast.success(
-      isEdit ? "Customer Saved successfully!" : "Customer Saved successfully!"
-    );
+    refetch();
+    toast.success("Customer saved successfully!");
   };
 
   const handlePolicySuccess = () => {
@@ -69,7 +68,6 @@ const Customers = () => {
         {/* ================= HEADER ================= */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
-            {/* LEFT */}
             <div>
               <h1 className="text-4xl font-serif font-semibold text-slate-900">
                 Customers
@@ -79,7 +77,6 @@ const Customers = () => {
               </p>
             </div>
 
-            {/* RIGHT */}
             <div className="text-right">
               <button
                 className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm font-medium"
@@ -116,6 +113,7 @@ const Customers = () => {
         {/* ================= TABLE ================= */}
         <CustomerTable
           data={data?.customers || []}
+          loading={isLoading || isFetching} // ✅ IMPORTANT
           onEdit={handleEditCustomer}
           onAddPolicy={handleAddPolicy}
         />
@@ -140,12 +138,6 @@ const Customers = () => {
             Next
           </button>
         </div>
-
-        {isLoading && (
-          <div className="px-4 py-2 text-sm text-slate-500">
-            Loading...
-          </div>
-        )}
       </div>
 
       {/* ================= CUSTOMER UPSERT ================= */}

@@ -3,17 +3,24 @@ import { MoreVertical } from "lucide-react";
 import type { Product } from "../../interfaces/product.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useInsurerDropdown } from "../../hooks/insurer/useInsurerDropdown";
+import TableSkeleton from "../common/TableSkeleton";
 
 const DROPDOWN_HEIGHT = 80;
 const DROPDOWN_WIDTH = 180;
 
 interface Props {
   data: Product[];
+  loading?: boolean; // ✅ NEW
   onEdit: (product: Product) => void;
 }
 
-const ProductTable = ({ data = [], onEdit }: Props) => {
-  const [openProduct, setOpenProduct] = useState<Product | null>(null);
+const ProductTable = ({
+  data = [],
+  loading = false,
+  onEdit,
+}: Props) => {
+  const [openProduct, setOpenProduct] =
+    useState<Product | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -35,6 +42,7 @@ const ProductTable = ({ data = [], onEdit }: Props) => {
     e: React.MouseEvent<HTMLButtonElement>,
     product: Product
   ) => {
+    e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
 
     setStyle({
@@ -47,14 +55,15 @@ const ProductTable = ({ data = [], onEdit }: Props) => {
 
   const handleEdit = () => {
     if (!openProduct) return;
-    onEdit(openProduct);
+    const p = openProduct;
     setOpenProduct(null);
+    setTimeout(() => onEdit(p), 0);
   };
 
   return (
     <div className="relative overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-slate-100">
+      <table className="w-full text-sm border-collapse">
+        <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
             <Th>Product</Th>
             <Th>Code</Th>
@@ -65,39 +74,48 @@ const ProductTable = ({ data = [], onEdit }: Props) => {
           </tr>
         </thead>
 
-        <tbody>
-          {data.map((p) => (
-            <tr key={p.productId} className="border-t h-[52px]">
-              <Td>{p.productName}</Td>
-              <Td>{p.productCode}</Td>
-              <Td>{p.productCategory}</Td>
-
-              {/* 🔥 ID → NAME MAPPING */}
-              <Td>{insurerMap[p.insurerId] ?? "-"}</Td>
-
-              <Td>{p.isActive ? "Active" : "Inactive"}</Td>
-
-              <Td className="text-center">
-                <button
-                  onClick={(e) => openDropdown(e, p)}
-                  className="p-2 rounded hover:bg-slate-200"
+        {/* ================= BODY ================= */}
+        {loading ? (
+          <TableSkeleton rows={6} columns={6} />
+        ) : (
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="text-center py-12 text-slate-500"
                 >
-                  <MoreVertical size={16} />
-                </button>
-              </Td>
-            </tr>
-          ))}
+                  No products found
+                </td>
+              </tr>
+            ) : (
+              data.map((p) => (
+                <tr
+                  key={p.productId}
+                  className="border-t h-[52px] hover:bg-slate-50"
+                >
+                  <Td>{p.productName}</Td>
+                  <Td>{p.productCode}</Td>
+                  <Td>{p.productCategory}</Td>
+                  <Td>{insurerMap[p.insurerId] ?? "-"}</Td>
+                  <Td>{p.isActive ? "Active" : "Inactive"}</Td>
 
-          {!data.length && (
-            <tr>
-              <td colSpan={6} className="text-center py-6 text-slate-500">
-                No products found
-              </td>
-            </tr>
-          )}
-        </tbody>
+                  <Td className="text-center">
+                    <button
+                      onClick={(e) => openDropdown(e, p)}
+                      className="p-2 rounded hover:bg-slate-200"
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                  </Td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        )}
       </table>
 
+      {/* ================= DROPDOWN ================= */}
       {openProduct && (
         <div
           ref={dropdownRef}
@@ -113,13 +131,18 @@ const ProductTable = ({ data = [], onEdit }: Props) => {
 
 export default ProductTable;
 
-/* helpers */
+/* ---------- HELPERS ---------- */
+
 const Th = ({ children }: any) => (
-  <th className="px-4 py-3 text-left font-semibold">{children}</th>
+  <th className="px-4 py-3 text-left font-semibold">
+    {children}
+  </th>
 );
+
 const Td = ({ children }: any) => (
   <td className="px-4 py-3">{children}</td>
 );
+
 const MenuItem = ({ label, onClick }: any) => (
   <button
     onClick={onClick}

@@ -1,20 +1,23 @@
 import { useState, useRef } from "react";
 import { MoreVertical } from "lucide-react";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import TableSkeleton from "../common/TableSkeleton";
 
 const DROPDOWN_HEIGHT = 80;
 const DROPDOWN_WIDTH = 180;
 
 interface Props {
   data: any[];
+  loading?: boolean; // ✅ NEW
   onEdit: (insurer: any) => void;
-  onAddProduct: (insurer: any) => void; // ✅ NEW
+  onAddProduct: (insurer: any) => void;
 }
 
 const InsurerTable = ({
   data = [],
+  loading = false,
   onEdit,
-  onAddProduct, // ✅ IMPORTANT
+  onAddProduct,
 }: Props) => {
   const [openInsurer, setOpenInsurer] = useState<any | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
@@ -26,6 +29,7 @@ const InsurerTable = ({
     e: React.MouseEvent<HTMLButtonElement>,
     insurer: any
   ) => {
+    e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     setStyle({
       top: rect.bottom + 6,
@@ -34,26 +38,24 @@ const InsurerTable = ({
     setOpenInsurer(insurer);
   };
 
-  /* ---------------- ACTIONS ---------------- */
-
   const handleEdit = () => {
     if (!openInsurer) return;
-    const insurer = openInsurer;
+    const i = openInsurer;
     setOpenInsurer(null);
-    setTimeout(() => onEdit(insurer), 0);
+    setTimeout(() => onEdit(i), 0);
   };
 
   const handleAddProduct = () => {
     if (!openInsurer) return;
-    const insurer = openInsurer;
+    const i = openInsurer;
     setOpenInsurer(null);
-    setTimeout(() => onAddProduct(insurer), 0);
+    setTimeout(() => onAddProduct(i), 0);
   };
 
   return (
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
-        <thead className="bg-slate-100">
+        <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
             <Th>Name</Th>
             <Th>Short Code</Th>
@@ -63,36 +65,44 @@ const InsurerTable = ({
           </tr>
         </thead>
 
-        <tbody>
-          {data.map((i) => (
-            <tr
-              key={i.insurerId}
-              className="border-t h-[52px] hover:bg-slate-50"
-            >
-              <Td>{i.insurerName}</Td>
-              <Td>{i.shortCode}</Td>
-              <Td>{i.portalUrl}</Td>
-              <Td>{i.portalUsername}</Td>
-
-              <Td className="text-center">
-                <button
-                  onClick={(e) => openDropdown(e, i)}
-                  className="p-2 rounded hover:bg-slate-200"
+        {/* ================= BODY ================= */}
+        {loading ? (
+          <TableSkeleton rows={6} columns={5} />
+        ) : (
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="text-center py-12 text-slate-500"
                 >
-                  <MoreVertical size={16} />
-                </button>
-              </Td>
-            </tr>
-          ))}
+                  No insurers found
+                </td>
+              </tr>
+            ) : (
+              data.map((i) => (
+                <tr
+                  key={i.insurerId}
+                  className="border-t h-[52px] hover:bg-slate-50"
+                >
+                  <Td>{i.insurerName}</Td>
+                  <Td>{i.shortCode}</Td>
+                  <Td>{i.portalUrl}</Td>
+                  <Td>{i.portalUsername}</Td>
 
-          {!data.length && (
-            <tr>
-              <td colSpan={5} className="text-center py-6 text-slate-500">
-                No insurers found
-              </td>
-            </tr>
-          )}
-        </tbody>
+                  <Td className="text-center">
+                    <button
+                      onClick={(e) => openDropdown(e, i)}
+                      className="p-2 rounded hover:bg-slate-200"
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                  </Td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        )}
       </table>
 
       {/* ================= DROPDOWN ================= */}
@@ -120,8 +130,8 @@ const Th = ({ children }: any) => (
   </th>
 );
 
-const Td = ({ children, className = "" }: any) => (
-  <td className={`px-4 py-3 ${className}`}>{children}</td>
+const Td = ({ children }: any) => (
+  <td className="px-4 py-3">{children}</td>
 );
 
 const MenuItem = ({

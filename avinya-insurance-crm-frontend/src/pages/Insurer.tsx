@@ -16,7 +16,6 @@ const Insurers = () => {
 
   const [openInsurerSheet, setOpenInsurerSheet] = useState(false);
   const [openProductSheet, setOpenProductSheet] = useState(false);
-
   const [selectedInsurer, setSelectedInsurer] = useState<any | null>(null);
 
   /* ---------------- FETCH DATA ---------------- */
@@ -57,25 +56,25 @@ const Insurers = () => {
     setOpenProductSheet(true);
   };
 
-  // ✅ NO TOAST HERE
   const handleInsurerSuccess = () => {
     setOpenInsurerSheet(false);
     loadData();
   };
 
-  // ✅ NO TOAST HERE
   const handleProductSuccess = () => {
     setOpenProductSheet(false);
     setSelectedInsurer(null);
   };
 
+  /* ================= UI ================= */
+
   return (
     <>
-      {/* 🔔 TOASTER (renders UI only) */}
+      {/* 🔔 TOASTER */}
       <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
@@ -96,6 +95,7 @@ const Insurers = () => {
               </button>
             </div>
 
+            {/* SEARCH */}
             <div>
               <input
                 type="text"
@@ -113,14 +113,15 @@ const Insurers = () => {
           </div>
         </div>
 
-        {/* TABLE */}
+        {/* ================= TABLE ================= */}
         <InsurerTable
           data={data?.data || []}
+          loading={loading} // ✅ IMPORTANT
           onEdit={handleEditInsurer}
           onAddProduct={handleAddProduct}
         />
 
-        {/* PAGINATION */}
+        {/* ================= PAGINATION ================= */}
         <div className="flex justify-end gap-4 px-4 py-3 border-t text-sm">
           <button
             disabled={pageNumber === 1}
@@ -140,15 +141,9 @@ const Insurers = () => {
             Next
           </button>
         </div>
-
-        {loading && (
-          <div className="px-4 py-2 text-sm text-slate-500">
-            Loading...
-          </div>
-        )}
       </div>
 
-      {/* INSURER UPSERT */}
+      {/* ================= INSURER UPSERT ================= */}
       <InsurerUpsertSheet
         open={openInsurerSheet}
         insurer={selectedInsurer}
@@ -156,7 +151,7 @@ const Insurers = () => {
         onSuccess={handleInsurerSuccess}
       />
 
-      {/* PRODUCT UPSERT */}
+      {/* ================= PRODUCT UPSERT ================= */}
       <ProductUpsertSheet
         open={openProductSheet}
         insurerId={selectedInsurer?.insurerId}

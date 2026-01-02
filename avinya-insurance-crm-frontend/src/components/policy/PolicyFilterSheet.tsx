@@ -6,6 +6,7 @@ import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdow
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { useInsurerDropdown } from "../../hooks/insurer/useInsurerDropdown";
 import { useProductCategoryDropdown } from "../../hooks/product/useProductCategoryDropdown";
+import Spinner from "../common/Spinner";
 
 interface Props {
   open: boolean;
@@ -24,11 +25,19 @@ const PolicyFilterSheet = ({
 }: Props) => {
   const [local, setLocal] = useState(filters);
 
-  const { data: statuses } = usePolicyStatusesDropdown();
-  const { data: types } = usePolicyTypesDropdown();
-  const { data: customers } = useCustomerDropdown();
-  const { data: insurers } = useInsurerDropdown();
-  const { data: products } = useProductCategoryDropdown();
+  const { data: statuses, isLoading: sLoading } =
+    usePolicyStatusesDropdown();
+  const { data: types, isLoading: tLoading } =
+    usePolicyTypesDropdown();
+  const { data: customers, isLoading: cLoading } =
+    useCustomerDropdown();
+  const { data: insurers, isLoading: iLoading } =
+    useInsurerDropdown();
+  const { data: products, isLoading: pLoading } =
+    useProductCategoryDropdown();
+
+  const loading =
+    sLoading || tLoading || cLoading || iLoading || pLoading;
 
   useEffect(() => {
     setLocal(filters);
@@ -41,6 +50,7 @@ const PolicyFilterSheet = ({
       <div className="flex-1 bg-black/30" onClick={onClose} />
 
       <div className="w-96 bg-white h-full shadow-xl flex flex-col">
+        {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between">
           <h2 className="font-semibold text-lg">
             Filter Policies
@@ -50,67 +60,98 @@ const PolicyFilterSheet = ({
           </button>
         </div>
 
-        <div className="flex-1 px-6 py-4 space-y-4 overflow-y-auto">
-          <Select
-            label="Policy Status"
-            value={local.policyStatusId}
-            options={statuses}
-            onChange={(v) =>
-              setLocal({ ...local, policyStatusId: v || null })
-            }
-          />
+        {/* BODY */}
+        <div className="flex-1 px-6 py-4 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Select
+                label="Policy Status"
+                value={local.policyStatusId}
+                options={statuses}
+                onChange={(v) =>
+                  setLocal({
+                    ...local,
+                    policyStatusId: v || null,
+                  })
+                }
+              />
 
-          <Select
-            label="Policy Type"
-            value={local.policyTypeId}
-            options={types}
-            onChange={(v) =>
-              setLocal({ ...local, policyTypeId: v || null })
-            }
-          />
+              <Select
+                label="Policy Type"
+                value={local.policyTypeId}
+                options={types}
+                onChange={(v) =>
+                  setLocal({
+                    ...local,
+                    policyTypeId: v || null,
+                  })
+                }
+              />
 
-          <Select
-            label="Customer"
-            value={local.customerId}
-            options={customers}
-            valueKey="customerId"
-            labelKey="fullName"
-            onChange={(v) =>
-              setLocal({ ...local, customerId: v || null })
-            }
-          />
+              <Select
+                label="Customer"
+                value={local.customerId}
+                options={customers}
+                valueKey="customerId"
+                labelKey="fullName"
+                onChange={(v) =>
+                  setLocal({
+                    ...local,
+                    customerId: v || null,
+                  })
+                }
+              />
 
-          <Select
-            label="Insurer"
-            value={local.insurerId}
-            options={insurers}
-            valueKey="insurerId"
-            labelKey="insurerName"
-            onChange={(v) =>
-              setLocal({ ...local, insurerId: v || null })
-            }
-          />
+              <Select
+                label="Insurer"
+                value={local.insurerId}
+                options={insurers}
+                valueKey="insurerId"
+                labelKey="insurerName"
+                onChange={(v) =>
+                  setLocal({
+                    ...local,
+                    insurerId: v || null,
+                  })
+                }
+              />
 
-          <Select
-            label="Product"
-            value={local.productId}
-            options={products}
-            onChange={(v) =>
-              setLocal({ ...local, productId: v || null })
-            }
-          />
+              <Select
+                label="Product"
+                value={local.productId}
+                options={products}
+                onChange={(v) =>
+                  setLocal({
+                    ...local,
+                    productId: v || null,
+                  })
+                }
+              />
+            </div>
+          )}
         </div>
 
+        {/* FOOTER */}
         <div className="px-6 py-4 border-t flex gap-3">
-          <button className="flex-1 border rounded-lg py-2 hover:bg-gray-50" onClick={onClear}>
+          <button
+            className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
+            onClick={onClear}
+            disabled={loading}
+          >
             Clear All
           </button>
+
           <button
             className="flex-1 bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700"
             onClick={() => {
               onApply(local);
               onClose();
             }}
+            disabled={loading}
           >
             Apply Filters
           </button>
@@ -122,7 +163,8 @@ const PolicyFilterSheet = ({
 
 export default PolicyFilterSheet;
 
-/* helpers */
+/* ---------- HELPER ---------- */
+
 const Select = ({
   label,
   value,

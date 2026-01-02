@@ -41,7 +41,13 @@ const Leads = () => {
     (state: RootState) => state.auth.advisorId
   );
 
-  const { data, isLoading, isFetching } = useLeads(filters);
+  /* ---------------- API ---------------- */
+
+  const {
+    data,
+    isLoading,
+    isFetching,
+  } = useLeads(filters);
 
   /* ---------------- COMMON HANDLERS ---------------- */
 
@@ -72,7 +78,7 @@ const Leads = () => {
 
   return (
     <>
-      {/* 🔔 TOASTER (UI ONLY – does NOT trigger toast) */}
+      {/* 🔔 TOASTER */}
       <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
@@ -131,16 +137,10 @@ const Leads = () => {
           </div>
         </div>
 
-        {/* ================= INLINE LOADING ================= */}
-        {(isLoading || isFetching) && (
-          <div className="px-4 py-2 text-sm text-slate-500">
-            {isLoading ? "Loading..." : "Updating..."}
-          </div>
-        )}
-
         {/* ================= LEADS TABLE ================= */}
         <LeadTable
           data={data?.data ?? []}
+          loading={isLoading || isFetching} // ✅ IMPORTANT
           onAdd={handleAddLead}
           onEdit={handleEditLead}
           onRowClick={openViewFollowUps}
@@ -167,6 +167,7 @@ const Leads = () => {
       </div>
 
       {/* ================= SHEETS ================= */}
+
       <LeadFilterSheet
         open={openFilterSheet}
         onClose={() => setOpenFilterSheet(false)}

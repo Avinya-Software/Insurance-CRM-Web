@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import toast from "react-hot-toast";
+
 import { useUpsertProduct } from "../../hooks/product/useUpsertProduct";
 import { useProductCategoryDropdown } from "../../hooks/product/useProductCategoryDropdown";
 import { useInsurerDropdown } from "../../hooks/insurer/useInsurerDropdown";
+import Spinner from "../common/Spinner";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   product?: any;
-  insurerId?: string; // ✅ NEW
+  insurerId?: string;
   onSuccess: () => void;
 }
 
@@ -21,8 +23,6 @@ const regex = {
   commissionRules: /^[A-Za-z0-9\s,.\-\/]{3,500}$/,
 };
 
-/* ---------------- COMPONENT ---------------- */
-
 const ProductUpsertSheet = ({
   open,
   onClose,
@@ -30,10 +30,14 @@ const ProductUpsertSheet = ({
   insurerId,
   onSuccess,
 }: Props) => {
-  /* ---------------- API HOOKS ---------------- */
+  /* ---------------- API ---------------- */
   const { mutateAsync, isLoading } = useUpsertProduct();
-  const { data: categories } = useProductCategoryDropdown();
-  const { data: insurers } = useInsurerDropdown();
+  const { data: categories, isLoading: catLoading } =
+    useProductCategoryDropdown();
+  const { data: insurers, isLoading: insurerLoading } =
+    useInsurerDropdown();
+
+  const loadingDropdowns = catLoading || insurerLoading;
 
   /* ---------------- FORM STATE ---------------- */
 
@@ -56,7 +60,6 @@ const ProductUpsertSheet = ({
   useEffect(() => {
     if (!open) return;
 
-    // EDIT MODE
     if (product && categories) {
       const matchedCategory = categories.find(
         (c) => c.name === product.productCategory
@@ -72,12 +75,10 @@ const ProductUpsertSheet = ({
         commissionRules: product.commissionRules ?? "",
         isActive: product.isActive ?? true,
       });
-    }
-    // ADD MODE (FROM INSURER)
-    else {
+    } else {
       setForm({
         ...initialForm,
-        insurerId: insurerId || "", // ✅ FORCE FROM INSURER TABLE
+        insurerId: insurerId || "",
       });
     }
 
@@ -110,8 +111,7 @@ const ProductUpsertSheet = ({
       form.defaultReminderDays === null ||
       form.defaultReminderDays < 0
     )
-      e.defaultReminderDays =
-        "Must be 0 or greater";
+      e.defaultReminderDays = "Must be 0 or greater";
 
     if (!form.commissionRules)
       e.commissionRules = "Commission rules required";
@@ -121,10 +121,8 @@ const ProductUpsertSheet = ({
 
     setErrors(e);
 
-    if (Object.keys(e).length > 0) {
-      toast.error("Please fix validation errors", {
-        duration: 3000,
-      });
+    if (Object.keys(e).length) {
+      toast.error("Please fix validation errors");
       return false;
     }
 
@@ -149,122 +147,139 @@ const ProductUpsertSheet = ({
       {/* OVERLAY */}
       <div
         className="fixed inset-0 bg-black/40 z-[60]"
-        onClick={onClose}
+        onClick={isLoading ? undefined : onClose}
       />
 
       {/* SHEET */}
       <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl flex flex-col animate-slideInRight">
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-lg">
             {product ? "Edit Product" : "Add Product"}
           </h2>
-          <button onClick={onClose}>
+          <button onClick={onClose} disabled={isLoading}>
             <X />
           </button>
         </div>
 
-        {/* BODY */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          <Select
-            label="Insurer"
-            value={form.insurerId}
-            error={errors.insurerId}
-            onChange={(v) =>
-              setForm({ ...form, insurerId: v })
-            }
-            options={insurers}
-            valueKey="insurerId"
-            labelKey="insurerName"
-            disabled={!!insurerId} // 🔒 DISABLED
-          />
+        {/* ================= BODY ================= */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loadingDropdowns ? (
+            <div className="flex items-center justify-center h-full">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Select
+                label="Insurer"
+                value={form.insurerId}
+                error={errors.insurerId}
+                onChange={(v) =>
+                  setForm({ ...form, insurerId: v })
+                }
+                options={insurers}
+                valueKey="insurerId"
+                labelKey="insurerName"
+                disabled={!!insurerId}
+              />
 
-          <Select
-            label="Product Category"
-            value={form.productCategoryId}
-            error={errors.productCategoryId}
-            onChange={(v) =>
-              setForm({
-                ...form,
-                productCategoryId: Number(v),
-              })
-            }
-            options={categories}
-            valueKey="id"
-            labelKey="name"
-          />
+              <Select
+                label="Product Category"
+                value={form.productCategoryId}
+                error={errors.productCategoryId}
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    productCategoryId: Number(v),
+                  })
+                }
+                options={categories}
+                valueKey="id"
+                labelKey="name"
+              />
 
-          <Input
-            label="Product Name"
-            value={form.productName}
-            error={errors.productName}
-            onChange={(v) =>
-              setForm({ ...form, productName: v })
-            }
-          />
+              <Input
+                label="Product Name"
+                value={form.productName}
+                error={errors.productName}
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    productName: v,
+                  })
+                }
+              />
 
-          <Input
-            label="Product Code"
-            value={form.productCode}
-            error={errors.productCode}
-            onChange={(v) =>
-              setForm({ ...form, productCode: v })
-            }
-          />
+              <Input
+                label="Product Code"
+                value={form.productCode}
+                error={errors.productCode}
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    productCode: v,
+                  })
+                }
+              />
 
-          <Input
-            label="Default Reminder Days"
-            type="number"
-            value={form.defaultReminderDays}
-            error={errors.defaultReminderDays}
-            onChange={(v) =>
-              setForm({
-                ...form,
-                defaultReminderDays: Number(v),
-              })
-            }
-          />
+              <Input
+                label="Default Reminder Days"
+                type="number"
+                value={form.defaultReminderDays}
+                error={errors.defaultReminderDays}
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    defaultReminderDays: Number(v),
+                  })
+                }
+              />
 
-          <Textarea
-            label="Commission Rules"
-            value={form.commissionRules}
-            error={errors.commissionRules}
-            onChange={(v) =>
-              setForm({
-                ...form,
-                commissionRules: v,
-              })
-            }
-          />
+              <Textarea
+                label="Commission Rules"
+                value={form.commissionRules}
+                error={errors.commissionRules}
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    commissionRules: v,
+                  })
+                }
+              />
 
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  isActive: e.target.checked,
-                })
-              }
-            />
-            Active
-          </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.isActive}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      isActive: e.target.checked,
+                    })
+                  }
+                />
+                Active
+              </label>
+            </div>
+          )}
         </div>
 
-        {/* FOOTER */}
+        {/* ================= FOOTER ================= */}
         <div className="px-6 py-4 border-t flex gap-3">
           <button
             className="flex-1 border rounded-lg py-2"
             onClick={onClose}
+            disabled={isLoading}
           >
             Cancel
           </button>
+
           <button
             disabled={isLoading}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2"
+            className="flex-1 bg-blue-600 text-white rounded-lg py-2 flex items-center justify-center gap-2"
             onClick={handleSave}
           >
+            {isLoading && <Spinner />}
             {isLoading ? "Saving..." : "Save"}
           </button>
         </div>

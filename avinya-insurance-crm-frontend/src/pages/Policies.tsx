@@ -40,12 +40,10 @@ const Policies = () => {
     setOpenPolicySheet(true);
   };
 
-  const handlePolicySuccess = (isEdit: boolean) => {
+  const handlePolicySuccess = () => {
     setOpenPolicySheet(false);
     setSelectedPolicy(null);
-    toast.success(
-      isEdit ? "Policy Saved successfully!" : "Policy Saved successfully!"
-    );
+    toast.success("Policy saved successfully!");
   };
 
   const handleClearFilters = () => {
@@ -122,20 +120,14 @@ const Policies = () => {
           </div>
         </div>
 
-        {/* LOADING */}
-        {(isLoading || isFetching) && (
-          <div className="px-4 py-2 text-sm text-slate-500">
-            {isLoading ? "Loading..." : "Updating..."}
-          </div>
-        )}
-
-        {/* TABLE */}
+        {/* ================= TABLE ================= */}
         <PolicyTable
           data={data?.data ?? []}
+          loading={isLoading || isFetching} // ✅ IMPORTANT
           onEdit={handleEditPolicy}
         />
 
-        {/* PAGINATION */}
+        {/* ================= PAGINATION ================= */}
         <div className="border-t px-4 py-3">
           <Pagination
             page={filters.pageNumber}
@@ -147,7 +139,7 @@ const Policies = () => {
         </div>
       </div>
 
-      {/* FILTER SHEET */}
+      {/* ================= FILTER SHEET ================= */}
       <PolicyFilterSheet
         open={openFilterSheet}
         filters={filters}
@@ -159,7 +151,7 @@ const Policies = () => {
         onClear={handleClearFilters}
       />
 
-      {/* UPSERT */}
+      {/* ================= UPSERT SHEET ================= */}
       <PolicyUpsertSheet
         open={openPolicySheet}
         policy={selectedPolicy}
