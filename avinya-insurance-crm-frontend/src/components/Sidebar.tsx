@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Settings,
   Target,
+  LogOut,
 } from "lucide-react";
 
 /* ================= JWT HELPER ================= */
@@ -34,6 +35,13 @@ const getUserFromToken = () => {
 
 const Sidebar = () => {
   const user = getUserFromToken();
+  const navigate = useNavigate();
+
+  /* ================= LOGOUT ================= */
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // 🔐 remove JWT
+    navigate("/login", { replace: true }); // 🚪 redirect
+  };
 
   return (
     <aside className="w-64 bg-slate-900 text-white h-screen flex flex-col">
@@ -92,6 +100,16 @@ const Sidebar = () => {
         />
       </nav>
 
+      {/* ---------- LOGOUT ---------- */}
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-3 px-4 py-2 mx-4 mb-3 rounded-lg text-sm
+                   text-slate-300 hover:bg-red-600 hover:text-white transition"
+      >
+        <LogOut size={18} />
+        Logout
+      </button>
+
       {/* ---------- USER ---------- */}
       <div className="px-6 py-4 border-t border-slate-800 text-sm">
         <p className="font-medium">
@@ -107,7 +125,15 @@ const Sidebar = () => {
 
 /* ================= NAV ITEM ================= */
 
-const NavItem = ({ to, icon, label }: any) => (
+const NavItem = ({
+  to,
+  icon,
+  label,
+}: {
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+}) => (
   <NavLink
     to={to}
     end
@@ -119,7 +145,7 @@ const NavItem = ({ to, icon, label }: any) => (
           : "text-slate-300 hover:bg-slate-800"
       }`
     }
-  >
+  > 
     {icon}
     {label}
   </NavLink>

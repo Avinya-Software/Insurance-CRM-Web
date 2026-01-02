@@ -10,6 +10,7 @@ import LeadFilterSheet from "../components/leads/LeadFilterSheet";
 import LeadUpsertSheet from "../components/leads/LeadUpsertSheet";
 import LeadFollowUpBottomSheet from "../components/followups/LeadFollowUpBottomSheet";
 import LeadFollowUpCreateSheet from "../components/followups/LeadFollowUpCreateSheet";
+import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
 
 import type { RootState } from "../store";
 
@@ -37,17 +38,17 @@ const Leads = () => {
     leadName?: string;
   } | null>(null);
 
+  // 🔥 ADD CUSTOMER FROM LEAD
+  const [openCustomerSheet, setOpenCustomerSheet] = useState(false);
+  const [leadForCustomer, setLeadForCustomer] = useState<any>(null);
+
   const advisorId = useSelector(
     (state: RootState) => state.auth.advisorId
   );
 
   /* ---------------- API ---------------- */
 
-  const {
-    data,
-    isLoading,
-    isFetching,
-  } = useLeads(filters);
+  const { data, isLoading, isFetching } = useLeads(filters);
 
   /* ---------------- COMMON HANDLERS ---------------- */
 
@@ -74,6 +75,12 @@ const Leads = () => {
     closeAllSheets();
     setSelectedLead(lead);
     setOpenLeadSheet(true);
+  };
+
+  const handleAddCustomerFromLead = (lead: any) => {
+    closeAllSheets();
+    setLeadForCustomer(lead);
+    setOpenCustomerSheet(true);
   };
 
   return (
@@ -140,7 +147,7 @@ const Leads = () => {
         {/* ================= LEADS TABLE ================= */}
         <LeadTable
           data={data?.data ?? []}
-          loading={isLoading || isFetching} // ✅ IMPORTANT
+          loading={isLoading || isFetching}
           onAdd={handleAddLead}
           onEdit={handleEditLead}
           onRowClick={openViewFollowUps}
@@ -152,6 +159,7 @@ const Leads = () => {
               leadName: lead.fullName,
             });
           }}
+          onAddCustomer={handleAddCustomerFromLead} // 🔥 HERE
         />
 
         {/* ================= PAGINATION ================= */}
@@ -188,6 +196,20 @@ const Leads = () => {
         }}
         lead={selectedLead}
         advisorId={advisorId}
+      />
+
+      {/* 🔥 CUSTOMER FROM LEAD */}
+      <CustomerUpsertSheet
+        open={openCustomerSheet}
+        leadId={leadForCustomer?.leadId}
+        onClose={() => {
+          setOpenCustomerSheet(false);
+          setLeadForCustomer(null);
+        }}
+        onSuccess={() => {
+          setOpenCustomerSheet(false);
+          setLeadForCustomer(null);
+        }}
       />
 
       <LeadFollowUpBottomSheet

@@ -9,9 +9,10 @@ const DROPDOWN_WIDTH = 180;
 
 interface CustomerTableProps {
   data: Customer[];
-  loading?: boolean; // ✅ NEW
+  loading?: boolean;
   onEdit: (customer: Customer) => void;
   onAddPolicy: (customer: Customer) => void;
+  onRowClick?: (customer: Customer) => void; // ✅ ADDED
 }
 
 const CustomerTable = ({
@@ -19,6 +20,7 @@ const CustomerTable = ({
   loading = false,
   onEdit,
   onAddPolicy,
+  onRowClick,
 }: CustomerTableProps) => {
   const [openCustomer, setOpenCustomer] =
     useState<Customer | null>(null);
@@ -32,10 +34,10 @@ const CustomerTable = ({
     e: React.MouseEvent<HTMLButtonElement>,
     customer: Customer
   ) => {
-    e.stopPropagation();
+    e.stopPropagation(); // ✅ PREVENT ROW CLICK
+
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-
     const spaceBelow = viewportHeight - rect.bottom;
     const openUpwards = spaceBelow < DROPDOWN_HEIGHT;
 
@@ -94,7 +96,8 @@ const CustomerTable = ({
               data.map((c) => (
                 <tr
                   key={c.customerId}
-                  className="border-t h-[52px] hover:bg-slate-50"
+                  onClick={() => onRowClick?.(c)} // ✅ THIS FIXES IT
+                  className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
                 >
                   <Td>{c.fullName}</Td>
                   <Td>{c.email || "-"}</Td>
@@ -122,6 +125,7 @@ const CustomerTable = ({
           ref={dropdownRef}
           className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg"
           style={style}
+          onClick={(e) => e.stopPropagation()} // ✅ SAFETY
         >
           <MenuItem label="Edit Customer" onClick={handleEdit} />
           <MenuItem label="Add Policy" onClick={handleAddPolicy} />

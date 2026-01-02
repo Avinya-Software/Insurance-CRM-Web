@@ -1,42 +1,43 @@
 import { useState, useRef } from "react";
 import { MoreVertical } from "lucide-react";
-import type { Policy } from "../../interfaces/policy.interface";
+import type { Customer } from "../../interfaces/customer.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import TableSkeleton from "../common/TableSkeleton";
 
-const DROPDOWN_HEIGHT = 48;
+const DROPDOWN_HEIGHT = 80;
 const DROPDOWN_WIDTH = 180;
 
-interface Props {
-  data: Policy[];
-  loading?: boolean; // ✅ NEW
-  onEdit: (policy: Policy) => void;
+interface CustomerTableProps {
+  data: Customer[];
+  loading?: boolean;
+  onEdit: (customer: Customer) => void;
+  onAddPolicy: (customer: Customer) => void;
+  onRowClick?: (customer: Customer) => void; // 🔥 NEW
 }
 
-const PolicyTable = ({
+const CustomerTable = ({
   data = [],
   loading = false,
   onEdit,
-}: Props) => {
-  const [openPolicy, setOpenPolicy] =
-    useState<Policy | null>(null);
+  onAddPolicy,
+  onRowClick,
+}: CustomerTableProps) => {
+  const [openCustomer, setOpenCustomer] =
+    useState<Customer | null>(null);
 
-  const [style, setStyle] = useState({
-    top: 0,
-    left: 0,
-  });
+  const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  useOutsideClick(dropdownRef, () => setOpenPolicy(null));
+  useOutsideClick(dropdownRef, () => setOpenCustomer(null));
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
-    policy: Policy
+    customer: Customer
   ) => {
     e.stopPropagation();
+
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
-
     const spaceBelow = viewportHeight - rect.bottom;
     const openUpwards = spaceBelow < DROPDOWN_HEIGHT;
 
@@ -47,7 +48,21 @@ const PolicyTable = ({
       left: rect.right - DROPDOWN_WIDTH,
     });
 
-    setOpenPolicy(policy);
+    setOpenCustomer(customer);
+  };
+
+  const handleEdit = () => {
+    if (!openCustomer) return;
+    const c = openCustomer;
+    setOpenCustomer(null);
+    setTimeout(() => onEdit(c), 0);
+  };
+
+  const handleAddPolicy = () => {
+    if (!openCustomer) return;
+    const c = openCustomer;
+    setOpenCustomer(null);
+    setTimeout(() => onAddPolicy(c), 0);
   };
 
   return (
@@ -55,10 +70,10 @@ const PolicyTable = ({
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
-            <Th>Policy No</Th>
-            <Th>Start</Th>
-            <Th>End</Th>
-            <Th>Premium</Th>
+            <Th>Name</Th>
+            <Th>Email</Th>
+            <Th>Mobile</Th>
+            <Th>Address</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
@@ -74,23 +89,24 @@ const PolicyTable = ({
                   colSpan={5}
                   className="text-center py-12 text-slate-500"
                 >
-                  No policies found
+                  No customers found
                 </td>
               </tr>
             ) : (
-              data.map((p) => (
+              data.map((c) => (
                 <tr
-                  key={p.policyId}
-                  className="border-t h-[52px] hover:bg-slate-50"
+                  key={c.customerId}
+                  onClick={() => onRowClick?.(c)} // 🔥 ROW CLICK
+                  className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
                 >
-                  <Td>{p.policyNumber}</Td>
-                  <Td>{p.startDate?.split("T")[0]}</Td>
-                  <Td>{p.endDate?.split("T")[0]}</Td>
-                  <Td>{p.premiumGross}</Td>
+                  <Td>{c.fullName}</Td>
+                  <Td>{c.email || "-"}</Td>
+                  <Td>{c.primaryMobile}</Td>
+                  <Td>{c.address || "-"}</Td>
 
                   <Td className="text-center">
                     <button
-                      onClick={(e) => openDropdown(e, p)}
+                      onClick={(e) => openDropdown(e, c)}
                       className="p-2 rounded hover:bg-slate-200"
                     >
                       <MoreVertical size={16} />
@@ -104,32 +120,27 @@ const PolicyTable = ({
       </table>
 
       {/* ================= DROPDOWN ================= */}
-      {openPolicy && (
+      {openCustomer && (
         <div
           ref={dropdownRef}
           className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg"
           style={style}
+          onClick={(e) => e.stopPropagation()}
         >
-          <MenuItem
-            label="Edit Policy"
-            onClick={() => {
-              const p = openPolicy;
-              setOpenPolicy(null);
-              setTimeout(() => onEdit(p), 0);
-            }}
-          />
+          <MenuItem label="Edit Customer" onClick={handleEdit} />
+          <MenuItem label="Add Policy" onClick={handleAddPolicy} />
         </div>
       )}
     </div>
   );
 };
 
-export default PolicyTable;
+export default CustomerTable;
 
 /* ---------- HELPERS ---------- */
 
 const Th = ({ children }: any) => (
-  <th className="px-4 py-3 text-left font-semibold">
+  <th className="px-4 py-3 text-left font-semibold text-slate-700">
     {children}
   </th>
 );

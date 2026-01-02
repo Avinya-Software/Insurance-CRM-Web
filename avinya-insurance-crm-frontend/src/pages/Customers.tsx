@@ -5,6 +5,7 @@ import { useCustomers } from "../hooks/customer/useCustomers";
 import CustomerTable from "../components/customer/CustomerTable";
 import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
 import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
+import CustomerPolicyBottomSheet from "../components/customer/CustomerPolicyBottomSheet";
 import type { Customer } from "../interfaces/customer.interface";
 
 const Customers = () => {
@@ -12,13 +13,19 @@ const Customers = () => {
   const [pageSize] = useState(10);
   const [search, setSearch] = useState("");
 
-  /* ---------------- CUSTOMER SHEET ---------------- */
+  /* ---------------- CUSTOMER UPSERT ---------------- */
   const [openCustomerSheet, setOpenCustomerSheet] = useState(false);
   const [selectedCustomer, setSelectedCustomer] =
     useState<Customer | null>(null);
 
-  /* ---------------- POLICY SHEET ---------------- */
+  /* ---------------- POLICY UPSERT ---------------- */
   const [openPolicySheet, setOpenPolicySheet] = useState(false);
+
+  /* ---------------- VIEW POLICIES (BOTTOM SHEET) ---------------- */
+  const [viewCustomerPolicies, setViewCustomerPolicies] = useState<{
+    customerId: string;
+    customerName?: string;
+  } | null>(null);
 
   /* ---------------- API ---------------- */
   const {
@@ -45,6 +52,13 @@ const Customers = () => {
     setOpenPolicySheet(true);
   };
 
+  const openCustomerPolicies = (customer: Customer) => {
+    setViewCustomerPolicies({
+      customerId: customer.customerId,
+      customerName: customer.fullName,
+    });
+  };
+
   const handleCustomerSuccess = () => {
     setOpenCustomerSheet(false);
     refetch();
@@ -61,7 +75,6 @@ const Customers = () => {
 
   return (
     <>
-      {/* 🔔 TOASTER */}
       <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
@@ -92,7 +105,7 @@ const Customers = () => {
               <div className="relative w-[360px]">
                 <input
                   type="text"
-                  placeholder="Search customers by name, email, or phone..."
+                  placeholder="Search customers..."
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -105,21 +118,20 @@ const Customers = () => {
                 </span>
               </div>
             </div>
-
-            <div />
           </div>
         </div>
 
         {/* ================= TABLE ================= */}
         <CustomerTable
           data={data?.customers || []}
-          loading={isLoading || isFetching} // ✅ IMPORTANT
+          loading={isLoading || isFetching}
           onEdit={handleEditCustomer}
           onAddPolicy={handleAddPolicy}
+          onRowClick={openCustomerPolicies} // 🔥 HERE
         />
 
         {/* ================= PAGINATION ================= */}
-        <div className="flex items-center justify-end gap-4 px-4 py-3 border-t text-sm">
+        <div className="flex justify-end gap-4 px-4 py-3 border-t text-sm">
           <button
             disabled={pageNumber === 1}
             onClick={() => setPageNumber((p) => p - 1)}
@@ -157,6 +169,14 @@ const Customers = () => {
           setSelectedCustomer(null);
         }}
         onSuccess={handlePolicySuccess}
+      />
+
+      {/* ================= CUSTOMER POLICIES BOTTOM SHEET ================= */}
+      <CustomerPolicyBottomSheet
+        open={!!viewCustomerPolicies}
+        customerId={viewCustomerPolicies?.customerId || null}
+        customerName={viewCustomerPolicies?.customerName}
+        onClose={() => setViewCustomerPolicies(null)}
       />
     </>
   );

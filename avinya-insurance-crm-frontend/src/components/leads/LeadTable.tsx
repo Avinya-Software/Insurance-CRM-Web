@@ -4,17 +4,20 @@ import type { Lead } from "../../interfaces/lead.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import TableSkeleton from "../common/TableSkeleton";
 
-const DROPDOWN_HEIGHT = 160;
+const DROPDOWN_HEIGHT = 200;
 const DROPDOWN_WIDTH = 210;
 
 interface LeadTableProps {
   data: Lead[];
-  loading?: boolean; // ✅ NEW
+  loading?: boolean;
   onEdit: (lead: Lead) => void;
   onAdd: () => void;
   onCreateFollowUp?: (lead: Lead) => void;
   onViewFollowUps?: (lead: Lead) => void;
   onRowClick?: (lead: Lead) => void;
+
+  // 🔥 NEW: ADD CUSTOMER FROM LEAD
+  onAddCustomer?: (lead: Lead) => void;
 }
 
 const LeadTable = ({
@@ -25,6 +28,7 @@ const LeadTable = ({
   onCreateFollowUp,
   onViewFollowUps,
   onRowClick,
+  onAddCustomer,
 }: LeadTableProps) => {
   const [openLead, setOpenLead] = useState<Lead | null>(null);
   const [style, setStyle] = useState<{ top: number; left: number }>({
@@ -84,10 +88,7 @@ const LeadTable = ({
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td
-                  colSpan={8}
-                  className="text-center py-12 text-slate-500"
-                >
+                <td colSpan={8} className="text-center py-12 text-slate-500">
                   No leads found
                 </td>
               </tr>
@@ -145,6 +146,16 @@ const LeadTable = ({
                   }
                 />
 
+                {/* 🔥 ADD CUSTOMER */}
+                <MenuItem
+                  label="Add Customer"
+                  onClick={() =>
+                    handleAction(() =>
+                      onAddCustomer?.(openLead)
+                    )
+                  }
+                />
+
                 <MenuItem
                   label="Create Follow Up"
                   onClick={() =>
@@ -169,6 +180,8 @@ const LeadTable = ({
     </div>
   );
 };
+
+export default LeadTable;
 
 /* ---------- Helpers ---------- */
 
@@ -201,5 +214,3 @@ const MenuItem = ({
     {label}
   </button>
 );
-
-export default LeadTable;

@@ -9,6 +9,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   customer?: any;
+
+  // 🔥 NEW: LEAD ID FROM LEADS PAGE
+  leadId?: string;
+
   onSuccess: () => void;
 }
 
@@ -16,6 +20,7 @@ const CustomerUpsertSheet = ({
   open,
   onClose,
   customer,
+  leadId,
   onSuccess,
 }: Props) => {
   /* ---------------- LOCK BODY SCROLL ---------------- */
@@ -46,12 +51,13 @@ const CustomerUpsertSheet = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
-  /* ---------------- PREFILL (EDIT MODE) ---------------- */
+  /* ---------------- PREFILL (EDIT / ADD MODE) ---------------- */
 
   useEffect(() => {
     if (!open) return;
 
     if (customer) {
+      // ✏️ EDIT CUSTOMER
       setForm({
         customerId: customer.customerId ?? null,
         fullName: customer.fullName ?? "",
@@ -67,12 +73,16 @@ const CustomerUpsertSheet = ({
         leadId: customer.leadId ?? "",
       });
     } else {
-      setForm(initialForm);
+      // ➕ ADD CUSTOMER (FROM LEAD OR DIRECT)
+      setForm({
+        ...initialForm,
+        leadId: leadId ?? "", // 🔥 THIS IS THE FIX
+      });
       setKycFiles([]);
     }
 
     setErrors({});
-  }, [open, customer]);
+  }, [open, customer, leadId]);
 
   /* ---------------- VALIDATION ---------------- */
 
@@ -108,6 +118,9 @@ const CustomerUpsertSheet = ({
 
   const handleSave = async () => {
     if (!validate()) return;
+
+    // 🔍 DEBUG (optional – remove later)
+    console.log("Submitting customer with leadId:", form.leadId);
 
     setSaving(true);
     try {
