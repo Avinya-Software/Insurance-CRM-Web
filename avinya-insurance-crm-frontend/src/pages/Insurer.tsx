@@ -4,6 +4,8 @@ import { Toaster, toast } from "react-hot-toast";
 import InsurerTable from "../components/insurer/InsurerTable";
 import InsurerUpsertSheet from "../components/insurer/InsurerUpsertSheet";
 import ProductUpsertSheet from "../components/product/ProductUpsertSheet";
+import Pagination from "../components/leads/Pagination";
+
 import { getInsurersApi } from "../api/insurer.api";
 
 const Insurers = () => {
@@ -99,7 +101,7 @@ const Insurers = () => {
             <div>
               <input
                 type="text"
-                placeholder="Search insurer..."
+                placeholder=" 🔍 Search insurer..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -116,31 +118,17 @@ const Insurers = () => {
         {/* ================= TABLE ================= */}
         <InsurerTable
           data={data?.data || []}
-          loading={loading} // ✅ IMPORTANT
+          loading={loading}
           onEdit={handleEditInsurer}
           onAddProduct={handleAddProduct}
         />
 
         {/* ================= PAGINATION ================= */}
-        <div className="flex justify-end gap-4 px-4 py-3 border-t text-sm">
-          <button
-            disabled={pageNumber === 1}
-            onClick={() => setPageNumber((p) => p - 1)}
-            className="disabled:text-slate-400"
-          >
-            Prev
-          </button>
-
-          <span>Page {pageNumber}</span>
-
-          <button
-            disabled={pageNumber === data?.totalPages}
-            onClick={() => setPageNumber((p) => p + 1)}
-            className="disabled:text-slate-400"
-          >
-            Next
-          </button>
-        </div>
+        <Pagination
+          page={pageNumber}
+          totalPages={data?.totalPages ?? 1}
+          onChange={(page) => setPageNumber(page)}
+        />
       </div>
 
       {/* ================= INSURER UPSERT ================= */}

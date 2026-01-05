@@ -1,53 +1,98 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, Eye, Download, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 import { useCreateClaim } from "../../hooks/claim/useCreateClaim";
-import { useClaimTypes } from "../../hooks/claim/useClaimMasters";
-import { useClaimStages } from "../../hooks/claim/useClaimMasters";
-import { useClaimHandlers } from "../../hooks/claim/useClaimMasters";
-
+import {
+  useClaimTypes,
+  useClaimStages,
+  useClaimHandlers,
+} from "../../hooks/claim/useClaimMasters";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { usePolicies } from "../../hooks/policy/usePolicies";
+import { useClaimFileActions } from "../../hooks/claim/useClaimFileActions";
+import Spinner from "../common/Spinner";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   claim?: any;
+  onSuccess: () => void;
 }
 
-const ClaimUpsertSheet = ({ open, onClose, claim }: Props) => {
-  const { mutate, isPending } = useCreateClaim();
+/* ---------------- VALIDATION ---------------- */
 
-  /* ---------- DROPDOWNS ---------- */
-  const { data: customers } = useCustomerDropdown();
-  const { data: claimTypes } = useClaimTypes();
-  const { data: claimStages } = useClaimStages();
-  const { data: claimHandlers } = useClaimHandlers();
+const validateForm = (form: any) => {
+  const e: any = {};
 
-  /* ---------- FORM STATE ---------- */
-  const [form, setForm] = useState<any>({
-    claimId: undefined,
+  if (!form.customerId) e.customerId = "Customer is required";
+  if (!form.policyId) e.policyId = "Policy is required";
+  if (!form.claimTypeId) e.claimTypeId = "Claim type is required";
+  if (!form.claimStageId) e.claimStageId = "Claim stage is required";
+  if (!form.claimHandlerId) e.claimHandlerId = "Handler is required";
+  if (!form.incidentDate) e.incidentDate = "Incident date is required";
+  if (!form.claimAmount || form.claimAmount <= 0)
+    e.claimAmount = "Claim amount must be greater than 0";
+  if (
+    form.approvedAmount &&
+    Number(form.approvedAmount) > Number(form.claimAmount)
+  )
+    e.approvedAmount = "Approved amount cannot exceed claim amount";
+  if (form.tatDays !== null && form.tatDays < 0)
+    e.tatDays = "TAT must be 0 or greater";
 
+  return e;
+};
+
+const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
+  /* ---------------- LOCK BODY SCROLL ---------------- */
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "unset";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [open]);
+
+  /* ---------------- CLAIM DOCUMENT ACTIONS ---------------- */
+  const [existingDocuments, setExistingDocuments] = useState<string[]>([]);
+
+  const { preview, download, remove } = useClaimFileActions((deletedId) => {
+    setExistingDocuments((prev) =>
+      prev.filter((f) => !f.startsWith(deletedId + "_"))
+    );
+  });
+
+  /* ---------------- API HOOKS ---------------- */
+  const { mutateAsync, isPending } = useCreateClaim();
+
+  /* ---------------- DROPDOWNS ---------------- */
+  const { data: customers, isLoading: customersLoading } = useCustomerDropdown();
+  const { data: claimTypes, isLoading: typesLoading } = useClaimTypes();
+  const { data: claimStages, isLoading: stagesLoading } = useClaimStages();
+  const { data: claimHandlers, isLoading: handlersLoading } = useClaimHandlers();
+
+  /* ---------------- FORM STATE ---------------- */
+  const initialForm = {
+    claimId: null as string | null,
     customerId: "",
     policyId: "",
-
     claimTypeId: "",
     claimStageId: "",
     claimHandlerId: "",
-
     incidentDate: "",
     claimAmount: "",
     approvedAmount: "",
-
-    tatDays: "",
+    tatDays: 0,
     status: "Open",
     notes: "",
+  };
 
-    documents: [] as File[],
-  });
+  const [form, setForm] = useState(initialForm);
+  const [documents, setDocuments] = useState<File[]>([]);
+  const [errors, setErrors] = useState<any>({});
 
-  /* ---------- POLICIES (DEPENDENT) ---------- */
-  const { data: policies } = usePolicies(
+  /* ---------------- POLICIES (DEPENDENT) ---------------- */
+  const { data: policies, isLoading: policiesLoading } = usePolicies(
     form.customerId
       ? {
           pageNumber: 1,
@@ -57,206 +102,332 @@ const ClaimUpsertSheet = ({ open, onClose, claim }: Props) => {
       : { pageNumber: 1, pageSize: 100 }
   );
 
-  /* ---------- PREFILL FOR EDIT ---------- */
+  const loadingDropdowns =
+    customersLoading || typesLoading || stagesLoading || handlersLoading;
+
+  /* ---------------- PREFILL ---------------- */
   useEffect(() => {
+    if (!open) return;
+
     if (claim) {
       setForm({
-        claimId: claim.claimId,
-
-        customerId: claim.customerId,
-        policyId: claim.policyId,
-
-        claimTypeId: claim.claimTypeId,
-        claimStageId: claim.claimStageId,
-        claimHandlerId: claim.claimHandlerId,
-
-        incidentDate: claim.incidentDate?.split("T")[0],
-        claimAmount: claim.claimAmount,
+        claimId: claim.claimId ?? null,
+        customerId: claim.customer?.customerId || "",
+        policyId: claim.policy?.policyId || "",
+        claimTypeId:
+          claimTypes?.find((x: any) => x.typeName === claim.claimType)
+            ?.claimTypeId || "",
+        claimStageId:
+          claimStages?.find((x: any) => x.stageName === claim.claimStage)
+            ?.claimStageId || "",
+        claimHandlerId:
+          claimHandlers?.find((x: any) => x.handlerName === claim.claimHandler)
+            ?.claimHandlerId || "",
+        incidentDate: claim.incidentDate ? claim.incidentDate.split("T")[0] : "",
+        claimAmount: claim.claimAmount || "",
         approvedAmount: claim.approvedAmount ?? "",
-
-        tatDays: claim.tatDays,
-        status: claim.status,
+        tatDays:
+          claim.tatDays !== undefined && claim.tatDays !== null
+            ? Number(claim.tatDays)
+            : 0,
+        status: claim.status || "Open",
         notes: claim.notes ?? "",
-
-        documents: [],
       });
+
+      setExistingDocuments(
+        claim.documents
+          ? claim.documents.split(",").filter(Boolean)
+          : []
+      );
+    } else {
+      setForm(initialForm);
+      setExistingDocuments([]);
+      setDocuments([]);
     }
-  }, [claim]);
+
+    setErrors({});
+  }, [open, claim, claimTypes, claimStages, claimHandlers]);
+
+  /* ---------------- SAVE ---------------- */
+  const handleSave = async () => {
+    const e = validateForm(form);
+    setErrors(e);
+
+    if (Object.keys(e).length) {
+      toast.error("Please fix validation errors");
+      return;
+    }
+
+    try {
+      await mutateAsync({ ...form, documents });
+      toast.success("Claim saved successfully");
+      onClose();
+      onSuccess();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Something went wrong");
+    }
+  };
 
   if (!open) return null;
 
-  const handleSubmit = () => {
-    mutate(form, { onSuccess: onClose });
-  };
+  /* =================== UI =================== */
 
   return (
     <>
-      {/* BACKDROP */}
+      {/* OVERLAY */}
       <div
-        className="fixed inset-0 bg-black/40 z-40"
-        onClick={onClose}
+        className="fixed inset-0 bg-black/40 z-[60]"
+        onClick={isPending ? undefined : onClose}
       />
 
       {/* SHEET */}
-      <div className="fixed top-0 right-0 w-[480px] h-screen bg-white shadow-xl z-50 overflow-y-auto">
+      <div className="fixed top-0 right-0 h-screen w-[480px] bg-white z-[70] shadow-2xl flex flex-col">
         {/* HEADER */}
-        <div className="px-6 py-4 border-b flex justify-between">
-          <h2 className="text-lg font-semibold">
+        <div className="px-6 py-4 border-b flex justify-between items-center">
+          <h2 className="font-semibold text-lg">
             {claim ? "Edit Claim" : "Add Claim"}
           </h2>
-          <button onClick={onClose}>
+          <button onClick={onClose} disabled={isPending}>
             <X />
           </button>
         </div>
 
         {/* BODY */}
-        <div className="p-6 space-y-4">
-          {/* CUSTOMER */}
-          <Select
-            label="Customer"
-            options={customers}
-            value={form.customerId}
-            onChange={(v) =>
-              setForm({
-                ...form,
-                customerId: v,
-                policyId: "", // reset policy
-              })
-            }
-            idKey="customerId"
-            labelKey="fullName"
-          />
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loadingDropdowns ? (
+            <div className="flex items-center justify-center h-full">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Select
+                label="Customer"
+                required
+                value={form.customerId}
+                error={errors.customerId}
+                options={customers}
+                idKey="customerId"
+                labelKey="fullName"
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    customerId: v,
+                    policyId: "",
+                  })
+                }
+              />
 
-          {/* POLICY (DEPENDENT) */}
-          <Select
-            label="Policy"
-            options={policies?.data || []}
-            value={form.policyId}
-            onChange={(v) => setForm({ ...form, policyId: v })}
-            idKey="policyId"
-            labelKey="policyNumber"
-            disabled={!form.customerId}
-          />
+              <Select
+                label="Policy"
+                required
+                value={form.policyId}
+                error={errors.policyId}
+                options={policies?.data || []}
+                idKey="policyId"
+                labelKey="policyNumber"
+                disabled={!form.customerId}
+                loading={policiesLoading}
+                onChange={(v) => setForm({ ...form, policyId: v })}
+              />
 
-          {/* CLAIM TYPE */}
-          <Select
-            label="Claim Type"
-            options={claimTypes}
-            value={form.claimTypeId}
-            onChange={(v) =>
-              setForm({ ...form, claimTypeId: Number(v) })
-            }
-            idKey="claimTypeId"
-            labelKey="typeName"
-          />
+              <Select
+                label="Claim Type"
+                required
+                value={form.claimTypeId}
+                error={errors.claimTypeId}
+                options={claimTypes}
+                idKey="claimTypeId"
+                labelKey="typeName"
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    claimTypeId: Number(v),
+                  })
+                }
+              />
 
-          {/* CLAIM STAGE */}
-          <Select
-            label="Current Stage"
-            options={claimStages}
-            value={form.claimStageId}
-            onChange={(v) =>
-              setForm({ ...form, claimStageId: Number(v) })
-            }
-            idKey="claimStageId"
-            labelKey="stageName"
-          />
+              <Select
+                label="Claim Stage"
+                required
+                value={form.claimStageId}
+                error={errors.claimStageId}
+                options={claimStages}
+                idKey="claimStageId"
+                labelKey="stageName"
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    claimStageId: Number(v),
+                  })
+                }
+              />
 
-          {/* HANDLER */}
-          <Select
-            label="Assigned Handler"
-            options={claimHandlers}
-            value={form.claimHandlerId}
-            onChange={(v) =>
-              setForm({ ...form, claimHandlerId: Number(v) })
-            }
-            idKey="claimHandlerId"
-            labelKey="handlerName"
-          />
+              <Select
+                label="Claim Handler"
+                required
+                value={form.claimHandlerId}
+                error={errors.claimHandlerId}
+                options={claimHandlers}
+                idKey="claimHandlerId"
+                labelKey="handlerName"
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    claimHandlerId: Number(v),
+                  })
+                }
+              />
 
-          {/* INCIDENT DATE */}
-          <Input
-            label="Incident Date"
-            type="date"
-            value={form.incidentDate}
-            onChange={(v) =>
-              setForm({ ...form, incidentDate: v })
-            }
-          />
+              <Input
+                label="Incident Date"
+                required
+                type="date"
+                value={form.incidentDate}
+                error={errors.incidentDate}
+                onChange={(v) => setForm({ ...form, incidentDate: v })}
+              />
 
-          {/* AMOUNTS */}
-          <Input
-            label="Claim Amount"
-            type="number"
-            value={form.claimAmount}
-            onChange={(v) =>
-              setForm({ ...form, claimAmount: v })
-            }
-          />
+              <Input
+                label="Claim Amount"
+                required
+                type="number"
+                value={form.claimAmount}
+                error={errors.claimAmount}
+                onChange={(v) => setForm({ ...form, claimAmount: v })}
+              />
 
-          <Input
-            label="Approved Amount"
-            type="number"
-            value={form.approvedAmount}
-            onChange={(v) =>
-              setForm({ ...form, approvedAmount: v })
-            }
-          />
+              <Input
+                label="Approved Amount"
+                type="number"
+                value={form.approvedAmount}
+                error={errors.approvedAmount}
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    approvedAmount: v,
+                  })
+                }
+              />
 
-          {/* TAT */}
-          <Input
-            label="TAT (Days)"
-            type="number"
-            value={form.tatDays}
-            onChange={(v) =>
-              setForm({ ...form, tatDays: v })
-            }
-          />
+              <Input
+                label="TAT (Days)"
+                type="number"
+                value={form.tatDays}
+                error={errors.tatDays}
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    tatDays: v === "" ? null : Number(v),
+                  })
+                }
+              />
 
-          {/* STATUS */}
-          <Select
-            label="Status"
-            options={[
-              { id: "Open", name: "Open" },
-              { id: "Approved", name: "Approved" },
-              { id: "Rejected", name: "Rejected" },
-              { id: "Closed", name: "Closed" },
-            ]}
-            value={form.status}
-            onChange={(v) =>
-              setForm({ ...form, status: v })
-            }
-          />
+              <Textarea
+                label="Notes"
+                value={form.notes}
+                onChange={(v) => setForm({ ...form, notes: v })}
+              />
 
-          {/* NOTES */}
-          <Textarea
-            label="Notes"
-            value={form.notes}
-            onChange={(v) => setForm({ ...form, notes: v })}
-          />
+              {/* ===== EXISTING CLAIM DOCUMENTS ===== */}
+              {claim?.claimId && existingDocuments.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium">
+                    Uploaded Claim Documents
+                  </label>
 
-          {/* DOCUMENTS */}
-          <FileInput
-            label="Claim Documents"
-            onChange={(files) =>
-              setForm({ ...form, documents: files })
-            }
-          />
+                  <div className="space-y-2 mt-2">
+                    {existingDocuments.map((file) => {
+                      const documentId = file.split("_")[0];
+
+                      return (
+                        <div
+                          key={file}
+                          className="flex justify-between items-center border rounded px-3 py-2 text-sm"
+                        >
+                          <span className="truncate flex-1">{file}</span>
+
+                          <div className="flex gap-2 ml-2">
+                            <button
+                              onClick={() => preview(claim.claimId, documentId)}
+                              className="p-1 hover:bg-gray-100 rounded"
+                              title="Preview"
+                            >
+                              <Eye size={16} />
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                download(claim.claimId, documentId)
+                              }
+                              className="p-1 hover:bg-gray-100 rounded"
+                              title="Download"
+                            >
+                              <Download size={16} />
+                            </button>
+
+                            <button
+                              onClick={async () => {
+                                if (!confirm("Delete this document?")) return;
+                                try {
+                                  await remove(claim.claimId, documentId);
+                                } catch {
+                                  toast.error("Failed to delete document");
+                                }
+                              }}
+                              className="p-1 hover:bg-red-100 text-red-600 rounded"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ===== CLAIM DOCUMENT UPLOAD ===== */}
+              <div>
+                <label className="text-sm font-medium">Add Claim Documents</label>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  disabled={isPending}
+                  onChange={(e) =>
+                    setDocuments(
+                      e.target.files ? Array.from(e.target.files) : []
+                    )
+                  }
+                  className="block mt-1 text-sm"
+                />
+                {documents.length > 0 && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    {documents.length} file(s) selected
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* FOOTER */}
         <div className="px-6 py-4 border-t flex gap-3">
           <button
-            className="flex-1 border rounded py-2"
+            className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
             onClick={onClose}
+            disabled={isPending}
           >
             Cancel
           </button>
+
           <button
-            className="flex-1 bg-blue-600 text-white rounded py-2"
-            disabled={isPending}
-            onClick={handleSubmit}
+            disabled={isPending || loadingDropdowns}
+            className="flex-1 bg-blue-600 text-white rounded-lg py-2 flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSave}
           >
+            {isPending && <Spinner />}
             {isPending ? "Saving..." : "Save Claim"}
           </button>
         </div>
@@ -267,17 +438,27 @@ const ClaimUpsertSheet = ({ open, onClose, claim }: Props) => {
 
 export default ClaimUpsertSheet;
 
-/* ===================== HELPERS ===================== */
+/* ---------------- HELPERS ---------------- */
 
-const Input = ({ label, type = "text", value, onChange }: any) => (
+const Input = ({
+  label,
+  required,
+  value,
+  onChange,
+  type = "text",
+  error,
+}: any) => (
   <div>
-    <label className="text-sm font-medium">{label}</label>
+    <label className="text-sm font-medium">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
     <input
       type={type}
-      className="input w-full"
+      className={`input w-full ${error ? "border-red-500" : ""}`}
       value={value || ""}
       onChange={(e) => onChange(e.target.value)}
     />
+    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
   </div>
 );
 
@@ -285,7 +466,7 @@ const Textarea = ({ label, value, onChange }: any) => (
   <div>
     <label className="text-sm font-medium">{label}</label>
     <textarea
-      className="input w-full h-24"
+      className="input w-full h-24 resize-none"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />
@@ -294,23 +475,34 @@ const Textarea = ({ label, value, onChange }: any) => (
 
 const Select = ({
   label,
+  required,
   options,
   value,
   onChange,
   idKey = "id",
   labelKey = "name",
+  error,
   disabled = false,
+  loading = false,
 }: any) => (
   <div>
-    <label className="text-sm font-medium">{label}</label>
+    <label className="text-sm font-medium">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
     <select
-      className="input w-full"
+      disabled={disabled || loading}
+      className={`input w-full ${
+        error ? "border-red-500" : ""
+      } disabled:bg-gray-100 disabled:cursor-not-allowed`}
       value={value || ""}
-      disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
     >
       <option value="">
-        {disabled ? "Select customer first" : "Select"}
+        {loading
+          ? "Loading..."
+          : disabled
+          ? "Select customer first"
+          : `Select ${label}`}
       </option>
       {options?.map((o: any) => (
         <option key={o[idKey]} value={o[idKey]}>
@@ -318,18 +510,6 @@ const Select = ({
         </option>
       ))}
     </select>
-  </div>
-);
-
-const FileInput = ({ label, onChange }: any) => (
-  <div>
-    <label className="text-sm font-medium">{label}</label>
-    <input
-      type="file"
-      multiple
-      onChange={(e) =>
-        onChange(Array.from(e.target.files || []))
-      }
-    />
+    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
   </div>
 );

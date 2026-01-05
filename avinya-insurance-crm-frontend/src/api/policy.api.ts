@@ -1,21 +1,33 @@
 import api from "./axios";
 
-/* ---------------- UPSERT POLICY ---------------- */
+/* ================= UPSERT POLICY ================= */
 
 export const upsertPolicyApi = async (data: FormData) => {
-  const res = await api.post(
-    "/policy/upsert",
-    data,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
+  const res = await api.post("/policy/upsert", data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
   return res.data;
 };
 
-/* ---------------- DROPDOWNS ---------------- */
+/* ================= GET POLICIES ================= */
+
+export const getPoliciesApi = async (params: {
+  pageNumber: number;
+  pageSize: number;
+  search?: string;
+  policyStatusId?: number | null;
+  policyTypeId?: number | null;
+  customerId?: string;
+  insurerId?: string;
+  productId?: string;
+}) => {
+  const res = await api.get("/policy", { params });
+  return res.data;
+};
+
+/* ================= DROPDOWNS ================= */
 
 export const getPolicyTypesDropdownApi = async () => {
   const res = await api.get<{ id: number; name: string }[]>(
@@ -30,7 +42,33 @@ export const getPolicyStatusesDropdownApi = async () => {
   );
   return res.data;
 };
-export const getPoliciesApi = async (params: any) => {
-  const res = await api.get("/policy", { params });
+
+/* ================= POLICY DOCUMENT PREVIEW ================= */
+
+export const previewPolicyDocumentApi = (
+  policyId: string,
+  documentId: string
+) => {
+  return `${api.defaults.baseURL}/policy/${policyId}/documents/${documentId}/preview`;
+};
+
+/* ================= POLICY DOCUMENT DOWNLOAD ================= */
+
+export const downloadPolicyDocumentApi = (
+  policyId: string,
+  documentId: string
+) => {
+  return `${api.defaults.baseURL}/policy/${policyId}/documents/${documentId}/download`;
+};
+
+/* ================= POLICY DOCUMENT DELETE ================= */
+
+export const deletePolicyDocumentApi = async (
+  policyId: string,
+  documentId: string
+) => {
+  const res = await api.delete(
+    `/policy/${policyId}/documents/${documentId}`
+  );
   return res.data;
 };

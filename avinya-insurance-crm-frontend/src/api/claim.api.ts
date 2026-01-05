@@ -5,26 +5,79 @@ import type {
   ClaimResponse,
 } from "../interfaces/claim.interface";
 
-/* ---------------- CREATE / UPDATE CLAIM ---------------- */
-export const upsertClaimApi = async (data: CreateClaimRequest) => {
+/* ================= CREATE / UPDATE CLAIM ================= */
+
+export const upsertClaimApi = async (
+  data: CreateClaimRequest
+) => {
   const formData = new FormData();
 
   Object.entries(data).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
-      if (key === "documents" && Array.isArray(value)) {
-        value.forEach(file => formData.append("Documents", file));
-      } else {
-        formData.append(key, value as any);
-      }
+    if (value === undefined || value === null) return;
+
+    // 🔥 FILES
+    if (key === "documents" && Array.isArray(value)) {
+      value.forEach((file) =>
+        formData.append("Documents", file)
+      );
+    }
+    // 🔥 OTHER FIELDS
+    else {
+      formData.append(key, String(value));
     }
   });
 
-  const res = await api.post<ClaimResponse>("/claim", formData);
+  const res = await api.post<ClaimResponse>(
+    "/claim",
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
   return res.data;
 };
 
-/* ---------------- GET CLAIMS (PAGINATED) ---------------- */
-export const getClaimsApi = async (params: ClaimFilters) => {
-  const res = await api.get("/claim", { params });
+/* ================= GET CLAIMS (PAGINATED) ================= */
+
+export const getClaimsApi = async (
+  params: ClaimFilters
+) => {
+  const res = await api.get("/claim", {
+    params,
+  });
+
+  return res.data;
+};
+
+/* ================= CLAIM DOCUMENT PREVIEW ================= */
+
+export const previewClaimDocumentApi = (
+  claimId: string,
+  documentId: string
+) => {
+  return `${api.defaults.baseURL}/claim/${claimId}/documents/${documentId}/preview`;
+};
+
+/* ================= CLAIM DOCUMENT DOWNLOAD ================= */
+
+export const downloadClaimDocumentApi = (
+  claimId: string,
+  documentId: string
+) => {
+  return `${api.defaults.baseURL}/claim/${claimId}/documents/${documentId}/download`;
+};
+
+/* ================= CLAIM DOCUMENT DELETE ================= */
+
+export const deleteClaimDocumentApi = async (
+  claimId: string,
+  documentId: string
+) => {
+  const res = await api.delete(
+    `/claim/${claimId}/documents/${documentId}`
+  );
   return res.data;
 };

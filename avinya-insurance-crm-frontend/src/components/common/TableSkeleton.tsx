@@ -3,7 +3,7 @@ interface Props {
   columns?: number;
 }
 
-const TableSkeleton = ({ rows = 6, columns = 8 }: Props) => {
+const TableSkeleton = ({ rows = 6, columns = 14 }: Props) => {
   return (
     <tbody>
       {Array.from({ length: rows }).map((_, r) => (

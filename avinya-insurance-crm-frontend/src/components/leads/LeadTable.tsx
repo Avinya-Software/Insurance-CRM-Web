@@ -66,7 +66,7 @@ const LeadTable = ({
   };
 
   return (
-    <div className="relative">
+    <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
@@ -83,7 +83,7 @@ const LeadTable = ({
 
         {/* ================= BODY ================= */}
         {loading ? (
-          <TableSkeleton />
+          <TableSkeleton rows={6} columns={8}  />
         ) : (
           <tbody>
             {data.length === 0 ? (

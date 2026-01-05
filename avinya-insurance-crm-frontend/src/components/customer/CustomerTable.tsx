@@ -12,8 +12,12 @@ interface CustomerTableProps {
   loading?: boolean;
   onEdit: (customer: Customer) => void;
   onAddPolicy: (customer: Customer) => void;
-  onRowClick?: (customer: Customer) => void; // ✅ ADDED
+
+  onRowClick?: (customer: Customer) => void;        // single click
+  onRowDoubleClick?: (customer: Customer) => void; // double click
 }
+
+let clickTimer: any = null;
 
 const CustomerTable = ({
   data = [],
@@ -21,6 +25,7 @@ const CustomerTable = ({
   onEdit,
   onAddPolicy,
   onRowClick,
+  onRowDoubleClick,
 }: CustomerTableProps) => {
   const [openCustomer, setOpenCustomer] =
     useState<Customer | null>(null);
@@ -30,11 +35,30 @@ const CustomerTable = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => setOpenCustomer(null));
 
+  /* ================= ROW CLICK HANDLER ================= */
+
+  const handleRowClick = (customer: Customer) => {
+    if (clickTimer) {
+      // DOUBLE CLICK
+      clearTimeout(clickTimer);
+      clickTimer = null;
+      onRowDoubleClick?.(customer);
+    } else {
+      // SINGLE CLICK
+      clickTimer = setTimeout(() => {
+        onRowClick?.(customer);
+        clickTimer = null;
+      }, 250);
+    }
+  };
+
+  /* ================= DROPDOWN ================= */
+
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
     customer: Customer
   ) => {
-    e.stopPropagation(); // ✅ PREVENT ROW CLICK
+    e.stopPropagation(); // 🚫 prevent row click
 
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
@@ -64,6 +88,8 @@ const CustomerTable = ({
     setOpenCustomer(null);
     setTimeout(() => onAddPolicy(c), 0);
   };
+
+  /* ================= UI ================= */
 
   return (
     <div className="relative overflow-x-auto">
@@ -96,7 +122,7 @@ const CustomerTable = ({
               data.map((c) => (
                 <tr
                   key={c.customerId}
-                  onClick={() => onRowClick?.(c)} // ✅ THIS FIXES IT
+                  onClick={() => handleRowClick(c)}
                   className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
                 >
                   <Td>{c.fullName}</Td>
@@ -125,7 +151,7 @@ const CustomerTable = ({
           ref={dropdownRef}
           className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg"
           style={style}
-          onClick={(e) => e.stopPropagation()} // ✅ SAFETY
+          onClick={(e) => e.stopPropagation()}
         >
           <MenuItem label="Edit Customer" onClick={handleEdit} />
           <MenuItem label="Add Policy" onClick={handleAddPolicy} />
@@ -137,7 +163,7 @@ const CustomerTable = ({
 
 export default CustomerTable;
 
-/* ---------- HELPERS ---------- */
+/* ================= HELPERS ================= */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold text-slate-700">

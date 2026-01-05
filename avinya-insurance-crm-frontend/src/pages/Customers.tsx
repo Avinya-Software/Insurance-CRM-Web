@@ -6,6 +6,9 @@ import CustomerTable from "../components/customer/CustomerTable";
 import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
 import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
 import CustomerPolicyBottomSheet from "../components/customer/CustomerPolicyBottomSheet";
+import CustomerClaimBottomSheet from "../components/customer/CustomerClaimBottomSheet";
+import Pagination from "../components/leads/Pagination";
+
 import type { Customer } from "../interfaces/customer.interface";
 
 const Customers = () => {
@@ -21,8 +24,14 @@ const Customers = () => {
   /* ---------------- POLICY UPSERT ---------------- */
   const [openPolicySheet, setOpenPolicySheet] = useState(false);
 
-  /* ---------------- VIEW POLICIES (BOTTOM SHEET) ---------------- */
+  /* ---------------- VIEW POLICIES (SINGLE CLICK) ---------------- */
   const [viewCustomerPolicies, setViewCustomerPolicies] = useState<{
+    customerId: string;
+    customerName?: string;
+  } | null>(null);
+
+  /* ---------------- VIEW CLAIMS (DOUBLE CLICK) ---------------- */
+  const [viewCustomerClaims, setViewCustomerClaims] = useState<{
     customerId: string;
     customerName?: string;
   } | null>(null);
@@ -52,8 +61,17 @@ const Customers = () => {
     setOpenPolicySheet(true);
   };
 
+  /* -------- SINGLE CLICK → POLICIES -------- */
   const openCustomerPolicies = (customer: Customer) => {
     setViewCustomerPolicies({
+      customerId: customer.customerId,
+      customerName: customer.fullName,
+    });
+  };
+
+  /* -------- DOUBLE CLICK → CLAIMS -------- */
+  const openCustomerClaims = (customer: Customer) => {
+    setViewCustomerClaims({
       customerId: customer.customerId,
       customerName: customer.fullName,
     });
@@ -127,29 +145,16 @@ const Customers = () => {
           loading={isLoading || isFetching}
           onEdit={handleEditCustomer}
           onAddPolicy={handleAddPolicy}
-          onRowClick={openCustomerPolicies} // 🔥 HERE
+          onRowClick={openCustomerPolicies}
+          onRowDoubleClick={openCustomerClaims}
         />
 
         {/* ================= PAGINATION ================= */}
-        <div className="flex justify-end gap-4 px-4 py-3 border-t text-sm">
-          <button
-            disabled={pageNumber === 1}
-            onClick={() => setPageNumber((p) => p - 1)}
-            className="disabled:text-slate-400"
-          >
-            Prev
-          </button>
-
-          <span>Page {pageNumber}</span>
-
-          <button
-            disabled={(data?.customers?.length ?? 0) < pageSize}
-            onClick={() => setPageNumber((p) => p + 1)}
-            className="disabled:text-slate-400"
-          >
-            Next
-          </button>
-        </div>
+        <Pagination
+          page={pageNumber}
+          totalPages={data?.totalPages ?? 1}
+          onChange={(page) => setPageNumber(page)}
+        />
       </div>
 
       {/* ================= CUSTOMER UPSERT ================= */}
@@ -171,12 +176,20 @@ const Customers = () => {
         onSuccess={handlePolicySuccess}
       />
 
-      {/* ================= CUSTOMER POLICIES BOTTOM SHEET ================= */}
+      {/* ================= POLICIES BOTTOM SHEET ================= */}
       <CustomerPolicyBottomSheet
         open={!!viewCustomerPolicies}
         customerId={viewCustomerPolicies?.customerId || null}
         customerName={viewCustomerPolicies?.customerName}
         onClose={() => setViewCustomerPolicies(null)}
+      />
+
+      {/* ================= CLAIMS BOTTOM SHEET ================= */}
+      <CustomerClaimBottomSheet
+        open={!!viewCustomerClaims}
+        customerId={viewCustomerClaims?.customerId || null}
+        customerName={viewCustomerClaims?.customerName}
+        onClose={() => setViewCustomerClaims(null)}
       />
     </>
   );

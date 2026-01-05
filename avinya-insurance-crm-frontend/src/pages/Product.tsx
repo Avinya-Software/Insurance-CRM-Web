@@ -5,6 +5,8 @@ import { useProducts } from "../hooks/product/useProducts";
 import { useProductCategoryDropdown } from "../hooks/product/useProductCategoryDropdown";
 import ProductTable from "../components/product/ProductTable";
 import ProductUpsertSheet from "../components/product/ProductUpsertSheet";
+import Pagination from "../components/leads/Pagination";
+
 import type { Product } from "../interfaces/product.interface";
 
 const Products = () => {
@@ -36,6 +38,7 @@ const Products = () => {
 
   const products = data?.data?.products || [];
   const totalRecords = data?.data?.totalRecords || 0;
+  const totalPages = data?.data?.totalPages || 1;
 
   /* ---------------- HANDLERS ---------------- */
 
@@ -54,6 +57,8 @@ const Products = () => {
     setOpenSheet(false);
     setSelectedProduct(null);
   };
+
+  /* ================= UI ================= */
 
   return (
     <>
@@ -127,30 +132,16 @@ const Products = () => {
         {/* ================= TABLE ================= */}
         <ProductTable
           data={products}
-          loading={isLoading || isFetching} // ✅ IMPORTANT
+          loading={isLoading || isFetching}
           onEdit={handleEdit}
         />
 
         {/* ================= PAGINATION ================= */}
-        <div className="flex items-center justify-end gap-4 px-4 py-3 border-t text-sm">
-          <button
-            disabled={pageNumber === 1}
-            onClick={() => setPageNumber((p) => p - 1)}
-            className="disabled:text-slate-400"
-          >
-            Prev
-          </button>
-
-          <span>Page {pageNumber}</span>
-
-          <button
-            disabled={products.length < pageSize}
-            onClick={() => setPageNumber((p) => p + 1)}
-            className="disabled:text-slate-400"
-          >
-            Next
-          </button>
-        </div>
+        <Pagination
+          page={pageNumber}
+          totalPages={totalPages}
+          onChange={(page) => setPageNumber(page)}
+        />
       </div>
 
       {/* ================= ADD / EDIT SHEET ================= */}
