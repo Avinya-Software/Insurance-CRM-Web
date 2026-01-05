@@ -5,6 +5,23 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
 import TableSkeleton from "../common/TableSkeleton";
 
+/* ===================== BADGE STYLES ===================== */
+
+const policyTypeStyles: Record<string, string> = {
+  Fresh: "bg-blue-100 text-blue-700 border-blue-200",
+  Renewal: "bg-green-100 text-green-700 border-green-200",
+  Lost: "bg-red-100 text-red-700 border-red-200",
+};
+
+const policyStatusStyles: Record<string, string> = {
+  Active: "bg-green-100 text-green-700 border-green-200",
+  Pending: "bg-amber-100 text-amber-700 border-amber-200",
+  Lapsed: "bg-slate-100 text-slate-600 border-slate-200",
+  Cancelled: "bg-red-100 text-red-700 border-red-200",
+};
+
+/* ===================== CONSTANTS ===================== */
+
 const DROPDOWN_HEIGHT = 120;
 const DROPDOWN_WIDTH = 180;
 
@@ -14,21 +31,18 @@ interface Props {
   onEdit: (policy: Policy) => void;
 }
 
+/* ===================== COMPONENT ===================== */
+
 const PolicyTable = ({
   data = [],
   loading = false,
   onEdit,
 }: Props) => {
-  const [openPolicy, setOpenPolicy] =
-    useState<Policy | null>(null);
-
+  const [openPolicy, setOpenPolicy] = useState<Policy | null>(null);
   const [confirmDelete, setConfirmDelete] =
     useState<Policy | null>(null);
 
-  const [style, setStyle] = useState({
-    top: 0,
-    left: 0,
-  });
+  const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => setOpenPolicy(null));
@@ -80,7 +94,7 @@ const PolicyTable = ({
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
-            {/* <Th>Policy No</Th> */}
+            <Th>Policy Number</Th>           
             <Th>Policy Type</Th>
             <Th>Insurer</Th>
             <Th>Product</Th>
@@ -101,7 +115,7 @@ const PolicyTable = ({
             {data.length === 0 ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={9}
                   className="text-center py-12 text-slate-500"
                 >
                   No policies found
@@ -113,11 +127,34 @@ const PolicyTable = ({
                   key={p.policyId}
                   className="border-t h-[52px] hover:bg-slate-50"
                 >
-                  {/* <Td>{p.policyNumber}</Td> */}
-                  <Td>{p.policyTypeName}</Td>
+                  <Td>{p.policyNumber}</Td>
+                  {/* 🔥 POLICY TYPE BADGE */}
+                  <Td>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                        policyTypeStyles[p.policyTypeName] ||
+                        "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      {p.policyTypeName}
+                    </span>
+                  </Td>
+
                   <Td>{p.insurerName}</Td>
                   <Td>{p.productName}</Td>
-                  <Td>{p.policyStatusName}</Td>
+
+                  {/* 🔥 POLICY STATUS BADGE */}
+                  <Td>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                        policyStatusStyles[p.policyStatusName] ||
+                        "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      {p.policyStatusName}
+                    </span>
+                  </Td>
+
                   <Td>{p.startDate?.split("T")[0]}</Td>
                   <Td>{p.endDate?.split("T")[0]}</Td>
                   <Td>{p.premiumNet}</Td>
@@ -147,7 +184,6 @@ const PolicyTable = ({
           onClick={(e) => e.stopPropagation()}
         >
           <MenuItem label="Edit Policy" onClick={handleEdit} />
-
           <MenuItem
             label="Delete Policy"
             danger
@@ -156,7 +192,7 @@ const PolicyTable = ({
         </div>
       )}
 
-      {/* ================= CONFIRM DELETE MODAL ================= */}
+      {/* ================= CONFIRM DELETE ================= */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
@@ -204,7 +240,7 @@ const PolicyTable = ({
 
 export default PolicyTable;
 
-/* ---------- HELPERS ---------- */
+/* ===================== HELPERS ===================== */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold">

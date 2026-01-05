@@ -4,6 +4,28 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteClaim } from "../../hooks/claim/useDeleteClaim";
 import TableSkeleton from "../common/TableSkeleton";
 
+/* ===================== BADGE STYLES ===================== */
+
+const claimTypeStyles: Record<string, string> = {
+  Accident: "bg-blue-100 text-blue-700 border-blue-200",
+  Medical: "bg-green-100 text-green-700 border-green-200",
+  Death: "bg-red-100 text-red-700 border-red-200",
+  Theft: "bg-amber-100 text-amber-700 border-amber-200",
+  Fire: "bg-orange-100 text-orange-700 border-orange-200",
+  NaturalDisaster:
+    "bg-purple-100 text-purple-700 border-purple-200",
+};
+
+const claimStageStyles: Record<string, string> = {
+  Initiated: "bg-slate-100 text-slate-700 border-slate-200",
+  DocumentsPending:
+    "bg-amber-100 text-amber-700 border-amber-200",
+  UnderReview: "bg-blue-100 text-blue-700 border-blue-200",
+  Approved: "bg-green-100 text-green-700 border-green-200",
+  Rejected: "bg-red-100 text-red-700 border-red-200",
+  Settled: "bg-emerald-100 text-emerald-700 border-emerald-200",
+};
+
 /* ===================== TYPES ===================== */
 
 interface Claim {
@@ -49,7 +71,6 @@ const DROPDOWN_WIDTH = 180;
 const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
   const [openClaim, setOpenClaim] = useState<Claim | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
-
   const [confirmDelete, setConfirmDelete] =
     useState<Claim | null>(null);
 
@@ -131,18 +152,42 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                   <Td>{claim.policy.policyStatus}</Td>
                   <Td>{claim.insurer.insurerName}</Td>
                   <Td>{claim.product.productName}</Td>
-                  <Td>{claim.claimType}</Td>
-                  <Td>{claim.claimStage}</Td>
+
+                  {/* 🔥 CLAIM TYPE BADGE */}
+                  <Td>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                        claimTypeStyles[claim.claimType] ||
+                        "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      {claim.claimType}
+                    </span>
+                  </Td>
+
+                  {/* 🔥 CLAIM STAGE BADGE */}
+                  <Td>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                        claimStageStyles[claim.claimStage] ||
+                        "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      {claim.claimStage}
+                    </span>
+                  </Td>
+
                   <Td>{claim.claimHandler}</Td>
                   <Td>₹ {claim.claimAmount}</Td>
                   <Td>{claim.status}</Td>
+
                   <Td>
                     {new Date(
                       claim.createdAt
                     ).toLocaleDateString()}
                   </Td>
 
-                  <Td className="text-left">
+                  <Td className="text-right">
                     <button
                       onClick={(e) =>
                         openDropdown(e, claim)
@@ -184,7 +229,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
         </div>
       )}
 
-      {/* ================= CONFIRM DELETE MODAL ================= */}
+      {/* ================= CONFIRM DELETE ================= */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[400px] p-6 shadow-lg">

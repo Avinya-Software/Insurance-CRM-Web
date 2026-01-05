@@ -9,6 +9,16 @@ import TableSkeleton from "../common/TableSkeleton";
 const DROPDOWN_HEIGHT = 120;
 const DROPDOWN_WIDTH = 180;
 
+/* ===================== STATUS BADGE STYLES ===================== */
+
+const productStatusStyles: Record<
+  "active" | "inactive",
+  string
+> = {
+  active: "bg-green-100 text-green-700 border-green-200",
+  inactive: "bg-slate-100 text-slate-600 border-slate-200",
+};
+
 interface Props {
   data: Product[];
   loading?: boolean;
@@ -109,27 +119,43 @@ const ProductTable = ({
                 </td>
               </tr>
             ) : (
-              data.map((p) => (
-                <tr
-                  key={p.productId}
-                  className="border-t h-[52px] hover:bg-slate-50"
-                >
-                  <Td>{p.productName}</Td>
-                  <Td>{p.productCode}</Td>
-                  <Td>{p.productCategory}</Td>
-                  <Td>{insurerMap[p.insurerId] ?? "-"}</Td>
-                  <Td>{p.isActive ? "Active" : "Inactive"}</Td>
+              data.map((p) => {
+                const statusKey = p.isActive
+                  ? "active"
+                  : "inactive";
 
-                  <Td className="text-center">
-                    <button
-                      onClick={(e) => openDropdown(e, p)}
-                      className="p-2 rounded hover:bg-slate-200"
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-                  </Td>
-                </tr>
-              ))
+                return (
+                  <tr
+                    key={p.productId}
+                    className="border-t h-[52px] hover:bg-slate-50"
+                  >
+                    <Td>{p.productName}</Td>
+                    <Td>{p.productCode}</Td>
+                    <Td>{p.productCategory}</Td>
+                    <Td>{insurerMap[p.insurerId] ?? "-"}</Td>
+
+                    {/* 🔥 STATUS BADGE */}
+                    <Td>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                          productStatusStyles[statusKey]
+                        }`}
+                      >
+                        {p.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </Td>
+
+                    <Td className="text-center">
+                      <button
+                        onClick={(e) => openDropdown(e, p)}
+                        className="p-2 rounded hover:bg-slate-200"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                    </Td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         )}

@@ -5,6 +5,19 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteLead } from "../../hooks/lead/useDeleteLead";
 import TableSkeleton from "../common/TableSkeleton";
 
+/* ===================== STATUS BADGE STYLES ===================== */
+
+const leadStatusStyles: Record<string, string> = {
+  New: "bg-slate-100 text-slate-700 border-slate-200",
+  Contacted: "bg-blue-100 text-blue-700 border-blue-200",
+  Qualified: "bg-purple-100 text-purple-700 border-purple-200",
+  "Follow Up": "bg-amber-100 text-amber-700 border-amber-200",
+  Converted: "bg-green-100 text-green-700 border-green-200",
+  Lost: "bg-red-100 text-red-700 border-red-200",
+};
+
+/* ===================== TYPES ===================== */
+
 const DROPDOWN_HEIGHT = 240;
 const DROPDOWN_WIDTH = 210;
 
@@ -16,10 +29,10 @@ interface LeadTableProps {
   onCreateFollowUp?: (lead: Lead) => void;
   onViewFollowUps?: (lead: Lead) => void;
   onRowClick?: (lead: Lead) => void;
-
-  // 🔥 ADD CUSTOMER FROM LEAD
   onAddCustomer?: (lead: Lead) => void;
 }
+
+/* ===================== COMPONENT ===================== */
 
 const LeadTable = ({
   data = [],
@@ -32,8 +45,7 @@ const LeadTable = ({
   onAddCustomer,
 }: LeadTableProps) => {
   const [openLead, setOpenLead] = useState<Lead | null>(null);
-  const [confirmDelete, setConfirmDelete] =
-    useState<Lead | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null);
 
   const [style, setStyle] = useState<{ top: number; left: number }>({
     top: 0,
@@ -43,8 +55,7 @@ const LeadTable = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => setOpenLead(null));
 
-  const { mutate: deleteLead, isPending } =
-    useDeleteLead();
+  const { mutate: deleteLead, isPending } = useDeleteLead();
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -128,8 +139,21 @@ const LeadTable = ({
                   <Td>{lead.fullName}</Td>
                   <Td>{lead.email}</Td>
                   <Td>{lead.mobile}</Td>
-                  <Td>{lead.leadStatus}</Td>
+
+                  {/* 🔥 STATUS BADGE */}
+                  <Td>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                        leadStatusStyles[lead.leadStatus] ||
+                        "bg-gray-100 text-gray-700 border-gray-200"
+                      }`}
+                    >
+                      {lead.leadStatus}
+                    </span>
+                  </Td>
+
                   <Td>{lead.leadSource}</Td>
+
                   <Td>
                     {new Date(
                       lead.createdAt
@@ -198,7 +222,6 @@ const LeadTable = ({
             }
           />
 
-          {/* 🔥 DELETE LEAD */}
           <MenuItem
             label="Delete Lead"
             danger
@@ -207,7 +230,7 @@ const LeadTable = ({
         </div>
       )}
 
-      {/* ================= CONFIRM DELETE MODAL ================= */}
+      {/* ================= CONFIRM DELETE ================= */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
@@ -255,7 +278,7 @@ const LeadTable = ({
 
 export default LeadTable;
 
-/* ---------- Helpers ---------- */
+/* ===================== HELPERS ===================== */
 
 const Th = ({ children, className = "" }: any) => (
   <th
