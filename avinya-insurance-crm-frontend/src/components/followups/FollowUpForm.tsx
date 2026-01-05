@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { createFollowUpApi } from "../../api/leadFollowUp.api";
 
 interface Props {
@@ -14,9 +14,20 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // refs to open date picker when clicking container
   const followUpRef = useRef<HTMLInputElement>(null);
   const nextFollowUpRef = useRef<HTMLInputElement>(null);
+
+  /* ---------------- AUTO FIX INVALID NEXT DATE ---------------- */
+
+  useEffect(() => {
+    if (
+      followUpDate &&
+      nextFollowUpDate &&
+      new Date(nextFollowUpDate) <= new Date(followUpDate)
+    ) {
+      setNextFollowUpDate("");
+    }
+  }, [followUpDate]);
 
   /* ---------------- VALIDATION ---------------- */
 
@@ -29,6 +40,16 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
 
     if (!nextFollowUpDate) {
       e.nextFollowUpDate = "Next follow up date is required";
+    }
+
+    if (followUpDate && nextFollowUpDate) {
+      const followUp = new Date(followUpDate);
+      const nextFollowUp = new Date(nextFollowUpDate);
+
+      if (followUp >= nextFollowUp) {
+        e.nextFollowUpDate =
+          "Next follow up date must be after follow up date";
+      }
     }
 
     if (!remark.trim()) {
@@ -103,6 +124,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
           <input
             ref={nextFollowUpRef}
             type="datetime-local"
+            min={followUpDate || undefined} // 🔥 disables earlier dates
             className={`input w-full ${
               errors.nextFollowUpDate ? "border-red-500" : ""
             }`}

@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 import type { Customer } from "../../interfaces/customer.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { useDeleteCustomer } from "../../hooks/customer/useDeleteCustomer";
 import TableSkeleton from "../common/TableSkeleton";
 
-const DROPDOWN_HEIGHT = 80;
+const DROPDOWN_HEIGHT = 120;
 const DROPDOWN_WIDTH = 180;
 
 interface CustomerTableProps {
@@ -13,8 +14,8 @@ interface CustomerTableProps {
   onEdit: (customer: Customer) => void;
   onAddPolicy: (customer: Customer) => void;
 
-  onRowClick?: (customer: Customer) => void;        // single click
-  onRowDoubleClick?: (customer: Customer) => void; // double click
+  onRowClick?: (customer: Customer) => void;
+  onRowDoubleClick?: (customer: Customer) => void;
 }
 
 let clickTimer: any = null;
@@ -30,21 +31,25 @@ const CustomerTable = ({
   const [openCustomer, setOpenCustomer] =
     useState<Customer | null>(null);
 
+  const [confirmDelete, setConfirmDelete] =
+    useState<Customer | null>(null);
+
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => setOpenCustomer(null));
 
+  const { mutate: deleteCustomer, isPending } =
+    useDeleteCustomer();
+
   /* ================= ROW CLICK HANDLER ================= */
 
   const handleRowClick = (customer: Customer) => {
     if (clickTimer) {
-      // DOUBLE CLICK
       clearTimeout(clickTimer);
       clickTimer = null;
       onRowDoubleClick?.(customer);
     } else {
-      // SINGLE CLICK
       clickTimer = setTimeout(() => {
         onRowClick?.(customer);
         clickTimer = null;
@@ -58,7 +63,7 @@ const CustomerTable = ({
     e: React.MouseEvent<HTMLButtonElement>,
     customer: Customer
   ) => {
-    e.stopPropagation(); // 🚫 prevent row click
+    e.stopPropagation();
 
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
@@ -89,6 +94,17 @@ const CustomerTable = ({
     setTimeout(() => onAddPolicy(c), 0);
   };
 
+  const handleDelete = () => {
+    if (!confirmDelete) return;
+
+    deleteCustomer(confirmDelete.customerId, {
+      onSuccess: () => {
+        setConfirmDelete(null);
+        setOpenCustomer(null);
+      },
+    });
+  };
+
   /* ================= UI ================= */
 
   return (
@@ -104,7 +120,6 @@ const CustomerTable = ({
           </tr>
         </thead>
 
-        {/* ================= BODY ================= */}
         {loading ? (
           <TableSkeleton rows={6} columns={5} />
         ) : (
@@ -155,6 +170,55 @@ const CustomerTable = ({
         >
           <MenuItem label="Edit Customer" onClick={handleEdit} />
           <MenuItem label="Add Policy" onClick={handleAddPolicy} />
+
+          <MenuItem
+            label="Delete Customer"
+            danger
+            onClick={() => setConfirmDelete(openCustomer)}
+          />
+        </div>
+      )}
+
+      {/* ================= CONFIRM DELETE MODAL ================= */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                Delete Customer
+              </h3>
+              <button
+                onClick={() => setConfirmDelete(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this customer?
+              <br />
+              <span className="text-red-600 font-medium">
+                This action cannot be undone.
+              </span>
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 border rounded hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                disabled={isPending}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                {isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -178,14 +242,21 @@ const Td = ({ children }: any) => (
 const MenuItem = ({
   label,
   onClick,
+  danger = false,
 }: {
   label: string;
   onClick: () => void;
+  danger?: boolean;
 }) => (
   <button
     onClick={onClick}
-    className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100"
+    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-100 ${
+      danger
+        ? "text-red-600 hover:bg-red-50"
+        : ""
+    }`}
   >
+    {danger && <X size={14} />}
     {label}
   </button>
 );

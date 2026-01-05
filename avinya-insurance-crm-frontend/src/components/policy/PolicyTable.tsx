@@ -1,15 +1,16 @@
 import { useState, useRef } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 import type { Policy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
 import TableSkeleton from "../common/TableSkeleton";
 
-const DROPDOWN_HEIGHT = 48;
+const DROPDOWN_HEIGHT = 120;
 const DROPDOWN_WIDTH = 180;
 
 interface Props {
   data: Policy[];
-  loading?: boolean; // ✅ NEW
+  loading?: boolean;
   onEdit: (policy: Policy) => void;
 }
 
@@ -21,6 +22,9 @@ const PolicyTable = ({
   const [openPolicy, setOpenPolicy] =
     useState<Policy | null>(null);
 
+  const [confirmDelete, setConfirmDelete] =
+    useState<Policy | null>(null);
+
   const [style, setStyle] = useState({
     top: 0,
     left: 0,
@@ -28,6 +32,9 @@ const PolicyTable = ({
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => setOpenPolicy(null));
+
+  const { mutate: deletePolicy, isPending } =
+    useDeletePolicy();
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -50,28 +57,51 @@ const PolicyTable = ({
     setOpenPolicy(policy);
   };
 
+  const handleEdit = () => {
+    if (!openPolicy) return;
+    const p = openPolicy;
+    setOpenPolicy(null);
+    setTimeout(() => onEdit(p), 0);
+  };
+
+  const handleDelete = () => {
+    if (!confirmDelete) return;
+
+    deletePolicy(confirmDelete.policyId, {
+      onSuccess: () => {
+        setConfirmDelete(null);
+        setOpenPolicy(null);
+      },
+    });
+  };
+
   return (
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
-            <Th>Policy No</Th>
+            {/* <Th>Policy No</Th> */}
+            <Th>Policy Type</Th>
+            <Th>Insurer</Th>
+            <Th>Product</Th>
+            <Th>Policy Status</Th>
             <Th>Start</Th>
             <Th>End</Th>
-            <Th>Premium</Th>
+            <Th>Net Premium</Th>
+            <Th>Gross Premium</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
         {/* ================= BODY ================= */}
         {loading ? (
-          <TableSkeleton rows={6} columns={5} />
+          <TableSkeleton rows={6} columns={9} />
         ) : (
           <tbody>
             {data.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={10}
                   className="text-center py-12 text-slate-500"
                 >
                   No policies found
@@ -83,9 +113,14 @@ const PolicyTable = ({
                   key={p.policyId}
                   className="border-t h-[52px] hover:bg-slate-50"
                 >
-                  <Td>{p.policyNumber}</Td>
+                  {/* <Td>{p.policyNumber}</Td> */}
+                  <Td>{p.policyTypeName}</Td>
+                  <Td>{p.insurerName}</Td>
+                  <Td>{p.productName}</Td>
+                  <Td>{p.policyStatusName}</Td>
                   <Td>{p.startDate?.split("T")[0]}</Td>
                   <Td>{p.endDate?.split("T")[0]}</Td>
+                  <Td>{p.premiumNet}</Td>
                   <Td>{p.premiumGross}</Td>
 
                   <Td className="text-center">
@@ -109,15 +144,58 @@ const PolicyTable = ({
           ref={dropdownRef}
           className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg"
           style={style}
+          onClick={(e) => e.stopPropagation()}
         >
+          <MenuItem label="Edit Policy" onClick={handleEdit} />
+
           <MenuItem
-            label="Edit Policy"
-            onClick={() => {
-              const p = openPolicy;
-              setOpenPolicy(null);
-              setTimeout(() => onEdit(p), 0);
-            }}
+            label="Delete Policy"
+            danger
+            onClick={() => setConfirmDelete(openPolicy)}
           />
+        </div>
+      )}
+
+      {/* ================= CONFIRM DELETE MODAL ================= */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                Delete Policy
+              </h3>
+              <button
+                onClick={() => setConfirmDelete(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this policy?
+              <br />
+              <span className="text-red-600 font-medium">
+                This action cannot be undone.
+              </span>
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 border rounded hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                disabled={isPending}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                {isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -141,14 +219,21 @@ const Td = ({ children }: any) => (
 const MenuItem = ({
   label,
   onClick,
+  danger = false,
 }: {
   label: string;
   onClick: () => void;
+  danger?: boolean;
 }) => (
   <button
     onClick={onClick}
-    className="w-full text-left px-4 py-2 text-sm hover:bg-slate-100"
+    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-100 ${
+      danger
+        ? "text-red-600 hover:bg-red-50"
+        : ""
+    }`}
   >
+    {danger && <X size={14} />}
     {label}
   </button>
 );

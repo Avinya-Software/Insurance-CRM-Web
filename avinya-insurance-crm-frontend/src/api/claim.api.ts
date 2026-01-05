@@ -81,3 +81,14 @@ export const deleteClaimDocumentApi = async (
   );
   return res.data;
 };
+
+/* ================= DELETE CLAIM (BY ID) ================= */
+
+export const deleteClaimApi = async (
+  claimId: string
+) => {
+  const res = await api.delete(
+    `/claim/${claimId}`
+  );
+  return res.data;
+};

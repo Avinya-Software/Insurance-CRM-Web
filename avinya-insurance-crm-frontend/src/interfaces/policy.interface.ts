@@ -9,7 +9,11 @@ export interface Policy {
 
   policyNumber: string;
   registrationNo?: string;
-
+  policyTypeName?:string;
+  insurerName?:string;
+  productName?:string;
+  policyStatusName?:string;
+  
   startDate: string;
   endDate: string;
 

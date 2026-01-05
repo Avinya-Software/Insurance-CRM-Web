@@ -181,7 +181,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
       />
 
       {/* SHEET */}
-      <div className="fixed top-0 right-0 h-screen w-[480px] bg-white z-[70] shadow-2xl flex flex-col">
+      <div className="fixed top-0 right-0 h-screen w-[480px] bg-white z-[70] shadow-2xl flex flex-col animate-slideInRight">
         {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-lg">

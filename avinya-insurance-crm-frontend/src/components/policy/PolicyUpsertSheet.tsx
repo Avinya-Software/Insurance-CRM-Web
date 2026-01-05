@@ -147,6 +147,7 @@ const PolicyUpsertSheet = ({
   const validate = () => {
     const e: Record<string, string> = {};
 
+    // Required field validation
     if (!form.customerId) e.customerId = "Customer is required";
     if (!form.insurerId) e.insurerId = "Insurer is required";
     if (!form.productId) e.productId = "Product is required";
@@ -156,6 +157,37 @@ const PolicyUpsertSheet = ({
       e.registrationNo = "Registration no is required";
     if (!form.startDate) e.startDate = "Start date is required";
     if (!form.endDate) e.endDate = "End date is required";
+
+    // Date validation business rules
+    if (form.startDate && form.endDate) {
+      const startDate = new Date(form.startDate);
+      const endDate = new Date(form.endDate);
+
+      // Rule 1: End Date must be on or after Start Date
+      if (endDate < startDate) {
+        e.endDate = "End date cannot be before start date";
+      }
+    }
+
+    if (form.startDate && form.paymentDueDate) {
+      const startDate = new Date(form.startDate);
+      const paymentDueDate = new Date(form.paymentDueDate);
+
+      // Rule 2: Payment Due Date must be on or after Start Date
+      if (paymentDueDate < startDate) {
+        e.paymentDueDate = "Payment due date cannot be before start date";
+      }
+    }
+
+    if (form.endDate && form.renewalDate) {
+      const endDate = new Date(form.endDate);
+      const renewalDate = new Date(form.renewalDate);
+
+      // Rule 3: Renewal Date must be on or after End Date
+      if (renewalDate < endDate) {
+        e.renewalDate = "Renewal date cannot be before end date";
+      }
+    }
 
     setErrors(e);
 
@@ -205,7 +237,7 @@ const PolicyUpsertSheet = ({
       />
 
       {/* SHEET */}
-      <div className="fixed top-0 right-0 w-[420px] h-screen bg-white z-[70] shadow-2xl flex flex-col">
+      <div className="fixed top-0 right-0 w-[420px] h-screen bg-white z-[70] shadow-2xl flex flex-col animate-slideInRight">
         {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-lg">
@@ -321,6 +353,7 @@ const PolicyUpsertSheet = ({
                 required
                 value={form.endDate}
                 error={errors.endDate}
+                min={form.startDate}
                 onChange={(v) => setForm({ ...form, endDate: v })}
               />
 
@@ -358,6 +391,8 @@ const PolicyUpsertSheet = ({
                 type="date"
                 label="Payment Due Date"
                 value={form.paymentDueDate}
+                error={errors.paymentDueDate}
+                min={form.startDate}
                 onChange={(v) => setForm({ ...form, paymentDueDate: v })}
               />
 
@@ -365,6 +400,8 @@ const PolicyUpsertSheet = ({
                 type="date"
                 label="Renewal Date"
                 value={form.renewalDate}
+                error={errors.renewalDate}
+                min={form.endDate}
                 onChange={(v) => setForm({ ...form, renewalDate: v })}
               />
 
@@ -496,6 +533,7 @@ const Input = ({
   value,
   error,
   type = "text",
+  min,
   onChange,
 }: any) => (
   <div>
@@ -504,6 +542,7 @@ const Input = ({
     </label>
     <input
       type={type}
+      min={min}
       className={`input w-full ${error ? "border-red-500" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}

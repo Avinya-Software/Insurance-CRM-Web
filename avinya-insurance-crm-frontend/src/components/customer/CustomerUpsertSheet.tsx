@@ -95,6 +95,18 @@ const CustomerUpsertSheet = ({
     setErrors({});
   }, [open, customer, leadId]);
 
+  /* ---------------- AUTO CLEAR INVALID ANNIVERSARY ---------------- */
+
+  useEffect(() => {
+    if (
+      form.dob &&
+      form.anniversary &&
+      new Date(form.anniversary) <= new Date(form.dob)
+    ) {
+      setForm((prev) => ({ ...prev, anniversary: "" }));
+    }
+  }, [form.dob]);
+
   /* ---------------- VALIDATION ---------------- */
 
   const validate = () => {
@@ -114,6 +126,16 @@ const CustomerUpsertSheet = ({
       e.email = "Email is required";
     else if (!emailRegex.test(form.email))
       e.email = "Invalid email address";
+
+    if (form.dob && form.anniversary) {
+      const dob = new Date(form.dob);
+      const anniversary = new Date(form.anniversary);
+
+      if (anniversary <= dob) {
+        e.anniversary =
+          "Anniversary date must be after date of birth";
+      }
+    }
 
     setErrors(e);
 
@@ -161,7 +183,7 @@ const CustomerUpsertSheet = ({
       />
 
       {/* SHEET */}
-      <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl flex flex-col">
+      <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl flex flex-col animate-slideInRight">
         {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between">
           <h2 className="font-semibold">
@@ -174,42 +196,66 @@ const CustomerUpsertSheet = ({
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          <Input label="Full Name" required value={form.fullName}
+          <Input
+            label="Full Name"
+            required
+            value={form.fullName}
             error={errors.fullName}
             onChange={(v) => setForm({ ...form, fullName: v })}
           />
 
-          <Input label="Primary Mobile" required value={form.primaryMobile}
+          <Input
+            label="Primary Mobile"
+            required
+            value={form.primaryMobile}
             error={errors.primaryMobile}
-            onChange={(v) => setForm({ ...form, primaryMobile: v })}
+            onChange={(v) =>
+              setForm({ ...form, primaryMobile: v })
+            }
           />
 
-          <Input label="Secondary Mobile"
+          <Input
+            label="Secondary Mobile"
             value={form.secondaryMobile}
-            onChange={(v) => setForm({ ...form, secondaryMobile: v })}
+            onChange={(v) =>
+              setForm({ ...form, secondaryMobile: v })
+            }
           />
 
-          <Input label="Email" required value={form.email}
+          <Input
+            label="Email"
+            required
+            value={form.email}
             error={errors.email}
             onChange={(v) => setForm({ ...form, email: v })}
           />
 
-          <Input label="Address"
+          <Input
+            label="Address"
             value={form.address}
             onChange={(v) => setForm({ ...form, address: v })}
           />
 
-          <Input label="Date of Birth" type="date"
+          <Input
+            label="Date of Birth"
+            type="date"
             value={form.dob}
             onChange={(v) => setForm({ ...form, dob: v })}
           />
 
-          <Input label="Anniversary" type="date"
+          <Input
+            label="Anniversary"
+            type="date"
             value={form.anniversary}
-            onChange={(v) => setForm({ ...form, anniversary: v })}
+            error={errors.anniversary}
+            min={form.dob || undefined}
+            onChange={(v) =>
+              setForm({ ...form, anniversary: v })
+            }
           />
 
-          <Textarea label="Notes"
+          <Textarea
+            label="Notes"
             value={form.notes}
             onChange={(v) => setForm({ ...form, notes: v })}
           />
@@ -244,7 +290,10 @@ const CustomerUpsertSheet = ({
 
                         <button
                           onClick={() =>
-                            download(customer.customerId, documentId)
+                            download(
+                              customer.customerId,
+                              documentId
+                            )
                           }
                           className="p-1 hover:bg-gray-100 rounded"
                         >
@@ -253,11 +302,19 @@ const CustomerUpsertSheet = ({
 
                         <button
                           onClick={async () => {
-                            if (!confirm("Delete this document?")) return;
+                            if (
+                              !confirm("Delete this document?")
+                            )
+                              return;
                             try {
-                              await remove(customer.customerId, documentId);
+                              await remove(
+                                customer.customerId,
+                                documentId
+                              );
                             } catch {
-                              toast.error("Failed to delete document");
+                              toast.error(
+                                "Failed to delete document"
+                              );
                             }
                           }}
                           className="p-1 hover:bg-red-100 text-red-600 rounded"
@@ -283,7 +340,9 @@ const CustomerUpsertSheet = ({
               accept=".pdf,.jpg,.png"
               onChange={(e) =>
                 setKycFiles(
-                  e.target.files ? Array.from(e.target.files) : []
+                  e.target.files
+                    ? Array.from(e.target.files)
+                    : []
                 )
               }
               className="block mt-1 text-sm"
@@ -326,6 +385,7 @@ const Input = ({
   value,
   error,
   type = "text",
+  min,
   onChange,
 }: any) => (
   <div>
@@ -334,6 +394,7 @@ const Input = ({
     </label>
     <input
       type={type}
+      min={min}
       className={`input w-full ${error ? "border-red-500" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}

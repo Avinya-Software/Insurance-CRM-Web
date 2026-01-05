@@ -71,12 +71,26 @@ export const downloadKycFileApi = (
 ) => {
   return `${api.defaults.baseURL}/Customer/${customerId}/kyc/${documentId}/download`;
 };
+
+/* ================= KYC DELETE ================= */
+
 export const deleteKycFileApi = async (
   customerId: string,
   documentId: string
 ) => {
   const res = await api.delete(
     `/Customer/${customerId}/kyc/${documentId}`
+  );
+  return res.data;
+};
+
+/* ================= DELETE CUSTOMER (BY ID) ================= */
+
+export const deleteCustomerApi = async (
+  customerId: string
+) => {
+  const res = await api.delete(
+    `/Customer/${customerId}`
   );
   return res.data;
 };

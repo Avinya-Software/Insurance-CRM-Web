@@ -72,3 +72,14 @@ export const deletePolicyDocumentApi = async (
   );
   return res.data;
 };
+
+/* ================= DELETE POLICY (BY ID) ================= */
+
+export const deletePolicyApi = async (
+  policyId: string
+) => {
+  const res = await api.delete(
+    `/policy/${policyId}`
+  );
+  return res.data;
+};

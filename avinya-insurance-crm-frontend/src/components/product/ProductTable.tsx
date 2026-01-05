@@ -1,16 +1,17 @@
 import { useState, useRef, useMemo } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 import type { Product } from "../../interfaces/product.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useInsurerDropdown } from "../../hooks/insurer/useInsurerDropdown";
+import { useDeleteProduct } from "../../hooks/product/useDeleteProduct";
 import TableSkeleton from "../common/TableSkeleton";
 
-const DROPDOWN_HEIGHT = 80;
+const DROPDOWN_HEIGHT = 120;
 const DROPDOWN_WIDTH = 180;
 
 interface Props {
   data: Product[];
-  loading?: boolean; // ✅ NEW
+  loading?: boolean;
   onEdit: (product: Product) => void;
 }
 
@@ -21,10 +22,18 @@ const ProductTable = ({
 }: Props) => {
   const [openProduct, setOpenProduct] =
     useState<Product | null>(null);
+
+  const [confirmDelete, setConfirmDelete] =
+    useState<Product | null>(null);
+
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => setOpenProduct(null));
+
+  /* 🔥 DELETE PRODUCT */
+  const { mutate: deleteProduct, isPending } =
+    useDeleteProduct();
 
   /* 🔥 INSURER DROPDOWN */
   const { data: insurers } = useInsurerDropdown();
@@ -58,6 +67,17 @@ const ProductTable = ({
     const p = openProduct;
     setOpenProduct(null);
     setTimeout(() => onEdit(p), 0);
+  };
+
+  const handleDelete = () => {
+    if (!confirmDelete) return;
+
+    deleteProduct(confirmDelete.productId, {
+      onSuccess: () => {
+        setConfirmDelete(null);
+        setOpenProduct(null);
+      },
+    });
   };
 
   return (
@@ -119,10 +139,60 @@ const ProductTable = ({
       {openProduct && (
         <div
           ref={dropdownRef}
-          className="fixed z-50 w-[180px] bg-white border rounded shadow"
+          className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg"
           style={style}
+          onClick={(e) => e.stopPropagation()}
         >
           <MenuItem label="Edit Product" onClick={handleEdit} />
+
+          <MenuItem
+            label="Delete Product"
+            danger
+            onClick={() => setConfirmDelete(openProduct)}
+          />
+        </div>
+      )}
+
+      {/* ================= CONFIRM DELETE MODAL ================= */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">
+                Delete Product
+              </h3>
+              <button
+                onClick={() => setConfirmDelete(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this product?
+              <br />
+              <span className="text-red-600 font-medium">
+                This action cannot be undone.
+              </span>
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 border rounded hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                disabled={isPending}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                {isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -143,11 +213,24 @@ const Td = ({ children }: any) => (
   <td className="px-4 py-3">{children}</td>
 );
 
-const MenuItem = ({ label, onClick }: any) => (
+const MenuItem = ({
+  label,
+  onClick,
+  danger = false,
+}: {
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) => (
   <button
     onClick={onClick}
-    className="w-full text-left px-4 py-2 hover:bg-slate-100"
+    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-100 ${
+      danger
+        ? "text-red-600 hover:bg-red-50"
+        : ""
+    }`}
   >
+    {danger && <X size={14} />}
     {label}
   </button>
 );
