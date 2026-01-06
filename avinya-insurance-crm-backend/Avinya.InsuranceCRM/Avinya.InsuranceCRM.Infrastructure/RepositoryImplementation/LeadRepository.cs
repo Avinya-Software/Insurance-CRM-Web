@@ -1,16 +1,19 @@
 ﻿using Avinya.InsuranceCRM.API.ResponseModels;
 using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 
 public class LeadRepository : ILeadRepository
 {
     private readonly AppDbContext _context;
+    private readonly IEmailService _emailService;
 
-    public LeadRepository(AppDbContext context)
+    public LeadRepository(AppDbContext context, IEmailService emailService  )
     {
         _context = context;
+        _emailService = emailService;
     }
 
     public async Task<Lead?> GetByIdAsync(Guid leadId)
@@ -121,6 +124,20 @@ public class LeadRepository : ILeadRepository
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+        //if (
+        //    Guid.TryParse("F3439CBF-8834-46D7-8837-B878B086CFF3", out var customerId) &&
+        //    Guid.TryParse("7311C444-0FAC-4946-A426-10BF611F192E", out var policyId)
+        //)
+        //{
+        //    await _emailService.SendRenewalReminderAsync(
+        //        customerId,
+        //        policyId,
+        //        DateTime.UtcNow.AddDays(7),
+        //        7,
+        //        10000
+        //    );
+        //}
+
 
         return new PagedRecordResult<Lead>
         {

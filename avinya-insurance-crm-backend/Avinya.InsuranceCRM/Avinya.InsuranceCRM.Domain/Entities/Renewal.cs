@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using Avinya.InsuranceCRM.Domain.ValueObjects;
 
 namespace Avinya.InsuranceCRM.Domain.Entities
 {
@@ -15,6 +16,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public CustomerPolicy Policy { get; set; } = null!;
 
         public Guid CustomerId { get; set; }
+
         [ValidateNever]
         public Customer Customer { get; set; } = null!;
 
@@ -25,13 +27,13 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public string ReminderDatesJson { get; set; } = null!;
 
         /// <summary>
-        /// Stores reminder logs:
-        /// [{ channel, timestamp, status }]
+        /// Stores reminder logs as JSON
         /// </summary>
-        public string? ReminderLog { get; set; }
+        public string? ReminderLog { get; private set; }
 
         // ---------------- STATUS ----------------
         public int RenewalStatusId { get; set; }
+
         [ValidateNever]
         public RenewalStatusMaster RenewalStatus { get; set; } = null!;
 
@@ -44,6 +46,41 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         // ---------------- AUDIT ----------------
         [ValidateNever]
         public string CreatedBy { get; set; } = null!;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        /* ================= DOMAIN METHODS ================= */
+
+        public List<ReminderLogItem> GetReminderLogs()
+        {
+            if (string.IsNullOrWhiteSpace(ReminderLog))
+                return new List<ReminderLogItem>();
+
+            return JsonSerializer.Deserialize<List<ReminderLogItem>>(ReminderLog)
+                   ?? new List<ReminderLogItem>();
+        }
+
+        public bool HasReminderBeenSent(int daysBefore)
+        {
+            return GetReminderLogs()
+                .Any(x => x.DaysBefore == daysBefore);
+        }
+
+        public void AddReminderLog(int daysBefore, string channel = "Email")
+        {
+            var logs = GetReminderLogs();
+
+            if (logs.Any(x => x.DaysBefore == daysBefore))
+                return; // prevent duplicates
+
+            logs.Add(new ReminderLogItem
+            {
+                DaysBefore = daysBefore,
+                SentOn = DateTime.UtcNow,
+                Channel = channel
+            });
+
+            ReminderLog = JsonSerializer.Serialize(logs);
+        }
     }
 }

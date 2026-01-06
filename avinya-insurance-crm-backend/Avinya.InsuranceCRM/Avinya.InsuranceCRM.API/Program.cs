@@ -1,8 +1,11 @@
 ﻿using Avinya.InsuranceCRM.API.Middleware;
 using Avinya.InsuranceCRM.API.Seeders;
+using Avinya.InsuranceCRM.Infrastructure.Email;
 using Avinya.InsuranceCRM.Infrastructure.Persistence;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
+using Avinya.InsuranceCRM.Infrastructure.Workers;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -150,6 +153,10 @@ builder.Services.AddScoped<ICustomerPolicyRepository, CustomerPolicyRepository>(
 builder.Services.AddScoped<ILeadFollowUpRepository, LeadFollowUpRepository>();
 builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
 builder.Services.AddScoped<IRenewalRepository, RenewalRepository>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.Configure<SmtpSettings>(
+    builder.Configuration.GetSection("Smtp"));
+builder.Services.AddHostedService<RenewalReminderWorker>();
 #endregion
 
 #region SWAGGER

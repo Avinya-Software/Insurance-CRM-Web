@@ -44,7 +44,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             entity.RenewalPremium = renewal.RenewalPremium;
             entity.RenewalStatusId = renewal.RenewalStatusId;
             entity.ReminderDatesJson = renewal.ReminderDatesJson;
-            entity.ReminderLog = renewal.ReminderLog;
 
             await _context.SaveChangesAsync();
             return entity;

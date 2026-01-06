@@ -9,10 +9,10 @@ namespace Avinya.InsuranceCRM.API.Controllers
 {
     [ApiController]
     [Route("api/products")]
-	[Authorize]
-	public class ProductController : ControllerBase
+    [Authorize]
+    public class ProductController : ControllerBase
     {
-        private readonly IProductRepository _productRepository; 
+        private readonly IProductRepository _productRepository;
         private readonly ILogger<ProductController> _logger;
 
         public ProductController(

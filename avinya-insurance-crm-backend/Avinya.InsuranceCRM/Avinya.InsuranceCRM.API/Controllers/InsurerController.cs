@@ -9,8 +9,8 @@ namespace Avinya.InsuranceCRM.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-	[Authorize]
-	public class InsurerController : ControllerBase
+    [Authorize]
+    public class InsurerController : ControllerBase
     {
         private readonly IInsurerRepository _repo;
 
@@ -80,7 +80,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
         [HttpGet]
-        public async Task<IActionResult> GetPaged([FromQuery] int pageNumber = 1,[FromQuery] int pageSize = 10,[FromQuery] string? search = null)
+        public async Task<IActionResult> GetPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
         {
             var result = await _repo.GetPagedAsync(
                 pageNumber,
