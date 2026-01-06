@@ -4,9 +4,12 @@ import {
   Users,
   FileText,
   RefreshCcw,
+  Building2,
   AlertTriangle,
+  Package,
   Settings,
   Target,
+  Megaphone,
   LogOut,
 } from "lucide-react";
 
@@ -58,53 +61,61 @@ const Sidebar = () => {
           icon={<LayoutDashboard size={18} />}
           label="Dashboard"
         />
+
         <NavItem
           to="/leads"
           icon={<Target size={18} />}
           label="Leads"
         />
+
         <NavItem
           to="/customers"
           icon={<Users size={18} />}
           label="Customers"
         />
+
         <NavItem
           to="/insurer"
-          icon={<Users size={18} />}
+          icon={<Building2 size={18} />}
           label="Insurers"
         />
+
         <NavItem
           to="/policies"
           icon={<FileText size={18} />}
           label="Policies"
         />
+
         <NavItem
           to="/products"
-          icon={<FileText size={18} />}
+          icon={<Package size={18} />}
           label="Products"
         />
+
         <NavItem
           to="/claims"
           icon={<AlertTriangle size={18} />}
           label="Claims"
         />
-         <NavItem
-          to="/Campaign"
-          icon={<AlertTriangle size={18} />}
-          label="Campaign"
-        />
+
         <NavItem
           to="/renewals"
           icon={<RefreshCcw size={18} />}
           label="Renewals"
         />
+
+        <NavItem
+          to="/campaign"
+          icon={<Megaphone size={18} />}
+          label="Campaign"
+        />
+
         <NavItem
           to="/settings"
           icon={<Settings size={18} />}
           label="Settings"
         />
       </nav>
-
       {/* ---------- LOGOUT ---------- */}
       <button
         onClick={handleLogout}

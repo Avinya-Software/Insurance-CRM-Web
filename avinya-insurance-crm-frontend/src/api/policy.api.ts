@@ -83,3 +83,15 @@ export const deletePolicyApi = async (
   );
   return res.data;
 };
+export interface PolicyDropdownItem {
+  id: string;
+  policyNumber: string;
+  policyCode?: string | null;
+}
+
+export const getPolicyDropdownApi = async () => {
+  const res = await api.get<PolicyDropdownItem[]>(
+    "/policy/policy-dropdown"
+  );
+  return res.data;
+};

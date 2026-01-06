@@ -193,14 +193,14 @@ const LeadTable = ({
                   }
                 />
 
-                <MenuItem
+                {/* <MenuItem
                   label="Add Customer"
                   onClick={() =>
                     handleAction(() =>
                       onAddCustomer?.(openLead)
                     )
                   }
-                />
+                /> */}
 
                 <MenuItem
                   label="Create Follow Up"

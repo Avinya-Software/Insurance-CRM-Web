@@ -5,6 +5,7 @@ import { Filter } from "lucide-react";
 import { usePolicies } from "../hooks/policy/usePolicies";
 import PolicyTable from "../components/policy/PolicyTable";
 import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
+import RenewalUpsertSheet from "../components/renewal/RenewalUpsertSheet";
 import PolicyFilterSheet from "../components/policy/PolicyFilterSheet";
 import Pagination from "../components/leads/Pagination";
 
@@ -24,6 +25,11 @@ const Policies = () => {
 
   const [openPolicySheet, setOpenPolicySheet] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
+
+  // 🔥 RENEWAL STATE
+  const [openRenewalSheet, setOpenRenewalSheet] = useState(false);
+  const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
+
   const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
   const { data, isLoading, isFetching } = usePolicies(filters);
@@ -40,10 +46,29 @@ const Policies = () => {
     setOpenPolicySheet(true);
   };
 
+  // ✅ THIS WAS MISSING
+  const handleCreateRenewal = (policy: any) => {
+    setSelectedRenewal({
+      policyId: policy.policyId,
+      customerId: policy.customerId,
+      renewalDate: policy.renewalDate
+        ? policy.renewalDate.split("T")[0]
+        : "",
+    });
+
+    setOpenRenewalSheet(true);
+  };
+
   const handlePolicySuccess = () => {
     setOpenPolicySheet(false);
     setSelectedPolicy(null);
     toast.success("Policy saved successfully!");
+  };
+
+  const handleRenewalSuccess = () => {
+    setOpenRenewalSheet(false);
+    setSelectedRenewal(null);
+    toast.success("Renewal saved successfully!");
   };
 
   const handleClearFilters = () => {
@@ -62,7 +87,7 @@ const Policies = () => {
 
   return (
     <>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="top-right" />
 
       <div className="bg-white rounded-lg border">
         {/* ================= HEADER ================= */}
@@ -123,8 +148,9 @@ const Policies = () => {
         {/* ================= TABLE ================= */}
         <PolicyTable
           data={data?.data ?? []}
-          loading={isLoading || isFetching} // ✅ IMPORTANT
+          loading={isLoading || isFetching}
           onEdit={handleEditPolicy}
+          onRenewal={handleCreateRenewal} // 🔥 CONNECTED
         />
 
         {/* ================= PAGINATION ================= */}
@@ -151,7 +177,7 @@ const Policies = () => {
         onClear={handleClearFilters}
       />
 
-      {/* ================= UPSERT SHEET ================= */}
+      {/* ================= POLICY UPSERT ================= */}
       <PolicyUpsertSheet
         open={openPolicySheet}
         policy={selectedPolicy}
@@ -160,6 +186,17 @@ const Policies = () => {
           setSelectedPolicy(null);
         }}
         onSuccess={handlePolicySuccess}
+      />
+
+      {/* ================= RENEWAL UPSERT ================= */}
+      <RenewalUpsertSheet
+        open={openRenewalSheet}
+        renewal={selectedRenewal}
+        onClose={() => {
+          setOpenRenewalSheet(false);
+          setSelectedRenewal(null);
+        }}
+        onSuccess={handleRenewalSuccess}
       />
     </>
   );

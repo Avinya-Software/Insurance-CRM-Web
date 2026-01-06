@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { MoreVertical, X } from "lucide-react";
+import { MoreVertical, X, RefreshCcw } from "lucide-react";
 import type { Policy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
@@ -22,13 +22,14 @@ const policyStatusStyles: Record<string, string> = {
 
 /* ===================== CONSTANTS ===================== */
 
-const DROPDOWN_HEIGHT = 120;
+const DROPDOWN_HEIGHT = 160;
 const DROPDOWN_WIDTH = 180;
 
 interface Props {
   data: Policy[];
   loading?: boolean;
   onEdit: (policy: Policy) => void;
+  onRenewal: (policy: Policy) => void; // 🔥 NEW
 }
 
 /* ===================== COMPONENT ===================== */
@@ -37,6 +38,7 @@ const PolicyTable = ({
   data = [],
   loading = false,
   onEdit,
+  onRenewal,
 }: Props) => {
   const [openPolicy, setOpenPolicy] = useState<Policy | null>(null);
   const [confirmDelete, setConfirmDelete] =
@@ -78,6 +80,13 @@ const PolicyTable = ({
     setTimeout(() => onEdit(p), 0);
   };
 
+  const handleRenewal = () => {
+    if (!openPolicy) return;
+    const p = openPolicy;
+    setOpenPolicy(null);
+    setTimeout(() => onRenewal(p), 0);
+  };
+
   const handleDelete = () => {
     if (!confirmDelete) return;
 
@@ -94,7 +103,7 @@ const PolicyTable = ({
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
-            <Th>Policy Number</Th>           
+            <Th>Policy Number</Th>
             <Th>Policy Type</Th>
             <Th>Insurer</Th>
             <Th>Product</Th>
@@ -128,7 +137,8 @@ const PolicyTable = ({
                   className="border-t h-[52px] hover:bg-slate-50"
                 >
                   <Td>{p.policyNumber}</Td>
-                  {/* 🔥 POLICY TYPE BADGE */}
+
+                  {/* POLICY TYPE */}
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -143,7 +153,7 @@ const PolicyTable = ({
                   <Td>{p.insurerName}</Td>
                   <Td>{p.productName}</Td>
 
-                  {/* 🔥 POLICY STATUS BADGE */}
+                  {/* POLICY STATUS */}
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -184,6 +194,13 @@ const PolicyTable = ({
           onClick={(e) => e.stopPropagation()}
         >
           <MenuItem label="Edit Policy" onClick={handleEdit} />
+
+          <MenuItem
+            label="Create Renewal"
+            icon={<RefreshCcw size={14} />}
+            onClick={handleRenewal}
+          />
+
           <MenuItem
             label="Delete Policy"
             danger
@@ -200,9 +217,7 @@ const PolicyTable = ({
               <h3 className="text-lg font-semibold">
                 Delete Policy
               </h3>
-              <button
-                onClick={() => setConfirmDelete(null)}
-              >
+              <button onClick={() => setConfirmDelete(null)}>
                 <X size={18} />
               </button>
             </div>
@@ -255,21 +270,21 @@ const Td = ({ children }: any) => (
 const MenuItem = ({
   label,
   onClick,
+  icon,
   danger = false,
 }: {
   label: string;
   onClick: () => void;
+  icon?: React.ReactNode;
   danger?: boolean;
 }) => (
   <button
     onClick={onClick}
     className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-100 ${
-      danger
-        ? "text-red-600 hover:bg-red-50"
-        : ""
+      danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
-    {danger && <X size={14} />}
+    {icon}
     {label}
   </button>
 );
