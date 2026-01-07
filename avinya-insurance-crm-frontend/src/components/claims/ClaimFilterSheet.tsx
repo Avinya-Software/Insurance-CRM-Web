@@ -41,7 +41,7 @@ const ClaimFilterSheet = ({
       ? {
           pageNumber: 1,
           pageSize: 100,
-          customerId: localFilters.customerId,
+          search: localFilters.customerId,
         }
       : { pageNumber: 1, pageSize: 100 }
   );

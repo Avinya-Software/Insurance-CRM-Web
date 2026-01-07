@@ -15,6 +15,5 @@ export const useCustomers = (
         pageSize,
         search,
       }),
-    keepPreviousData: true,
   });
 };

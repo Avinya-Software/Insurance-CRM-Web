@@ -10,6 +10,5 @@ export const useProducts = (filters: {
   return useQuery({
     queryKey: ["products", filters],
     queryFn: () => getProductsApi(filters),
-    keepPreviousData: true,
   });
 };

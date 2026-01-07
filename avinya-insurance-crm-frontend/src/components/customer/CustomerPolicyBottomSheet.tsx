@@ -21,7 +21,7 @@ const CustomerPolicyBottomSheet = ({
   const { data, isLoading, refetch } = usePolicies({
     pageNumber: 1,
     pageSize: 20,
-    customerId,
+    search: customerId || "",
   });
 
   useOutsideClick(sheetRef, () => {

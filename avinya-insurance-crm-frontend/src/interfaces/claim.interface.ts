@@ -4,13 +4,13 @@ export interface CreateClaimRequest {
   policyId: string;
   customerId: string;
 
-  claimTypeId: number;
-  claimStageId: number;
-  claimHandlerId: number;
+  claimTypeId: string;
+  claimStageId: string;
+  claimHandlerId: string;
 
   incidentDate: string; // yyyy-MM-dd
-  claimAmount: number;
-  approvedAmount?: number;
+  claimAmount: any;
+  approvedAmount?: any;
 
   tatDays: number;
   status?: string;

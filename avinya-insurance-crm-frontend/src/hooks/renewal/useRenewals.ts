@@ -12,6 +12,5 @@ export const useRenewals = (params: Params) => {
   return useQuery({
     queryKey: ["renewals", params],
     queryFn: () => getRenewalsApi(params),
-    keepPreviousData: true,
   });
 };

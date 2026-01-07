@@ -36,7 +36,7 @@ const PolicyUpsertSheet = ({
 
   /* ---------------- POLICY DOCUMENT ACTIONS ---------------- */
   const [existingDocuments, setExistingDocuments] = useState<string[]>([]);
-
+  const isLoading = false;
   const { preview, download, remove } = usePolicyDocumentActions(
     (deletedId) => {
       setExistingDocuments((prev) =>
@@ -72,7 +72,7 @@ const PolicyUpsertSheet = ({
 
   /* ---------------- API HOOKS ---------------- */
 
-  const { mutateAsync, isLoading } = useUpsertPolicy();
+  const { mutateAsync } = useUpsertPolicy();
 
   const { data: customers, isLoading: cLoading } = useCustomerDropdown();
   const { data: insurers, isLoading: iLoading } = useInsurerDropdown();

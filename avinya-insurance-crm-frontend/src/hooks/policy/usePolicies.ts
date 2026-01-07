@@ -11,6 +11,5 @@ export const usePolicies = (filters: PolicyFilters) => {
   return useQuery({
     queryKey: ["policies", filters],
     queryFn: () => getPoliciesApi(filters),
-    keepPreviousData: true,
   });
 };

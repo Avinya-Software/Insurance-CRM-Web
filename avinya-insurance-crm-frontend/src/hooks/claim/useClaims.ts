@@ -6,6 +6,5 @@ export const useClaims = (filters: ClaimFilters) => {
   return useQuery({
     queryKey: ["claims", filters],
     queryFn: () => getClaimsApi(filters),
-    keepPreviousData: true,
   });
 };

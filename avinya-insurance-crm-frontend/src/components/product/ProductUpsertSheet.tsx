@@ -31,12 +31,12 @@ const ProductUpsertSheet = ({
   onSuccess,
 }: Props) => {
   /* ---------------- API ---------------- */
-  const { mutateAsync, isLoading } = useUpsertProduct();
+  const { mutateAsync } = useUpsertProduct();
   const { data: categories, isLoading: catLoading } =
     useProductCategoryDropdown();
   const { data: insurers, isLoading: insurerLoading } =
     useInsurerDropdown();
-
+  const isLoading = catLoading || insurerLoading;
   const loadingDropdowns = catLoading || insurerLoading;
 
   /* ---------------- FORM STATE ---------------- */

@@ -97,7 +97,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
       ? {
           pageNumber: 1,
           pageSize: 100,
-          customerId: form.customerId,
+          search: form.customerId,
         }
       : { pageNumber: 1, pageSize: 100 }
   );
@@ -241,7 +241,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 onChange={(v) =>
                   setForm({
                     ...form,
-                    claimTypeId: Number(v),
+                    claimTypeId: (v),
                   })
                 }
               />
@@ -257,7 +257,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 onChange={(v) =>
                   setForm({
                     ...form,
-                    claimStageId: Number(v),
+                    claimStageId: (v),
                   })
                 }
               />
@@ -273,7 +273,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 onChange={(v) =>
                   setForm({
                     ...form,
-                    claimHandlerId: Number(v),
+                    claimHandlerId: (v),
                   })
                 }
               />
