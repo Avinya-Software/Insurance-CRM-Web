@@ -157,6 +157,9 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.Configure<SmtpSettings>(
     builder.Configuration.GetSection("Smtp"));
 builder.Services.AddHostedService<RenewalReminderWorker>();
+builder.Services.AddHostedService<CampaignWorker>();
+builder.Services.AddScoped<ICampaignEmailService, CampaignEmailService>();
+
 #endregion
 
 #region SWAGGER

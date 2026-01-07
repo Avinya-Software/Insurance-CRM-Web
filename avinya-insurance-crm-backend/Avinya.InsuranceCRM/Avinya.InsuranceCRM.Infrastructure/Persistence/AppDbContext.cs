@@ -29,6 +29,10 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ClaimHandlerMaster> ClaimHandlers => Set<ClaimHandlerMaster>();
     public DbSet<RenewalStatusMaster> RenewalStatuses => Set<RenewalStatusMaster>();
     public DbSet<Renewal> Renewals => Set<Renewal>();
+    public DbSet<Campaign> Campaigns => Set<Campaign>();
+    public DbSet<CampaignRule> CampaignRules => Set<CampaignRule>();
+    public DbSet<CampaignTemplate> CampaignTemplates => Set<CampaignTemplate>();
+    public DbSet<CampaignLog> CampaignLogs => Set<CampaignLog>();
 
     // ---------------- MODEL CONFIG ----------------
     protected override void OnModelCreating(ModelBuilder builder)
@@ -245,6 +249,61 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             entity.HasIndex(x => x.CustomerId);
             entity.HasIndex(x => x.RenewalStatusId);
             entity.HasIndex(x => x.RenewalDate);
+        });
+
+
+        builder.Entity<Campaign>(entity =>
+        {
+            entity.HasKey(x => x.CampaignId);
+
+            entity.Property(x => x.Name)
+                  .HasMaxLength(150)
+                  .IsRequired();
+
+            entity.Property(x => x.CampaignType)
+                  .HasMaxLength(50)
+                  .IsRequired();
+
+            entity.Property(x => x.Channel)
+                  .HasMaxLength(20)
+                  .IsRequired();
+
+            entity.Property(x => x.AdvisorId)
+                  .HasMaxLength(450)
+                  .IsRequired();
+
+            entity.Property(x => x.CreatedAt)
+                  .IsRequired();
+        });
+
+        builder.Entity<CampaignRule>(entity =>
+        {
+            entity.HasKey(x => x.CampaignRuleId);
+
+            entity.Property(x => x.RuleEntity).HasMaxLength(50);
+            entity.Property(x => x.RuleField).HasMaxLength(50);
+            entity.Property(x => x.Operator).HasMaxLength(20);
+            entity.Property(x => x.RuleValue).HasMaxLength(100);
+        });
+
+        builder.Entity<CampaignTemplate>(entity =>
+        {
+            entity.HasKey(x => x.TemplateId);
+
+            entity.Property(x => x.Subject)
+                  .HasMaxLength(200);
+
+            entity.Property(x => x.Channel)
+                  .HasMaxLength(20)
+                  .IsRequired();
+        });
+
+        builder.Entity<CampaignLog>(entity =>
+        {
+            entity.HasKey(x => x.CampaignLogId);
+
+            entity.HasIndex(x => new { x.CampaignId, x.CustomerId, x.TriggerDate })
+                  .IsUnique();
         });
 
         // ---------------- LEAD STATUS MASTER DATA ----------------
