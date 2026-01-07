@@ -111,7 +111,9 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                     FullName = x.FullName,
                     Email = x.Email,
                     DOB = x.DOB,
-                    Anniversary = x.Anniversary
+                    Anniversary = x.Anniversary,
+                    PrimaryMobile=x.PrimaryMobile,
+                    Address=x.Address
                 })
                 .ToListAsync();
         }

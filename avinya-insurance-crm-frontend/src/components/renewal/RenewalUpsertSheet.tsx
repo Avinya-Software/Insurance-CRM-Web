@@ -57,35 +57,45 @@ const RenewalUpsertSheet = ({
 
   /* ---------------- PREFILL ---------------- */
 
-  useEffect(() => {
-    if (!open) {
-      setForm(initialForm);
-      setErrors({});
-      return;
-    }
-
-    if (loadingDropdowns) return;
-
-    if (renewal) {
-      setForm({
-        renewalId: renewal.renewalId ?? null,
-        customerId: renewal.customerId || "",
-        policyId: renewal.policyId || "",
-        renewalStatusId: renewal.renewalStatusId ?? 0,
-        renewalDate: renewal.renewalDate
-          ? renewal.renewalDate.split("T")[0]
-          : "",
-        renewalPremium: renewal.renewalPremium ?? 0,
-        reminderDaysInput: renewal.reminderDatesJson
-          ? JSON.parse(renewal.reminderDatesJson).join(",")
-          : "90,60,30,15,7,1",
-      });
-    } else {
-      setForm(initialForm);
-    }
-
+useEffect(() => {
+  if (!open) {
+    setForm(initialForm);
     setErrors({});
-  }, [open, renewal, loadingDropdowns]);
+    return;
+  }
+
+  if (loadingDropdowns) return;
+
+  if (renewal) {
+    // 🔥 MAP STATUS NAME → STATUS ID
+    const mappedStatusId =
+      renewal.renewalStatusId ??
+      statuses?.find(
+        (s: any) =>
+          s.statusName?.toLowerCase() ===
+          renewal.status?.toLowerCase()
+      )?.renewalStatusId ??
+      0;
+
+    setForm({
+      renewalId: renewal.renewalId ?? null,
+      customerId: renewal.customerId || "",
+      policyId: renewal.policyId || "",
+      renewalStatusId: mappedStatusId,
+      renewalDate: renewal.renewalDate
+        ? renewal.renewalDate.split("T")[0]
+        : "",
+      renewalPremium: renewal.renewalPremium ?? 0,
+      reminderDaysInput: renewal.reminderDatesJson
+        ? JSON.parse(renewal.reminderDatesJson).join(",")
+        : "90,60,30,15,7,1",
+    });
+  } else {
+    setForm(initialForm);
+  }
+
+  setErrors({});
+}, [open, renewal, statuses, loadingDropdowns]);
 
   /* ---------------- VALIDATION ---------------- */
 

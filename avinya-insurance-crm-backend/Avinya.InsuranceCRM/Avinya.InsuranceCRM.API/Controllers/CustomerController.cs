@@ -34,7 +34,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
         // -------- CREATE OR UPDATE CUSTOMER --------
         [HttpPost]
         public async Task<IActionResult> CreateOrUpdateCustomer(
-            [FromForm] CreateCustomerRequest request)
+    [FromForm] CreateCustomerRequest request)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -45,20 +45,21 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 );
             }
 
+            Customer customer;
+
             /* ================= UPDATE ================= */
             if (request.CustomerId.HasValue)
             {
-                var existingCustomer =
-                    await _customerRepository.GetByIdAsync(request.CustomerId.Value);
+                customer = await _customerRepository.GetByIdAsync(request.CustomerId.Value);
 
-                if (existingCustomer == null)
+                if (customer == null)
                 {
                     return NotFound(
                         ApiResponse<string>.Fail(404, "Customer not found")
                     );
                 }
 
-                if (existingCustomer.AdvisorId != advisorId)
+                if (customer.AdvisorId != advisorId)
                 {
                     return Forbid();
                 }
@@ -68,16 +69,13 @@ namespace Avinya.InsuranceCRM.API.Controllers
                     var mobileExists =
                         await _customerRepository.ExistsByMobileAsync(
                             request.PrimaryMobile,
-                            existingCustomer.CustomerId
+                            customer.CustomerId
                         );
 
                     if (mobileExists)
                     {
                         return BadRequest(
-                            ApiResponse<string>.Fail(
-                                400,
-                                "Mobile number already exists"
-                            )
+                            ApiResponse<string>.Fail(400, "Mobile number already exists")
                         );
                     }
                 }
@@ -87,99 +85,84 @@ namespace Avinya.InsuranceCRM.API.Controllers
                     var emailExists =
                         await _customerRepository.ExistsByEmailAsync(
                             request.Email,
-                            existingCustomer.CustomerId
+                            customer.CustomerId
                         );
 
                     if (emailExists)
                     {
                         return BadRequest(
-                            ApiResponse<string>.Fail(
-                                400,
-                                "Email already exists"
-                            )
+                            ApiResponse<string>.Fail(400, "Email already exists")
                         );
                     }
                 }
 
-                existingCustomer.FullName = request.FullName;
-                existingCustomer.PrimaryMobile = request.PrimaryMobile;
-                existingCustomer.SecondaryMobile = request.SecondaryMobile;
-                existingCustomer.Email = request.Email;
-                existingCustomer.Address = request.Address;
-                existingCustomer.KYCStatus = request.KYCStatus;
-                existingCustomer.DOB = request.DOB;
-                existingCustomer.Anniversary = request.Anniversary;
-                existingCustomer.Notes = request.Notes;
-                existingCustomer.UpdatedAt = DateTime.UtcNow;
+                customer.FullName = request.FullName;
+                customer.PrimaryMobile = request.PrimaryMobile;
+                customer.SecondaryMobile = request.SecondaryMobile;
+                customer.Email = request.Email;
+                customer.Address = request.Address;
+                customer.KYCStatus = request.KYCStatus;
+                customer.DOB = request.DOB;
+                customer.Anniversary = request.Anniversary;
+                customer.Notes = request.Notes;
+                customer.UpdatedAt = DateTime.UtcNow;
 
-                await _customerRepository.UpdateAsync(existingCustomer);
-
-                return Ok(
-                    ApiResponse<object>.Success(
-                        new { existingCustomer.CustomerId },
-                        "Customer updated successfully"
-                    )
-                );
+                await _customerRepository.UpdateAsync(customer);
             }
-
             /* ================= CREATE ================= */
-
-            if (await _customerRepository.ExistsByMobileAsync(request.PrimaryMobile))
+            else
             {
-                return BadRequest(
-                    ApiResponse<string>.Fail(
-                        400,
-                        "Mobile number already exists"
-                    )
-                );
-            }
-
-            if (!string.IsNullOrWhiteSpace(request.Email) &&
-                await _customerRepository.ExistsByEmailAsync(request.Email))
-            {
-                return BadRequest(
-                    ApiResponse<string>.Fail(
-                        400,
-                        "Email already exists"
-                    )
-                );
-            }
-
-            var customer = new Customer
-            {
-                CustomerId = Guid.NewGuid(),
-                FullName = request.FullName,
-                PrimaryMobile = request.PrimaryMobile,
-                SecondaryMobile = request.SecondaryMobile,
-                Email = request.Email,
-                Address = request.Address,
-                KYCStatus = request.KYCStatus,
-                DOB = request.DOB,
-                Anniversary = request.Anniversary,
-                Notes = request.Notes,
-                AdvisorId = advisorId,
-                LeadId = request.LeadId,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await _customerRepository.AddAsync(customer);
-
-            if (request.LeadId.HasValue)
-            {
-                var lead = await _leadRepository.GetByIdAsync(request.LeadId.Value);
-
-                if (lead != null && !lead.IsConverted)
+                if (await _customerRepository.ExistsByMobileAsync(request.PrimaryMobile))
                 {
-                    lead.IsConverted = true;
-                    lead.CustomerId = customer.CustomerId;
-                    lead.LeadStatusId = 5;
-                    lead.UpdatedAt = DateTime.UtcNow;
+                    return BadRequest(
+                        ApiResponse<string>.Fail(400, "Mobile number already exists")
+                    );
+                }
 
-                    await _leadRepository.UpdateAsync(lead);
+                if (!string.IsNullOrWhiteSpace(request.Email) &&
+                    await _customerRepository.ExistsByEmailAsync(request.Email))
+                {
+                    return BadRequest(
+                        ApiResponse<string>.Fail(400, "Email already exists")
+                    );
+                }
+
+                customer = new Customer
+                {
+                    CustomerId = Guid.NewGuid(),
+                    FullName = request.FullName,
+                    PrimaryMobile = request.PrimaryMobile,
+                    SecondaryMobile = request.SecondaryMobile,
+                    Email = request.Email,
+                    Address = request.Address,
+                    KYCStatus = request.KYCStatus,
+                    DOB = request.DOB,
+                    Anniversary = request.Anniversary,
+                    Notes = request.Notes,
+                    AdvisorId = advisorId,
+                    LeadId = request.LeadId,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _customerRepository.AddAsync(customer);
+
+                if (request.LeadId.HasValue)
+                {
+                    var lead = await _leadRepository.GetByIdAsync(request.LeadId.Value);
+
+                    if (lead != null && !lead.IsConverted)
+                    {
+                        lead.IsConverted = true;
+                        lead.CustomerId = customer.CustomerId;
+                        lead.LeadStatusId = 5;
+                        lead.UpdatedAt = DateTime.UtcNow;
+
+                        await _leadRepository.UpdateAsync(lead);
+                    }
                 }
             }
 
-            /* -------- KYC FILE UPLOAD -------- */
+            /* ================= KYC FILE UPLOAD (CREATE + UPDATE) ================= */
             if (request.KycFiles != null && request.KycFiles.Any())
             {
                 var uploadRoot = Path.Combine(
@@ -206,14 +189,21 @@ namespace Avinya.InsuranceCRM.API.Controllers
                     savedFiles.Add(fileName);
                 }
 
-                // 🔴 EXISTING BEHAVIOR KEPT
-                customer.KYCFiles = string.Join(",", savedFiles);
+                // 🔥 APPEND TO EXISTING FILES
+                var existingFiles = string.IsNullOrWhiteSpace(customer.KYCFiles)
+                    ? new List<string>()
+                    : customer.KYCFiles.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+
+                existingFiles.AddRange(savedFiles);
+
+                customer.KYCFiles = string.Join(",", existingFiles);
                 customer.KYCStatus = "Uploaded";
                 customer.UpdatedAt = DateTime.UtcNow;
 
                 await _customerRepository.UpdateAsync(customer);
             }
 
+            /* ================= FINAL RESPONSE ================= */
             return Ok(
                 ApiResponse<object>.Success(
                     new
@@ -224,7 +214,9 @@ namespace Avinya.InsuranceCRM.API.Controllers
                         customer.Email,
                         customer.KYCFiles
                     },
-                    "Customer saved successfully"
+                    request.CustomerId.HasValue
+                        ? "Customer updated successfully"
+                        : "Customer created successfully"
                 )
             );
         }
@@ -262,7 +254,10 @@ namespace Avinya.InsuranceCRM.API.Controllers
                             c.Email,
                             c.Address,
                             c.KYCFiles, // 🔴 KEPT AS IS
-                            c.CreatedAt
+                            c.CreatedAt,
+                            c.Anniversary,
+                            c.DOB,
+                            c.Notes
                         })
                     },
                     "Customers fetched successfully"
@@ -476,7 +471,10 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 c.FullName,
                 c.Email,
                 c.DOB,
-                c.Anniversary
+                c.Anniversary,
+                c.Address,
+                c.PrimaryMobile
+
             }));
         }
 

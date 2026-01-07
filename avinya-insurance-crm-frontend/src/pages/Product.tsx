@@ -124,7 +124,6 @@ const Products = () => {
                 ))}
               </select>
             </div>
-
             <div />
           </div>
         </div>

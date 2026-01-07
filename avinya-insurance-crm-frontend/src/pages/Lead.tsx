@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { useSelector } from "react-redux";
 import { Toaster } from "react-hot-toast";
 
@@ -14,14 +14,21 @@ import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
 
 import type { RootState } from "../store";
 
+const DEFAULT_FILTERS = {
+  pageNumber: 1,
+  pageSize: 10,
+  search: "",
+  fullName: "",
+  email: "",
+  mobile: "",
+  leadStatusId: null as number | null,
+  leadSourceId: null as number | null,
+};
+
 const Leads = () => {
   /* ---------------- STATE ---------------- */
 
-  const [filters, setFilters] = useState({
-    pageNumber: 1,
-    pageSize: 10,
-    search: "",
-  });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const [openLeadSheet, setOpenLeadSheet] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
@@ -50,7 +57,19 @@ const Leads = () => {
 
   const { data, isLoading, isFetching } = useLeads(filters);
 
-  /* ---------------- COMMON HANDLERS ---------------- */
+  /* ---------------- HELPERS ---------------- */
+
+  const hasActiveFilters =
+    filters.search ||
+    filters.fullName ||
+    filters.email ||
+    filters.mobile ||
+    filters.leadStatusId ||
+    filters.leadSourceId;
+
+  const clearAllFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+  };
 
   const closeAllSheets = () => {
     setViewFollowUpLead(null);
@@ -85,7 +104,6 @@ const Leads = () => {
 
   return (
     <>
-      {/* 🔔 TOASTER */}
       <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
@@ -111,6 +129,7 @@ const Leads = () => {
               </button>
             </div>
 
+            {/* 🔍 SEARCH */}
             <div>
               <div className="relative w-[360px]">
                 <input
@@ -132,7 +151,18 @@ const Leads = () => {
               </div>
             </div>
 
-            <div className="text-right">
+            {/* 🎯 FILTER + CLEAR */}
+            <div className="flex justify-end gap-2">
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="inline-flex items-center gap-2 border border-red-300 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-50"
+                >
+                  <X size={14} />
+                  Clear Filters
+                </button>
+              )}
+
               <button
                 onClick={() => setOpenFilterSheet(true)}
                 className="inline-flex items-center gap-2 border px-4 py-2 rounded-lg text-sm font-medium"
@@ -159,7 +189,7 @@ const Leads = () => {
               leadName: lead.fullName,
             });
           }}
-          onAddCustomer={handleAddCustomerFromLead} // 🔥 HERE
+          onAddCustomer={handleAddCustomerFromLead}
         />
 
         {/* ================= PAGINATION ================= */}
@@ -174,20 +204,16 @@ const Leads = () => {
         </div>
       </div>
 
-      {/* ================= SHEETS ================= */}
-
+      {/* ================= FILTER SHEET ================= */}
       <LeadFilterSheet
         open={openFilterSheet}
         onClose={() => setOpenFilterSheet(false)}
         filters={filters}
-        onApply={(f) =>
-          setFilters({ ...f, pageNumber: 1 })
-        }
-        onClear={() =>
-          setFilters({ pageNumber: 1, pageSize: 10, search: "" })
-        }
+        onApply={(f) => setFilters({ ...f, pageNumber: 1 })}
+        onClear={clearAllFilters}
       />
 
+      {/* ================= OTHER SHEETS ================= */}
       <LeadUpsertSheet
         open={openLeadSheet}
         onClose={() => {
@@ -198,7 +224,6 @@ const Leads = () => {
         advisorId={advisorId}
       />
 
-      {/* 🔥 CUSTOMER FROM LEAD */}
       <CustomerUpsertSheet
         open={openCustomerSheet}
         leadId={leadForCustomer?.leadId}

@@ -37,7 +37,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                     AdvisorId = advisorId,
                     CreatedAt = DateTime.UtcNow,
 
-                    // ✅ AUTO-GENERATED ONCE
+                    // ✅ GENERATED ONLY ONCE
                     PolicyNumber = await GeneratePolicyNumberAsync(advisorId)
                 };
 
@@ -47,7 +47,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             else
             {
                 entity.UpdatedAt = DateTime.UtcNow;
-                // ❌ DO NOT TOUCH PolicyNumber HERE
+                // ❌ DO NOT TOUCH PolicyNumber
             }
 
             /* ================= COMMON FIELDS ================= */
@@ -66,11 +66,35 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             entity.RenewalDate = policy.RenewalDate;
             entity.BrokerCode = policy.BrokerCode;
             entity.PolicyCode = policy.PolicyCode;
-            /* -------- DOCUMENT SAFE UPDATE -------- */
+
+            /* ================= DOCUMENT UPDATE (APPEND MODE) ================= */
+            // 🔥 APPEND new files instead of replacing
             if (!string.IsNullOrWhiteSpace(policy.PolicyDocumentRef))
             {
-                entity.PolicyDocumentRef = policy.PolicyDocumentRef;
+                if (string.IsNullOrWhiteSpace(entity.PolicyDocumentRef))
+                {
+                    // No existing files, just set the new ones
+                    entity.PolicyDocumentRef = policy.PolicyDocumentRef;
+                }
+                else
+                {
+                    // Existing files present, append new ones
+                    var existingFiles = entity.PolicyDocumentRef
+                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(f => f.Trim())
+                        .ToList();
+
+                    var newFiles = policy.PolicyDocumentRef
+                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(f => f.Trim())
+                        .ToList();
+
+                    // Combine and remove duplicates
+                    var allFiles = existingFiles.Union(newFiles).ToList();
+                    entity.PolicyDocumentRef = string.Join(",", allFiles);
+                }
             }
+            // If policy.PolicyDocumentRef is null/empty, keep existing files unchanged
 
             await _context.SaveChangesAsync();
             return entity;
@@ -166,23 +190,8 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 data = policies
             };
         }
-        public async Task<List<CustomerPolicy>> GetPoliciesForDropdownAsync(string advisorId)
-        {
-            return await _context.CustomerPolicies
-                .AsNoTracking()
-                .Where(x => x.AdvisorId == advisorId)
-                .OrderBy(x => x.PolicyNumber)
-                .Select(x => new CustomerPolicy
-                {
-                    PolicyId = x.PolicyId,
-                    PolicyNumber = x.PolicyNumber,
-                    PolicyCode = x.PolicyCode
-                })
-                .ToListAsync();
-        }
 
-
-        /* ================= GET BY ID ================= */
+        /* ================= GET POLICY BY ID ================= */
 
         public async Task<CustomerPolicy?> GetByIdAsync(Guid policyId)
         {
@@ -190,14 +199,15 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 .FirstOrDefaultAsync(x => x.PolicyId == policyId);
         }
 
-        /* ================= DELETE ================= */
+        /* ================= DELETE POLICY ================= */
 
         public async Task DeleteByIdAsync(Guid policyId, string advisorId)
         {
             var policy = await _context.CustomerPolicies
                 .FirstOrDefaultAsync(x =>
                     x.PolicyId == policyId &&
-                    x.AdvisorId == advisorId);
+                    x.AdvisorId == advisorId
+                );
 
             if (policy == null)
                 return;
@@ -246,6 +256,21 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             return await _context.PolicyStatuses
                 .Where(x => x.IsActive)
                 .OrderBy(x => x.StatusName)
+                .ToListAsync();
+        }
+
+        public async Task<List<CustomerPolicy>> GetPoliciesForDropdownAsync(string advisorId)
+        {
+            return await _context.CustomerPolicies
+                .AsNoTracking()
+                .Where(x => x.AdvisorId == advisorId)
+                .OrderBy(x => x.PolicyNumber)
+                .Select(x => new CustomerPolicy
+                {
+                    PolicyId = x.PolicyId,
+                    PolicyNumber = x.PolicyNumber,
+                    PolicyCode = x.PolicyCode
+                })
                 .ToListAsync();
         }
     }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import { Filter } from "lucide-react";
+import { Filter, X } from "lucide-react";
 
 import { usePolicies } from "../hooks/policy/usePolicies";
 import PolicyTable from "../components/policy/PolicyTable";
@@ -9,19 +9,21 @@ import RenewalUpsertSheet from "../components/renewal/RenewalUpsertSheet";
 import PolicyFilterSheet from "../components/policy/PolicyFilterSheet";
 import Pagination from "../components/leads/Pagination";
 
+const DEFAULT_FILTERS = {
+  pageNumber: 1,
+  pageSize: 10,
+  search: "",
+  policyStatusId: null as number | null,
+  policyTypeId: null as number | null,
+  customerId: null as string | null,
+  insurerId: null as string | null,
+  productId: null as string | null,
+};
+
 const Policies = () => {
   /* ---------------- STATE ---------------- */
 
-  const [filters, setFilters] = useState({
-    pageNumber: 1,
-    pageSize: 10,
-    search: "",
-    policyStatusId: null,
-    policyTypeId: null,
-    customerId: null,
-    insurerId: null,
-    productId: null,
-  });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const [openPolicySheet, setOpenPolicySheet] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
@@ -33,6 +35,21 @@ const Policies = () => {
   const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
   const { data, isLoading, isFetching } = usePolicies(filters);
+
+  /* ---------------- HELPERS ---------------- */
+
+  const hasActiveFilters =
+    filters.search ||
+    filters.policyStatusId ||
+    filters.policyTypeId ||
+    filters.customerId ||
+    filters.insurerId ||
+    filters.productId;
+
+  const clearAllFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+    toast.success("Filters cleared");
+  };
 
   /* ---------------- HANDLERS ---------------- */
 
@@ -46,7 +63,6 @@ const Policies = () => {
     setOpenPolicySheet(true);
   };
 
-  // ✅ THIS WAS MISSING
   const handleCreateRenewal = (policy: any) => {
     setSelectedRenewal({
       policyId: policy.policyId,
@@ -55,7 +71,6 @@ const Policies = () => {
         ? policy.renewalDate.split("T")[0]
         : "",
     });
-
     setOpenRenewalSheet(true);
   };
 
@@ -71,20 +86,6 @@ const Policies = () => {
     toast.success("Renewal saved successfully!");
   };
 
-  const handleClearFilters = () => {
-    setFilters({
-      pageNumber: 1,
-      pageSize: 10,
-      search: "",
-      policyStatusId: null,
-      policyTypeId: null,
-      customerId: null,
-      insurerId: null,
-      productId: null,
-    });
-    toast.success("Filters cleared");
-  };
-
   return (
     <>
       <Toaster position="top-right" />
@@ -92,7 +93,7 @@ const Policies = () => {
       <div className="bg-white rounded-lg border">
         {/* ================= HEADER ================= */}
         <div className="px-4 py-5 border-b bg-gray-100">
-          <div className="grid grid-cols-2 gap-y-4">
+          <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
               <h1 className="text-4xl font-serif font-semibold">
                 Policies
@@ -111,7 +112,7 @@ const Policies = () => {
               </button>
             </div>
 
-            {/* SEARCH */}
+            {/* 🔍 SEARCH */}
             <div>
               <div className="relative w-[360px]">
                 <input
@@ -132,8 +133,18 @@ const Policies = () => {
               </div>
             </div>
 
-            {/* FILTER */}
-            <div className="text-right">
+            {/* 🎯 FILTER + CLEAR */}
+            <div className="flex justify-end gap-2">
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="inline-flex items-center gap-2 border border-red-300 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-50"
+                >
+                  <X size={14} />
+                  Clear FIl
+                </button>
+              )}
+
               <button
                 onClick={() => setOpenFilterSheet(true)}
                 className="inline-flex items-center gap-2 border px-4 py-2 rounded"
@@ -150,7 +161,7 @@ const Policies = () => {
           data={data?.data ?? []}
           loading={isLoading || isFetching}
           onEdit={handleEditPolicy}
-          onRenewal={handleCreateRenewal} // 🔥 CONNECTED
+          onRenewal={handleCreateRenewal}
         />
 
         {/* ================= PAGINATION ================= */}
@@ -174,7 +185,7 @@ const Policies = () => {
           setFilters({ ...f, pageNumber: 1 });
           toast.success("Filters applied");
         }}
-        onClear={handleClearFilters}
+        onClear={clearAllFilters}
       />
 
       {/* ================= POLICY UPSERT ================= */}

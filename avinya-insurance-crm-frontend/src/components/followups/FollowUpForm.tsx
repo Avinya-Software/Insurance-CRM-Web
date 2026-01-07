@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { createFollowUpApi } from "../../api/leadFollowUp.api";
+import toast from "react-hot-toast";
 
 interface Props {
   leadId: string;
@@ -63,23 +64,32 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
   /* ---------------- SUBMIT ---------------- */
 
   const handleSubmit = async () => {
-    if (!validate()) return;
+  if (!validate()) return;
 
-    try {
-      setSaving(true);
+  try {
+    setSaving(true);
 
-      await createFollowUpApi({
-        leadId,
-        followUpDate,
-        nextFollowUpDate,
-        remark,
-      });
+    await createFollowUpApi({
+      leadId,
+      followUpDate,
+      nextFollowUpDate,
+      remark,
+    });
 
-      onSuccess();
-    } finally {
-      setSaving(false);
-    }
-  };
+    toast.success("Follow up created successfully", {
+      id: "followup-create-success", // ✅ prevents duplicates
+    });
+
+    onSuccess(); // close sheet AFTER toast
+  } catch (err: any) {
+    toast.error(
+      err?.message || "Failed to create follow up"
+    );
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   return (
     <div className="space-y-4">

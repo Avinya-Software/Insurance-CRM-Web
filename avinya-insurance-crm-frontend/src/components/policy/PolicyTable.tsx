@@ -118,7 +118,7 @@ const PolicyTable = ({
 
         {/* ================= BODY ================= */}
         {loading ? (
-          <TableSkeleton rows={6} columns={9} />
+          <TableSkeleton rows={6} columns={10} />
         ) : (
           <tbody>
             {data.length === 0 ? (

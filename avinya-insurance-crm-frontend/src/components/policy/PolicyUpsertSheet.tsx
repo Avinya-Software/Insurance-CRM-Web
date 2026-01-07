@@ -133,14 +133,14 @@ const PolicyUpsertSheet = ({
 
   /* ---------------- RESET PRODUCT ON INSURER CHANGE ---------------- */
 
-  useEffect(() => {
-    if (form.insurerId) {
-      setForm((prev) => ({
-        ...prev,
-        productId: "",
-      }));
-    }
-  }, [form.insurerId]);
+  // useEffect(() => {
+  //   if (form.insurerId) {
+  //     setForm((prev) => ({
+  //       ...prev,
+  //       productId: "",
+  //     }));
+  //   }
+  // }, [form.insurerId]);
 
   /* ---------------- VALIDATION ---------------- */
 
@@ -216,7 +216,7 @@ const PolicyUpsertSheet = ({
       files.forEach((f) => formData.append("PolicyDocuments", f));
 
       await mutateAsync(formData);
-      toast.success("Policy saved successfully");
+      // toast.success("Policy saved successfully");
       onClose();
       onSuccess();
     } catch (error: any) {

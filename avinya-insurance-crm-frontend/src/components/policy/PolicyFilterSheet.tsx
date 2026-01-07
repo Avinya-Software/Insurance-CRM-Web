@@ -5,7 +5,7 @@ import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesD
 import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdown";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { useInsurerDropdown } from "../../hooks/insurer/useInsurerDropdown";
-import { useProductCategoryDropdown } from "../../hooks/product/useProductCategoryDropdown";
+import { useProductDropdown } from "../../hooks/product/useProductDropdown";
 import Spinner from "../common/Spinner";
 
 interface Props {
@@ -34,7 +34,7 @@ const PolicyFilterSheet = ({
   const { data: insurers, isLoading: iLoading } =
     useInsurerDropdown();
   const { data: products, isLoading: pLoading } =
-    useProductCategoryDropdown();
+    useProductDropdown();
 
   const loading =
     sLoading || tLoading || cLoading || iLoading || pLoading;
@@ -124,6 +124,8 @@ const PolicyFilterSheet = ({
                 label="Product"
                 value={local.productId}
                 options={products}
+                valueKey="productId"
+                labelKey="productName"
                 onChange={(v) =>
                   setLocal({
                     ...local,

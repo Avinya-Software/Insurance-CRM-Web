@@ -155,8 +155,8 @@ public class LeadRepository : ILeadRepository
         if (lead == null)
             return false;
 
-        if (lead.IsConverted || lead.CustomerId != null)
-            return false;
+        //if (lead.IsConverted || lead.CustomerId != null)
+        //    return false;
 
         _context.Leads.Remove(lead);
         await _context.SaveChangesAsync();

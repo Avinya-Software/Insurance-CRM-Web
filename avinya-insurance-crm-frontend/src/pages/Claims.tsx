@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter } from "lucide-react";
+import { Filter, X } from "lucide-react";
 
 import { useClaims } from "../hooks/claim/useClaims";
 import ClaimTable from "../components/claims/ClaimTable";
@@ -7,16 +7,22 @@ import Pagination from "../components/leads/Pagination";
 import ClaimFilterSheet from "../components/claims/ClaimFilterSheet";
 import ClaimUpsertSheet from "../components/claims/ClaimUpsertSheet";
 
+const DEFAULT_FILTERS = {
+  pageNumber: 1,
+  pageSize: 10,
+  search: "",
+  customerId: null as string | null,
+  policyId: null as string | null,
+  claimTypeId: null as number | null,
+  claimStageId: null as number | null,
+  claimHandlerId: null as number | null,
+  status: null as string | null,
+};
+
 const Claims = () => {
   /* ---------------- STATE ---------------- */
 
-  const [filters, setFilters] = useState({
-    pageNumber: 1,
-    pageSize: 10,
-    search: "",
-    claimTypeId: null as number | null,
-    claimStageId: null as number | null,
-  });
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
   const [openFilter, setOpenFilter] = useState(false);
   const [openSheet, setOpenSheet] = useState(false);
@@ -25,6 +31,21 @@ const Claims = () => {
   /* ---------------- API ---------------- */
 
   const { data, isLoading, isFetching } = useClaims(filters);
+
+  /* ---------------- HELPERS ---------------- */
+
+  const hasActiveFilters =
+    filters.search ||
+    filters.customerId ||
+    filters.policyId ||
+    filters.claimTypeId ||
+    filters.claimStageId ||
+    filters.claimHandlerId ||
+    filters.status;
+
+  const clearAllFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+  };
 
   /* ================= UI ================= */
 
@@ -80,8 +101,18 @@ const Claims = () => {
               </div>
             </div>
 
-            {/* FILTER BUTTON */}
-            <div className="text-right">
+            {/* FILTER + CLEAR */}
+            <div className="flex justify-end gap-2">
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="inline-flex items-center gap-2 border border-red-300 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-50"
+                >
+                  <X size={14} />
+                  Clear Filters
+                </button>
+              )}
+
               <button
                 onClick={() => setOpenFilter(true)}
                 className="inline-flex items-center gap-2 border px-4 py-2 rounded-lg text-sm font-medium"
@@ -128,6 +159,10 @@ const Claims = () => {
         open={openSheet}
         claim={selectedClaim}
         onClose={() => {
+          setOpenSheet(false);
+          setSelectedClaim(null);
+        }}
+        onSuccess={() => {
           setOpenSheet(false);
           setSelectedClaim(null);
         }}
