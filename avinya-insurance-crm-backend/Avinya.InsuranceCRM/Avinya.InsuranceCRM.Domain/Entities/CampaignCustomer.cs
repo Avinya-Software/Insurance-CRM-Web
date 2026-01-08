@@ -8,18 +8,24 @@ using System.Threading.Tasks;
 
 namespace Avinya.InsuranceCRM.Domain.Entities
 {
-    public class CampaignTemplate
+    public class CampaignCustomer
     {
-        public Guid TemplateId { get; set; }
+        public Guid CampaignCustomerId { get; set; }
 
         public Guid CampaignId { get; set; }
+
         [JsonIgnore]
         [ValidateNever]
         public Campaign Campaign { get; set; } = null!;
 
-        public string? Subject { get; set; }
-        public string Body { get; set; } = null!;
-        public string Channel { get; set; } = null!;
+        public Guid CustomerId { get; set; }
+
+        [JsonIgnore]
+        public Customer Customer { get; set; } = null!;
+
+        public bool IsActive { get; set; } = true;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
 }

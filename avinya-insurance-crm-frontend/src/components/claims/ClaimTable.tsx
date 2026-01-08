@@ -108,7 +108,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
 
   return (
     <div className="relative overflow-x-auto">
-      <table className="min-w-[1200px] text-sm">
+      <table className="min-w-[1610px] text-sm">
         <thead className="bg-slate-100">
           <tr>
             <Th>Customer</Th>
@@ -187,7 +187,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                     ).toLocaleDateString()}
                   </Td>
 
-                  <Td className="text-right">
+                  <Td className="text-left">
                     <button
                       onClick={(e) =>
                         openDropdown(e, claim)
@@ -208,7 +208,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
       {openClaim && (
         <div
           ref={dropdownRef}
-          className="fixed bg-white border rounded shadow z-50 min-w-[160px]"
+          className="fixed bg-white border text-left rounded shadow z-50 min-w-[160px]"
           style={style}
         >
           <MenuItem

@@ -121,8 +121,10 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             if (!string.IsNullOrWhiteSpace(search))
             {
                 query = query.Where(x =>
-                    x.PolicyNumber.Contains(search) ||
-                    x.RegistrationNo.Contains(search));
+                 x.PolicyNumber.Contains(search) ||
+                 x.RegistrationNo.Contains(search) ||
+                 x.CustomerId.ToString().Contains(search)
+             );
             }
 
             /* -------- FILTERS -------- */

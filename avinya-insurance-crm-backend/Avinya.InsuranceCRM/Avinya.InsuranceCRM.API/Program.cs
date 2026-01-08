@@ -159,6 +159,7 @@ builder.Services.Configure<SmtpSettings>(
 builder.Services.AddHostedService<RenewalReminderWorker>();
 builder.Services.AddHostedService<CampaignWorker>();
 builder.Services.AddScoped<ICampaignEmailService, CampaignEmailService>();
+builder.Services.AddScoped<ICampaignRepository, CampaignRepository>();
 
 #endregion
 

@@ -106,7 +106,7 @@ const LeadTable = ({
             <Th>Status</Th>
             <Th>Source</Th>
             <Th>Created</Th>
-            <Th className="text-right">Actions</Th>
+            <Th className="text-left">Actions</Th>
           </tr>
         </thead>
 
@@ -160,7 +160,7 @@ const LeadTable = ({
                     ).toLocaleDateString()}
                   </Td>
 
-                  <Td className="text-right">
+                  <Td className="text-left">
                     <button
                       onClick={(e) => openDropdown(e, lead)}
                       className="p-2 rounded hover:bg-slate-200"

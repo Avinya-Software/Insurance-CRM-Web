@@ -33,6 +33,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<CampaignRule> CampaignRules => Set<CampaignRule>();
     public DbSet<CampaignTemplate> CampaignTemplates => Set<CampaignTemplate>();
     public DbSet<CampaignLog> CampaignLogs => Set<CampaignLog>();
+    public DbSet<CampaignCustomer> CampaignCustomers => Set<CampaignCustomer>();
 
     // ---------------- MODEL CONFIG ----------------
     protected override void OnModelCreating(ModelBuilder builder)
@@ -280,11 +281,41 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         {
             entity.HasKey(x => x.CampaignRuleId);
 
-            entity.Property(x => x.RuleEntity).HasMaxLength(50);
-            entity.Property(x => x.RuleField).HasMaxLength(50);
-            entity.Property(x => x.Operator).HasMaxLength(20);
-            entity.Property(x => x.RuleValue).HasMaxLength(100);
+            entity.Property(x => x.RuleEntity)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(x => x.RuleField)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(x => x.Operator)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(x => x.RuleValue)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            entity.Property(x => x.SortOrder)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            entity.Property(x => x.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(x => x.Campaign)
+                .WithMany(c => c.Rules)
+                .HasForeignKey(x => x.CampaignId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => new { x.CampaignId, x.IsActive });
         });
+
 
         builder.Entity<CampaignTemplate>(entity =>
         {
@@ -305,6 +336,22 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             entity.HasIndex(x => new { x.CampaignId, x.CustomerId, x.TriggerDate })
                   .IsUnique();
         });
+        builder.Entity<CampaignCustomer>(entity =>
+{
+            entity.HasKey(x => x.CampaignCustomerId);
+
+            entity.HasIndex(x => new { x.CampaignId, x.CustomerId })
+                  .IsUnique(); // prevents duplicates
+
+            entity.HasOne(x => x.Campaign)
+                  .WithMany(c => c.CampaignCustomers)
+                  .HasForeignKey(x => x.CampaignId);
+
+            entity.HasOne(x => x.Customer)
+                  .WithMany(c => c.CampaignCustomers)
+                  .HasForeignKey(x => x.CustomerId);
+        });
+
 
         // ---------------- LEAD STATUS MASTER DATA ----------------
         builder.Entity<LeadStatus>().HasData(

@@ -40,5 +40,6 @@ namespace Avinya.InsuranceCRM.Domain.Entities
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        public ICollection<CampaignCustomer> CampaignCustomers { get; set; } = new List<CampaignCustomer>();
     }
 }
