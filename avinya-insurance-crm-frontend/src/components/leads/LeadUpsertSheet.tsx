@@ -5,7 +5,7 @@ import { useUpsertLead } from "../../hooks/lead/useUpsertLead";
 import { useLeadStatuses } from "../../hooks/lead/useLeadStatuses";
 import { useLeadSources } from "../../hooks/lead/useLeadSources";
 import { getCustomerDropdownApi } from "../../api/customer.api";
-
+import SearchableComboBox from "../common/SearchableComboBox";
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -204,15 +204,25 @@ const LeadUpsertSheet = ({
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          <Select
-            label="Existing Customer (optional)"
-            value={selectedCustomerId}
-            options={customers.map((c) => ({
-              id: c.customerId,
-              name: `${c.fullName} (${c.email})`,
-            }))}
-            onChange={handleCustomerSelect}
-          />
+          <label className="text-sm font-medium">
+          Existing Customer (optional)
+        </label>
+
+        <SearchableComboBox
+          items={customers.map((c) => ({
+            value: c.customerId,
+            label: `${c.fullName} (${c.email})`,
+          }))}
+          value={selectedCustomerId}
+          placeholder="Search customer..."
+          emptyText="No customer found"
+          createText="Add new customer"
+          onSelect={(item) => {
+            setSelectedCustomerId(item?.value);
+            
+          }}
+          
+        />
 
           <Input
             label="Full Name"

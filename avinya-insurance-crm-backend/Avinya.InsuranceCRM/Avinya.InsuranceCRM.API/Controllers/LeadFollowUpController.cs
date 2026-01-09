@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 [ApiController]
 [Route("api/lead-followups")]
-[Authorize]
+[Authorize(Policy = "ApprovedAdvisor")]
 public class LeadFollowUpController : ControllerBase
 {
     private readonly ILeadRepository _leadRepo;

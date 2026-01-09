@@ -1,7 +1,16 @@
 import { useState } from "react";
-import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  ArrowRight,
+  Loader2,
+  ShieldCheck
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLoginAdvisor } from "../hooks/advisor/useLoginAdvisor";
+import { useLoginAdmin } from "../hooks/admin/useLoginAdmin";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../store/authSlice";
 
@@ -20,10 +29,17 @@ const Login = () => {
 
   const {
     mutate: loginAdvisor,
-    isPending,
-    isError,
-    error,
+    isPending: advisorLoading,
+    isError: advisorError,
+    error: advisorErr
   } = useLoginAdvisor();
+
+  const {
+    mutate: loginAdmin,
+    isPending: adminLoading,
+    isError: adminError,
+    error: adminErr
+  } = useLoginAdmin();
 
   /* ---------------- VALIDATION ---------------- */
   const validate = () => {
@@ -45,31 +61,62 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  /* ---------------- LOGIN ---------------- */
-  const handleLogin = () => {
+  /* ---------------- ADVISOR LOGIN ---------------- */
+  const handleAdvisorLogin = () => {
     if (!validate()) return;
 
     loginAdvisor(
       { email, password },
       {
         onSuccess: (res) => {
-        const data = res.data;
-        // 🔐 Save token
-        localStorage.setItem("token", data.token);
-        // 🧠 Save user in Redux
-        dispatch(
-            loginSuccess({
-            advisorId: data.advisorId,
-            fullName: data.fullName,
-            email: data.email,
-            })
-        );
+          const data = res.data;
 
-        navigate("/");
-        },
-    }
+          localStorage.setItem("token", data.token);
+
+          dispatch(
+            loginSuccess({
+              advisorId: data.advisorId,
+              fullName: data.fullName,
+              email: data.email
+            })
+          );
+
+          navigate("/");
+        }
+      }
     );
   };
+
+  /* ---------------- ADMIN LOGIN ---------------- */
+  const handleAdminLogin = () => {
+    if (!validate()) return;
+
+    loginAdmin(
+      { email, password },
+      {
+        onSuccess: (res) => {
+          const data = res.data;
+
+          localStorage.setItem("token", data.token);
+
+          dispatch(
+            loginSuccess({
+              advisorId: null,
+              fullName: "Super Admin",
+              email: data.email
+            })
+          );
+
+          navigate("/admin");
+        }
+      }
+    );
+  };
+
+  const isLoading = advisorLoading || adminLoading;
+  const errorMessage =
+    (advisorErr as any)?.response?.data?.message ||
+    (adminErr as any)?.response?.data?.message;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-green-50 px-4 py-8">
@@ -106,9 +153,10 @@ const Login = () => {
                     setErrors((prev) => ({ ...prev, email: undefined }));
                   }}
                   className={`w-full pl-11 pr-4 py-3 rounded-lg outline-none transition-all
-                    ${errors.email
-                      ? "border border-red-500 focus:ring-2 focus:ring-red-500"
-                      : "border border-gray-300 focus:ring-2 focus:ring-green-500"
+                    ${
+                      errors.email
+                        ? "border border-red-500 focus:ring-2 focus:ring-red-500"
+                        : "border border-gray-300 focus:ring-2 focus:ring-green-500"
                     }`}
                 />
               </div>
@@ -133,9 +181,10 @@ const Login = () => {
                     setErrors((prev) => ({ ...prev, password: undefined }));
                   }}
                   className={`w-full pl-11 pr-11 py-3 rounded-lg outline-none transition-all
-                    ${errors.password
-                      ? "border border-red-500 focus:ring-2 focus:ring-red-500"
-                      : "border border-gray-300 focus:ring-2 focus:ring-green-500"
+                    ${
+                      errors.password
+                        ? "border border-red-500 focus:ring-2 focus:ring-red-500"
+                        : "border border-gray-300 focus:ring-2 focus:ring-green-500"
                     }`}
                 />
                 <button
@@ -156,20 +205,19 @@ const Login = () => {
             </div>
 
             {/* API Error */}
-            {isError && (
+            {(advisorError || adminError) && (
               <p className="text-sm text-red-600 text-center">
-                {(error as any)?.response?.data?.message ||
-                  "Invalid email or password"}
+                {errorMessage || "Login failed"}
               </p>
             )}
 
-            {/* Login Button */}
+            {/* Advisor Login */}
             <button
-              onClick={handleLogin}
-              disabled={isPending}
+              onClick={handleAdvisorLogin}
+              disabled={isLoading}
               className="w-full bg-slate-800 text-white py-3 rounded-lg font-medium hover:bg-slate-900 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              {isPending ? (
+              {advisorLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Signing in...
@@ -180,6 +228,16 @@ const Login = () => {
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
+            </button>
+
+            {/* Admin Login */}
+            <button
+              onClick={handleAdminLogin}
+              disabled={isLoading}
+              className="w-full border border-slate-800 text-slate-800 py-3 rounded-lg font-medium hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+            >
+              <ShieldCheck className="w-5 h-5" />
+              Login as Admin
             </button>
           </div>
 

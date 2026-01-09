@@ -1,9 +1,11 @@
 ﻿using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/campaigns")]
+[Authorize(Policy = "ApprovedAdvisor")]
 public class CampaignController : ControllerBase
 {
     private readonly ICampaignRepository _repository;

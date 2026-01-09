@@ -27,8 +27,6 @@ namespace Avinya.InsuranceCRM.Domain.Entities
 
         public DateTime CreatedAt { get; set; }
 
-        [JsonIgnore]
-        [ValidateNever]
         public ICollection<CampaignRule> Rules { get; set; } = new List<CampaignRule>();
 
         public ICollection<CampaignTemplate> Templates { get; set; } = new List<CampaignTemplate>();

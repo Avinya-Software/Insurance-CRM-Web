@@ -2,6 +2,7 @@
 using Avinya.InsuranceCRM.API.Models;
 using Avinya.InsuranceCRM.API.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
+using Avinya.InsuranceCRM.Infrastructure.Identity;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -13,13 +14,13 @@ namespace Avinya.InsuranceCRM.API.Controllers
     public class AdvisorController : ControllerBase
     {
         private readonly IAdvisorRepository _advisorRepository;
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AdvisorController> _logger;
 
         public AdvisorController(
             IAdvisorRepository advisorRepository,
-            UserManager<IdentityUser> userManager,
+            UserManager<ApplicationUser> userManager,
             IConfiguration configuration,
             ILogger<AdvisorController> logger)
         {
@@ -31,8 +32,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
         // ---------------- REGISTER ----------------
         [HttpPost("register")]
-        public async Task<IActionResult> Register(
-            AdvisorRegisterRequest request)
+        public async Task<IActionResult> Register(AdvisorRegisterRequest request)
         {
             _logger.LogInformation("Advisor registration attempt: {Email}", request.Email);
 
@@ -44,10 +44,12 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 );
             }
 
-            var user = new IdentityUser
+            var user = new ApplicationUser
             {
                 UserName = request.Email,
-                Email = request.Email
+                Email = request.Email,
+                IsApproved = false, // 🔥 must be approved by SuperAdmin
+                IsActive = true
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
@@ -62,10 +64,8 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 );
             }
 
-            // Assign Advisor role
             await _userManager.AddToRoleAsync(user, "Advisor");
 
-            // Create Advisor profile
             var advisor = new Advisor
             {
                 AdvisorId = Guid.NewGuid(),
@@ -79,14 +79,15 @@ namespace Avinya.InsuranceCRM.API.Controllers
             await _advisorRepository.AddAsync(advisor);
 
             return Ok(
-                ApiResponse<string>.Success("Advisor registered successfully")
+                ApiResponse<string>.Success(
+                    "Registration successful. Await admin approval."
+                )
             );
         }
 
         // ---------------- LOGIN ----------------
         [HttpPost("login")]
-        public async Task<IActionResult> Login(
-            AdvisorLoginRequest request)
+        public async Task<IActionResult> Login(AdvisorLoginRequest request)
         {
             _logger.LogInformation("Advisor login attempt: {Email}", request.Email);
 
@@ -96,6 +97,20 @@ namespace Avinya.InsuranceCRM.API.Controllers
             {
                 return Unauthorized(
                     ApiResponse<string>.Fail(401, "Invalid email or password")
+                );
+            }
+
+            if (!user.IsApproved)
+            {
+                return Unauthorized(
+                    ApiResponse<string>.Fail(403, "Account pending admin approval")
+                );
+            }
+
+            if (!user.IsActive)
+            {
+                return Unauthorized(
+                    ApiResponse<string>.Fail(403, "Account is disabled")
                 );
             }
 

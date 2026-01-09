@@ -14,5 +14,9 @@ namespace Avinya.InsuranceCRM.Infrastructure.Services.Interfaces
             DateTime renewalDate,
             int daysBefore,
             decimal premium);
+
+        Task SendAdvisorApprovalEmailAsync(string email);
+
+        Task SendAdvisorRejectionEmailAsync(string email);
     }
 }

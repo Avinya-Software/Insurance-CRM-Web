@@ -10,7 +10,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
 {
     [ApiController]
     [Route("api/policy")]
-    [Authorize]
+    [Authorize(Policy = "ApprovedAdvisor")]
     public class PolicyController : ControllerBase
     {
         private readonly ICustomerPolicyRepository _policyRepository;

@@ -6,6 +6,9 @@ import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { useCreateCampaign } from "../../hooks/campaigns/useCreateCampaign";
 import CampaignTemplateEditor from "./CampaignTemplateEditor";
 import { getAdvisorIdFromToken } from "../../utils/jwt";
+import { useCampaignTypeDropdown } from "../../hooks/campaigns/useCampaignTypeDropdown";
+import { useUpdateCampaign } from "../../hooks/campaigns/useUpdateCampaign";
+import MultiSelectDropdown from "../common/MultiSelectDropdown";
 
 interface Props {
   open: boolean;
@@ -29,15 +32,17 @@ const CampaignUpsertSheet = ({
   }, [open]);
 
   /* ================= API ================= */
+  
   const { data: customers = [] } = useCustomerDropdown();
-  const { mutate: createCampaign, isPending } =
-    useCreateCampaign();
-
+  const { mutate: createCampaign, isPending } = useCreateCampaign();
+  const { data: campaignTypes = [], isLoading } = useCampaignTypeDropdown();
+  const { mutate: updateCampaign, isPending: updating } = useUpdateCampaign();
+  
   /* ================= STATE ================= */
   const advisorId = getAdvisorIdFromToken();
   const [campaign, setCampaign] = useState({
     name: "",
-    campaignType: "Promotional",
+    campaignTypeId: undefined as number | undefined,
     channel: "Email",
     applyToAllCustomers: true,
     startDate: "", // yyyy-mm-dd
@@ -74,26 +79,29 @@ const CampaignUpsertSheet = ({
     if (!open) return;
 
     if (selectedCampaign) {
+      // ===== EDIT MODE =====
       setCampaign({
         name: selectedCampaign.name || "",
-        campaignType: selectedCampaign.campaignType || "Promotional",
+        campaignTypeId: selectedCampaign.campaignTypeId,
         channel: selectedCampaign.channel || "Email",
         applyToAllCustomers: selectedCampaign.applyToAllCustomers ?? true,
-        startDate: selectedCampaign.startDate ?? "",
-        endDate: selectedCampaign.endDate ?? "",
-        advisorId: advisorId,
+        startDate: selectedCampaign.startDate
+        ? selectedCampaign.startDate.split("T")[0]
+        : "",
+      endDate: selectedCampaign.endDate
+        ? selectedCampaign.endDate.split("T")[0]
+        : "",
+        advisorId,
         isActive: selectedCampaign.isActive ?? true,
       });
 
-      if (selectedCampaign.applyToAllCustomers) {
-        setSelectedCustomerIds(customers.map((c) => c.customerId));
-      } else {
-        setSelectedCustomerIds(
-          selectedCampaign.campaignCustomers?.map(
-            (cc: any) => cc.customerId
-          ) || []
-        );
-      }
+      setSelectedCustomerIds(
+        selectedCampaign.applyToAllCustomers
+          ? customers.map((c) => c.customerId)
+          : selectedCampaign.campaignCustomers?.map(
+              (cc: any) => cc.customerId
+            ) || []
+      );
 
       if (selectedCampaign.templates?.[0]) {
         setTemplate({
@@ -121,15 +129,37 @@ const CampaignUpsertSheet = ({
         }
       }
     } else {
-      setSelectedCustomerIds(customers.map((c) => c.customerId));
-      setRuleType("OffsetDays");
-      setOffsetRule({ field: "DOB", direction: "On", days: 0 });
-      setFixedDate("");
+      // ===== CREATE MODE =====
+      resetForm();
     }
   }, [open, selectedCampaign, customers]);
 
-  /* ================= APPLY TO ALL ================= */
+  /* ================= RESET FORM ================= */
+  const resetForm = () => {
+    setCampaign({
+      name: "",
+      campaignTypeId: undefined,
+      channel: "Email",
+      applyToAllCustomers: true,
+      startDate: "",
+      endDate: "",
+      advisorId,
+      isActive: true,
+    });
 
+    setTemplate({
+      subject: "",
+      body: "",
+      channel: "Email",
+    });
+
+    setSelectedCustomerIds(customers.map((c) => c.customerId));
+    setRuleType("OffsetDays");
+    setOffsetRule({ field: "DOB", direction: "On", days: 0 });
+    setFixedDate("");
+  };
+
+  /* ================= APPLY TO ALL ================= */
   const handleApplyToAllChange = (checked: boolean) => {
     setCampaign((prev) => ({
       ...prev,
@@ -144,72 +174,91 @@ const CampaignUpsertSheet = ({
   /* ================= SUBMIT ================= */
 
   const handleSubmit = () => {
-    if (!campaign.name.trim()) return toast.error("Campaign name is required");
-    if (!template.subject.trim()) return toast.error("Template subject is required");
-    if (!template.body.trim()) return toast.error("Template body is required");
-    if (selectedCustomerIds.length === 0)
-      return toast.error("No customers selected");
+  if (!campaign.name.trim()) return toast.error("Campaign name is required");
+  if (!campaign.campaignTypeId) return toast.error("Campaign type is required");
+  if (!template.subject.trim()) return toast.error("Template subject is required");
+  if (!template.body.trim()) return toast.error("Template body is required");
+  if (selectedCustomerIds.length === 0)
+    return toast.error("No customers selected");
 
-    let campaignRule: any;
+  const selectedCampaignType = campaignTypes.find(
+    (t) => t.campaignTypeId === campaign.campaignTypeId
+  );
 
-    if (ruleType === "FixedDate") {
-      if (!fixedDate) return toast.error("Please select a date");
+  let campaignRule: any;
 
-      campaignRule = {
-        ruleEntity: "System",
-        ruleField: "Date",
-        operator: "FixedDate",
-        ruleValue: fixedDate,
-        sortOrder: 0,
-        isActive: true,
-      };
-    } else {
-      const offset =
-        offsetRule.direction === "Before"
-          ? -offsetRule.days
-          : offsetRule.direction === "After"
-          ? offsetRule.days
-          : 0;
+  if (ruleType === "FixedDate") {
+    if (!fixedDate) return toast.error("Please select a date");
 
-      campaignRule = {
-        ruleEntity: "Customer",
-        ruleField: offsetRule.field,
-        operator: "OffsetDays",
-        ruleValue: offset.toString(),
-        sortOrder: 0,
-        isActive: true,
-      };
-    }
+    campaignRule = {
+      ruleEntity: "System",
+      ruleField: "Date",
+      operator: "FixedDate",
+      ruleValue: fixedDate,
+      sortOrder: 0,
+      isActive: true,
+    };
+  } else {
+    const offset =
+      offsetRule.direction === "Before"
+        ? -offsetRule.days
+        : offsetRule.direction === "After"
+        ? offsetRule.days
+        : 0;
 
-    createCampaign(
+    campaignRule = {
+      ruleEntity: "Customer",
+      ruleField: offsetRule.field,
+      operator: "OffsetDays",
+      ruleValue: offset.toString(),
+      sortOrder: 0,
+      isActive: true,
+    };
+  }
+
+  const payload = {
+    campaign: {
+      ...campaign,
+      campaignType: selectedCampaignType?.name || "Promotional",
+      startDate: campaign.startDate || null,
+      endDate: campaign.endDate || null,
+      createdAt: new Date().toISOString(),
+    },
+    templates: [
       {
-        campaign: {
-          ...campaign,
-          // 🔑 IMPORTANT: send null, not empty string
-          startDate: campaign.startDate || null,
-          endDate: campaign.endDate || null,
-          createdAt: new Date().toISOString(),
-        },
-        templates: [
-          {
-            subject: template.subject,
-            body: template.body,
-            channel: template.channel,
-          },
-        ],
-        rules: [campaignRule],
-        customerIds: selectedCustomerIds,
+        subject: template.subject,
+        body: template.body,
+        channel: template.channel,
+      },
+    ],
+    rules: [campaignRule],
+    customerIds: selectedCustomerIds,
+  };
+
+  // 🔥 DECIDE CREATE vs UPDATE
+  if (selectedCampaign?.campaignId) {
+    updateCampaign(
+      {
+        campaignId: selectedCampaign.campaignId,
+        data: payload,
       },
       {
         onSuccess: () => {
-          toast.success(
-            selectedCampaign ? "Campaign updated" : "Campaign created"
-          );
+          toast.success("Campaign updated");
           onSuccess();
         },
       }
     );
-  };
+  } else {
+    createCampaign(payload, {
+      onSuccess: () => {
+        toast.success("Campaign created");
+        onSuccess();
+      },
+    });
+  }
+};
+
 
   if (!open) return null;
 
@@ -245,7 +294,7 @@ const CampaignUpsertSheet = ({
             }
           />
 
-          {/* START / END DATE (RESTORED ✅) */}
+          {/* START / END DATE */}
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Start Date"
@@ -267,20 +316,36 @@ const CampaignUpsertSheet = ({
 
           {/* TARGET CUSTOMERS */}
           <div>
-            <label className="text-sm font-medium">Target Customers</label>
+            {/* TARGET CUSTOMERS */}
+            <div>
+              <label className="text-sm font-medium">Target Customers</label>
 
-            <div className="mt-2 flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={campaign.applyToAllCustomers}
-                onChange={(e) =>
-                  handleApplyToAllChange(e.target.checked)
-                }
-              />
-              <span className="text-sm">
-                Apply to all customers ({selectedCustomerIds.length})
-              </span>
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={campaign.applyToAllCustomers}
+                  onChange={(e) => handleApplyToAllChange(e.target.checked)}
+                />
+                <span className="text-sm">
+                  Apply to all customers ({selectedCustomerIds.length})
+                </span>
+              </div>
+
+              {!campaign.applyToAllCustomers && (
+                <div className="mt-3">
+                 <MultiSelectDropdown
+                    items={customers.map((c) => ({
+                      value: c.customerId,
+                      label: c.fullName,
+                    }))}
+                    selectedValues={selectedCustomerIds}
+                    onChange={setSelectedCustomerIds}
+                    placeholder="Select customers"
+                  />
+                </div>
+              )}
             </div>
+
 
             {!campaign.applyToAllCustomers && (
               <div className="mt-3 max-h-[180px] overflow-y-auto border rounded-lg">
@@ -322,17 +387,25 @@ const CampaignUpsertSheet = ({
           {/* RULE UI */}
           {ruleType === "OffsetDays" ? (
             <div className="grid grid-cols-3 gap-3">
+              {/* CAMPAIGN TYPE DROPDOWN */}
               <select
-                className="input"
-                value={offsetRule.field}
+                className="input w-full"
+                value={campaign.campaignTypeId ?? ""}
                 onChange={(e) =>
-                  setOffsetRule({ ...offsetRule, field: e.target.value })
+                  setCampaign({
+                    ...campaign,
+                    campaignTypeId: Number(e.target.value),
+                  })
                 }
               >
-                <option value="DOB">Customer Birthday</option>
-                <option value="PolicyEndDate">Policy End Date</option>
+                <option value="">Select type</option>
+                {campaignTypes.map((t) => (
+                  <option key={t.campaignTypeId} value={t.campaignTypeId}>
+                    {t.name}
+                  </option>
+                ))}
               </select>
-
+              {/* DIRECTION */}
               <select
                 className="input"
                 value={offsetRule.direction}
@@ -345,6 +418,7 @@ const CampaignUpsertSheet = ({
                 <option value="After">After</option>
               </select>
 
+              {/* DAYS */}
               <input
                 type="number"
                 min={0}

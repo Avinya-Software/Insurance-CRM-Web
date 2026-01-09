@@ -157,6 +157,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             var query = _db.Campaigns
                 .Include(c => c.CampaignCustomers)
                 .Include(c => c.Templates)
+                .Include(c => c.Rules)
                 .AsNoTracking()
                 .Where(c => c.IsActive);
 
@@ -247,15 +248,15 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 }
             }
 
-            _db.CampaignLogs.Add(new CampaignLog
-            {
-                CampaignLogId = Guid.NewGuid(),
-                CampaignId = campaignId,
-                CustomerId = Guid.Empty,
-                TriggerDate = DateTime.UtcNow.Date,
-                Channel = "System",
-                Status = "Updated"
-            });
+            //_db.CampaignLogs.Add(new CampaignLog
+            //{
+            //    CampaignLogId = Guid.NewGuid(),
+            //    CampaignId = campaignId,
+            //    CustomerId = Guid.Empty,
+            //    TriggerDate = DateTime.UtcNow.Date,
+            //    Channel = "System",
+            //    Status = "Updated"
+            //});
 
             await _db.SaveChangesAsync();
             await tx.CommitAsync();

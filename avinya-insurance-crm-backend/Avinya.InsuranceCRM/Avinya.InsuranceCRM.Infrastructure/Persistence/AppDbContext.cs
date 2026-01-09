@@ -1,10 +1,11 @@
 ﻿using Avinya.InsuranceCRM.Domain.Entities;
+using Avinya.InsuranceCRM.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Emit;
 
-public class AppDbContext : IdentityDbContext<IdentityUser>
+public class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -49,7 +50,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             entity.HasIndex(x => x.PrimaryMobile).IsUnique();
 
             // FK to AspNetUsers (Advisor)
-            entity.HasOne<IdentityUser>()
+            entity.HasOne<ApplicationUser>()
                   .WithMany()
                   .HasForeignKey(x => x.AdvisorId)
                   .OnDelete(DeleteBehavior.Restrict);

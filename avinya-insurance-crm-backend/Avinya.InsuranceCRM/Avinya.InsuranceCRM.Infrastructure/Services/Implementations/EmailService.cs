@@ -1,4 +1,5 @@
 ﻿using Avinya.InsuranceCRM.Infrastructure.Email;
+using Avinya.InsuranceCRM.Infrastructure.Persistence;
 using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
 using Microsoft.Extensions.Options;
 using System.Net;
@@ -17,6 +18,9 @@ public class EmailService : IEmailService
         _smtp = smtpOptions.Value;
     }
 
+    // =====================================================
+    // RENEWAL REMINDER (EXISTING)
+    // =====================================================
     public async Task SendRenewalReminderAsync(
         Guid customerId,
         Guid policyId,
@@ -44,6 +48,70 @@ Regards,
 Avinya Insurance CRM
 ";
 
+        await SendEmailAsync(customer.Email, subject, body);
+    }
+
+    // =====================================================
+    // ADVISOR APPROVAL EMAIL (NEW)
+    // =====================================================
+    public async Task SendAdvisorApprovalEmailAsync(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return;
+
+        var subject = "Your Advisor Account Has Been Approved";
+
+        var body = @"
+Hello,
+
+Good news! 🎉
+
+Your advisor account has been approved by the administrator.
+You can now log in and start using the Avinya Insurance CRM.
+
+Login here:
+https://uatinsurancecrm.avinyasoftware.com/login
+
+Regards,
+Avinya Insurance CRM Team
+";
+
+        await SendEmailAsync(email, subject, body);
+    }
+
+    // =====================================================
+    // ADVISOR REJECTION EMAIL (NEW)
+    // =====================================================
+    public async Task SendAdvisorRejectionEmailAsync(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return;
+
+        var subject = "Update on Your Advisor Registration";
+
+        var body = @"
+Hello,
+
+Thank you for registering with Avinya Insurance CRM.
+
+After review, your advisor registration was not approved at this time.
+If you believe this was a mistake, please contact our support team.
+
+Regards,
+Avinya Insurance CRM Team
+";
+
+        await SendEmailAsync(email, subject, body);
+    }
+
+    // =====================================================
+    // INTERNAL SMTP HELPER (REUSED)
+    // =====================================================
+    private async Task SendEmailAsync(
+        string toEmail,
+        string subject,
+        string body)
+    {
         using var client = new SmtpClient(_smtp.Host, _smtp.Port)
         {
             Credentials = new NetworkCredential(
@@ -62,7 +130,7 @@ Avinya Insurance CRM
             IsBodyHtml = false
         };
 
-        mail.To.Add(customer.Email);
+        mail.To.Add(toEmail);
 
         await client.SendMailAsync(mail);
     }

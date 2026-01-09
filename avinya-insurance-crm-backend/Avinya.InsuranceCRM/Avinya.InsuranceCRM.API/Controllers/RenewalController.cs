@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 [ApiController]
 [Route("api/renewals")]
-[Authorize(Roles = "Advisor")]
+[Authorize(Policy = "ApprovedAdvisor")]
 public class RenewalController : ControllerBase
 {
     private readonly IRenewalRepository _renewalRepository;

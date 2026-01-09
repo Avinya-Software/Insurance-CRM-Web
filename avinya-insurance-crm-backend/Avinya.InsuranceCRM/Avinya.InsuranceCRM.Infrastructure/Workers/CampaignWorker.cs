@@ -26,11 +26,9 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                 }
                 catch (Exception ex)
                 {
-                    // 🚨 NEVER crash the host
                     Console.WriteLine($"[CampaignWorker] Fatal error: {ex}");
                 }
 
-                // ⏱ Runs every 6 hours (change to minutes for testing)
                 await Task.Delay(TimeSpan.FromHours(6), stoppingToken);
             }
         }
@@ -49,20 +47,24 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             var campaigns = await db.Campaigns
                 .Where(c =>
                     c.IsActive &&
+                    !string.IsNullOrWhiteSpace(c.AdvisorId) &&
                     (c.StartDate == null || c.StartDate <= today) &&
-                    (c.EndDate == null || c.EndDate >= today))
+                    (c.EndDate == null || c.EndDate >= today) &&
+                    (
+                        // 🔑 CampaignTypeId OR CampaignType fallback
+                        new[] { 2, 3, 4, 5 }.Contains(c.CampaignTypeId) ||
+                        c.CampaignType == "Birthday" ||
+                        c.CampaignType == "Policy Renewal" ||
+                        c.CampaignType == "Payment Reminder" ||
+                        c.CampaignType == "Policy Expiry"
+                    ))
                 .Include(c => c.Templates)
-                .Include(c => c.Rules)           // ✅ IMPORTANT
+                .Include(c => c.Rules)
                 .ToListAsync(token);
 
             foreach (var campaign in campaigns)
             {
-                await ExecuteCampaign(
-                    campaign,
-                    db,
-                    emailService,
-                    today,
-                    token);
+                await ExecuteCampaign(campaign, db, emailService, today, token);
             }
         }
 
@@ -83,15 +85,28 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
 
             List<Customer> customers;
 
+            // ================= ADVISOR ISOLATION =================
+
             if (campaign.ApplyToAllCustomers)
             {
-                customers = await db.Customers.ToListAsync(token);
+                customers = await db.CustomerPolicies
+                    .Where(p => p.AdvisorId == campaign.AdvisorId)
+                    .Select(p => p.Customer)
+                    .Distinct()
+                    .ToListAsync(token);
             }
             else
             {
                 customers = await db.CampaignCustomers
-                    .Where(cc => cc.CampaignId == campaign.CampaignId && cc.IsActive)
+                    .Where(cc =>
+                        cc.CampaignId == campaign.CampaignId &&
+                        cc.IsActive &&
+                        db.CustomerPolicies.Any(p =>
+                            p.CustomerId == cc.CustomerId &&
+                            p.AdvisorId == campaign.AdvisorId))
+                    .Include(cc => cc.Customer)
                     .Select(cc => cc.Customer)
+                    .Distinct()
                     .ToListAsync(token);
             }
 
@@ -100,10 +115,13 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                 if (token.IsCancellationRequested)
                     return;
 
-                // ✅ RULE ENGINE (decides whether campaign runs today)
+                Console.WriteLine($"[CampaignWorker] Customer={customer.CustomerId}, Email={customer.Email}");
+
+                // ================= RULE ENGINE =================
+
                 var shouldRun = false;
 
-                foreach (var rule in campaign.Rules)
+                foreach (var rule in campaign.Rules.Where(r => r.IsActive))
                 {
                     if (await ShouldRunForToday(rule, customer, db, today, token))
                     {
@@ -115,19 +133,20 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                 if (!shouldRun)
                     continue;
 
+                // ================= HARD DEDUP =================
 
-                // 🛑 HARD DEDUP — once per campaign per customer per day
-                var logExists = await db.CampaignLogs.AnyAsync(
+                var alreadySent = await db.CampaignLogs.AnyAsync(
                     l =>
                         l.CampaignId == campaign.CampaignId &&
                         l.CustomerId == customer.CustomerId &&
                         l.TriggerDate == today,
                     token);
 
-                if (logExists)
+                if (alreadySent)
                     continue;
 
-                // ❌ Missing email → log skipped
+                // ================= EMAIL CHECK =================
+
                 if (string.IsNullOrWhiteSpace(customer.Email))
                 {
                     await InsertLogSafe(db, new CampaignLog
@@ -138,7 +157,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                         TriggerDate = today,
                         Channel = "Email",
                         Status = "Skipped",
-                        ErrorMessage = "Customer email is missing"
+                        ErrorMessage = "Customer email missing"
                     }, token);
 
                     continue;
@@ -149,10 +168,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                     var subject = ApplyTokens(template.Subject ?? "", customer);
                     var body = ApplyTokens(template.Body ?? "", customer);
 
-                    await emailService.SendAsync(
-                        customer.Email,
-                        subject,
-                        body);
+                    await emailService.SendAsync(customer.Email, subject, body);
 
                     await InsertLogSafe(db, new CampaignLog
                     {
@@ -181,47 +197,82 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             }
         }
 
-        /* ================= RULE ENGINE ================= */
+        /* ================= RULE ENGINE (FINAL) ================= */
 
         private async Task<bool> ShouldRunForToday(
-             CampaignRule rule,
-             Customer customer,
-             AppDbContext db,
-             DateTime today,
-             CancellationToken token)
+            CampaignRule rule,
+            Customer customer,
+            AppDbContext db,
+            DateTime today,
+            CancellationToken token)
         {
-            if (rule.Operator == "FixedDate")
+            // ✅ System.Date (FixedDate)
+            if (rule.RuleEntity == "System" &&
+                rule.RuleField == "Date" &&
+                rule.Operator == "FixedDate")
             {
                 var fixedDate = DateTime.Parse(rule.RuleValue).Date;
                 return fixedDate == today;
             }
 
-            if (rule.Operator == "OffsetDays")
+            // 🎂 Birthday logic (ignore year)
+            if (rule.RuleEntity == "Customer" &&
+                rule.RuleField == "DOB" &&
+                rule.Operator == "OffsetDays")
             {
-                DateTime? baseDate = rule.RuleField switch
-                {
-                    "DOB" => customer.DOB,
-                    "PolicyEndDate" => await GetPolicyEndDateAsync(
-                                            db,
-                                            customer.CustomerId,
-                                            token),
-                    _ => null
-                };
-
-                if (!baseDate.HasValue)
+                if (!customer.DOB.HasValue)
                     return false;
 
-                var triggerDate =
-                    baseDate.Value.Date.AddDays(int.Parse(rule.RuleValue));
+                var dobThisYear = new DateTime(
+                    today.Year,
+                    customer.DOB.Value.Month,
+                    customer.DOB.Value.Day);
+
+                var triggerDate = dobThisYear
+                    .AddDays(int.Parse(rule.RuleValue));
 
                 return triggerDate == today;
             }
 
+            // 🔁 Policy-based rules
+            DateTime? baseDate = rule.RuleEntity switch
+            {
+                "Policy" when rule.RuleField == "EndDate" =>
+                    await db.CustomerPolicies
+                        .Where(p => p.CustomerId == customer.CustomerId)
+                        .OrderBy(p => p.EndDate)
+                        .Select(p => (DateTime?)p.EndDate)
+                        .FirstOrDefaultAsync(token),
 
-            return false;
+                "Policy" when rule.RuleField == "PaymentDueDate" =>
+                    await db.CustomerPolicies
+                        .Where(p => p.CustomerId == customer.CustomerId &&
+                                    p.PaymentDueDate != null)
+                        .OrderBy(p => p.PaymentDueDate)
+                        .Select(p => (DateTime?)p.PaymentDueDate)
+                        .FirstOrDefaultAsync(token),
+
+                "Policy" when rule.RuleField == "RenewalDate" =>
+                    await db.CustomerPolicies
+                        .Where(p => p.CustomerId == customer.CustomerId &&
+                                    p.RenewalDate != null)
+                        .OrderBy(p => p.RenewalDate)
+                        .Select(p => (DateTime?)p.RenewalDate)
+                        .FirstOrDefaultAsync(token),
+
+                _ => null
+            };
+
+            if (!baseDate.HasValue)
+                return false;
+
+            var finalTrigger = baseDate.Value.Date
+                .AddDays(int.Parse(rule.RuleValue));
+
+            return finalTrigger == today;
         }
 
-        /* ================= TEMPLATE TOKEN ENGINE ================= */
+        /* ================= TEMPLATE TOKENS ================= */
 
         private string ApplyTokens(string template, Customer customer)
         {
@@ -245,22 +296,8 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             }
             catch (DbUpdateException)
             {
-                // 🔇 Ignore duplicate log insert (unique index protection)
+                // ignore duplicates
             }
         }
-        private async Task<DateTime?> GetPolicyEndDateAsync(
-            AppDbContext db,
-            Guid customerId,
-            CancellationToken token)
-        {
-            return await db.CustomerPolicies
-                .Where(p =>
-                    p.CustomerId == customerId &&
-                    p.EndDate >= DateTime.UtcNow)
-                .OrderBy(p => p.EndDate)
-                .Select(p => (DateTime?)p.EndDate)
-                .FirstOrDefaultAsync(token);
-        }
-
     }
 }

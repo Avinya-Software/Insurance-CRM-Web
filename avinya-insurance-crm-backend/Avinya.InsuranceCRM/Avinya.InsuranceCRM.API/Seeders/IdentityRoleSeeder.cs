@@ -8,7 +8,7 @@ namespace Avinya.InsuranceCRM.API.Seeders
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            string[] roles = { "Advisor" };
+            string[] roles = { "Advisor", "Admin" };
 
             foreach (var role in roles)
             {

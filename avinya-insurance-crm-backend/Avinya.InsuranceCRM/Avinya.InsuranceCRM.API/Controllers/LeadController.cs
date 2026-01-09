@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = "ApprovedAdvisor")]
 public class LeadController : ControllerBase
 {
     private readonly ILeadRepository _repo;

@@ -1,6 +1,7 @@
 ﻿using Avinya.InsuranceCRM.API.Middleware;
 using Avinya.InsuranceCRM.API.Seeders;
 using Avinya.InsuranceCRM.Infrastructure.Email;
+using Avinya.InsuranceCRM.Infrastructure.Identity;
 using Avinya.InsuranceCRM.Infrastructure.Persistence;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
@@ -38,14 +39,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")
         ?? throw new Exception("Missing DB connection string")
-
     )
 );
 #endregion
 
-#region IDENTITY
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+#region IDENTITY (✅ ONLY ONCE – ApplicationUser)
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
+    options.User.RequireUniqueEmail = true;
+
     options.Password.RequireDigit = false;
     options.Password.RequireLowercase = false;
     options.Password.RequireUppercase = false;
@@ -56,7 +58,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 #endregion
 
-#region 🔥 PREVENT IDENTITY REDIRECTS (CRITICAL)
+#region 🔥 PREVENT IDENTITY REDIRECTS (API SAFE)
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Events.OnRedirectToLogin = context =>
@@ -73,7 +75,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 #endregion
 
-#region CORS (JWT BASED – NO COOKIES)
+#region CORS (JWT – NO COOKIES)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
@@ -86,12 +88,11 @@ builder.Services.AddCors(options =>
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
-        // ❌ NO AllowCredentials (JWT uses headers)
     });
 });
 #endregion
 
-#region JWT AUTH
+#region JWT AUTHENTICATION
 var jwt = builder.Configuration.GetSection("Jwt");
 
 if (string.IsNullOrWhiteSpace(jwt["Key"]))
@@ -126,7 +127,6 @@ builder.Services
             ClockSkew = TimeSpan.Zero
         };
     });
-
 #endregion
 
 #region AUTHORIZATION
@@ -134,6 +134,12 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdvisorOnly", policy =>
         policy.RequireRole("Advisor"));
+
+    options.AddPolicy("ApprovedAdvisor", policy =>
+    {
+        policy.RequireRole("Advisor");
+        policy.RequireClaim("IsApproved", "True");
+    });
 });
 #endregion
 
@@ -143,7 +149,7 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 #endregion
 
-#region DI
+#region DEPENDENCY INJECTION
 builder.Services.AddScoped<IAdvisorRepository, AdvisorRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IInsurerRepository, InsurerRepository>();
@@ -153,14 +159,17 @@ builder.Services.AddScoped<ICustomerPolicyRepository, CustomerPolicyRepository>(
 builder.Services.AddScoped<ILeadFollowUpRepository, LeadFollowUpRepository>();
 builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
 builder.Services.AddScoped<IRenewalRepository, RenewalRepository>();
+builder.Services.AddScoped<IAdminService, AdminService>();
+
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.Configure<SmtpSettings>(
     builder.Configuration.GetSection("Smtp"));
+
 builder.Services.AddHostedService<RenewalReminderWorker>();
 builder.Services.AddHostedService<CampaignWorker>();
+
 builder.Services.AddScoped<ICampaignEmailService, CampaignEmailService>();
 builder.Services.AddScoped<ICampaignRepository, CampaignRepository>();
-
 #endregion
 
 #region SWAGGER
@@ -212,23 +221,31 @@ catch (Exception ex)
     Console.WriteLine($"Role seeding failed: {ex.Message}");
 }
 #endregion
+#region SEED SUPER ADMIN
+try
+{
+    using var scope = app.Services.CreateScope();
+    await SuperAdminSeeder.SeedAsync(scope.ServiceProvider);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Super admin seeding failed: {ex.Message}");
+}
+#endregion
 
-#region 🔥 SERVER / IIS FIXES (VERY IMPORTANT)
 
-// Handle reverse proxy / IIS HTTPS redirects
+#region SERVER / IIS FIXES
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders =
         ForwardedHeaders.XForwardedFor |
         ForwardedHeaders.XForwardedProto
 });
-
-app.UseRouting();
-app.UseCors("FrontendPolicy");
-
 #endregion
 
-#region MIDDLEWARE
+#region PIPELINE
+app.UseRouting();
+app.UseCors("FrontendPolicy");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
@@ -244,7 +261,6 @@ app.UseSwaggerUI(c =>
 
 app.MapControllers();
 app.MapGet("/", () => "Insurance CRM API running 🚀");
-
 #endregion
 
 app.Run();

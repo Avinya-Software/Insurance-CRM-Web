@@ -12,7 +12,8 @@ import Claims from "./pages/Claims";
 import Settings from "./pages/Settings";
 import Lead from "./pages/Lead";
 import Product from "./pages/Product";
-import Campaign from "./pages/Campaign "
+import Campaign from "./pages/Campaign ";
+import AdminDashboard from "./pages/AdminDashboard";
 import Insurer from "./pages/Insurer";
 
 function App() {
@@ -41,6 +42,8 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/Campaign" element={<Campaign />} />
           <Route path="/products" element={<Product />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+
         </Route>
       </Routes>
     </BrowserRouter>

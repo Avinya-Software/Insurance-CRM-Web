@@ -9,6 +9,8 @@ import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { useInsurerDropdown } from "../../hooks/insurer/useInsurerDropdown";
 import { useProductDropdown } from "../../hooks/product/useProductDropdown";
 import { usePolicyDocumentActions } from "../../hooks/policy/usePolicyDocumentActions";
+import SearchableComboBox from "../common/SearchableComboBox";
+
 import Spinner from "../common/Spinner";
 
 interface Props {
