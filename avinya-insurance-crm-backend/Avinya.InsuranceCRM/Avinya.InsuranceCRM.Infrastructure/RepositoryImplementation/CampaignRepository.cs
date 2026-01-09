@@ -295,5 +295,17 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                     c.Name))
                 .ToListAsync();
         }
+        public async Task<List<(int CampaignTypeId, string Name)>> GetCampaignTypeDropdownAsync()
+        {
+            return await _db.MasterCampaignTypes
+                .AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new ValueTuple<int, string>(
+                    x.CampaignTypeId,
+                    x.Name))
+                .ToListAsync();
+        }
+
     }
 }

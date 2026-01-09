@@ -62,3 +62,13 @@ export const getCampaignDropdownApi = async () => {
 
   return res.data;
 };
+
+/* ================= CAMPAIGN TYPE DROPDOWN ================= */
+
+export const getCampaignTypeDropdownApi = async () => {
+  const res = await api.get<
+    { campaignTypeId: number; name: string }[]
+  >("/campaigns/campaign-types/dropdown");
+
+  return res.data;
+};

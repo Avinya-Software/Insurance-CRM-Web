@@ -115,9 +115,12 @@ const Campaigns = () => {
       </div>
 
       {/* UPSERT SHEET - 👇 ADDED selectedCampaign PROP */}
-      <CampaignUpsertSheet
+        <CampaignUpsertSheet
         open={openSheet}
-        onClose={() => setOpenSheet(false)}
+        onClose={() => {
+          setOpenSheet(false);
+          setSelectedCampaign(null); // 🔑 CRITICAL
+        }}
         onSuccess={handleSuccess}
         selectedCampaign={selectedCampaign}
       />

@@ -25,4 +25,5 @@ public interface ICampaignRepository
     Task DeleteCampaignAsync(Guid campaignId);
 
     Task<List<(Guid CampaignId, string Name)>> GetDropdownAsync();
+    Task<List<(int CampaignTypeId, string Name)>> GetCampaignTypeDropdownAsync();
 }

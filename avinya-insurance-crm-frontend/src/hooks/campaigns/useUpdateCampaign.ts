@@ -19,7 +19,6 @@ export const useUpdateCampaign = () => {
     }) => updateCampaignApi(campaignId, data),
 
     onSuccess: () => {
-      toast.success("Campaign updated successfully");
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
     },
 

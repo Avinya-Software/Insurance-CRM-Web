@@ -100,4 +100,15 @@ public class CampaignController : ControllerBase
             name = x.Name
         }));
     }
+    [HttpGet("campaign-types/dropdown")]
+    public async Task<IActionResult> CampaignTypeDropdown()
+    {
+        var data = await _repository.GetCampaignTypeDropdownAsync();
+
+        return Ok(data.Select(x => new
+        {
+            campaignTypeId = x.CampaignTypeId,
+            name = x.Name
+        }));
+    }
 }

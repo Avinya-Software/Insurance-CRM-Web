@@ -14,7 +14,6 @@ export const useCreateCampaign = () => {
     }) => createCampaignApi(data),
 
     onSuccess: () => {
-      toast.success("Campaign created successfully");
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
     },
 

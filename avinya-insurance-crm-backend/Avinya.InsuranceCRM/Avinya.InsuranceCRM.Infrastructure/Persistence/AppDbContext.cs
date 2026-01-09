@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 public class AppDbContext : IdentityDbContext<IdentityUser>
 {
@@ -34,6 +35,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<CampaignTemplate> CampaignTemplates => Set<CampaignTemplate>();
     public DbSet<CampaignLog> CampaignLogs => Set<CampaignLog>();
     public DbSet<CampaignCustomer> CampaignCustomers => Set<CampaignCustomer>();
+    public DbSet<MasterCampaignType> MasterCampaignTypes => Set<MasterCampaignType>();
 
     // ---------------- MODEL CONFIG ----------------
     protected override void OnModelCreating(ModelBuilder builder)
@@ -351,6 +353,22 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
                   .WithMany(c => c.CampaignCustomers)
                   .HasForeignKey(x => x.CustomerId);
         });
+        builder.Entity<MasterCampaignType>(entity =>
+        {
+            entity.ToTable("MasterCampaignTypes");
+
+            entity.HasKey(x => x.CampaignTypeId);
+
+            entity.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.IsActive)
+                .HasDefaultValue(true);
+
+            entity.Property(x => x.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+        });
 
 
         // ---------------- LEAD STATUS MASTER DATA ----------------
@@ -425,6 +443,14 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         new RenewalStatusMaster { RenewalStatusId = 1, StatusName = "Pending", IsActive = true },
         new RenewalStatusMaster { RenewalStatusId = 2, StatusName = "Renewed", IsActive = true },
         new RenewalStatusMaster { RenewalStatusId = 3, StatusName = "Lost", IsActive = true }
+        );
+        builder.Entity<MasterCampaignType>().HasData(
+        new MasterCampaignType{CampaignTypeId = 1, Name = "Promotional",IsActive = true, CreatedAt = DateTime.UtcNow},
+        new MasterCampaignType{CampaignTypeId = 2, Name = "Birthday",IsActive = true,CreatedAt = DateTime.UtcNow },
+        new MasterCampaignType{CampaignTypeId = 3,Name = "Policy Renewal",IsActive = true, CreatedAt = DateTime.UtcNow},
+        new MasterCampaignType{CampaignTypeId = 4,Name = "Payment Reminder",  IsActive = true,CreatedAt = DateTime.UtcNow},
+        new MasterCampaignType{CampaignTypeId = 5, Name = "Policy Expiry", IsActive = true, CreatedAt = DateTime.UtcNow },
+        new MasterCampaignType{CampaignTypeId = 6,Name = "Custom",IsActive = true,CreatedAt = DateTime.UtcNow }
         );
     }
 }
