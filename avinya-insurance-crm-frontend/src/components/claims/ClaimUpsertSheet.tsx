@@ -12,6 +12,7 @@ import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { usePolicies } from "../../hooks/policy/usePolicies";
 import { useClaimFileActions } from "../../hooks/claim/useClaimFileActions";
 import Spinner from "../common/Spinner";
+import SearchableComboBox from "../common/SearchableComboBox";
 
 interface Props {
   open: boolean;
@@ -201,35 +202,58 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
             </div>
           ) : (
             <div className="space-y-4">
-              <Select
-                label="Customer"
-                required
-                value={form.customerId}
-                error={errors.customerId}
-                options={customers}
-                idKey="customerId"
-                labelKey="fullName"
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    customerId: v,
-                    policyId: "",
-                  })
-                }
-              />
+              <SearchableComboBox
+                  items={customers.map((c) => ({
+                    value: c.customerId,
+                    label: c.fullName,
+                  }))}
+                  value={form.customerId}
+                  placeholder="Select customer"
+                  onSelect={(item) =>
+                    setForm({
+                      ...form,
+                      customerId: item?.value || "",
+                      policyId: "", // reset policy on customer change
+                    })
+                  }
+                />
 
-              <Select
-                label="Policy"
-                required
-                value={form.policyId}
-                error={errors.policyId}
-                options={policies?.data || []}
-                idKey="policyId"
-                labelKey="policyNumber"
-                disabled={!form.customerId}
-                loading={policiesLoading}
-                onChange={(v) => setForm({ ...form, policyId: v })}
-              />
+                {errors.customerId && (
+                  <p className="text-sm text-red-500 mt-1">{errors.customerId}</p>
+                )}
+
+
+             <div
+                className={
+                  !form.customerId || policiesLoading
+                    ? "opacity-50 pointer-events-none"
+                    : ""
+                }
+              >
+        <SearchableComboBox
+          items={(policies?.data || []).map((p) => ({
+            value: p.policyId,
+            label: p.policyNumber,
+          }))}
+          value={form.policyId}
+          placeholder={
+            policiesLoading
+              ? "Loading policies..."
+              : "Select policy"
+          }
+          onSelect={(item) =>
+            setForm({
+              ...form,
+              policyId: item?.value || "",
+            })
+          }
+        />
+      </div>
+
+      {errors.policyId && (
+        <p className="text-sm text-red-500 mt-1">{errors.policyId}</p>
+      )}
+
 
               <Select
                 label="Claim Type"

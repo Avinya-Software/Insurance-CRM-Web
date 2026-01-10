@@ -15,6 +15,7 @@ import Lead from "./pages/Lead";
 import Product from "./pages/Product";
 import Campaign from "./pages/Campaign ";
 import Insurer from "./pages/Insurer";
+import { Toaster } from "react-hot-toast";
 
 /* -------- ADMIN PAGES -------- */
 import AdminAdvisorsByStatusPage from "./pages/AdminAdvisorsByStatusPage";
@@ -22,6 +23,13 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
+    <>
+     <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+        }}
+      />
     <BrowserRouter>
       <Routes>
         {/* ================= PUBLIC ================= */}
@@ -57,6 +65,7 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </>
   );
 }
 

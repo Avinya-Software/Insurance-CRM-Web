@@ -6,6 +6,18 @@ export interface ComboBoxItem {
 }
 
 interface Props<T extends ComboBoxItem> {
+  /** Label shown above input */
+  label?: string;
+
+  /** Marks field required (UI only) */
+  required?: boolean;
+
+  /** Validation error message */
+  error?: string;
+
+  /** Disable interaction */
+  disabled?: boolean;
+
   items: T[];
   value?: string;
   placeholder?: string;
@@ -24,9 +36,14 @@ interface Props<T extends ComboBoxItem> {
 }
 
 const SearchableComboBox = <T extends ComboBoxItem>({
+  label,
+  required,
+  error,
+  disabled,
+
   items,
   value,
-  placeholder = "Search...",
+  placeholder = "Select",
   onSelect,
   onCreate,
   emptyText = "No results found",
@@ -53,49 +70,73 @@ const SearchableComboBox = <T extends ComboBoxItem>({
   }, []);
 
   return (
-    <div ref={ref} className="relative w-full">
-      <input
-        className="input w-full"
-        placeholder={placeholder}
-        value={open ? search : selected?.label || ""}
-        onFocus={() => {
-          setOpen(true);
-          setSearch("");
-        }}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
-      {open && (
-        <div className="absolute z-50 mt-1 w-full bg-white border rounded-lg shadow max-h-56 overflow-y-auto">
-          {filtered.length > 0 ? (
-            filtered.map((item) => (
-              <div
-                key={item.value}
-                className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-100"
-                onClick={() => {
-                  onSelect(item);
-                  setOpen(false);
-                }}
-              >
-                {item.label}
-              </div>
-            ))
-          ) : (
-            <div className="p-3 text-sm text-gray-500">
-              {emptyText}
-
-              {onCreate && search && (
-                <button
-                  className="mt-2 w-full border rounded-md py-1 text-blue-600 hover:bg-blue-50"
-                  onClick={() => onCreate(search)}
-                >
-                  + {createText}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+    <div className="w-full">
+      {/* LABEL */}
+      {label && (
+        <label className="block text-sm font-medium mb-1">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
       )}
+
+      <div
+        ref={ref}
+        className={`relative ${
+          disabled ? "pointer-events-none opacity-60" : ""
+        }`}
+      >
+        <input
+          className={`input w-full placeholder:text-black
+            ${selected ? "text-black-900" : "text-black-900"}
+            ${error ? "border-red-500 focus:ring-red-500" : ""}
+          `}
+          placeholder={placeholder}
+          value={open ? search : selected?.label || ""}
+          disabled={disabled}
+          onFocus={() => {
+            if (disabled) return;
+            setOpen(true);
+            setSearch("");
+          }}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        {open && (
+          <div className="absolute z-50 mt-1 w-full bg-white border rounded-lg shadow max-h-56 overflow-y-auto">
+            {filtered.length > 0 ? (
+              filtered.map((item) => (
+                <div
+                  key={item.value}
+                  className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 text-gray-900"
+                  onClick={() => {
+                    onSelect(item);
+                    setOpen(false);
+                  }}
+                >
+                  {item.label}
+                </div>
+              ))
+            ) : (
+              <div className="p-3 text-sm text-gray-500">
+                {emptyText}
+
+                {onCreate && search && (
+                  <button
+                    type="button"
+                    className="mt-2 w-full border rounded-md py-1 text-blue-600 hover:bg-blue-50"
+                    onClick={() => onCreate(search)}
+                  >
+                    + {createText}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ERROR */}
+      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
     </div>
   );
 };

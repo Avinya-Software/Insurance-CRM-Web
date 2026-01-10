@@ -2,41 +2,40 @@ import { useState } from "react";
 import {
   CheckCircle,
   Loader2,
-  UserCheck,
   XCircle
 } from "lucide-react";
+import { Toaster } from "react-hot-toast";
 import { usePendingAdvisors } from "../hooks/admin/usePendingAdvisors";
 import { useApproveAdvisor } from "../hooks/admin/useApproveAdvisor";
 import { useDeleteAdvisor } from "../hooks/admin/useDeleteAdvisor";
-
-type PendingAdvisor = {
-  userId: string;
-  advisorId: string;
-  fullName: string;
-  email: string;
-  registeredAt?: string;
-};
+import TableSkeleton from "../components/common/TableSkeleton";
 
 type ActionType = "approve" | "reject" | null;
 
 const AdminDashboard = () => {
-  const { data, isLoading, isError } = usePendingAdvisors();
+  const { data, isLoading } = usePendingAdvisors();
   const approveMutation = useApproveAdvisor();
   const deleteMutation = useDeleteAdvisor();
 
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<ActionType>(null);
+  const [selectedUserId, setSelectedUserId] =
+    useState<string | null>(null);
+  const [actionType, setActionType] =
+    useState<ActionType>(null);
 
-  const advisors: PendingAdvisor[] = data?.data || [];
+  const advisors = data?.data || [];
 
-  const openApproveDialog = (userId: string) => {
-    setSelectedUserId(userId);
-    setActionType("approve");
-  };
+  const confirmAction = () => {
+    if (!selectedUserId || !actionType) return;
 
-  const openRejectDialog = (userId: string) => {
-    setSelectedUserId(userId);
-    setActionType("reject");
+    if (actionType === "approve") {
+      approveMutation.mutate(selectedUserId, {
+        onSuccess: closeDialog,
+      });
+    } else {
+      deleteMutation.mutate(selectedUserId, {
+        onSuccess: closeDialog,
+      });
+    }
   };
 
   const closeDialog = () => {
@@ -44,127 +43,109 @@ const AdminDashboard = () => {
     setActionType(null);
   };
 
-  const confirmAction = () => {
-    if (!selectedUserId || !actionType) return;
-
-    if (actionType === "approve") {
-      approveMutation.mutate(selectedUserId, {
-        onSuccess: closeDialog
-      });
-    }
-
-    if (actionType === "reject") {
-      deleteMutation.mutate(selectedUserId, {
-        onSuccess: closeDialog
-      });
-    }
-  };
-
   const isActionLoading =
-    approveMutation.isPending || deleteMutation.isPending;
+    approveMutation.isPending ||
+    deleteMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-blue-50 px-6 py-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Admin Dashboard
+    <>
+      <Toaster position="top-right" />
+
+      <div className="bg-white rounded-lg border">
+        {/* ================= HEADER ================= */}
+        <div className="px-4 py-5 border-b bg-gray-100">
+          <h1 className="text-4xl font-serif font-semibold text-slate-900">
+            Pending Advisors
           </h1>
-          <p className="text-gray-700">
-            Approve or reject newly registered advisors
+          <p className="mt-1 text-sm text-slate-600">
+            {advisors.length} awaiting approval
           </p>
         </div>
 
-        {/* Loading */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-gray-700" />
-          </div>
-        )}
+        {/* ================= TABLE ================= */}
+        <div className="relative overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead className="bg-slate-100 sticky top-0 z-10">
+              <tr>
+                <Th>Name</Th>
+                <Th>Email</Th>
+                <Th className="text-center">Actions</Th>
+              </tr>
+            </thead>
 
-        {/* Error */}
-        {isError && (
-          <p className="text-red-600">
-            Failed to load pending advisors
-          </p>
-        )}
-
-        {/* Empty */}
-        {!isLoading && advisors.length === 0 && (
-          <div className="bg-white rounded-lg p-8 text-center shadow">
-            <UserCheck className="w-12 h-12 mx-auto text-green-600 mb-3" />
-            <p className="text-gray-800 font-medium">
-              No pending advisors 🎉
-            </p>
-          </div>
-        )}
-
-        {/* Table */}
-        {advisors.length > 0 && (
-          <div className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-100 text-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left">Name</th>
-                  <th className="px-6 py-3 text-left">Email</th>
-                  <th className="px-6 py-3 text-left">Action</th>
-                </tr>
-              </thead>
+            {isLoading ? (
+              <TableSkeleton rows={6} columns={3} />
+            ) : (
               <tbody>
-                {advisors.map((advisor) => (
-                  <tr key={advisor.userId} className="border-t">
-                    <td className="px-6 py-4 font-medium">
-                      {advisor.fullName}
-                    </td>
-                    <td className="px-6 py-4">
-                      {advisor.email}
-                    </td>
-                    <td className="px-6 py-4 flex gap-3">
-                      {/* APPROVE */}
-                      <button
-                        onClick={() =>
-                          openApproveDialog(advisor.userId)
-                        }
-                        className="inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 transition"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        Approve
-                      </button>
-
-                      {/* REJECT */}
-                      <button
-                        onClick={() =>
-                          openRejectDialog(advisor.userId)
-                        }
-                        className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Reject
-                      </button>
+                {advisors.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="text-center py-12 text-slate-500"
+                    >
+                      No pending advisors 🎉
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  advisors.map((a: any) => (
+                    <tr
+                      key={a.userId}
+                      className="border-t h-[52px] hover:bg-slate-50"
+                    >
+                      <Td className="font-medium">
+                        {a.fullName}
+                      </Td>
+                      <Td>{a.email}</Td>
+                      <Td className="text-center">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedUserId(a.userId);
+                              setActionType("approve");
+                            }}
+                            className="inline-flex items-center gap-2 bg-green-700 text-white px-3 py-1.5 rounded text-sm hover:bg-green-800"
+                          >
+                            <CheckCircle size={16} />
+                            Approve
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setSelectedUserId(a.userId);
+                              setActionType("reject");
+                            }}
+                            className="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700"
+                          >
+                            <XCircle size={16} />
+                            Reject
+                          </button>
+                        </div>
+                      </Td>
+                    </tr>
+                  ))
+                )}
               </tbody>
-            </table>
-          </div>
-        )}
+            )}
+          </table>
+        </div>
       </div>
 
-      {/* CONFIRMATION MODAL */}
+      {/* ================= CONFIRM MODAL ================= */}
       {selectedUserId && actionType && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
+            <h3 className="text-lg font-semibold mb-3">
               {actionType === "approve"
-                ? "Confirm Approval"
-                : "Confirm Rejection"}
+                ? "Approve Advisor"
+                : "Reject Advisor"}
             </h3>
 
-            <p className="text-gray-700 mb-6">
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to{" "}
               {actionType === "approve"
-                ? "Are you sure you want to approve this advisor?"
-                : "Are you sure you want to reject this advisor?"}
+                ? "approve"
+                : "reject"}{" "}
+              this advisor?
             </p>
 
             <div className="flex justify-end gap-3">
@@ -178,17 +159,20 @@ const AdminDashboard = () => {
               <button
                 onClick={confirmAction}
                 disabled={isActionLoading}
-                className={`px-4 py-2 text-white rounded flex items-center gap-2 disabled:opacity-60 ${
+                className={`px-4 py-2 text-white rounded disabled:opacity-50 ${
                   actionType === "approve"
                     ? "bg-green-700 hover:bg-green-800"
                     : "bg-red-600 hover:bg-red-700"
                 }`}
               >
                 {isActionLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="flex items-center gap-2">
+                    <Loader2
+                      size={16}
+                      className="animate-spin"
+                    />
                     Processing...
-                  </>
+                  </span>
                 ) : actionType === "approve" ? (
                   "Approve"
                 ) : (
@@ -199,8 +183,21 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
 export default AdminDashboard;
+
+/* ---------- HELPERS ---------- */
+const Th = ({ children, className = "" }: any) => (
+  <th
+    className={`px-4 py-3 text-left font-semibold text-slate-700 ${className}`}
+  >
+    {children}
+  </th>
+);
+
+const Td = ({ children, className = "" }: any) => (
+  <td className={`px-4 py-3 ${className}`}>{children}</td>
+);

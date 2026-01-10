@@ -119,7 +119,7 @@ const Login = () => {
     (adminErr as any)?.response?.data?.message;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-green-50 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-8">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -156,7 +156,7 @@ const Login = () => {
                     ${
                       errors.email
                         ? "border border-red-500 focus:ring-2 focus:ring-red-500"
-                        : "border border-gray-300 focus:ring-2 focus:ring-green-500"
+                        : "border border-gray-300 focus:ring-2 focus:ring-salte-500"
                     }`}
                 />
               </div>
@@ -184,7 +184,7 @@ const Login = () => {
                     ${
                       errors.password
                         ? "border border-red-500 focus:ring-2 focus:ring-red-500"
-                        : "border border-gray-300 focus:ring-2 focus:ring-green-500"
+                        : "border border-gray-300 focus:ring-2 focus:ring-slate-500"
                     }`}
                 />
                 <button
@@ -246,7 +246,7 @@ const Login = () => {
             Don&apos;t have an account?{" "}
             <Link
               to="/register"
-              className="text-green-800 hover:text-green-700 font-semibold"
+              className="text-slate-800 hover:text-slate-700 font-semibold"
             >
               Create one now
             </Link>

@@ -181,7 +181,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
         /* ================= PRODUCT CATEGORY DROPDOWN ================= */
 
-        [HttpGet("product-category-dropdown")]
+        [HttpGet("ProductCategorydropdown")]
         public async Task<IActionResult> GetProductCategoryDropdown()
         {
             var categories = await _productRepository.GetProductCategoryDropdownAsync();

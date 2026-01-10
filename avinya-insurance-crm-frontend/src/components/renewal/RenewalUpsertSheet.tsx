@@ -7,6 +7,7 @@ import { usePolicyDropdown } from "../../hooks/policy/usePolicyDropdown";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { useRenewalStatuses } from "../../hooks/renewal/useRenewalStatuses";
 import Spinner from "../common/Spinner";
+import SearchableComboBox from "../common/SearchableComboBox";
 
 interface Props {
   open: boolean;
@@ -231,19 +232,28 @@ useEffect(() => {
             <Spinner />
           ) : (
             <div className="space-y-4">
-              <Select
-                label="Customer"
-                required
-                value={form.customerId}
-                error={errors.customerId}
-                options={customers || []}
-                valueKey="customerId"
-                labelKey="fullName"
-                disabled={isFromPolicy}
-                onChange={(v) =>
-                  setForm({ ...form, customerId: v })
-                }
-              />
+              <div className={isFromPolicy ? "opacity-50 pointer-events-none" : ""}>
+                <SearchableComboBox
+                  label="Customer"
+                  items={(customers || []).map((c) => ({
+                    value: c.customerId,
+                    label: c.fullName,
+                  }))}
+                  value={form.customerId}
+                  placeholder="Select customer"
+                  onSelect={(item) =>
+                    setForm({
+                      ...form,
+                      customerId: item?.value || "",
+                    })
+                  }
+                />
+              </div>
+
+              {errors.customerId && (
+                <p className="text-sm text-red-500 mt-1">{errors.customerId}</p>
+              )}
+
 
               <Select
                 label="Policy"

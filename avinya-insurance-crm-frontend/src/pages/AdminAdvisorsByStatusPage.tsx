@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
+import { Toaster } from "react-hot-toast";
 import { useAdvisorsByStatus } from "../hooks/admin/useAdvisorsByStatus";
+import TableSkeleton from "../components/common/TableSkeleton";
 
 type StatusType = "approved" | "rejected";
 
@@ -11,11 +13,10 @@ const AdminAdvisorsByStatusPage = () => {
     status
   });
 
-  // 🔍 Client-side search (fast & simple)
+  /* ---------- SEARCH ---------- */
   const filteredData = useMemo(() => {
     if (!data?.data) return [];
-
-    return data.data.filter((item) =>
+    return data.data.filter((item: any) =>
       `${item.fullName} ${item.email}`
         .toLowerCase()
         .includes(search.toLowerCase())
@@ -23,105 +24,133 @@ const AdminAdvisorsByStatusPage = () => {
   }, [data, search]);
 
   return (
-    <div className="p-6 space-y-6">
-      {/* ================= HEADER ================= */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">
-          {status === "approved"
-            ? "Approved Advisors"
-            : "Rejected Advisors"}
-        </h1>
+    <>
+      <Toaster position="top-right" />
 
-        {/* 🔀 STATUS SWITCH */}
-        <div className="flex items-center bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setStatus("approved")}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-              status === "approved"
-                ? "bg-white shadow text-green-600"
-                : "text-gray-500"
-            }`}
-          >
-            Approved
-          </button>
+      <div className="bg-white rounded-lg border">
+        {/* ================= HEADER ================= */}
+        <div className="px-4 py-5 border-b bg-gray-100">
+          <div className="grid grid-cols-2 gap-y-4 items-start">
+            <div>
+              <h1 className="text-4xl font-serif font-semibold text-slate-900">
+                Advisor History
+              </h1>
+            </div>
 
-          <button
-            onClick={() => setStatus("rejected")}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
-              status === "rejected"
-                ? "bg-white shadow text-red-600"
-                : "text-gray-500"
-            }`}
-          >
-            Rejected
-          </button>
+            {/* STATUS SWITCH */}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setStatus("approved");
+                }}
+                className={`px-4 py-2 rounded text-sm font-medium ${
+                  status === "approved"
+                    ? "bg-green-600 text-white"
+                    : "border"
+                }`}
+              >
+                Approved
+              </button>
+
+              <button
+                onClick={() => {
+                  setStatus("rejected");
+                }}
+                className={`px-4 py-2 rounded text-sm font-medium ${
+                  status === "rejected"
+                    ? "bg-red-600 text-white"
+                    : "border"
+                }`}
+              >
+                Rejected
+              </button>
+            </div>
+
+            {/* SEARCH */}
+            <div>
+              <input
+                type="text"
+                placeholder=" 🔍 Search advisor..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                }}
+                className="w-[360px] h-10 px-3 border rounded text-sm"
+              />
+            </div>
+
+            <div />
+          </div>
+        </div>
+
+        {/* ================= TABLE ================= */}
+        <div className="relative overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead className="bg-slate-100 sticky top-0 z-10">
+              <tr>
+                <Th>Advisor</Th>
+                <Th>Email</Th>
+                <Th>Advisor ID</Th>
+                <Th>
+                  {status === "approved"
+                    ? "Approved On"
+                    : "Rejected On"}
+                </Th>
+              </tr>
+            </thead>
+
+            {isLoading ? (
+              <TableSkeleton rows={6} columns={4} />
+            ) : (
+              <tbody>
+                {filteredData.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="text-center py-12 text-slate-500"
+                    >
+                      No advisors found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredData.map((item: any) => (
+                    <tr
+                      key={item.userId}
+                      className="border-t h-[52px] hover:bg-slate-50"
+                    >
+                      <Td className="font-medium">
+                        {item.fullName}
+                      </Td>
+                      <Td>{item.email}</Td>
+                      <Td>{item.advisorId}</Td>
+                      <Td>
+                        {item.actionDate
+                          ? new Date(
+                              item.actionDate
+                            ).toLocaleDateString()
+                          : "-"}
+                      </Td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            )}
+          </table>
         </div>
       </div>
-
-      {/* ================= SEARCH ================= */}
-      <div className="flex gap-4">
-        <input
-          type="text"
-          placeholder="Search by name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      {/* ================= TABLE ================= */}
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr className="text-left">
-              <th className="p-3">Advisor</th>
-              <th className="p-3">Email</th>
-              <th className="p-3">Advisor ID</th>
-              <th className="p-3">
-                {status === "approved" ? "Approved On" : "Rejected On"}
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={4} className="p-6 text-center">
-                  Loading...
-                </td>
-              </tr>
-            )}
-
-            {!isLoading && filteredData.length === 0 && (
-              <tr>
-                <td colSpan={4} className="p-6 text-center text-gray-500">
-                  No records found
-                </td>
-              </tr>
-            )}
-
-            {filteredData.map((item) => (
-              <tr
-                key={item.userId}
-                className="border-b hover:bg-gray-50"
-              >
-                <td className="p-3 font-medium">
-                  {item.fullName}
-                </td>
-                <td className="p-3">{item.email}</td>
-                <td className="p-3">{item.advisorId}</td>
-                <td className="p-3">
-                  {item.actionDate
-                    ? new Date(item.actionDate).toLocaleDateString()
-                    : "-"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    </>
   );
 };
 
 export default AdminAdvisorsByStatusPage;
+
+/* ---------- HELPERS ---------- */
+const Th = ({ children }: any) => (
+  <th className="px-4 py-3 text-left font-semibold text-slate-700">
+    {children}
+  </th>
+);
+
+const Td = ({ children, className = "" }: any) => (
+  <td className={`px-4 py-3 ${className}`}>{children}</td>
+);

@@ -6,7 +6,7 @@ import { useUpsertProduct } from "../../hooks/product/useUpsertProduct";
 import { useProductCategoryDropdown } from "../../hooks/product/useProductCategoryDropdown";
 import { useInsurerDropdown } from "../../hooks/insurer/useInsurerDropdown";
 import Spinner from "../common/Spinner";
-
+import SearchableComboBox from "../common/SearchableComboBox";
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -170,18 +170,27 @@ const ProductUpsertSheet = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <Select
-                label="Insurer"
-                value={form.insurerId}
-                error={errors.insurerId}
-                onChange={(v) =>
-                  setForm({ ...form, insurerId: v })
-                }
-                options={insurers}
-                valueKey="insurerId"
-                labelKey="insurerName"
-                disabled={!!insurerId}
-              />
+              <div className={insurerId ? "opacity-50 pointer-events-none" : ""}>
+                <SearchableComboBox
+                  label="Insurer"
+                  items={insurers.map((i) => ({
+                    value: i.insurerId,
+                    label: i.insurerName,
+                  }))}
+                  value={form.insurerId}
+                  placeholder="Select insurer"
+                  onSelect={(item) =>
+                    setForm({
+                      ...form,
+                      insurerId: item?.value || "",
+                    })
+                  }
+                />
+              </div>
+
+              {errors.insurerId && (
+                <p className="text-sm text-red-500 mt-1">{errors.insurerId}</p>
+              )}
 
               <Select
                 label="Product Category"

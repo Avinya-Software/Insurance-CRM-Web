@@ -258,47 +258,68 @@ const PolicyUpsertSheet = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <Select
+              <SearchableComboBox
                 label="Customer"
                 required
+                items={(customers || []).map((c) => ({
+                  value: c.customerId,
+                  label: c.fullName,
+                }))}
                 value={form.customerId}
                 error={errors.customerId}
-                options={customers}
-                valueKey="customerId"
-                labelKey="fullName"
                 disabled={!!customerId}
-                onChange={(v) => setForm({ ...form, customerId: v })}
-              />
-
-              <Select
-                label="Insurer"
-                required
-                value={form.insurerId}
-                error={errors.insurerId}
-                options={insurers}
-                valueKey="insurerId"
-                labelKey="insurerName"
-                onChange={(v) =>
+                placeholder="Select customer"
+                onSelect={(item) =>
                   setForm({
                     ...form,
-                    insurerId: v,
-                    productId: "",
+                    customerId: item?.value || "",
                   })
                 }
               />
 
-              <Select
-                label="Product"
-                required
-                value={form.productId}
-                error={errors.productId}
-                options={products}
-                valueKey="productId"
-                labelKey="productName"
-                disabled={!form.insurerId}
-                onChange={(v) => setForm({ ...form, productId: v })}
+
+             <SearchableComboBox
+             label="insurer"
+                items={insurers.map((i) => ({
+                  value: i.insurerId,
+                  label: i.insurerName,
+                }))}
+                value={form.insurerId}
+                placeholder="Select insurer"
+                onSelect={(item) =>
+                  setForm({
+                    ...form,
+                    insurerId: item?.value || "",
+                    productId: "", // reset product on insurer change
+                  })
+                }
               />
 
+              {errors.insurerId && (
+                <p className="text-sm text-red-500 mt-1">{errors.insurerId}</p>
+              )}
+
+              <SearchableComboBox
+                label="Product"
+                items={products.map((p) => ({
+                  value: p.productId,
+                  label: p.productName,
+                }))}
+                value={form.productId}
+                placeholder={
+                  form.insurerId ? "Select product" : "Select insurer first"
+                }
+                onSelect={(item) =>
+                  setForm({
+                    ...form,
+                    productId: item?.value || "",
+                  })
+                }
+              />
+
+              {errors.productId && (
+                <p className="text-sm text-red-500 mt-1">{errors.productId}</p>
+              )}
               <Select
                 label="Policy Type"
                 required

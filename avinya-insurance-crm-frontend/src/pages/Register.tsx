@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Loader2,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { useRegisterAdvisor } from "../hooks/advisor/useRegisterAdvisor";
 
@@ -80,15 +81,27 @@ const Register = () => {
   };
 
   /* ---------------- REGISTER ---------------- */
-  const handleRegister = () => {
-    if (!validate()) return;
 
-    registerAdvisor(form, {
-      onSuccess: () => {
-        navigate("/login");
-      },
-    });
-  };
+const handleRegister = () => {
+  if (!validate()) return;
+
+  registerAdvisor(form, {
+    onSuccess: () => {
+      toast.success(
+        "Registration successful! Once the admin approves your request, you will be able to access the software."
+      );
+
+      navigate("/login");
+    },
+    onError: (err: any) => {
+      toast.error(
+        err?.response?.data?.message ||
+          "Registration failed. Please try again."
+      );
+    }
+  });
+};
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -96,11 +109,11 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-green-50 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-8">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-800 rounded-2xl mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-800 rounded-2xl mb-4 shadow-lg">
             <User className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -131,7 +144,7 @@ const Register = () => {
                     ${
                       errors.fullName
                         ? "border border-red-500 focus:ring-2 focus:ring-red-500"
-                        : "border border-gray-300 focus:ring-2 focus:ring-green-500"
+                        : "border border-gray-300 focus:ring-2 focus:ring-slate-500"
                     }`}
                 />
               </div>
@@ -157,7 +170,7 @@ const Register = () => {
                     ${
                       errors.mobileNumber
                         ? "border border-red-500 focus:ring-2 focus:ring-red-500"
-                        : "border border-gray-300 focus:ring-2 focus:ring-green-500"
+                        : "border border-gray-300 focus:ring-2 focus:ring-slate-500"
                     }`}
                 />
               </div>
@@ -185,7 +198,7 @@ const Register = () => {
                     ${
                       errors.email
                         ? "border border-red-500 focus:ring-2 focus:ring-red-500"
-                        : "border border-gray-300 focus:ring-2 focus:ring-green-500"
+                        : "border border-gray-300 focus:ring-2 focus:ring-slate-500"
                     }`}
                 />
               </div>
@@ -211,7 +224,7 @@ const Register = () => {
                     ${
                       errors.password
                         ? "border border-red-500 focus:ring-2 focus:ring-red-500"
-                        : "border border-gray-300 focus:ring-2 focus:ring-green-500"
+                        : "border border-gray-300 focus:ring-2 focus:ring-slate-500"
                     }`}
                 />
                 <button
@@ -243,7 +256,7 @@ const Register = () => {
             <button
               onClick={handleRegister}
               disabled={isPending}
-              className="w-full bg-green-800 text-white py-3 rounded-lg font-medium hover:bg-green-900 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full bg-slate-800 text-white py-3 rounded-lg font-medium hover:bg-slate-900 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {isPending ? (
                 <>
@@ -264,7 +277,7 @@ const Register = () => {
             Already have an account?{" "}
             <Link
               to="/login"
-              className="text-green-800 hover:text-green-700 font-semibold"
+              className="text-slate-800 hover:text-slate-700 font-semibold"
             >
               Sign in
             </Link>
