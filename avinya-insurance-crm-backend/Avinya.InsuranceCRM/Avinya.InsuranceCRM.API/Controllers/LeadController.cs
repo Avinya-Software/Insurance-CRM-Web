@@ -21,23 +21,24 @@ public class LeadController : ControllerBase
         _customerRepo = customerRepo;
     }
 
-    // ---------- ADD / UPDATE LEAD ----------
+    /* ================= CREATE / UPDATE ================= */
+
     [HttpPost]
     public async Task<IActionResult> CreateOrUpdate(
         CreateOrUpdateLeadRequest request)
     {
-        // 🔐 AdvisorId MUST come from JWT
-        var advisorIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrEmpty(advisorIdClaim))
+        if (string.IsNullOrEmpty(advisorId))
             return Unauthorized("Advisor not found in token");
 
-        var advisorId = advisorIdClaim;
-
-        // ---------------- UPDATE ----------------
+        /* ---------------- UPDATE ---------------- */
         if (request.LeadId.HasValue)
         {
-            var lead = await _repo.GetByIdAsync(request.LeadId.Value);
+            var lead = await _repo.GetByIdAsync(
+                advisorId,
+                request.LeadId.Value
+            );
 
             if (lead == null)
                 return NotFound("Lead not found");
@@ -50,7 +51,6 @@ public class LeadController : ControllerBase
             lead.LeadSourceDescription = request.LeadSourceDescription;
             lead.Notes = request.Notes;
             lead.Address = request.Address;
-            lead.AdvisorId = advisorId;     // ✅ enforce ownership
             lead.UpdatedAt = DateTime.UtcNow;
 
             await _repo.UpdateAsync(lead);
@@ -58,10 +58,11 @@ public class LeadController : ControllerBase
             return Ok("Lead updated successfully");
         }
 
-        // ---------------- CREATE ----------------
+        /* ---------------- CREATE ---------------- */
+
         Guid? customerId = request.CustomerId;
 
-        // If customer does not exist → create customer
+        // Create customer if not exists
         if (!customerId.HasValue)
         {
             if (string.IsNullOrWhiteSpace(request.FullName) ||
@@ -78,7 +79,7 @@ public class LeadController : ControllerBase
                 PrimaryMobile = request.Mobile,
                 Email = request.Email,
                 Address = request.Address,
-                AdvisorId = advisorId,      // ✅ JWT
+                AdvisorId = advisorId,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -97,7 +98,7 @@ public class LeadController : ControllerBase
             LeadStatusId = request.LeadStatusId,
             LeadSourceId = request.LeadSourceId,
             LeadSourceDescription = request.LeadSourceDescription,
-            AdvisorId = advisorId,        // ✅ JWT
+            AdvisorId = advisorId,
             Address = request.Address,
             CreatedAt = DateTime.UtcNow
         };
@@ -112,7 +113,8 @@ public class LeadController : ControllerBase
         });
     }
 
-    // ---------- SEARCH + PAGINATION ----------
+    /* ================= SEARCH + PAGINATION ================= */
+
     [HttpGet]
     public async Task<IActionResult> GetPaged(
         int pageNumber = 1,
@@ -124,7 +126,13 @@ public class LeadController : ControllerBase
         int? leadStatusId = null,
         int? leadSourceId = null)
     {
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(advisorId))
+            return Unauthorized("Advisor not found in token");
+
         var result = await _repo.GetPagedAsync(
+            advisorId,
             pageNumber,
             pageSize,
             search,
@@ -160,11 +168,20 @@ public class LeadController : ControllerBase
         });
     }
 
-    // ---------- DELETE LEAD ----------
+    /* ================= DELETE ================= */
+
     [HttpDelete("{leadId:guid}")]
     public async Task<IActionResult> Delete(Guid leadId)
     {
-        var deleted = await _repo.DeleteAsync(leadId);
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(advisorId))
+            return Unauthorized("Advisor not found in token");
+
+        var deleted = await _repo.DeleteAsync(
+            advisorId,
+            leadId
+        );
 
         if (!deleted)
             return NotFound("Lead not found or cannot be deleted");
@@ -172,7 +189,8 @@ public class LeadController : ControllerBase
         return Ok("Lead deleted successfully");
     }
 
-    // ---------- LEAD STATUS DROPDOWN ----------
+    /* ================= DROPDOWNS ================= */
+
     [HttpGet("lead-statuses")]
     public async Task<IActionResult> GetLeadStatuses()
     {
@@ -185,7 +203,6 @@ public class LeadController : ControllerBase
         }));
     }
 
-    // ---------- LEAD SOURCE DROPDOWN ----------
     [HttpGet("lead-sources")]
     public async Task<IActionResult> GetLeadSources()
     {

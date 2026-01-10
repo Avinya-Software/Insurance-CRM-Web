@@ -9,7 +9,13 @@ namespace Avinya.InsuranceCRM.Domain.Entities
     {
         public Guid RenewalId { get; set; }
 
-        // ---------------- FKs ----------------
+        /* ================= TENANCY ================= */
+
+        // 🔐 Enforces advisor-level isolation
+        public string AdvisorId { get; set; } = null!;
+
+        /* ================= FOREIGN KEYS ================= */
+
         public Guid PolicyId { get; set; }
 
         [ValidateNever]
@@ -20,7 +26,8 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         [ValidateNever]
         public Customer Customer { get; set; } = null!;
 
-        // ---------------- REMINDERS ----------------
+        /* ================= REMINDERS ================= */
+
         /// <summary>
         /// Stores reminder days like [90,60,30,15,7,1]
         /// </summary>
@@ -31,23 +38,27 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         /// </summary>
         public string? ReminderLog { get; private set; }
 
-        // ---------------- STATUS ----------------
+        /* ================= STATUS ================= */
+
         public int RenewalStatusId { get; set; }
 
         [ValidateNever]
         public RenewalStatusMaster RenewalStatus { get; set; } = null!;
 
-        // ---------------- RENEWAL DETAILS ----------------
+        /* ================= RENEWAL DETAILS ================= */
+
         public DateTime RenewalDate { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal RenewalPremium { get; set; }
 
-        // ---------------- AUDIT ----------------
+        /* ================= AUDIT ================= */
+
         [ValidateNever]
         public string CreatedBy { get; set; } = null!;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
 
         /* ================= DOMAIN METHODS ================= */
 

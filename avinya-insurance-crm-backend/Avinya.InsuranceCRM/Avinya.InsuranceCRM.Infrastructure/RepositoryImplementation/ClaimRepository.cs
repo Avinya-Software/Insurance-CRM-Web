@@ -14,63 +14,113 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context = context;
         }
 
-        public async Task<InsuranceClaim?> GetByIdAsync(Guid claimId)
+        /* ================= GET BY ID ================= */
+
+        public async Task<InsuranceClaim?> GetByIdAsync(
+            string advisorId,
+            Guid claimId)
         {
             return await _context.Claims
-                .FirstOrDefaultAsync(x => x.ClaimId == claimId);
+                .Include(x => x.Customer)
+                .Include(x => x.Policy)
+                    .ThenInclude(p => p.PolicyStatus)
+                .Include(x => x.Policy)
+                    .ThenInclude(p => p.Insurer)
+                .Include(x => x.Policy)
+                    .ThenInclude(p => p.Product)
+                .Include(x => x.ClaimType)
+                .Include(x => x.ClaimStage)
+                .Include(x => x.ClaimHandler)
+                .FirstOrDefaultAsync(x =>
+                    x.ClaimId == claimId &&
+                    x.AdvisorId == advisorId);
         }
 
-        public async Task AddAsync(InsuranceClaim claim)
+        /* ================= CREATE ================= */
+
+        public async Task AddAsync(
+            InsuranceClaim claim,
+            string advisorId)
         {
+            // 🔐 Enforce ownership
+            claim.AdvisorId = advisorId;
+            claim.CreatedAt = DateTime.UtcNow;
+
             await _context.Claims.AddAsync(claim);
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateAsync(InsuranceClaim claim)
+        /* ================= UPDATE ================= */
+
+        public async Task UpdateAsync(
+            InsuranceClaim claim,
+            string advisorId)
         {
-            _context.Claims.Update(claim);
+            var existing = await _context.Claims
+                .FirstOrDefaultAsync(x =>
+                    x.ClaimId == claim.ClaimId &&
+                    x.AdvisorId == advisorId);
+
+            if (existing == null)
+                return;
+
+            existing.PolicyId = claim.PolicyId;
+            existing.CustomerId = claim.CustomerId;
+            existing.ClaimTypeId = claim.ClaimTypeId;
+            existing.ClaimStageId = claim.ClaimStageId;
+            existing.ClaimHandlerId = claim.ClaimHandlerId;
+            existing.IncidentDate = claim.IncidentDate;
+            existing.ClaimAmount = claim.ClaimAmount;
+            existing.ApprovedAmount = claim.ApprovedAmount;
+            existing.Documents = claim.Documents;
+            existing.Status = claim.Status;
+            existing.TATDays = claim.TATDays;
+            existing.Notes = claim.Notes;
+            existing.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
         }
+
+        /* ================= PAGED LIST ================= */
+
         public async Task<(int TotalRecords, List<InsuranceClaim> Data)> GetPagedAsync(
-           int pageNumber,
-           int pageSize,
-           string? search,
-           Guid? customerId,
-           Guid? policyId,
-           int? claimTypeId,
-           int? claimStageId,
-           int? claimHandlerId,
-           string? status)
+            string advisorId,
+            int pageNumber,
+            int pageSize,
+            string? search,
+            Guid? customerId,
+            Guid? policyId,
+            int? claimTypeId,
+            int? claimStageId,
+            int? claimHandlerId,
+            string? status)
         {
             var query = _context.Claims
-            .Include(x => x.Customer)
+                .AsNoTracking()
+                .Where(x => x.AdvisorId == advisorId)
 
-            .Include(x => x.Policy)
-                .ThenInclude(p => p.PolicyStatus)
+                .Include(x => x.Customer)
+                .Include(x => x.Policy)
+                    .ThenInclude(p => p.PolicyStatus)
+                .Include(x => x.Policy)
+                    .ThenInclude(p => p.Insurer)
+                .Include(x => x.Policy)
+                    .ThenInclude(p => p.Product)
+                .Include(x => x.ClaimType)
+                .Include(x => x.ClaimStage)
+                .Include(x => x.ClaimHandler)
+                .AsQueryable();
 
-            .Include(x => x.Policy)
-                .ThenInclude(p => p.Insurer)
-
-            .Include(x => x.Policy)
-                .ThenInclude(p => p.Product)
-
-            .Include(x => x.ClaimType)
-            .Include(x => x.ClaimStage)
-            .Include(x => x.ClaimHandler)
-            .AsQueryable();
-
-
-            // ---------------- SEARCH ----------------
+            /* -------- SEARCH -------- */
             if (!string.IsNullOrWhiteSpace(search))
             {
                 query = query.Where(x =>
                     x.Customer.FullName.Contains(search) ||
                     x.Policy.PolicyNumber.Contains(search) ||
-                    x.Status.Contains(search)
-                );
+                    x.Status.Contains(search));
             }
 
-            // ---------------- FILTERS ----------------
+            /* -------- FILTERS -------- */
             if (customerId.HasValue)
                 query = query.Where(x => x.CustomerId == customerId);
 
@@ -99,10 +149,17 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
             return (totalRecords, data);
         }
-        public async Task DeleteByIdAsync(Guid claimId)
+
+        /* ================= DELETE ================= */
+
+        public async Task DeleteByIdAsync(
+            string advisorId,
+            Guid claimId)
         {
             var claim = await _context.Claims
-                .FirstOrDefaultAsync(x => x.ClaimId == claimId);
+                .FirstOrDefaultAsync(x =>
+                    x.ClaimId == claimId &&
+                    x.AdvisorId == advisorId);
 
             if (claim == null)
                 return;

@@ -2,12 +2,6 @@
 using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Dynamic.Core;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 {
@@ -20,26 +14,27 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context = context;
         }
 
-        public async Task<Insurer?> GetByIdAsync(Guid insurerId)
+        /* ================= READ ================= */
+
+        public async Task<Insurer?> GetByIdAsync(
+            string advisorId,
+            Guid insurerId)
         {
             return await _context.Insurers
-                .FirstOrDefaultAsync(x => x.InsurerId == insurerId);
+                .FirstOrDefaultAsync(x =>
+                    x.InsurerId == insurerId &&
+                    x.AdvisorId == advisorId);
         }
 
-        public async Task AddAsync(Insurer insurer)
+        public async Task<PagedRecordResult<Insurer>> GetPagedAsync(
+            string advisorId,
+            int pageNumber,
+            int pageSize,
+            string? search)
         {
-            _context.Insurers.Add(insurer);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Insurer insurer)
-        {
-            _context.Insurers.Update(insurer);
-            await _context.SaveChangesAsync();
-        }
-        public async Task<PagedRecordResult<Insurer>> GetPagedAsync(int pageNumber,int pageSize,string? search)
-        {
-            var query = _context.Insurers.AsQueryable();
+            var query = _context.Insurers
+                .Where(x => x.AdvisorId == advisorId)
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -69,9 +64,12 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 Data = insurers
             };
         }
-        public async Task<List<Insurer>> GetDropdownAsync()
+
+        public async Task<List<Insurer>> GetDropdownAsync(
+            string advisorId)
         {
             return await _context.Insurers
+                .Where(x => x.AdvisorId == advisorId)
                 .OrderBy(x => x.InsurerName)
                 .Select(x => new Insurer
                 {
@@ -80,10 +78,31 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 })
                 .ToListAsync();
         }
-        public async Task<bool> DeleteAsync(Guid insurerId)
+
+        /* ================= CREATE / UPDATE ================= */
+
+        public async Task AddAsync(Insurer insurer)
+        {
+            _context.Insurers.Add(insurer);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Insurer insurer)
+        {
+            _context.Insurers.Update(insurer);
+            await _context.SaveChangesAsync();
+        }
+
+        /* ================= DELETE ================= */
+
+        public async Task<bool> DeleteAsync(
+            string advisorId,
+            Guid insurerId)
         {
             var insurer = await _context.Insurers
-                .FirstOrDefaultAsync(x => x.InsurerId == insurerId);
+                .FirstOrDefaultAsync(x =>
+                    x.InsurerId == insurerId &&
+                    x.AdvisorId == advisorId);
 
             if (insurer == null)
                 return false;

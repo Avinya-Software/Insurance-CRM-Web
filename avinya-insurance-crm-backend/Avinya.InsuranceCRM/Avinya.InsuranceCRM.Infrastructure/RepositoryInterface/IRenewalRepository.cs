@@ -4,18 +4,39 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
 {
     public interface IRenewalRepository
     {
-        // UPSERT
-        Task<Renewal> UpsertAsync(Renewal renewal, string userId);
+        /* ================= UPSERT ================= */
 
-        // LIST WITH FILTERS
+        Task<Renewal> UpsertAsync(
+            Renewal renewal,
+            string advisorId
+        );
+
+        /* ================= LIST WITH FILTERS ================= */
+
         Task<object> GetRenewalsAsync(
+            string advisorId,
             int pageNumber,
             int pageSize,
             string? search,
             int? renewalStatusId
         );
 
-        // MASTER DROPDOWN
+        /* ================= SINGLE FETCH ================= */
+
+        Task<Renewal?> GetByIdAsync(
+            Guid renewalId,
+            string advisorId
+        );
+
+        /* ================= DELETE ================= */
+
+        Task DeleteByIdAsync(
+            Guid renewalId,
+            string advisorId
+        );
+
+        /* ================= MASTER DROPDOWN ================= */
+
         Task<List<RenewalStatusMaster>> GetRenewalStatusesAsync();
     }
 }

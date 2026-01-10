@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Avinya.InsuranceCRM.Domain.Entities
 {
@@ -13,6 +9,13 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         [Key]
         public Guid ProductId { get; set; } = Guid.NewGuid();
 
+        /* ================= TENANT ================= */
+
+        [Required]
+        public string AdvisorId { get; set; } = null!;
+
+        /* ================= RELATIONS ================= */
+
         [Required]
         public Guid InsurerId { get; set; }
 
@@ -20,7 +23,8 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public int ProductCategoryId { get; set; }
         public ProductCategory ProductCategory { get; set; } = null!;
 
-        [ForeignKey(nameof(ProductCategoryId))]
+        /* ================= PRODUCT DETAILS ================= */
+
         [Required]
         [MaxLength(150)]
         public string ProductName { get; set; } = string.Empty;
@@ -31,9 +35,12 @@ namespace Avinya.InsuranceCRM.Domain.Entities
 
         public int DefaultReminderDays { get; set; } = 0;
 
+        // JSON / Text rules
         public string? CommissionRules { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        /* ================= AUDIT ================= */
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

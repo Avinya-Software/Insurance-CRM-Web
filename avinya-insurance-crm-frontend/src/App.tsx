@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import AppLayout from "./layout/AppLayout";
 
+/* -------- ADVISOR PAGES -------- */
 import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
 import Policies from "./pages/Policies";
@@ -13,18 +14,21 @@ import Settings from "./pages/Settings";
 import Lead from "./pages/Lead";
 import Product from "./pages/Product";
 import Campaign from "./pages/Campaign ";
-import AdminDashboard from "./pages/AdminDashboard";
 import Insurer from "./pages/Insurer";
+
+/* -------- ADMIN PAGES -------- */
+import AdminAdvisorsByStatusPage from "./pages/AdminAdvisorsByStatusPage";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* PUBLIC */}
+        {/* ================= PUBLIC ================= */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* PROTECTED + LAYOUT */}
+        {/* ================= PROTECTED + LAYOUT ================= */}
         <Route
           element={
             <ProtectedRoute>
@@ -32,6 +36,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          {/* -------- ADVISOR ROUTES -------- */}
           <Route path="/" element={<Dashboard />} />
           <Route path="/leads" element={<Lead />} />
           <Route path="/customers" element={<Customers />} />
@@ -40,10 +45,15 @@ function App() {
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/Campaign" element={<Campaign />} />
+          <Route path="/campaign" element={<Campaign />} />
           <Route path="/products" element={<Product />} />
-          <Route path="/admin" element={<AdminDashboard />} />
 
+          {/* -------- ADMIN ROUTES -------- */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route
+            path="/admin/history"
+            element={<AdminAdvisorsByStatusPage />}
+          />
         </Route>
       </Routes>
     </BrowserRouter>

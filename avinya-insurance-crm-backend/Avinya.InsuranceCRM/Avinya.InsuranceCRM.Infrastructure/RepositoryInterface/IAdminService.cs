@@ -1,4 +1,5 @@
 ﻿using Avinya.InsuranceCRM.Application.DTOs.Admin;
+using Avinya.InsuranceCRM.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,11 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
         Task<List<PendingAdvisorDto>> GetPendingAdvisorsAsync();
         Task ApproveAdvisorAsync(string userId, string approvedBy);
         Task DisableAdvisorAsync(string userId);
+        Task<List<AdvisorStatusDto>> GetAdvisorsByStatusAsync(
+           string status,
+           DateTime? fromDate,
+           DateTime? toDate
+       );
     }
 
 }

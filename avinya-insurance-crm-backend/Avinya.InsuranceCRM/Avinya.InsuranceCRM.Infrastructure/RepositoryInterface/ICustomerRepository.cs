@@ -1,19 +1,48 @@
 ﻿using Avinya.InsuranceCRM.API.ResponseModels;
 using Avinya.InsuranceCRM.Domain.Entities;
+
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
 {
     public interface ICustomerRepository
     {
-        Task<bool> ExistsByMobileAsync(string mobile);
-        Task<bool> ExistsByEmailAsync(string email);
+        /* ================= VALIDATIONS ================= */
+
+        Task<bool> ExistsByMobileAsync(string advisorId, string mobile);
+        Task<bool> ExistsByEmailAsync(string advisorId, string email);
+
+        Task<bool> ExistsByEmailAsync(
+            string advisorId,
+            string email,
+            Guid excludeCustomerId);
+
+        Task<bool> ExistsByMobileAsync(
+            string advisorId,
+            string mobile,
+            Guid excludeCustomerId);
+
+        /* ================= CREATE / UPDATE ================= */
+
         Task<Customer> AddAsync(Customer customer);
         Task UpdateAsync(Customer customer);
-        Task<Customer?> GetByIdAsync(Guid customerId);
-        Task<PagedRecordResult<Customer>> GetAllAsync(int pageNumber,int pageSize,string? search);
-        Task<bool> DeleteAsync(Guid customerId);
-        Task<List<Customer>> GetDropdownAsync();
-        Task<bool> ExistsByEmailAsync(string email, Guid excludeCustomerId);
-        Task<bool> ExistsByMobileAsync(string mobile, Guid excludeCustomerId);
-        Task DeleteByIdAsync(Guid customerId);
+
+        /* ================= READ ================= */
+
+        Task<Customer?> GetByIdAsync(
+            string advisorId,
+            Guid customerId);
+
+        Task<PagedRecordResult<Customer>> GetAllAsync(
+            string advisorId,
+            int pageNumber,
+            int pageSize,
+            string? search);
+
+        Task<List<Customer>> GetDropdownAsync(string advisorId);
+
+        /* ================= DELETE ================= */
+
+        Task<bool> DeleteAsync(
+            string advisorId,
+            Guid customerId);
     }
 }

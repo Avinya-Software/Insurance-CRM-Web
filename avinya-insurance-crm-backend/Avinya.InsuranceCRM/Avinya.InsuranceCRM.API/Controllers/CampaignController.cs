@@ -2,6 +2,7 @@
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 [ApiController]
 [Route("api/campaigns")]
@@ -21,7 +22,10 @@ public class CampaignController : ControllerBase
     public async Task<IActionResult> Create(
         [FromBody] CampaignCreateRequest request)
     {
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
         var campaign = await _repository.CreateCampaignAsync(
+            advisorId,
             request.Campaign,
             request.Templates,
             request.Rules,
@@ -33,25 +37,35 @@ public class CampaignController : ControllerBase
             campaign);
     }
 
-    /* ================= GET ================= */
+    /* ================= GET BY ID ================= */
 
     [HttpGet("{campaignId}")]
     public async Task<IActionResult> GetById(Guid campaignId)
     {
-        var campaign = await _repository.GetByIdAsync(campaignId);
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var campaign = await _repository.GetByIdAsync(
+            campaignId,
+            advisorId);
 
         if (campaign == null)
             return NotFound();
 
         return Ok(campaign);
     }
+
+    /* ================= GET PAGED ================= */
+
     [HttpGet]
     public async Task<IActionResult> GetPaged(
-    int pageNumber = 1,
-    int pageSize = 10,
-    string? search = null)
+        int pageNumber = 1,
+        int pageSize = 10,
+        string? search = null)
     {
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
         var result = await _repository.GetPagedAsync(
+            advisorId,
             pageNumber,
             pageSize,
             search);
@@ -70,8 +84,11 @@ public class CampaignController : ControllerBase
         Guid campaignId,
         [FromBody] CampaignCreateRequest request)
     {
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
         await _repository.UpdateCampaignAsync(
             campaignId,
+            advisorId,
             request.Campaign,
             request.Templates,
             request.Rules,
@@ -85,7 +102,12 @@ public class CampaignController : ControllerBase
     [HttpDelete("{campaignId}")]
     public async Task<IActionResult> Delete(Guid campaignId)
     {
-        await _repository.DeleteCampaignAsync(campaignId);
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        await _repository.DeleteCampaignAsync(
+            campaignId,
+            advisorId);
+
         return NoContent();
     }
 
@@ -94,7 +116,9 @@ public class CampaignController : ControllerBase
     [HttpGet("dropdown")]
     public async Task<IActionResult> Dropdown()
     {
-        var data = await _repository.GetDropdownAsync();
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var data = await _repository.GetDropdownAsync(advisorId);
 
         return Ok(data.Select(x => new
         {
@@ -102,6 +126,7 @@ public class CampaignController : ControllerBase
             name = x.Name
         }));
     }
+
     [HttpGet("campaign-types/dropdown")]
     public async Task<IActionResult> CampaignTypeDropdown()
     {

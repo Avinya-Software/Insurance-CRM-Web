@@ -2,11 +2,6 @@
 using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 {
@@ -19,6 +14,8 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context = context;
         }
 
+        /* ================= CREATE ================= */
+
         public async Task<Product> AddAsync(Product product)
         {
             _context.Products.Add(product);
@@ -26,53 +23,39 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             return product;
         }
 
-        public async Task<Product?> GetByIdAsync(Guid productId)
+        /* ================= READ ================= */
+
+        public async Task<Product?> GetByIdAsync(
+            string advisorId,
+            Guid productId)
         {
             return await _context.Products
-                .FirstOrDefaultAsync(x => x.ProductId == productId);
+                .Include(x => x.ProductCategory)
+                .FirstOrDefaultAsync(x =>
+                    x.ProductId == productId &&
+                    x.AdvisorId == advisorId);
         }
 
-        public async Task UpdateAsync(Product product)
-        {
-            _context.Products.Update(product);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<List<Product>> GetDropdownAsync(Guid? insurerId)
-        {
-            var query = _context.Products
-                .Where(x => x.IsActive)
-                .AsQueryable();
-
-            // 🔹 Apply filter ONLY if insurerId is passed
-            if (insurerId.HasValue && insurerId != Guid.Empty)
-            {
-                query = query.Where(x => x.InsurerId == insurerId.Value);
-            }
-
-            return await query
-                .OrderBy(x => x.ProductName)
-                .Select(x => new Product
-                {
-                    ProductId = x.ProductId,
-                    ProductName = x.ProductName
-                })
-                .ToListAsync();
-        }
-        public async Task<PagedRecordResult<Product>> GetPagedAsync( int pageNumber,int pageSize,int? productCategoryId,string? search)
+        public async Task<PagedRecordResult<Product>> GetPagedAsync(
+            string advisorId,
+            int pageNumber,
+            int pageSize,
+            int? productCategoryId,
+            string? search)
         {
             var query = _context.Products
                 .Include(p => p.ProductCategory)
+                .Where(p => p.AdvisorId == advisorId)
                 .AsQueryable();
 
-            // 🎯 Product Category filter
+            /* -------- CATEGORY FILTER -------- */
             if (productCategoryId.HasValue)
             {
                 query = query.Where(p =>
                     p.ProductCategoryId == productCategoryId.Value);
             }
 
-            // 🔍 Search filter (ProductName, ProductCode, CommissionRules)
+            /* -------- SEARCH FILTER -------- */
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.ToLower();
@@ -101,17 +84,59 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 Data = products
             };
         }
-        public async Task<bool> DeleteAsync(Guid productId)
+
+        public async Task<List<Product>> GetDropdownAsync(
+            string advisorId,
+            Guid? insurerId)
+        {
+            var query = _context.Products
+                .Where(x =>
+                    x.AdvisorId == advisorId &&
+                    x.IsActive)
+                .AsQueryable();
+
+            if (insurerId.HasValue && insurerId != Guid.Empty)
+            {
+                query = query.Where(x => x.InsurerId == insurerId.Value);
+            }
+
+            return await query
+                .OrderBy(x => x.ProductName)
+                .Select(x => new Product
+                {
+                    ProductId = x.ProductId,
+                    ProductName = x.ProductName
+                })
+                .ToListAsync();
+        }
+
+        /* ================= UPDATE ================= */
+
+        public async Task UpdateAsync(Product product)
+        {
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+        }
+
+        /* ================= DELETE ================= */
+
+        public async Task<bool> DeleteAsync(
+            string advisorId,
+            Guid productId)
         {
             var product = await _context.Products
-                .FirstOrDefaultAsync(x => x.ProductId == productId);
+                .FirstOrDefaultAsync(x =>
+                    x.ProductId == productId &&
+                    x.AdvisorId == advisorId);
 
             if (product == null)
                 return false;
 
-            // 🚫 Business rule: Do not delete if used in policies
+            // 🚫 Do not delete if used in policies (advisor-safe)
             var isUsed = await _context.CustomerPolicies
-                .AnyAsync(p => p.ProductId == productId);
+                .AnyAsync(p =>
+                    p.ProductId == productId &&
+                    p.AdvisorId == advisorId);
 
             if (isUsed)
                 return false;
@@ -121,15 +146,15 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
             return true;
         }
+
+        /* ================= DROPDOWNS ================= */
+
         public async Task<List<ProductCategory>> GetProductCategoryDropdownAsync()
         {
-            var query = _context.ProductCategories
+            return await _context.ProductCategories
                 .Where(x => x.IsActive)
-                .AsQueryable();
-            return await query
                 .OrderBy(x => x.CategoryName)
                 .ToListAsync();
         }
-
     }
 }

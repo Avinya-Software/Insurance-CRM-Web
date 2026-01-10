@@ -1,4 +1,5 @@
 ﻿using Avinya.InsuranceCRM.Application.DTOs.Admin;
+using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.Identity;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.AspNetCore.Identity;
@@ -69,6 +70,53 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             user.IsActive = false;
             await _userManager.UpdateAsync(user);
         }
+        public async Task<List<AdvisorStatusDto>> GetAdvisorsByStatusAsync(
+    string status,
+    DateTime? fromDate,
+    DateTime? toDate)
+        {
+            var users = _userManager.Users.AsQueryable();
+
+            if (status == "approved")
+            {
+                users = users.Where(u => u.IsApproved && u.IsActive);
+
+                if (fromDate.HasValue)
+                    users = users.Where(u => u.ApprovedAt >= fromDate);
+
+                if (toDate.HasValue)
+                    users = users.Where(u => u.ApprovedAt <= toDate);
+            }
+            else if (status == "rejected")
+            {
+                users = users.Where(u => !u.IsActive);
+            }
+            else
+            {
+                throw new ArgumentException("Invalid status. Use approved or rejected");
+            }
+
+            var result = new List<AdvisorStatusDto>();
+
+            foreach (var user in users.ToList())
+            {
+                var advisor = await _advisorRepo.GetByUserIdAsync(user.Id);
+                if (advisor == null) continue;
+
+                result.Add(new AdvisorStatusDto
+                {
+                    UserId = user.Id,
+                    AdvisorId = advisor.AdvisorId,
+                    FullName = advisor.FullName,
+                    Email = user.Email!,
+                    ActionDate = user.ApprovedAt,
+                    Status = status
+                });
+            }
+
+            return result;
+        }
+
     }
 
 }

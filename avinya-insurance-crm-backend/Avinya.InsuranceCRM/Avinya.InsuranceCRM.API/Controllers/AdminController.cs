@@ -138,5 +138,25 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 ApiResponse<string>.Success("Advisor account rejected successfully")
             );
         }
+        // ---------------- ADVISORS BY STATUS & DATE ----------------
+        [Authorize(Roles = "SuperAdmin")]
+        [HttpGet("advisors-by-status")]
+        public async Task<IActionResult> GetAdvisorsByStatus(
+            [FromQuery] string status,
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+                return BadRequest("Status is required (approved / rejected)");
+
+            var result = await _adminService.GetAdvisorsByStatusAsync(
+                status.ToLower(),
+                fromDate,
+                toDate
+            );
+
+            return Ok(ApiResponse<object>.Success(result));
+        }
+
     }
 }

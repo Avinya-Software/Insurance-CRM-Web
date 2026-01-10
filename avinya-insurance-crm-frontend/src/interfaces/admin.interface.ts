@@ -17,3 +17,11 @@ export interface ApiWrapper<T> {
   message: string;
   data: T;
 }
+export interface AdvisorStatusResponse {
+  userId: string;
+  advisorId: string;
+  fullName: string;
+  email: string;
+  actionDate: string | null;
+  status: "approved" | "rejected";
+}

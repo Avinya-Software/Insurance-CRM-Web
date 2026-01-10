@@ -3,7 +3,7 @@ using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.Persistence;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Dynamic.Core;
+
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 {
     public class CustomerRepository : ICustomerRepository
@@ -15,17 +15,45 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context = context;
         }
 
-        public async Task<bool> ExistsByMobileAsync(string mobile)
+        /* ================= VALIDATIONS ================= */
+
+        public async Task<bool> ExistsByMobileAsync(string advisorId, string mobile)
         {
-            return await _context.Customers
-                .AnyAsync(x => x.PrimaryMobile == mobile);
+            return await _context.Customers.AnyAsync(x =>
+                x.AdvisorId == advisorId &&
+                x.PrimaryMobile == mobile);
         }
 
-        public async Task<bool> ExistsByEmailAsync(string email)
+        public async Task<bool> ExistsByEmailAsync(string advisorId, string email)
         {
-            return await _context.Customers
-                .AnyAsync(x => x.Email == email);
+            return await _context.Customers.AnyAsync(x =>
+                x.AdvisorId == advisorId &&
+                x.Email == email);
         }
+
+        public async Task<bool> ExistsByEmailAsync(
+            string advisorId,
+            string email,
+            Guid excludeCustomerId)
+        {
+            return await _context.Customers.AnyAsync(x =>
+                x.AdvisorId == advisorId &&
+                x.Email == email &&
+                x.CustomerId != excludeCustomerId);
+        }
+
+        public async Task<bool> ExistsByMobileAsync(
+            string advisorId,
+            string mobile,
+            Guid excludeCustomerId)
+        {
+            return await _context.Customers.AnyAsync(x =>
+                x.AdvisorId == advisorId &&
+                x.PrimaryMobile == mobile &&
+                x.CustomerId != excludeCustomerId);
+        }
+
+        /* ================= CREATE / UPDATE ================= */
 
         public async Task<Customer> AddAsync(Customer customer)
         {
@@ -33,40 +61,48 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             await _context.SaveChangesAsync();
             return customer;
         }
+
         public async Task UpdateAsync(Customer customer)
         {
             _context.Customers.Update(customer);
             await _context.SaveChangesAsync();
         }
-        public async Task<Customer?> GetByIdAsync(Guid customerId)
+
+        /* ================= READ ================= */
+
+        public async Task<Customer?> GetByIdAsync(string advisorId, Guid customerId)
         {
-            return await _context.Customers
-                .FirstOrDefaultAsync(x => x.CustomerId == customerId);
+            return await _context.Customers.FirstOrDefaultAsync(x =>
+                x.CustomerId == customerId &&
+                x.AdvisorId == advisorId);
         }
+
         public async Task<PagedRecordResult<Customer>> GetAllAsync(
-     int pageNumber,
-     int pageSize,
-     string? search)
+            string advisorId,
+            int pageNumber,
+            int pageSize,
+            string? search)
         {
-            var query = _context.Customers.AsQueryable();
+            var query = _context.Customers
+                .Where(x => x.AdvisorId == advisorId);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 search = search.Trim().ToLower();
 
-                // Base text search
                 query = query.Where(x =>
                     x.FullName.ToLower().Contains(search) ||
                     x.Email.ToLower().Contains(search) ||
-                    x.Address.ToLower().Contains(search) ||
-                    x.PrimaryMobile.Contains(search)
+                    x.PrimaryMobile.Contains(search) ||
+                    (x.Address != null && x.Address.ToLower().Contains(search))
                 );
 
-                // 🔥 OR condition for CustomerId
                 if (Guid.TryParse(search, out var customerId))
                 {
                     query = query.Union(
-                        _context.Customers.Where(x => x.CustomerId == customerId)
+                        _context.Customers.Where(x =>
+                            x.CustomerId == customerId &&
+                            x.AdvisorId == advisorId)
                     );
                 }
             }
@@ -88,65 +124,38 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             };
         }
 
-        public async Task<bool> DeleteAsync(Guid customerId)
-        {
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(x => x.CustomerId == customerId);
-
-            if (customer == null)
-                return false;
-
-            _context.Customers.Remove(customer);
-            await _context.SaveChangesAsync();
-
-            return true;
-        }
-        public async Task<List<Customer>> GetDropdownAsync()
+        public async Task<List<Customer>> GetDropdownAsync(string advisorId)
         {
             return await _context.Customers
+                .Where(x => x.AdvisorId == advisorId)
                 .OrderBy(x => x.FullName)
                 .Select(x => new Customer
                 {
                     CustomerId = x.CustomerId,
                     FullName = x.FullName,
                     Email = x.Email,
+                    PrimaryMobile = x.PrimaryMobile,
                     DOB = x.DOB,
                     Anniversary = x.Anniversary,
-                    PrimaryMobile=x.PrimaryMobile,
-                    Address=x.Address
+                    Address = x.Address
                 })
                 .ToListAsync();
         }
-        public async Task<bool> ExistsByEmailAsync(
-           string email,
-           Guid excludeCustomerId)
-        {
-            return await _context.Customers.AnyAsync(c =>
-                c.Email == email &&
-                c.CustomerId != excludeCustomerId
-            );
-        }
 
-        public async Task<bool> ExistsByMobileAsync(
-            string mobile,
-            Guid excludeCustomerId)
+        /* ================= DELETE ================= */
+
+        public async Task<bool> DeleteAsync(string advisorId, Guid customerId)
         {
-            return await _context.Customers.AnyAsync(c =>
-                c.PrimaryMobile == mobile &&
-                c.CustomerId != excludeCustomerId
-            );
-        }
-        public async Task DeleteByIdAsync(Guid customerId)
-        {
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.CustomerId == customerId);
+            var customer = await _context.Customers.FirstOrDefaultAsync(x =>
+                x.CustomerId == customerId &&
+                x.AdvisorId == advisorId);
 
             if (customer == null)
-                return;
+                return false;
 
             _context.Customers.Remove(customer);
             await _context.SaveChangesAsync();
+            return true;
         }
-
     }
 }

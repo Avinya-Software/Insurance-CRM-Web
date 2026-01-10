@@ -17,16 +17,18 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
         /* ================= CREATE ================= */
 
         public async Task<Campaign> CreateCampaignAsync(
-     Campaign campaign,
-     List<CampaignTemplate> templates,
-     List<CampaignRule> rules,
-     List<Guid>? customerIds)
+             string advisorId,
+             Campaign campaign,
+             List<CampaignTemplate> templates,
+             List<CampaignRule> rules,
+             List<Guid>? customerIds)
         {
             using var tx = await _db.Database.BeginTransactionAsync();
 
             try
             {
                 campaign.CampaignId = Guid.NewGuid();
+                campaign.AdvisorId = advisorId;
                 campaign.CreatedAt = DateTime.UtcNow;
                 campaign.IsActive = true;
 
@@ -137,29 +139,32 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
         /* ================= GET BY ID (FULL ENTITY GRAPH) ================= */
 
-        public async Task<Campaign?> GetByIdAsync(Guid campaignId)
+        public async Task<Campaign?> GetByIdAsync(Guid campaignId, string advisorId)
         {
             return await _db.Campaigns
                 .Include(c => c.Templates)
                 .Include(c => c.CampaignCustomers)
                 .Include(c => c.Rules)
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.CampaignId == campaignId);
+               .FirstOrDefaultAsync(c =>
+                c.CampaignId == campaignId &&
+                c.AdvisorId == advisorId &&     // 🔥 SECURITY
+                c.IsActive);
         }
 
         /* ================= GET PAGED ================= */
 
         public async Task<(List<Campaign> Items, int TotalCount)> GetPagedAsync(
-            int pageNumber,
-            int pageSize,
-            string? search)
+    string advisorId,
+    int pageNumber,
+    int pageSize,
+    string? search)
         {
             var query = _db.Campaigns
-                .Include(c => c.CampaignCustomers)
-                .Include(c => c.Templates)
-                .Include(c => c.Rules)
                 .AsNoTracking()
-                .Where(c => c.IsActive);
+                .Where(c =>
+                    c.AdvisorId == advisorId &&     // 🔥 SECURITY
+                    c.IsActive);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -179,10 +184,12 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             return (items, totalCount);
         }
 
+
         /* ================= UPDATE ================= */
 
         public async Task UpdateCampaignAsync(
     Guid campaignId,
+    string advisorId,
     Campaign campaign,
     List<CampaignTemplate> templates,
     List<CampaignRule> rules,
@@ -194,9 +201,10 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 .Include(c => c.Templates)
                 .Include(c => c.CampaignCustomers)
                 .Include(c => c.Rules) // 👈 IMPORTANT
-                .FirstOrDefaultAsync(c => c.CampaignId == campaignId);
-
-            if (existing == null)
+                .FirstOrDefaultAsync(c =>
+                    c.CampaignId == campaignId &&
+                    c.AdvisorId == advisorId);
+                    if (existing == null)
                 throw new InvalidOperationException("Campaign not found");
 
             existing.Name = campaign.Name;
@@ -263,10 +271,12 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
         }
         /* ================= DELETE ================= */
 
-        public async Task DeleteCampaignAsync(Guid campaignId)
+        public async Task DeleteCampaignAsync(Guid campaignId, string advisorId)
         {
-            var campaign = await _db.Campaigns.FindAsync(campaignId);
-            if (campaign == null) return;
+            var campaign = await _db.Campaigns
+                    .FirstOrDefaultAsync(c =>
+                        c.CampaignId == campaignId &&
+                        c.AdvisorId == advisorId); if (campaign == null) return;
 
             campaign.IsActive = false;
 
@@ -285,17 +295,21 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
         /* ================= DROPDOWN ================= */
 
-        public async Task<List<(Guid CampaignId, string Name)>> GetDropdownAsync()
+        public async Task<List<(Guid CampaignId, string Name)>> GetDropdownAsync(
+     string advisorId)
         {
             return await _db.Campaigns
                 .AsNoTracking()
-                .Where(c => c.IsActive)
+                .Where(c =>
+                    c.AdvisorId == advisorId &&
+                    c.IsActive)
                 .OrderBy(c => c.Name)
                 .Select(c => new ValueTuple<Guid, string>(
                     c.CampaignId,
                     c.Name))
                 .ToListAsync();
         }
+
         public async Task<List<(int CampaignTypeId, string Name)>> GetCampaignTypeDropdownAsync()
         {
             return await _db.MasterCampaignTypes

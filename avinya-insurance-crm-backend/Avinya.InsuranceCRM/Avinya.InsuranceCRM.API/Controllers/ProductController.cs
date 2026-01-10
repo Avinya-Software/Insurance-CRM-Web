@@ -4,6 +4,7 @@ using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Avinya.InsuranceCRM.API.Controllers
 {
@@ -23,17 +24,24 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _logger = logger;
         }
 
-        // 🔥 ADD / UPDATE PRODUCT
+        /* ================= ADD / UPDATE ================= */
+
         [HttpPost]
         public async Task<IActionResult> UpsertProduct(
             [FromBody] UpsertProductRequest request)
         {
-            // ---------------- ADD ----------------
-            if (request.ProductId == null || request.ProductId == Guid.Empty)
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token");
+
+            /* ---------- CREATE ---------- */
+            if (!request.ProductId.HasValue || request.ProductId == Guid.Empty)
             {
                 var product = new Product
                 {
                     ProductId = Guid.NewGuid(),
+                    AdvisorId = advisorId,          // 🔐 JWT enforced
                     InsurerId = request.InsurerId,
                     ProductCategoryId = request.ProductCategoryId,
                     ProductName = request.ProductName,
@@ -53,8 +61,11 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 });
             }
 
-            // ---------------- UPDATE ----------------
-            var existingProduct = await _productRepository.GetByIdAsync(request.ProductId.Value);
+            /* ---------- UPDATE ---------- */
+            var existingProduct = await _productRepository.GetByIdAsync(
+                advisorId,
+                request.ProductId.Value
+            );
 
             if (existingProduct == null)
                 return NotFound("Product not found");
@@ -75,10 +86,22 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 ProductId = existingProduct.ProductId
             });
         }
+
+        /* ================= DROPDOWN ================= */
+
         [HttpGet("dropdown")]
-        public async Task<IActionResult> GetDropdown([FromQuery] Guid? insurerId)
+        public async Task<IActionResult> GetDropdown(
+            [FromQuery] Guid? insurerId)
         {
-            var products = await _productRepository.GetDropdownAsync(insurerId);
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token");
+
+            var products = await _productRepository.GetDropdownAsync(
+                advisorId,
+                insurerId
+            );
 
             return Ok(products.Select(x => new
             {
@@ -86,17 +109,23 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 x.ProductName
             }));
         }
+
+        /* ================= PAGED LIST ================= */
+
         [HttpGet]
         public async Task<IActionResult> GetProducts(
-    [FromQuery] int pageNumber = 1,
-    [FromQuery] int pageSize = 10,
-
-    // 🎯 Filters
-    [FromQuery] int? productCategoryId = null,
-    [FromQuery] string? search = null
-)
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] int? productCategoryId = null,
+            [FromQuery] string? search = null)
         {
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token");
+
             var result = await _productRepository.GetPagedAsync(
+                advisorId,
                 pageNumber,
                 pageSize,
                 productCategoryId,
@@ -125,11 +154,21 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 })
             }, "Products fetched successfully"));
         }
-        // ---------- DELETE PRODUCT ----------
+
+        /* ================= DELETE ================= */
+
         [HttpDelete("{productId:guid}")]
         public async Task<IActionResult> DeleteProduct(Guid productId)
         {
-            var deleted = await _productRepository.DeleteAsync(productId);
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token");
+
+            var deleted = await _productRepository.DeleteAsync(
+                advisorId,
+                productId
+            );
 
             if (!deleted)
                 return NotFound("Product not found or cannot be deleted");
@@ -139,12 +178,15 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 Message = "Product deleted successfully"
             });
         }
-        [HttpGet("ProductCategorydropdown")]
-        public async Task<IActionResult> GetProductDropdown()
-        {
-            var products = await _productRepository.GetProductCategoryDropdownAsync();
 
-            return Ok(products.Select(p => new
+        /* ================= PRODUCT CATEGORY DROPDOWN ================= */
+
+        [HttpGet("product-category-dropdown")]
+        public async Task<IActionResult> GetProductCategoryDropdown()
+        {
+            var categories = await _productRepository.GetProductCategoryDropdownAsync();
+
+            return Ok(categories.Select(p => new
             {
                 id = p.ProductCategoryId,
                 name = p.CategoryName

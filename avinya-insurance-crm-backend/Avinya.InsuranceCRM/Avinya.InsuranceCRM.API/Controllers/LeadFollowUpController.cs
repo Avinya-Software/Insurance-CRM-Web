@@ -22,21 +22,31 @@ public class LeadFollowUpController : ControllerBase
         _followUpRepo = followUpRepo;
     }
 
-    // ---------- CREATE FOLLOW-UP ----------
+    /* ================= CREATE FOLLOW-UP ================= */
+
     [HttpPost]
     public async Task<IActionResult> Create(
         CreateLeadFollowUpRequest request)
     {
-        // 1️⃣ Validate Lead
-        var lead = await _leadRepo.GetByIdAsync(request.LeadId);
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(advisorId))
+            return Unauthorized("Advisor not found in token");
+
+        /* 1️⃣ Validate Lead (Advisor-scoped) */
+        var lead = await _leadRepo.GetByIdAsync(
+            advisorId,
+            request.LeadId
+        );
+
         if (lead == null)
             return NotFound("Lead not found");
 
-        // ❌ Optional business rule
+        /* ❌ Optional business rule */
         if (lead.LeadStatusId == 5 || lead.LeadStatusId == 6)
             return BadRequest("Follow-up not allowed for Converted/Lost leads");
 
-        // 2️⃣ Create Follow-Up
+        /* 2️⃣ Create Follow-Up */
         var followUp = new LeadFollowUp
         {
             FollowUpId = Guid.NewGuid(),
@@ -44,15 +54,13 @@ public class LeadFollowUpController : ControllerBase
             FollowUpDate = request.FollowUpDate,
             NextFollowUpDate = request.NextFollowUpDate,
             Remark = request.Remark,
-            CreatedBy = Guid.Parse(
-                User.FindFirstValue(ClaimTypes.NameIdentifier)!
-            ),
+            CreatedBy = Guid.Parse(advisorId),
             CreatedAt = DateTime.UtcNow
         };
 
         await _followUpRepo.AddAsync(followUp);
 
-        // 3️⃣ Update Lead Status → Follow Up (4)
+        /* 3️⃣ Update Lead Status → Follow Up (4) */
         lead.LeadStatusId = 4;
         lead.UpdatedAt = DateTime.UtcNow;
 
@@ -64,18 +72,30 @@ public class LeadFollowUpController : ControllerBase
             FollowUpId = followUp.FollowUpId
         });
     }
-    [HttpGet("by-lead/{leadId}")]
+
+    /* ================= GET FOLLOW-UPS BY LEAD ================= */
+
+    [HttpGet("by-lead/{leadId:guid}")]
     public async Task<IActionResult> GetByLeadId(Guid leadId)
     {
-        // 1️⃣ Validate Lead
-        var lead = await _leadRepo.GetByIdAsync(leadId);
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(advisorId))
+            return Unauthorized("Advisor not found in token");
+
+        /* 1️⃣ Validate Lead (Advisor-scoped) */
+        var lead = await _leadRepo.GetByIdAsync(
+            advisorId,
+            leadId
+        );
+
         if (lead == null)
             return NotFound("Lead not found");
 
-        // 2️⃣ Fetch Follow-Ups
+        /* 2️⃣ Fetch Follow-Ups */
         var followUps = await _followUpRepo.GetByLeadIdAsync(leadId);
 
-        // 3️⃣ Map to Response
+        /* 3️⃣ Map Response */
         var response = followUps.Select(x => new LeadFollowUpResponse
         {
             FollowUpId = x.FollowUpId,

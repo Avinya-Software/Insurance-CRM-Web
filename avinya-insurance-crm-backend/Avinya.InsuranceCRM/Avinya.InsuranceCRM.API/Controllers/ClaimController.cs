@@ -3,6 +3,7 @@ using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Avinya.InsuranceCRM.API.Controllers
 {
@@ -29,13 +30,21 @@ namespace Avinya.InsuranceCRM.API.Controllers
         public async Task<IActionResult> CreateOrUpdate(
             [FromForm] UpsertClaimRequest request)
         {
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token");
+
             InsuranceClaim claim;
             var isUpdate = request.ClaimId.HasValue;
 
             /* ---------- UPDATE ---------- */
             if (isUpdate)
             {
-                claim = await _claimRepository.GetByIdAsync(request.ClaimId!.Value);
+                claim = await _claimRepository.GetByIdAsync(
+                    advisorId,
+                    request.ClaimId!.Value
+                );
 
                 if (claim == null)
                     return NotFound("Claim not found");
@@ -48,8 +57,8 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 claim = new InsuranceClaim
                 {
                     ClaimId = Guid.NewGuid(),
-                    CreatedAt = DateTime.UtcNow,
-                    Status = "Open"
+                    Status = "Open",
+                    CreatedAt = DateTime.UtcNow
                 };
             }
 
@@ -103,9 +112,9 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
             /* ---------- SAVE ---------- */
             if (isUpdate)
-                await _claimRepository.UpdateAsync(claim);
+                await _claimRepository.UpdateAsync(claim, advisorId);
             else
-                await _claimRepository.AddAsync(claim);
+                await _claimRepository.AddAsync(claim, advisorId);
 
             return Ok(new
             {
@@ -132,7 +141,13 @@ namespace Avinya.InsuranceCRM.API.Controllers
             int? claimHandlerId = null,
             string? status = null)
         {
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token");
+
             var result = await _claimRepository.GetPagedAsync(
+                advisorId,
                 pageNumber,
                 pageSize,
                 search,
@@ -175,7 +190,6 @@ namespace Avinya.InsuranceCRM.API.Controllers
                     {
                         x.Policy.PolicyId,
                         x.Policy.PolicyNumber,
-
                         PolicyStatus = x.Policy.PolicyStatus.StatusName
                     },
 
@@ -198,7 +212,39 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
 
-        /* ================= PREVIEW DOCUMENT ================= */
+        /* ================= DELETE CLAIM ================= */
+
+        [HttpDelete("{claimId:guid}")]
+        public async Task<IActionResult> DeleteClaim(Guid claimId)
+        {
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token");
+
+            var claim = await _claimRepository.GetByIdAsync(advisorId, claimId);
+
+            if (claim == null)
+                return NotFound("Claim not found");
+
+            var claimFolder = Path.Combine(
+                _env.ContentRootPath,
+                "Uploads",
+                "Claims",
+                claimId.ToString()
+            );
+
+            if (Directory.Exists(claimFolder))
+            {
+                Directory.Delete(claimFolder, recursive: true);
+            }
+
+            await _claimRepository.DeleteByIdAsync(advisorId, claimId);
+
+            return Ok("Claim deleted successfully");
+        }
+
+        /* ================= DOCUMENT PREVIEW ================= */
 
         [HttpGet("{claimId:guid}/documents/{documentId}/preview")]
         public IActionResult PreviewDocument(Guid claimId, string documentId)
@@ -226,33 +272,8 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 enableRangeProcessing: true
             );
         }
-        [HttpDelete("{claimId:guid}")]
-        public async Task<IActionResult> DeleteClaim(Guid claimId)
-        {
-            var claim = await _claimRepository.GetByIdAsync(claimId);
 
-            if (claim == null)
-                return NotFound("Claim not found");
-
-            /* -------- DELETE DOCUMENT FOLDER -------- */
-            var claimFolder = Path.Combine(
-                _env.ContentRootPath,
-                "Uploads",
-                "Claims",
-                claimId.ToString()
-            );
-
-            if (Directory.Exists(claimFolder))
-            {
-                Directory.Delete(claimFolder, recursive: true);
-            }
-
-            /* -------- DELETE CLAIM FROM DB -------- */
-            await _claimRepository.DeleteByIdAsync(claimId);
-
-            return Ok("Claim deleted successfully");
-        }
-        /* ================= DOWNLOAD DOCUMENT ================= */
+        /* ================= DOCUMENT DOWNLOAD ================= */
 
         [HttpGet("{claimId:guid}/documents/{documentId}/download")]
         public IActionResult DownloadDocument(Guid claimId, string documentId)
@@ -288,7 +309,12 @@ namespace Avinya.InsuranceCRM.API.Controllers
             Guid claimId,
             string documentId)
         {
-            var claim = await _claimRepository.GetByIdAsync(claimId);
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token");
+
+            var claim = await _claimRepository.GetByIdAsync(advisorId, claimId);
 
             if (claim == null)
                 return NotFound("Claim not found");
@@ -324,7 +350,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
             claim.UpdatedAt = DateTime.UtcNow;
 
-            await _claimRepository.UpdateAsync(claim);
+            await _claimRepository.UpdateAsync(claim, advisorId);
 
             return Ok("Document deleted successfully");
         }

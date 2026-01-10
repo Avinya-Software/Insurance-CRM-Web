@@ -68,33 +68,28 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             entity.PolicyCode = policy.PolicyCode;
 
             /* ================= DOCUMENT UPDATE (APPEND MODE) ================= */
-            // 🔥 APPEND new files instead of replacing
             if (!string.IsNullOrWhiteSpace(policy.PolicyDocumentRef))
             {
                 if (string.IsNullOrWhiteSpace(entity.PolicyDocumentRef))
                 {
-                    // No existing files, just set the new ones
                     entity.PolicyDocumentRef = policy.PolicyDocumentRef;
                 }
                 else
                 {
-                    // Existing files present, append new ones
                     var existingFiles = entity.PolicyDocumentRef
-                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
                         .Select(f => f.Trim())
                         .ToList();
 
                     var newFiles = policy.PolicyDocumentRef
-                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
                         .Select(f => f.Trim())
                         .ToList();
 
-                    // Combine and remove duplicates
                     var allFiles = existingFiles.Union(newFiles).ToList();
                     entity.PolicyDocumentRef = string.Join(",", allFiles);
                 }
             }
-            // If policy.PolicyDocumentRef is null/empty, keep existing files unchanged
 
             await _context.SaveChangesAsync();
             return entity;
@@ -117,17 +112,14 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 .AsNoTracking()
                 .Where(x => x.AdvisorId == advisorId);
 
-            /* -------- SEARCH -------- */
             if (!string.IsNullOrWhiteSpace(search))
             {
                 query = query.Where(x =>
-                 x.PolicyNumber.Contains(search) ||
-                 x.RegistrationNo.Contains(search) ||
-                 x.CustomerId.ToString().Contains(search)
-             );
+                    x.PolicyNumber.Contains(search) ||
+                    x.RegistrationNo.Contains(search) ||
+                    x.CustomerId.ToString().Contains(search));
             }
 
-            /* -------- FILTERS -------- */
             if (policyStatusId.HasValue)
                 query = query.Where(x => x.PolicyStatusId == policyStatusId);
 
@@ -195,21 +187,26 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
         /* ================= GET POLICY BY ID ================= */
 
-        public async Task<CustomerPolicy?> GetByIdAsync(Guid policyId)
+        public async Task<CustomerPolicy?> GetByIdAsync(
+            string advisorId,
+            Guid policyId)
         {
             return await _context.CustomerPolicies
-                .FirstOrDefaultAsync(x => x.PolicyId == policyId);
+                .FirstOrDefaultAsync(x =>
+                    x.PolicyId == policyId &&
+                    x.AdvisorId == advisorId);
         }
 
         /* ================= DELETE POLICY ================= */
 
-        public async Task DeleteByIdAsync(Guid policyId, string advisorId)
+        public async Task DeleteByIdAsync(
+            string advisorId,
+            Guid policyId)
         {
             var policy = await _context.CustomerPolicies
                 .FirstOrDefaultAsync(x =>
                     x.PolicyId == policyId &&
-                    x.AdvisorId == advisorId
-                );
+                    x.AdvisorId == advisorId);
 
             if (policy == null)
                 return;
@@ -261,7 +258,8 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 .ToListAsync();
         }
 
-        public async Task<List<CustomerPolicy>> GetPoliciesForDropdownAsync(string advisorId)
+        public async Task<List<CustomerPolicy>> GetPoliciesForDropdownAsync(
+            string advisorId)
         {
             return await _context.CustomerPolicies
                 .AsNoTracking()

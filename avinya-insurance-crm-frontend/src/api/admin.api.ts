@@ -2,6 +2,7 @@ import api from "./axios";
 import type {
   AdminLoginRequest,
   AdminLoginResponse,
+  AdvisorStatusResponse,
   ApiWrapper
 } from "../interfaces/admin.interface";
 
@@ -41,5 +42,23 @@ export const deleteAdvisorApi = async (
   const res = await api.delete<ApiWrapper<string>>(
     `/admin/delete/${userId}`
   );
+  return res.data;
+};
+export const getAdvisorsByStatusApi = async (
+  status: "approved" | "rejected",
+  fromDate?: string,
+  toDate?: string
+) => {
+  const res = await api.get<ApiWrapper<AdvisorStatusResponse[]>>(
+    "/admin/advisors-by-status",
+    {
+      params: {
+        status,
+        fromDate,
+        toDate
+      }
+    }
+  );
+
   return res.data;
 };

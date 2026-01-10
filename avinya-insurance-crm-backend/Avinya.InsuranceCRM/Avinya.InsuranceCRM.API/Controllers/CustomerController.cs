@@ -34,15 +34,13 @@ namespace Avinya.InsuranceCRM.API.Controllers
         // -------- CREATE OR UPDATE CUSTOMER --------
         [HttpPost]
         public async Task<IActionResult> CreateOrUpdateCustomer(
-    [FromForm] CreateCustomerRequest request)
+     [FromForm] CreateCustomerRequest request)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(advisorId))
             {
-                return Unauthorized(
-                    ApiResponse<string>.Fail(401, "Invalid advisor token")
-                );
+                return Unauthorized(ApiResponse<string>.Fail(401, "Invalid advisor token"));
             }
 
             Customer customer;
@@ -50,33 +48,28 @@ namespace Avinya.InsuranceCRM.API.Controllers
             /* ================= UPDATE ================= */
             if (request.CustomerId.HasValue)
             {
-                customer = await _customerRepository.GetByIdAsync(request.CustomerId.Value);
+                customer = await _customerRepository.GetByIdAsync(
+                    advisorId,
+                    request.CustomerId.Value
+                );
 
                 if (customer == null)
                 {
-                    return NotFound(
-                        ApiResponse<string>.Fail(404, "Customer not found")
-                    );
-                }
-
-                if (customer.AdvisorId != advisorId)
-                {
-                    return Forbid();
+                    return NotFound(ApiResponse<string>.Fail(404, "Customer not found"));
                 }
 
                 if (!string.IsNullOrWhiteSpace(request.PrimaryMobile))
                 {
                     var mobileExists =
                         await _customerRepository.ExistsByMobileAsync(
+                            advisorId,
                             request.PrimaryMobile,
                             customer.CustomerId
                         );
 
                     if (mobileExists)
                     {
-                        return BadRequest(
-                            ApiResponse<string>.Fail(400, "Mobile number already exists")
-                        );
+                        return BadRequest(ApiResponse<string>.Fail(400, "Mobile number already exists"));
                     }
                 }
 
@@ -84,15 +77,14 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 {
                     var emailExists =
                         await _customerRepository.ExistsByEmailAsync(
+                            advisorId,
                             request.Email,
                             customer.CustomerId
                         );
 
                     if (emailExists)
                     {
-                        return BadRequest(
-                            ApiResponse<string>.Fail(400, "Email already exists")
-                        );
+                        return BadRequest(ApiResponse<string>.Fail(400, "Email already exists"));
                     }
                 }
 
@@ -112,19 +104,19 @@ namespace Avinya.InsuranceCRM.API.Controllers
             /* ================= CREATE ================= */
             else
             {
-                if (await _customerRepository.ExistsByMobileAsync(request.PrimaryMobile))
+                if (await _customerRepository.ExistsByMobileAsync(
+                    advisorId,
+                    request.PrimaryMobile))
                 {
-                    return BadRequest(
-                        ApiResponse<string>.Fail(400, "Mobile number already exists")
-                    );
+                    return BadRequest(ApiResponse<string>.Fail(400, "Mobile number already exists"));
                 }
 
                 if (!string.IsNullOrWhiteSpace(request.Email) &&
-                    await _customerRepository.ExistsByEmailAsync(request.Email))
+                    await _customerRepository.ExistsByEmailAsync(
+                        advisorId,
+                        request.Email))
                 {
-                    return BadRequest(
-                        ApiResponse<string>.Fail(400, "Email already exists")
-                    );
+                    return BadRequest(ApiResponse<string>.Fail(400, "Email already exists"));
                 }
 
                 customer = new Customer
@@ -148,13 +140,16 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
                 if (request.LeadId.HasValue)
                 {
-                    var lead = await _leadRepository.GetByIdAsync(request.LeadId.Value);
+                    var lead = await _leadRepository.GetByIdAsync(
+                        advisorId,
+                        request.LeadId.Value
+                    );
 
                     if (lead != null && !lead.IsConverted)
                     {
                         lead.IsConverted = true;
                         lead.CustomerId = customer.CustomerId;
-                        lead.LeadStatusId = 5;
+                        lead.LeadStatusId = 5; // Converted
                         lead.UpdatedAt = DateTime.UtcNow;
 
                         await _leadRepository.UpdateAsync(lead);
@@ -162,7 +157,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 }
             }
 
-            /* ================= KYC FILE UPLOAD (CREATE + UPDATE) ================= */
+            /* ================= KYC FILE UPLOAD ================= */
             if (request.KycFiles != null && request.KycFiles.Any())
             {
                 var uploadRoot = Path.Combine(
@@ -189,7 +184,6 @@ namespace Avinya.InsuranceCRM.API.Controllers
                     savedFiles.Add(fileName);
                 }
 
-                // 🔥 APPEND TO EXISTING FILES
                 var existingFiles = string.IsNullOrWhiteSpace(customer.KYCFiles)
                     ? new List<string>()
                     : customer.KYCFiles.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
@@ -203,67 +197,70 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 await _customerRepository.UpdateAsync(customer);
             }
 
-            /* ================= FINAL RESPONSE ================= */
-            return Ok(
-                ApiResponse<object>.Success(
-                    new
-                    {
-                        customer.CustomerId,
-                        customer.FullName,
-                        customer.PrimaryMobile,
-                        customer.Email,
-                        customer.KYCFiles
-                    },
-                    request.CustomerId.HasValue
-                        ? "Customer updated successfully"
-                        : "Customer created successfully"
-                )
-            );
+            return Ok(ApiResponse<object>.Success(
+                new
+                {
+                    customer.CustomerId,
+                    customer.FullName,
+                    customer.PrimaryMobile,
+                    customer.Email,
+                    customer.KYCFiles
+                },
+                request.CustomerId.HasValue
+                    ? "Customer updated successfully"
+                    : "Customer created successfully"
+            ));
         }
+
 
         /* ================= GET ALL ================= */
 
         [HttpGet]
         public async Task<IActionResult> GetAllCustomers(
-            int pageNumber = 1,
-            int pageSize = 10,
-            string? search = null)
+    int pageNumber = 1,
+    int pageSize = 10,
+    string? search = null)
         {
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+            {
+                return Unauthorized(ApiResponse<string>.Fail(401, "Invalid advisor token"));
+            }
+
             var result = await _customerRepository.GetAllAsync(
+                advisorId,
                 pageNumber,
                 pageSize,
                 search
             );
 
-            return Ok(
-                ApiResponse<object>.Success(
-                    new
+            return Ok(ApiResponse<object>.Success(
+                new
+                {
+                    result.TotalRecords,
+                    result.PageNumber,
+                    result.PageSize,
+                    TotalPages = (int)Math.Ceiling(result.TotalRecords / (double)pageSize),
+                    Customers = result.Data.Select(c => new
                     {
-                        result.TotalRecords,
-                        result.PageNumber,
-                        result.PageSize,
-                        TotalPages = (int)Math.Ceiling(
-                            result.TotalRecords / (double)pageSize
-                        ),
-                        Customers = result.Data.Select(c => new
-                        {
-                            c.CustomerId,
-                            c.FullName,
-                            c.PrimaryMobile,
-                            c.SecondaryMobile,
-                            c.Email,
-                            c.Address,
-                            c.KYCFiles, // 🔴 KEPT AS IS
-                            c.CreatedAt,
-                            c.Anniversary,
-                            c.DOB,
-                            c.Notes
-                        })
-                    },
-                    "Customers fetched successfully"
-                )
-            );
+                        c.CustomerId,
+                        c.FullName,
+                        c.PrimaryMobile,
+                        c.SecondaryMobile,
+                        c.Email,
+                        c.Address,
+                        c.KYCFiles,
+                        c.CreatedAt,
+                        c.Anniversary,
+                        c.DOB,
+                        c.Notes
+                    })
+                },
+                "Customers fetched successfully"
+            ));
         }
+
 
         /* ================= KYC PREVIEW ================= */
 
@@ -334,26 +331,16 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
             if (string.IsNullOrEmpty(advisorId))
             {
-                return Unauthorized(
-                    ApiResponse<string>.Fail(401, "Invalid advisor token")
-                );
+                return Unauthorized(ApiResponse<string>.Fail(401, "Invalid advisor token"));
             }
 
-            var customer = await _customerRepository.GetByIdAsync(customerId);
+            var customer = await _customerRepository.GetByIdAsync(advisorId, customerId);
 
             if (customer == null)
             {
-                return NotFound(
-                    ApiResponse<string>.Fail(404, "Customer not found")
-                );
+                return NotFound(ApiResponse<string>.Fail(404, "Customer not found"));
             }
 
-            if (customer.AdvisorId != advisorId)
-            {
-                return Forbid();
-            }
-
-            /* -------- DELETE KYC FILES -------- */
             var kycFolder = Path.Combine(
                 _env.ContentRootPath,
                 "Uploads",
@@ -366,51 +353,37 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 Directory.Delete(kycFolder, recursive: true);
             }
 
-            /* -------- DELETE CUSTOMER -------- */
-            await _customerRepository.DeleteByIdAsync(customerId);
+            await _customerRepository.DeleteAsync(advisorId, customerId);
 
-            return Ok(
-                ApiResponse<string>.Success("Customer deleted successfully")
-            );
+            return Ok(ApiResponse<string>.Success("Customer deleted successfully"));
         }
+
         /* ================= DELETE KYC FILE ================= */
 
         [HttpDelete("{customerId:guid}/kyc/{documentId}")]
         public async Task<IActionResult> DeleteKycFile(
-            Guid customerId,
-            string documentId)
+     Guid customerId,
+     string documentId)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(advisorId))
             {
-                return Unauthorized(
-                    ApiResponse<string>.Fail(401, "Invalid advisor token")
-                );
+                return Unauthorized(ApiResponse<string>.Fail(401, "Invalid advisor token"));
             }
 
-            var customer = await _customerRepository.GetByIdAsync(customerId);
+            var customer = await _customerRepository.GetByIdAsync(advisorId, customerId);
 
             if (customer == null)
             {
-                return NotFound(
-                    ApiResponse<string>.Fail(404, "Customer not found")
-                );
-            }
-
-            if (customer.AdvisorId != advisorId)
-            {
-                return Forbid();
+                return NotFound(ApiResponse<string>.Fail(404, "Customer not found"));
             }
 
             if (string.IsNullOrWhiteSpace(customer.KYCFiles))
             {
-                return BadRequest(
-                    ApiResponse<string>.Fail(400, "No KYC files found")
-                );
+                return BadRequest(ApiResponse<string>.Fail(400, "No KYC files found"));
             }
 
-            // 🔍 Find matching file
             var files = customer.KYCFiles
                 .Split(",", StringSplitOptions.RemoveEmptyEntries)
                 .ToList();
@@ -420,12 +393,9 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
             if (fileName == null)
             {
-                return NotFound(
-                    ApiResponse<string>.Fail(404, "Document not found")
-                );
+                return NotFound(ApiResponse<string>.Fail(404, "Document not found"));
             }
 
-            // 🗂️ Delete file from disk
             var filePath = Path.Combine(
                 _env.ContentRootPath,
                 "Uploads",
@@ -439,31 +409,30 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 System.IO.File.Delete(filePath);
             }
 
-            // 🧹 Remove from DB list
             files.Remove(fileName);
-            customer.KYCFiles = files.Any()
-                ? string.Join(",", files)
-                : null;
-
+            customer.KYCFiles = files.Any() ? string.Join(",", files) : null;
             customer.UpdatedAt = DateTime.UtcNow;
 
             await _customerRepository.UpdateAsync(customer);
 
-            return Ok(
-                ApiResponse<string>.Success(
-                    "KYC document deleted successfully"
-                )
-            );
+            return Ok(ApiResponse<string>.Success("KYC document deleted successfully"));
         }
 
 
 
-        /* ================= DROPDOWN ================= */
 
+        /* ================= DROPDOWN ================= */
         [HttpGet("dropdown")]
         public async Task<IActionResult> GetCustomerDropdown()
         {
-            var customers = await _customerRepository.GetDropdownAsync();
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+            {
+                return Unauthorized(ApiResponse<string>.Fail(401, "Invalid advisor token"));
+            }
+
+            var customers = await _customerRepository.GetDropdownAsync(advisorId);
 
             return Ok(customers.Select(c => new
             {
@@ -474,9 +443,9 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 c.Anniversary,
                 c.Address,
                 c.PrimaryMobile
-
             }));
         }
+
 
         /* ================= HELPERS ================= */
 
@@ -493,7 +462,5 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 _ => "application/octet-stream"
             };
         }
-
-
     }
 }

@@ -11,6 +11,7 @@ import {
   Target,
   Megaphone,
   LogOut,
+  History,
 } from "lucide-react";
 
 /* ================= JWT HELPER ================= */
@@ -40,10 +41,12 @@ const Sidebar = () => {
   const user = getUserFromToken();
   const navigate = useNavigate();
 
+  const isAdmin = user?.role === "SuperAdmin";
+
   /* ================= LOGOUT ================= */
   const handleLogout = () => {
-    localStorage.removeItem("token"); // 🔐 remove JWT
-    navigate("/login", { replace: true }); // 🚪 redirect
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -56,66 +59,88 @@ const Sidebar = () => {
 
       {/* ---------- NAV ---------- */}
       <nav className="flex-1 px-4 py-6 space-y-1">
-        <NavItem
-          to="/"
-          icon={<LayoutDashboard size={18} />}
-          label="Dashboard"
-        />
+        {/* ================= ADVISOR MENU ================= */}
+        {!isAdmin && (
+          <>
+            <NavItem
+              to="/"
+              icon={<LayoutDashboard size={18} />}
+              label="Dashboard"
+            />
 
-        <NavItem
-          to="/leads"
-          icon={<Target size={18} />}
-          label="Leads"
-        />
+            <NavItem
+              to="/leads"
+              icon={<Target size={18} />}
+              label="Leads"
+            />
 
-        <NavItem
-          to="/customers"
-          icon={<Users size={18} />}
-          label="Customers"
-        />
+            <NavItem
+              to="/customers"
+              icon={<Users size={18} />}
+              label="Customers"
+            />
 
-        <NavItem
-          to="/insurer"
-          icon={<Building2 size={18} />}
-          label="Insurers"
-        />
+            <NavItem
+              to="/insurer"
+              icon={<Building2 size={18} />}
+              label="Insurers"
+            />
 
-        <NavItem
-          to="/policies"
-          icon={<FileText size={18} />}
-          label="Policies"
-        />
+            <NavItem
+              to="/policies"
+              icon={<FileText size={18} />}
+              label="Policies"
+            />
 
-        <NavItem
-          to="/products"
-          icon={<Package size={18} />}
-          label="Products"
-        />
+            <NavItem
+              to="/products"
+              icon={<Package size={18} />}
+              label="Products"
+            />
 
-        <NavItem
-          to="/claims"
-          icon={<AlertTriangle size={18} />}
-          label="Claims"
-        />
+            <NavItem
+              to="/claims"
+              icon={<AlertTriangle size={18} />}
+              label="Claims"
+            />
 
-        <NavItem
-          to="/renewals"
-          icon={<RefreshCcw size={18} />}
-          label="Renewals"
-        />
+            <NavItem
+              to="/renewals"
+              icon={<RefreshCcw size={18} />}
+              label="Renewals"
+            />
 
-        <NavItem
-          to="/campaign"
-          icon={<Megaphone size={18} />}
-          label="Campaign"
-        />
+            <NavItem
+              to="/campaign"
+              icon={<Megaphone size={18} />}
+              label="Campaign"
+            />
 
-        <NavItem
-          to="/settings"
-          icon={<Settings size={18} />}
-          label="Settings"
-        />
+            <NavItem
+              to="/settings"
+              icon={<Settings size={18} />}
+              label="Settings"
+            />
+          </>
+        )}
+
+        {/* ================= ADMIN MENU ================= */}
+        {isAdmin && (
+          <>
+          <NavItem
+              to="/admin"
+              icon={<History size={18} />}
+              label="Dashboard"
+            />
+            <NavItem
+              to="/admin/history"
+              icon={<History size={18} />}
+              label="History"
+            />
+          </>
+        )}
       </nav>
+
       {/* ---------- LOGOUT ---------- */}
       <button
         onClick={handleLogout}
@@ -126,10 +151,10 @@ const Sidebar = () => {
         Logout
       </button>
 
-      {/* ---------- USER ---------- */}
+      {/* ---------- USER INFO ---------- */}
       <div className="px-6 py-4 border-t border-slate-800 text-sm">
         <p className="font-medium">
-          {user?.fullName || "Advisor"}
+          {user?.fullName || " "}
         </p>
         <p className="text-slate-400">
           {user?.role || "User"}
@@ -161,7 +186,7 @@ const NavItem = ({
           : "text-slate-300 hover:bg-slate-800"
       }`
     }
-  > 
+  >
     {icon}
     {label}
   </NavLink>
