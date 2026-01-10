@@ -28,7 +28,7 @@ const PolicyUpsertSheet = ({
   customerId,
   onSuccess,
 }: Props) => {
-  /* ---------------- LOCK BODY SCROLL ---------------- */
+  /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
     return () => {
@@ -36,7 +36,7 @@ const PolicyUpsertSheet = ({
     };
   }, [open]);
 
-  /* ---------------- POLICY DOCUMENT ACTIONS ---------------- */
+  /*   POLICY DOCUMENT ACTIONS   */
   const [existingDocuments, setExistingDocuments] = useState<string[]>([]);
   const isLoading = false;
   const { preview, download, remove } = usePolicyDocumentActions(
@@ -47,7 +47,7 @@ const PolicyUpsertSheet = ({
     }
   );
 
-  /* ---------------- FORM STATE ---------------- */
+  /*   FORM STATE   */
 
   const initialForm = {
     policyId: null as string | null,
@@ -72,7 +72,7 @@ const PolicyUpsertSheet = ({
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  /* ---------------- API HOOKS ---------------- */
+  /*   API HOOKS   */
 
   const { mutateAsync } = useUpsertPolicy();
 
@@ -87,7 +87,7 @@ const PolicyUpsertSheet = ({
 
   const loadingDropdowns = cLoading || iLoading || pLoading || tLoading || sLoading;
 
-  /* ---------------- PREFILL ---------------- */
+  /*   PREFILL   */
 
   useEffect(() => {
     if (!open) return;
@@ -133,7 +133,7 @@ const PolicyUpsertSheet = ({
     setErrors({});
   }, [open, policy, customerId]);
 
-  /* ---------------- RESET PRODUCT ON INSURER CHANGE ---------------- */
+  /*   RESET PRODUCT ON INSURER CHANGE   */
 
   // useEffect(() => {
   //   if (form.insurerId) {
@@ -144,7 +144,7 @@ const PolicyUpsertSheet = ({
   //   }
   // }, [form.insurerId]);
 
-  /* ---------------- VALIDATION ---------------- */
+  /*   VALIDATION   */
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -201,7 +201,7 @@ const PolicyUpsertSheet = ({
     return true;
   };
 
-  /* ---------------- SAVE ---------------- */
+  /*   SAVE  */
 
   const handleSave = async () => {
     if (!validate()) return;
@@ -228,7 +228,7 @@ const PolicyUpsertSheet = ({
 
   if (!open) return null;
 
-  /* =================== UI =================== */
+  /*  UI  */
 
   return (
     <>
@@ -279,7 +279,7 @@ const PolicyUpsertSheet = ({
 
 
              <SearchableComboBox
-             label="insurer"
+             label="Insurer"
                 items={insurers.map((i) => ({
                   value: i.insurerId,
                   label: i.insurerName,
@@ -440,7 +440,7 @@ const PolicyUpsertSheet = ({
                 onChange={(v) => setForm({ ...form, policyCode: v })}
               />
 
-              {/* ===== EXISTING POLICY DOCUMENTS ===== */}
+              {/*  EXISTING POLICY DOCUMENTS  */}
               {policy?.policyId && existingDocuments.length > 0 && (
                 <div>
                   <label className="text-sm font-medium">
@@ -497,7 +497,7 @@ const PolicyUpsertSheet = ({
                 </div>
               )}
 
-              {/* ===== POLICY DOCUMENT UPLOAD ===== */}
+              {/* POLICY DOCUMENT UPLOAD  */}
               <div>
                 <label className="text-sm font-medium">
                   Add Policy Documents
@@ -548,7 +548,7 @@ const PolicyUpsertSheet = ({
 
 export default PolicyUpsertSheet;
 
-/* ---------------- HELPERS ---------------- */
+/*   HELPERS   */
 
 const Input = ({
   label,

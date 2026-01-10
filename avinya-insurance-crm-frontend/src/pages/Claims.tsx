@@ -20,7 +20,7 @@ const DEFAULT_FILTERS = {
 };
 
 const Claims = () => {
-  /* ---------------- STATE ---------------- */
+  /*   STATE   */
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
@@ -28,11 +28,11 @@ const Claims = () => {
   const [openSheet, setOpenSheet] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState<any>(null);
 
-  /* ---------------- API ---------------- */
+  /*   API   */
 
   const { data, isLoading, isFetching } = useClaims(filters);
 
-  /* ---------------- HELPERS ---------------- */
+  /*   HELPERS   */
 
   const hasActiveFilters =
     filters.search ||
@@ -47,12 +47,12 @@ const Claims = () => {
     setFilters(DEFAULT_FILTERS);
   };
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <>
       <div className="bg-white rounded-lg border">
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             {/* TITLE */}
@@ -124,7 +124,7 @@ const Claims = () => {
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/*   TABLE   */}
         <ClaimTable
           data={data?.data || []}
           loading={isLoading || isFetching}
@@ -134,7 +134,7 @@ const Claims = () => {
           }}
         />
 
-        {/* ================= PAGINATION ================= */}
+        {/*   PAGINATION   */}
         <Pagination
           page={filters.pageNumber}
           totalPages={data?.totalPages ?? 1}
@@ -144,7 +144,7 @@ const Claims = () => {
         />
       </div>
 
-      {/* ================= FILTER SHEET ================= */}
+      {/*   FILTER SHEET   */}
       <ClaimFilterSheet
         open={openFilter}
         filters={filters}
@@ -154,7 +154,7 @@ const Claims = () => {
         onClose={() => setOpenFilter(false)}
       />
 
-      {/* ================= UPSERT SHEET ================= */}
+      {/*   UPSERT SHEET   */}
       <ClaimUpsertSheet
         open={openSheet}
         claim={selectedClaim}

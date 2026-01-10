@@ -21,7 +21,7 @@ interface Props {
   onSuccess: () => void;
 }
 
-/* ---------------- VALIDATION ---------------- */
+/*   VALIDATION   */
 
 const validateForm = (form: any) => {
   const e: any = {};
@@ -46,7 +46,7 @@ const validateForm = (form: any) => {
 };
 
 const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
-  /* ---------------- LOCK BODY SCROLL ---------------- */
+  /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
     return () => {
@@ -54,7 +54,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     };
   }, [open]);
 
-  /* ---------------- CLAIM DOCUMENT ACTIONS ---------------- */
+  /*   CLAIM DOCUMENT ACTIONS   */
   const [existingDocuments, setExistingDocuments] = useState<string[]>([]);
 
   const { preview, download, remove } = useClaimFileActions((deletedId) => {
@@ -63,17 +63,17 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     );
   });
 
-  /* ---------------- API HOOKS ---------------- */
+  /*   API HOOKS   */
   const { mutateAsync, isPending } = useCreateClaim();
 
 
-  /* ---------------- DROPDOWNS ---------------- */
+  /*   DROPDOWNS   */
   const { data: customers, isLoading: customersLoading } = useCustomerDropdown();
   const { data: claimTypes, isLoading: typesLoading } = useClaimTypes();
   const { data: claimStages, isLoading: stagesLoading } = useClaimStages();
   const { data: claimHandlers, isLoading: handlersLoading } = useClaimHandlers();
 
-  /* ---------------- FORM STATE ---------------- */
+  /*   FORM STATE   */
   const initialForm = {
     claimId: null as string | null,
     customerId: "",
@@ -93,7 +93,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const [documents, setDocuments] = useState<File[]>([]);
   const [errors, setErrors] = useState<any>({});
 
-  /* ---------------- POLICIES (DEPENDENT) ---------------- */
+  /*   POLICIES (DEPENDENT)   */
   const { data: policies, isLoading: policiesLoading } = usePolicies(
     form.customerId
       ? {
@@ -107,7 +107,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const loadingDropdowns =
     customersLoading || typesLoading || stagesLoading || handlersLoading;
 
-  /* ---------------- PREFILL ---------------- */
+  /*   PREFILL   */
   useEffect(() => {
     if (!open) return;
 
@@ -150,7 +150,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     setErrors({});
   }, [open, claim, claimTypes, claimStages, claimHandlers]);
 
-  /* ---------------- SAVE ---------------- */
+  /*  SAVE  */
   const handleSave = async () => {
     const e = validateForm(form);
     setErrors(e);
@@ -172,7 +172,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
   if (!open) return null;
 
-  /* =================== UI =================== */
+  /*   UI   */
 
   return (
     <>
@@ -203,6 +203,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
           ) : (
             <div className="space-y-4">
               <SearchableComboBox
+                  label="Customer"
                   items={customers.map((c) => ({
                     value: c.customerId,
                     label: c.fullName,
@@ -231,6 +232,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 }
               >
         <SearchableComboBox
+        label="Policy"
           items={(policies?.data || []).map((p) => ({
             value: p.policyId,
             label: p.policyNumber,
@@ -463,7 +465,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
 export default ClaimUpsertSheet;
 
-/* ---------------- HELPERS ---------------- */
+/*   HELPERS   */
 
 const Input = ({
   label,

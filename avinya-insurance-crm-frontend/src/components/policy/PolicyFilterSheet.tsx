@@ -165,7 +165,7 @@ const PolicyFilterSheet = ({
 
 export default PolicyFilterSheet;
 
-/* ---------- HELPER ---------- */
+/*  HELPER  */
 
 const Select = ({
   label,

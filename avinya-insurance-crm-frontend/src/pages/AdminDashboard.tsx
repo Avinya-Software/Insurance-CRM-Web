@@ -52,7 +52,7 @@ const AdminDashboard = () => {
       <Toaster position="top-right" />
 
       <div className="bg-white rounded-lg border">
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <h1 className="text-4xl font-serif font-semibold text-slate-900">
             Pending Advisors
@@ -62,7 +62,7 @@ const AdminDashboard = () => {
           </p>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/*   TABLE   */}
         <div className="relative overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead className="bg-slate-100 sticky top-0 z-10">
@@ -130,7 +130,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* ================= CONFIRM MODAL ================= */}
+      {/*   CONFIRM MODAL   */}
       {selectedUserId && actionType && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
@@ -189,7 +189,7 @@ const AdminDashboard = () => {
 
 export default AdminDashboard;
 
-/* ---------- HELPERS ---------- */
+/*  HELPERS  */
 const Th = ({ children, className = "" }: any) => (
   <th
     className={`px-4 py-3 text-left font-semibold text-slate-700 ${className}`}

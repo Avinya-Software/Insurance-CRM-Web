@@ -41,7 +41,7 @@ const CampaignTable = ({
     setOpenCampaign(null)
   );
 
-  /* ================= DROPDOWN ================= */
+  /*   DROPDOWN   */
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -64,7 +64,7 @@ const CampaignTable = ({
     setOpenCampaign(campaign);
   };
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <div className="relative overflow-x-auto">
@@ -150,7 +150,7 @@ const CampaignTable = ({
         )}
       </table>
 
-      {/* ================= DROPDOWN ================= */}
+      {/*   DROPDOWN   */}
       {openCampaign && (
         <div
           ref={dropdownRef}
@@ -180,7 +180,7 @@ const CampaignTable = ({
 
 export default CampaignTable;
 
-/* ================= HELPERS ================= */
+/*   HELPERS   */
 
 const formatDate = (d?: string) =>
   d ? new Date(d).toLocaleDateString() : "-";

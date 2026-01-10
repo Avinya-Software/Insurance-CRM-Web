@@ -41,7 +41,7 @@ const Login = () => {
     error: adminErr
   } = useLoginAdmin();
 
-  /* ---------------- VALIDATION ---------------- */
+  /*   VALIDATION   */
   const validate = () => {
     const newErrors: LoginErrors = {};
 
@@ -61,7 +61,7 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  /* ---------------- ADVISOR LOGIN ---------------- */
+  /*   ADVISOR LOGIN   */
   const handleAdvisorLogin = () => {
     if (!validate()) return;
 
@@ -87,7 +87,7 @@ const Login = () => {
     );
   };
 
-  /* ---------------- ADMIN LOGIN ---------------- */
+  /*   ADMIN LOGIN   */
   const handleAdminLogin = () => {
     if (!validate()) return;
 

@@ -5,7 +5,7 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteLead } from "../../hooks/lead/useDeleteLead";
 import TableSkeleton from "../common/TableSkeleton";
 
-/* ===================== STATUS BADGE STYLES ===================== */
+/*   STATUS BADGE STYLES   */
 
 const leadStatusStyles: Record<string, string> = {
   New: "bg-slate-100 text-slate-700 border-slate-200",
@@ -16,7 +16,7 @@ const leadStatusStyles: Record<string, string> = {
   Lost: "bg-red-100 text-red-700 border-red-200",
 };
 
-/* ===================== TYPES ===================== */
+/*   TYPES   */
 
 const DROPDOWN_HEIGHT = 240;
 const DROPDOWN_WIDTH = 210;
@@ -32,7 +32,7 @@ interface LeadTableProps {
   onAddCustomer?: (lead: Lead) => void;
 }
 
-/* ===================== COMPONENT ===================== */
+/*   COMPONENT   */
 
 const LeadTable = ({
   data = [],
@@ -110,7 +110,7 @@ const LeadTable = ({
           </tr>
         </thead>
 
-        {/* ================= BODY ================= */}
+        {/*   BODY   */}
         {loading ? (
           <TableSkeleton rows={6} columns={8} />
         ) : (
@@ -175,7 +175,7 @@ const LeadTable = ({
         )}
       </table>
 
-      {/* ================= DROPDOWN ================= */}
+      {/*   DROPDOWN   */}
       {openLead && (
         <div
           ref={dropdownRef}
@@ -230,7 +230,7 @@ const LeadTable = ({
         </div>
       )}
 
-      {/* ================= CONFIRM DELETE ================= */}
+      {/*   CONFIRM DELETE   */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
@@ -278,7 +278,7 @@ const LeadTable = ({
 
 export default LeadTable;
 
-/* ===================== HELPERS ===================== */
+/*   HELPERS   */
 
 const Th = ({ children, className = "" }: any) => (
   <th

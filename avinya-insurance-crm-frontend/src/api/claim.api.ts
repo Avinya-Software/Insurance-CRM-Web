@@ -5,7 +5,7 @@ import type {
   ClaimResponse,
 } from "../interfaces/claim.interface";
 
-/* ================= CREATE / UPDATE CLAIM ================= */
+/*   CREATE / UPDATE CLAIM   */
 
 export const upsertClaimApi = async (
   data: CreateClaimRequest
@@ -15,13 +15,11 @@ export const upsertClaimApi = async (
   Object.entries(data).forEach(([key, value]) => {
     if (value === undefined || value === null) return;
 
-    // 🔥 FILES
     if (key === "documents" && Array.isArray(value)) {
       value.forEach((file) =>
         formData.append("Documents", file)
       );
     }
-    // 🔥 OTHER FIELDS
     else {
       formData.append(key, String(value));
     }
@@ -40,7 +38,7 @@ export const upsertClaimApi = async (
   return res.data;
 };
 
-/* ================= GET CLAIMS (PAGINATED) ================= */
+/*   GET CLAIMS (PAGINATED)   */
 
 export const getClaimsApi = async (
   params: ClaimFilters
@@ -52,7 +50,7 @@ export const getClaimsApi = async (
   return res.data;
 };
 
-/* ================= CLAIM DOCUMENT PREVIEW ================= */
+/*   CLAIM DOCUMENT PREVIEW   */
 
 export const previewClaimDocumentApi = (
   claimId: string,
@@ -61,7 +59,7 @@ export const previewClaimDocumentApi = (
   return `${api.defaults.baseURL}/claim/${claimId}/documents/${documentId}/preview`;
 };
 
-/* ================= CLAIM DOCUMENT DOWNLOAD ================= */
+/*   CLAIM DOCUMENT DOWNLOAD   */
 
 export const downloadClaimDocumentApi = (
   claimId: string,
@@ -70,7 +68,7 @@ export const downloadClaimDocumentApi = (
   return `${api.defaults.baseURL}/claim/${claimId}/documents/${documentId}/download`;
 };
 
-/* ================= CLAIM DOCUMENT DELETE ================= */
+/*   CLAIM DOCUMENT DELETE   */
 
 export const deleteClaimDocumentApi = async (
   claimId: string,
@@ -82,7 +80,7 @@ export const deleteClaimDocumentApi = async (
   return res.data;
 };
 
-/* ================= DELETE CLAIM (BY ID) ================= */
+/*   DELETE CLAIM (BY ID)   */
 
 export const deleteClaimApi = async (
   claimId: string

@@ -4,7 +4,7 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteClaim } from "../../hooks/claim/useDeleteClaim";
 import TableSkeleton from "../common/TableSkeleton";
 
-/* ===================== BADGE STYLES ===================== */
+/*   BADGE STYLES   */
 
 const claimTypeStyles: Record<string, string> = {
   Accident: "bg-blue-100 text-blue-700 border-blue-200",
@@ -26,7 +26,7 @@ const claimStageStyles: Record<string, string> = {
   Settled: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
-/* ===================== TYPES ===================== */
+/*   TYPES   */
 
 interface Claim {
   claimId: string;
@@ -66,7 +66,7 @@ interface Props {
 const DROPDOWN_HEIGHT = 120;
 const DROPDOWN_WIDTH = 180;
 
-/* ===================== COMPONENT ===================== */
+/*   COMPONENT   */
 
 const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
   const [openClaim, setOpenClaim] = useState<Claim | null>(null);
@@ -204,7 +204,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
         )}
       </table>
 
-      {/* ================= DROPDOWN ================= */}
+      {/*  DROPDOWN  */}
       {openClaim && (
         <div
           ref={dropdownRef}
@@ -229,7 +229,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
         </div>
       )}
 
-      {/* ================= CONFIRM DELETE ================= */}
+      {/*  CONFIRM DELETE  */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[400px] p-6 shadow-lg">
@@ -279,7 +279,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
 
 export default ClaimTable;
 
-/* ===================== HELPERS ===================== */
+/*   HELPERS   */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold whitespace-nowrap">

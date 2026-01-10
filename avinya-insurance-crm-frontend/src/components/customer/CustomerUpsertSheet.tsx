@@ -21,7 +21,7 @@ const CustomerUpsertSheet = ({
   leadId,
   onSuccess,
 }: Props) => {
-  /* ---------------- LOCK BODY SCROLL ---------------- */
+  /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
     return () => {
@@ -29,7 +29,7 @@ const CustomerUpsertSheet = ({
     };
   }, [open]);
 
-  /* ---------------- KYC ACTIONS ---------------- */
+  /*   KYC ACTIONS   */
   const [existingKycFiles, setExistingKycFiles] = useState<string[]>([]);
 
   const { preview, download, remove } = useKycFileActions(
@@ -40,7 +40,7 @@ const CustomerUpsertSheet = ({
     }
   );
 
-  /* ---------------- FORM STATE ---------------- */
+  /*   FORM STATE   */
 
   const initialForm = {
     customerId: null as string | null,
@@ -60,7 +60,7 @@ const CustomerUpsertSheet = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
-  /* ---------------- PREFILL ---------------- */
+  /*   PREFILL   */
 
   useEffect(() => {
     if (!open) return;
@@ -95,7 +95,7 @@ const CustomerUpsertSheet = ({
     setErrors({});
   }, [open, customer, leadId]);
 
-  /* ---------------- AUTO CLEAR INVALID ANNIVERSARY ---------------- */
+  /*   AUTO CLEAR INVALID ANNIVERSARY   */
 
   useEffect(() => {
     if (
@@ -107,7 +107,7 @@ const CustomerUpsertSheet = ({
     }
   }, [form.dob]);
 
-  /* ---------------- VALIDATION ---------------- */
+  /*   VALIDATION   */
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -147,7 +147,7 @@ const CustomerUpsertSheet = ({
     return true;
   };
 
-  /* ---------------- SAVE ---------------- */
+  /*   SAVE   */
 
   const handleSave = async () => {
     if (!validate()) return;
@@ -172,7 +172,7 @@ const CustomerUpsertSheet = ({
 
   if (!open) return null;
 
-  /* =================== UI =================== */
+  /*  UI  */
 
   return (
     <>
@@ -377,7 +377,7 @@ const CustomerUpsertSheet = ({
 
 export default CustomerUpsertSheet;
 
-/* ---------------- HELPERS ---------------- */
+/*   HELPERS   */
 
 const Input = ({
   label,

@@ -13,8 +13,7 @@ import toast from "react-hot-toast";
 export const useClaimFileActions = (
   onDeleted?: (documentId: string) => void
 ) => {
-  /* ================= PREVIEW ================= */
-  /* 🔍 Opens PDF / image inline */
+  /*  PREVIEW  */
 
   const preview = async (
     claimId: string,
@@ -31,7 +30,7 @@ export const useClaimFileActions = (
     window.open(url, "_blank");
   };
 
-  /* ================= DOWNLOAD ================= */
+  /*  DOWNLOAD  */
   /* ⬇️ Forces file download */
 
   const download = async (
@@ -58,8 +57,7 @@ export const useClaimFileActions = (
     URL.revokeObjectURL(url);
   };
 
-  /* ================= DELETE ================= */
-  /* 🗑️ Deletes from DB + disk */
+  /*  DELETE  */
 
   const remove = async (
     claimId: string,
@@ -72,7 +70,7 @@ export const useClaimFileActions = (
 
     toast.success("Document deleted");
 
-    // 🔥 notify UI to remove item without refetch
+    //  notify UI to remove item without refetch
     onDeleted?.(documentId);
   };
 

@@ -22,7 +22,7 @@ const Campaigns = () => {
     refetch,
   } = useCampaigns(pageNumber, pageSize, search);
 
-  /* ================= HANDLERS ================= */
+  /*   HANDLERS   */
 
   const handleAdd = () => {
     setSelectedCampaign(null);
@@ -44,7 +44,7 @@ const Campaigns = () => {
     refetch();
   };
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <>
@@ -114,12 +114,12 @@ const Campaigns = () => {
         />
       </div>
 
-      {/* UPSERT SHEET - 👇 ADDED selectedCampaign PROP */}
+      {/* UPSERT SHEET - ADDED selectedCampaign PROP */}
         <CampaignUpsertSheet
         open={openSheet}
         onClose={() => {
           setOpenSheet(false);
-          setSelectedCampaign(null); // 🔑 CRITICAL
+          setSelectedCampaign(null); //  CRITICAL
         }}
         onSuccess={handleSuccess}
         selectedCampaign={selectedCampaign}

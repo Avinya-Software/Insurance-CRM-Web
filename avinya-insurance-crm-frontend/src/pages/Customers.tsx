@@ -16,27 +16,27 @@ const Customers = () => {
   const [pageSize] = useState(10);
   const [search, setSearch] = useState("");
 
-  /* ---------------- CUSTOMER UPSERT ---------------- */
+  /*   CUSTOMER UPSERT   */
   const [openCustomerSheet, setOpenCustomerSheet] = useState(false);
   const [selectedCustomer, setSelectedCustomer] =
     useState<Customer | null>(null);
 
-  /* ---------------- POLICY UPSERT ---------------- */
+  /*   POLICY UPSERT   */
   const [openPolicySheet, setOpenPolicySheet] = useState(false);
 
-  /* ---------------- VIEW POLICIES (SINGLE CLICK) ---------------- */
+  /*   VIEW POLICIES (SINGLE CLICK)   */
   const [viewCustomerPolicies, setViewCustomerPolicies] = useState<{
     customerId: string;
     customerName?: string;
   } | null>(null);
 
-  /* ---------------- VIEW CLAIMS (DOUBLE CLICK) ---------------- */
+  /*   VIEW CLAIMS (DOUBLE CLICK)   */
   const [viewCustomerClaims, setViewCustomerClaims] = useState<{
     customerId: string;
     customerName?: string;
   } | null>(null);
 
-  /* ---------------- API ---------------- */
+  /*   API   */
   const {
     data,
     isLoading,
@@ -44,7 +44,7 @@ const Customers = () => {
     refetch,
   } = useCustomers(pageNumber, pageSize, search);
 
-  /* ---------------- HANDLERS ---------------- */
+  /*   HANDLERS   */
 
   const handleAddCustomer = () => {
     setSelectedCustomer(null);
@@ -61,7 +61,7 @@ const Customers = () => {
     setOpenPolicySheet(true);
   };
 
-  /* -------- SINGLE CLICK → POLICIES -------- */
+  /*   SINGLE CLICK → POLICIES   */
   const openCustomerPolicies = (customer: Customer) => {
     setViewCustomerPolicies({
       customerId: customer.customerId,
@@ -69,7 +69,7 @@ const Customers = () => {
     });
   };
 
-  /* -------- DOUBLE CLICK → CLAIMS -------- */
+  /*   DOUBLE CLICK → CLAIMS   */
   const openCustomerClaims = (customer: Customer) => {
     setViewCustomerClaims({
       customerId: customer.customerId,
@@ -89,14 +89,14 @@ const Customers = () => {
     toast.success("Policy added successfully!");
   };
 
-  /* ================= UI ================= */
+  /*  UI  */
 
   return (
     <>
       <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
-        {/* ================= HEADER ================= */}
+        {/*  HEADER  */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
@@ -139,7 +139,7 @@ const Customers = () => {
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/*   TABLE   */}
         <CustomerTable
           data={data?.customers || []}
           loading={isLoading || isFetching}
@@ -149,7 +149,7 @@ const Customers = () => {
           onRowDoubleClick={openCustomerClaims}
         />
 
-        {/* ================= PAGINATION ================= */}
+        {/*   PAGINATION   */}
         <Pagination
           page={pageNumber}
           totalPages={data?.totalPages ?? 1}
@@ -157,7 +157,7 @@ const Customers = () => {
         />
       </div>
 
-      {/* ================= CUSTOMER UPSERT ================= */}
+      {/*   CUSTOMER UPSERT   */}
       <CustomerUpsertSheet
         open={openCustomerSheet}
         customer={selectedCustomer}
@@ -165,7 +165,7 @@ const Customers = () => {
         onSuccess={handleCustomerSuccess}
       />
 
-      {/* ================= POLICY UPSERT ================= */}
+      {/*   POLICY UPSERT   */}
       <PolicyUpsertSheet
         open={openPolicySheet}
         customerId={selectedCustomer?.customerId}
@@ -176,7 +176,7 @@ const Customers = () => {
         onSuccess={handlePolicySuccess}
       />
 
-      {/* ================= POLICIES BOTTOM SHEET ================= */}
+      {/*   POLICIES BOTTOM SHEET   */}
       <CustomerPolicyBottomSheet
         open={!!viewCustomerPolicies}
         customerId={viewCustomerPolicies?.customerId || null}
@@ -184,7 +184,7 @@ const Customers = () => {
         onClose={() => setViewCustomerPolicies(null)}
       />
 
-      {/* ================= CLAIMS BOTTOM SHEET ================= */}
+      {/*   CLAIMS BOTTOM SHEET   */}
       <CustomerClaimBottomSheet
         open={!!viewCustomerClaims}
         customerId={viewCustomerClaims?.customerId || null}

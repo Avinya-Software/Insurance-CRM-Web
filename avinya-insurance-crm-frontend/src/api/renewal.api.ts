@@ -1,6 +1,6 @@
 import api from "./axios";
 
-/* ================= UPSERT ================= */
+/*   UPSERT   */
 export const upsertRenewalApi = async (payload: {
   renewalId?: string;
   policyId: string;
@@ -14,7 +14,7 @@ export const upsertRenewalApi = async (payload: {
   return res.data;
 };
 
-/* ================= LIST ================= */
+/*   LIST   */
 export const getRenewalsApi = async (params: {
   pageNumber: number;
   pageSize: number;
@@ -25,7 +25,7 @@ export const getRenewalsApi = async (params: {
   return res.data;
 };
 
-/* ================= STATUS DROPDOWN ================= */
+/*   STATUS DROPDOWN   */
 export const getRenewalStatusesApi = async () => {
   const res = await api.get("/renewals/statuses");
   return res.data;

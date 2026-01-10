@@ -13,7 +13,7 @@ const AdminAdvisorsByStatusPage = () => {
     status
   });
 
-  /* ---------- SEARCH ---------- */
+  /*   SEARCH   */
   const filteredData = useMemo(() => {
     if (!data?.data) return [];
     return data.data.filter((item: any) =>
@@ -28,7 +28,7 @@ const AdminAdvisorsByStatusPage = () => {
       <Toaster position="top-right" />
 
       <div className="bg-white rounded-lg border">
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
@@ -83,7 +83,7 @@ const AdminAdvisorsByStatusPage = () => {
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/*   TABLE   */}
         <div className="relative overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead className="bg-slate-100 sticky top-0 z-10">
@@ -144,7 +144,7 @@ const AdminAdvisorsByStatusPage = () => {
 
 export default AdminAdvisorsByStatusPage;
 
-/* ---------- HELPERS ---------- */
+/*   HELPERS   */
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold text-slate-700">
     {children}

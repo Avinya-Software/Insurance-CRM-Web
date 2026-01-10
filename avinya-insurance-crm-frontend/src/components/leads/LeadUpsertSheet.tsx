@@ -31,7 +31,7 @@ const LeadUpsertSheet = ({
   const { data: statuses } = useLeadStatuses();
   const { data: sources } = useLeadSources();
 
-  /* ---------------- LOCK BODY SCROLL ---------------- */
+  /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
     return () => {
@@ -39,7 +39,7 @@ const LeadUpsertSheet = ({
     };
   }, [open]);
 
-  /* ---------------- CUSTOMER DROPDOWN ---------------- */
+  /*   CUSTOMER DROPDOWN   */
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -48,7 +48,7 @@ const LeadUpsertSheet = ({
     getCustomerDropdownApi().then(setCustomers);
   }, []);
 
-  /* ---------------- FORM STATE ---------------- */
+  /*   FORM STATE   */
 
   const initialForm = {
     customerId: null as string | null,
@@ -64,7 +64,7 @@ const LeadUpsertSheet = ({
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  /* ---------------- PREFILL (EDIT MODE) ---------------- */
+  /*   PREFILL (EDIT MODE)   */
 
   useEffect(() => {
     if (!open) return;
@@ -110,7 +110,7 @@ const LeadUpsertSheet = ({
     setErrors({});
   }, [open, lead, statuses, sources]);
 
-  /* ---------------- CUSTOMER SELECT ---------------- */
+  /*   CUSTOMER SELECT   */
 
   const handleCustomerSelect = (customerId: string) => {
     setSelectedCustomerId(customerId);
@@ -135,7 +135,7 @@ const LeadUpsertSheet = ({
     }));
   };
 
-  /* ---------------- VALIDATION ---------------- */
+  /*   VALIDATION   */
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -162,7 +162,7 @@ const LeadUpsertSheet = ({
     return Object.keys(e).length === 0;
   };
 
-  /* ---------------- SAVE ---------------- */
+  /*  SAVE  */
 
   const handleSave = () => {
     if (!validate()) return;
@@ -182,7 +182,7 @@ const LeadUpsertSheet = ({
 
   if (!open) return null;
 
-  /* =================== UI =================== */
+  /*  == UI  == */
 
   return (
     <>
@@ -209,6 +209,7 @@ const LeadUpsertSheet = ({
         </label>
 
         <SearchableComboBox
+        label="customer"
           items={customers.map((c) => ({
             value: c.customerId,
             label: `${c.fullName} (${c.email})`,
@@ -314,7 +315,7 @@ const LeadUpsertSheet = ({
 
 export default LeadUpsertSheet;
 
-/* ---------------- HELPERS ---------------- */
+/*   HELPERS   */
 
 const Input = ({ label, required, value, error, onChange }: any) => (
   <div>

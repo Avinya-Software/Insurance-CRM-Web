@@ -24,12 +24,12 @@ const LeadFollowUpBottomSheet = ({
     refetch,
   } = useLeadFollowUps(leadId || "");
 
-  /* ---------- CLOSE ON OUTSIDE CLICK ---------- */
+  /*   CLOSE ON OUTSIDE CLICK   */
   useOutsideClick(sheetRef, () => {
     if (open) onClose();
   });
 
-  /* ---------- LOCK BODY SCROLL ---------- */
+  /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
     return () => {
@@ -37,7 +37,7 @@ const LeadFollowUpBottomSheet = ({
     };
   }, [open]);
 
-  /* ---------- 🔥 FORCE REFETCH WHEN OPENED ---------- */
+  /*   🔥 FORCE REFETCH WHEN OPENED   */
   useEffect(() => {
     if (open && leadId) {
       refetch();
@@ -48,13 +48,13 @@ const LeadFollowUpBottomSheet = ({
 
   return (
     <>
-      {/* ---------- BACKDROP ---------- */}
+      {/*   BACKDROP   */}
       <div
         className="fixed inset-0 bg-black/40 z-40"
         onClick={onClose}
       />
 
-      {/* ---------- BOTTOM SHEET ---------- */}
+      {/*   BOTTOM SHEET   */}
       <div
         ref={sheetRef}
         className="
@@ -68,7 +68,7 @@ const LeadFollowUpBottomSheet = ({
           animate-slideUp
         "
       >
-        {/* ---------- HEADER ---------- */}
+        {/*   HEADER   */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
             <h2 className="text-xl font-semibold">
@@ -89,7 +89,7 @@ const LeadFollowUpBottomSheet = ({
           </button>
         </div>
 
-        {/* ---------- CONTENT ---------- */}
+        {/*   CONTENT   */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {isLoading ? (
             <div className="flex justify-center py-8">

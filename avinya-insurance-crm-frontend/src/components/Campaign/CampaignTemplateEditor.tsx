@@ -1,6 +1,6 @@
 import { MentionsInput, Mention } from "react-mentions";
 
-/* ================= TYPES ================= */
+/*   TYPES   */
 
 interface TemplateValue {
   subject: string;
@@ -14,7 +14,7 @@ interface Props {
   customers?: any[]; // Optional, for future use
 }
 
-/* ================= MERGE TAGS ================= */
+/*   MERGE TAGS   */
 
 const MERGE_TAGS = [
   { id: "name", display: "Name" },
@@ -22,7 +22,7 @@ const MERGE_TAGS = [
   { id: "phone", display: "Phone Number" },
 ];
 
-/* ================= HELPERS ================= */
+/*   HELPERS   */
 
 const convertMentionsToTemplate = (text: string) => {
   let output = text;
@@ -51,7 +51,7 @@ const previewText = (text: string) => {
     );
 };
 
-/* ================= STYLES ================= */
+/*   STYLES   */
 
 const mentionsStyle = {
   control: {
@@ -109,14 +109,14 @@ const mentionsStyle = {
   },
 };
 
-/* ================= COMPONENT ================= */
+/*   COMPONENT   */
 
 const CampaignTemplateEditor = ({
   value,
   onChange,
   customers,
 }: Props) => {
-  /* ================= HANDLERS ================= */
+  /*   HANDLERS   */
 
   const handleSubjectChange = (
     _: any,
@@ -138,7 +138,7 @@ const CampaignTemplateEditor = ({
     });
   };
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <div className="space-y-6">
@@ -183,7 +183,7 @@ const CampaignTemplateEditor = ({
         </p>
       </div>
 
-      {/* ===== BODY WITH @ TAGS ===== */}
+      {/*  BODY WITH @ TAGS  */}
       <div>
         <label className="text-sm font-medium">
           Message Body
@@ -223,7 +223,7 @@ const CampaignTemplateEditor = ({
         </p>
       </div>
 
-      {/* ===== PREVIEW ===== */}
+      {/*  PREVIEW  */}
       <div>
         <label className="text-sm font-medium">
           Preview

@@ -23,18 +23,18 @@ const ClaimFilterSheet = ({
   onApply,
   onClose,
 }: Props) => {
-  /* ---------------- DROPDOWNS ---------------- */
+  /*   DROPDOWNS   */
 
   const { data: customers } = useCustomerDropdown();
   const { data: claimTypes } = useClaimTypes();
   const { data: claimStages } = useClaimStages();
   const { data: claimHandlers } = useClaimHandlers();
 
-  /* ---------------- LOCAL STATE ---------------- */
+  /*   LOCAL STATE   */
 
   const [localFilters, setLocalFilters] = useState(filters);
 
-  /* ---------------- DEPENDENT POLICY ---------------- */
+  /*   DEPENDENT POLICY   */
 
   const { data: policies } = usePolicies(
     localFilters.customerId
@@ -52,7 +52,7 @@ const ClaimFilterSheet = ({
 
   if (!open) return null;
 
-  /* ---------------- ACTIONS ---------------- */
+  /*   ACTIONS   */
 
   const handleApply = () => {
     onApply({ ...localFilters });
@@ -74,7 +74,7 @@ const ClaimFilterSheet = ({
     onClose();
   };
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -84,7 +84,7 @@ const ClaimFilterSheet = ({
       />
 
       <div className="w-96 bg-white h-full shadow-xl flex flex-col">
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-lg">
             Filter Claims
@@ -94,7 +94,7 @@ const ClaimFilterSheet = ({
           </button>
         </div>
 
-        {/* ================= BODY ================= */}
+        {/*   BODY   */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* CUSTOMER */}
           <Select
@@ -192,7 +192,7 @@ const ClaimFilterSheet = ({
           />
         </div>
 
-        {/* ================= FOOTER ================= */}
+        {/*   FOOTER   */}
         <div className="px-6 py-4 border-t flex gap-3">
           <button
             className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
@@ -214,7 +214,7 @@ const ClaimFilterSheet = ({
 
 export default ClaimFilterSheet;
 
-/* ================= HELPERS ================= */
+/*   HELPERS   */
 
 const Select = ({
   label,

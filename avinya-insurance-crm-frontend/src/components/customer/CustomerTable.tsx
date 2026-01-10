@@ -42,7 +42,7 @@ const CustomerTable = ({
   const { mutate: deleteCustomer, isPending } =
     useDeleteCustomer();
 
-  /* ================= ROW CLICK HANDLER ================= */
+  /*   ROW CLICK HANDLER   */
 
   const handleRowClick = (customer: Customer) => {
     if (clickTimer) {
@@ -57,7 +57,7 @@ const CustomerTable = ({
     }
   };
 
-  /* ================= DROPDOWN ================= */
+  /*   DROPDOWN   */
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -105,7 +105,7 @@ const CustomerTable = ({
     });
   };
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <div className="relative overflow-x-auto">
@@ -160,7 +160,7 @@ const CustomerTable = ({
         )}
       </table>
 
-      {/* ================= DROPDOWN ================= */}
+      {/*   DROPDOWN   */}
       {openCustomer && (
         <div
           ref={dropdownRef}
@@ -179,7 +179,7 @@ const CustomerTable = ({
         </div>
       )}
 
-      {/* ================= CONFIRM DELETE MODAL ================= */}
+      {/*   CONFIRM DELETE MODAL   */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
@@ -227,7 +227,7 @@ const CustomerTable = ({
 
 export default CustomerTable;
 
-/* ================= HELPERS ================= */
+/*   HELPERS   */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold text-slate-700">

@@ -1,6 +1,6 @@
 import api from "./axios";
 
-/* ---------------- ADD / UPDATE PRODUCT ---------------- */
+/*  ADD / UPDATE PRODUCT  */
 
 export const upsertProductApi = async (payload: {
   productId?: string;
@@ -16,7 +16,7 @@ export const upsertProductApi = async (payload: {
   return res.data;
 };
 
-/* ---------------- PRODUCT CATEGORY DROPDOWN ---------------- */
+/*  PRODUCT CATEGORY DROPDOWN  */
 
 export const getProductCategoryDropdownApi = async () => {
   const res = await api.get<{ id: number; name: string }[]>(
@@ -25,7 +25,7 @@ export const getProductCategoryDropdownApi = async () => {
   return res.data;
 };
 
-/* ---------------- GET PRODUCTS (WITH FILTER + PAGINATION) ---------------- */
+/*  GET PRODUCTS (WITH FILTER + PAGINATION)  */
 
 export const getProductsApi = async (params: {
   pageNumber: number;
@@ -37,7 +37,7 @@ export const getProductsApi = async (params: {
   return res.data;
 };
 
-/* ---------------- PRODUCT DROPDOWN ---------------- */
+/*  PRODUCT DROPDOWN  */
 
 export const getProductDropdownApi = async (
   insurerId?: string
@@ -51,7 +51,7 @@ export const getProductDropdownApi = async (
   return res.data;
 };
 
-/* ---------------- DELETE PRODUCT (BY ID) ---------------- */
+/*  DELETE PRODUCT (BY ID)  */
 
 export const deleteProductApi = async (
   productId: string

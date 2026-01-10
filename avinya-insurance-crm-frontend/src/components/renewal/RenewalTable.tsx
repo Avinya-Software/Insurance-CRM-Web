@@ -126,7 +126,7 @@ const RenewalTable = ({
         </tbody>
       </table>
 
-      {/* ================= DROPDOWN ================= */}
+      {/*  DROPDOWN  */}
       {openRow && (
         <div
           ref={dropdownRef}
@@ -142,7 +142,7 @@ const RenewalTable = ({
 
 export default RenewalTable;
 
-/* ---------- HELPERS ---------- */
+/*  HELPERS  */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold">

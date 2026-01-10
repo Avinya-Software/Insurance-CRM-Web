@@ -1,18 +1,18 @@
 import api from "./axios";
 
-/* ---------------- CLAIM TYPE DROPDOWN ---------------- */
+/*   CLAIM TYPE DROPDOWN   */
 export const getClaimTypesApi = async () => {
   const res = await api.get("/claim-masters/claim-types");
   return res.data;
 };
 
-/* ---------------- CLAIM STAGE DROPDOWN ---------------- */
+/*   CLAIM STAGE DROPDOWN   */
 export const getClaimStagesApi = async () => {
   const res = await api.get("/claim-masters/claim-stages");
   return res.data;
 };
 
-/* ---------------- CLAIM HANDLER DROPDOWN ---------------- */
+/*   CLAIM HANDLER DROPDOWN   */
 export const getClaimHandlersApi = async () => {
   const res = await api.get("/claim-masters/claim-handlers");
   return res.data;

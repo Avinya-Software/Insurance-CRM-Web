@@ -6,7 +6,7 @@ import type {
   ApiWrapper
 } from "../interfaces/admin.interface";
 
-// ================= LOGIN =================
+//   LOGIN  
 export const loginAdminApi = async (
   data: AdminLoginRequest
 ) => {
@@ -17,7 +17,7 @@ export const loginAdminApi = async (
   return res.data;
 };
 
-// ================= PENDING ADVISORS =================
+//   PENDING ADVISORS  
 export const getPendingAdvisorsApi = async () => {
   const res = await api.get<ApiWrapper<any[]>>(
     "/admin/pending-advisors"
@@ -25,7 +25,7 @@ export const getPendingAdvisorsApi = async () => {
   return res.data;
 };
 
-// ================= APPROVE ADVISOR =================
+//   APPROVE ADVISOR  
 export const approveAdvisorApi = async (
   userId: string
 ) => {
@@ -35,7 +35,7 @@ export const approveAdvisorApi = async (
   return res.data;
 };
 
-// ================= DELETE / DISABLE ADVISOR =================
+//   DELETE / DISABLE ADVISOR  
 export const deleteAdvisorApi = async (
   userId: string
 ) => {

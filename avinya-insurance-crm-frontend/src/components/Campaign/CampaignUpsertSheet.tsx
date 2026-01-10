@@ -23,7 +23,7 @@ const CampaignUpsertSheet = ({
   onSuccess,
   selectedCampaign,
 }: Props) => {
-  /* ================= LOCK SCROLL ================= */
+  /*   LOCK SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
     return () => {
@@ -31,14 +31,14 @@ const CampaignUpsertSheet = ({
     };
   }, [open]);
 
-  /* ================= API ================= */
+  /*   API   */
   
   const { data: customers = [] } = useCustomerDropdown();
   const { mutate: createCampaign, isPending } = useCreateCampaign();
   const { data: campaignTypes = [], isLoading } = useCampaignTypeDropdown();
   const { mutate: updateCampaign, isPending: updating } = useUpdateCampaign();
   
-  /* ================= STATE ================= */
+  /*   STATE   */
   const advisorId = getAdvisorIdFromToken();
   const [campaign, setCampaign] = useState({
     name: "",
@@ -60,7 +60,7 @@ const CampaignUpsertSheet = ({
     channel: "Email",
   });
 
-  /* ================= RULE STATE ================= */
+  /*   RULE STATE   */
 
   const [ruleType, setRuleType] =
     useState<"OffsetDays" | "FixedDate">("OffsetDays");
@@ -73,13 +73,13 @@ const CampaignUpsertSheet = ({
 
   const [fixedDate, setFixedDate] = useState("");
 
-  /* ================= RESET / PREFILL ================= */
+  /*   RESET / PREFILL   */
 
   useEffect(() => {
     if (!open) return;
 
     if (selectedCampaign) {
-      // ===== EDIT MODE =====
+      //  EDIT MODE 
       setCampaign({
         name: selectedCampaign.name || "",
         campaignTypeId: selectedCampaign.campaignTypeId,
@@ -129,12 +129,12 @@ const CampaignUpsertSheet = ({
         }
       }
     } else {
-      // ===== CREATE MODE =====
+      //  CREATE MODE 
       resetForm();
     }
   }, [open, selectedCampaign, customers]);
 
-  /* ================= RESET FORM ================= */
+  /*   RESET FORM   */
   const resetForm = () => {
     setCampaign({
       name: "",
@@ -159,7 +159,7 @@ const CampaignUpsertSheet = ({
     setFixedDate("");
   };
 
-  /* ================= APPLY TO ALL ================= */
+  /*   APPLY TO ALL   */
   const handleApplyToAllChange = (checked: boolean) => {
     setCampaign((prev) => ({
       ...prev,
@@ -171,7 +171,7 @@ const CampaignUpsertSheet = ({
     );
   };
 
-  /* ================= SUBMIT ================= */
+  /*   SUBMIT   */
 
   const handleSubmit = () => {
   if (!campaign.name.trim()) return toast.error("Campaign name is required");
@@ -262,7 +262,7 @@ const CampaignUpsertSheet = ({
 
   if (!open) return null;
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <>
@@ -316,7 +316,6 @@ const CampaignUpsertSheet = ({
 
           {/* TARGET CUSTOMERS */}
           <div>
-            {/* TARGET CUSTOMERS */}
             <div>
               <label className="text-sm font-medium">Target Customers</label>
 
@@ -471,7 +470,7 @@ const CampaignUpsertSheet = ({
 
 export default CampaignUpsertSheet;
 
-/* ================= HELPERS ================= */
+/*   HELPERS   */
 
 const Input = ({
   label,

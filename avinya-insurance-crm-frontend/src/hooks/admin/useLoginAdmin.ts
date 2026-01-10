@@ -9,7 +9,7 @@ export const useLoginAdmin = () => {
       loginAdminApi(data),
 
     onSuccess: (res) => {
-      // 🔐 Save JWT
+      //  Save JWT
       saveToken(res.data.token);
 
       // Optional: store admin info

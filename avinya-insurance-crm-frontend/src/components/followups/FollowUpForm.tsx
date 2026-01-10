@@ -18,7 +18,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
   const followUpRef = useRef<HTMLInputElement>(null);
   const nextFollowUpRef = useRef<HTMLInputElement>(null);
 
-  /* ---------------- AUTO FIX INVALID NEXT DATE ---------------- */
+  /*   AUTO FIX INVALID NEXT DATE   */
 
   useEffect(() => {
     if (
@@ -30,7 +30,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
     }
   }, [followUpDate]);
 
-  /* ---------------- VALIDATION ---------------- */
+  /*   VALIDATION   */
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -61,7 +61,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
     return Object.keys(e).length === 0;
   };
 
-  /* ---------------- SUBMIT ---------------- */
+  /*   SUBMIT   */
 
   const handleSubmit = async () => {
   if (!validate()) return;
@@ -93,7 +93,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
 
   return (
     <div className="space-y-4">
-      {/* ---------- FOLLOW UP DATE ---------- */}
+      {/*   FOLLOW UP DATE   */}
       <div>
         <label className="text-sm font-medium">
           Follow Up Date <span className="text-red-500">*</span>
@@ -121,7 +121,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
         )}
       </div>
 
-      {/* ---------- NEXT FOLLOW UP DATE ---------- */}
+      {/*   NEXT FOLLOW UP DATE   */}
       <div>
         <label className="text-sm font-medium">
           Next Follow Up Date <span className="text-red-500">*</span>
@@ -152,7 +152,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
         )}
       </div>
 
-      {/* ---------- REMARK ---------- */}
+      {/*   REMARK   */}
       <div>
         <label className="text-sm font-medium">
           Remark <span className="text-red-500">*</span>
@@ -174,7 +174,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
         )}
       </div>
 
-      {/* ---------- SAVE ---------- */}
+      {/*   SAVE   */}
       <button
         onClick={handleSubmit}
         disabled={saving}

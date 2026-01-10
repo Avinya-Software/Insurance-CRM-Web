@@ -13,7 +13,7 @@ interface Props {
   onSuccess: () => void;
 }
 
-/* ---------------- REGEX ---------------- */
+/*   REGEX   */
 
 const regex = {
   insurerName: /^[A-Za-z ]{3,50}$/,
@@ -24,7 +24,7 @@ const regex = {
   portalPassword: /^.{6,50}$/,
 };
 
-/* ---------------- COMPONENT ---------------- */
+/*   COMPONENT   */
 
 const InsurerUpsertSheet = ({
   open,
@@ -51,7 +51,7 @@ const InsurerUpsertSheet = ({
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  /* ---------------- PREFILL ---------------- */
+  /*   PREFILL   */
 
   useEffect(() => {
     if (!open) return;
@@ -71,7 +71,7 @@ const InsurerUpsertSheet = ({
     setLoadingPassword(false);
   }, [open, insurer]);
 
-  /* ---------------- VALIDATION ---------------- */
+  /*   VALIDATION   */
 
   const validate = () => {
     const e: any = {};
@@ -126,7 +126,7 @@ const InsurerUpsertSheet = ({
     return true;
   };
 
-  /* ---------------- PASSWORD ---------------- */
+  /*   PASSWORD   */
 
   const handleTogglePassword = async () => {
     if (!isEdit) return;
@@ -151,7 +151,7 @@ const InsurerUpsertSheet = ({
     setShowPassword((p) => !p);
   };
 
-  /* ---------------- SAVE ---------------- */
+  /*   SAVE   */
 
   const handleSave = async () => {
     if (!validate()) return;
@@ -171,7 +171,7 @@ const InsurerUpsertSheet = ({
 
   if (!open) return null;
 
-  /* ================= UI ================= */
+  /*  UI  */
 
   return (
     <>
@@ -316,7 +316,7 @@ const InsurerUpsertSheet = ({
 
 export default InsurerUpsertSheet;
 
-/* ---------------- INPUT ---------------- */
+/*   INPUT   */
 
 const Input = ({
   label,
@@ -343,7 +343,7 @@ const Input = ({
   </div>
 );
 
-/* ---------------- TEXTAREA ---------------- */
+/*   TEXTAREA   */
 
 const TextArea = ({
   label,

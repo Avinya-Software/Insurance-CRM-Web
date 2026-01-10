@@ -9,7 +9,7 @@ export const useLoginAdvisor = () => {
       loginAdvisorApi(data),
 
     onSuccess: (res) => {
-      // 🔐 Save JWT
+      //  Save JWT
       saveToken(res.data.token);
 
       // Optional: store advisor info

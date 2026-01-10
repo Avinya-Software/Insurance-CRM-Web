@@ -1,7 +1,7 @@
 // src/api/campaign.api.ts
 import api from "./axios";
 
-/* ================= GET CAMPAIGNS (PAGINATED) ================= */
+/*   GET CAMPAIGNS (PAGINATED)   */
 
 export const getCampaignsApi = async (
   pageNumber: number,
@@ -14,14 +14,14 @@ export const getCampaignsApi = async (
   return res.data;
 };
 
-/* ================= GET CAMPAIGN BY ID ================= */
+/*   GET CAMPAIGN BY ID   */
 
 export const getCampaignByIdApi = async (campaignId: string) => {
   const res = await api.get(`/campaigns/${campaignId}`);
   return res.data;
 };
 
-/* ================= CREATE CAMPAIGN ================= */
+/*   CREATE CAMPAIGN   */
 
 export const createCampaignApi = async (data: {
   campaign: any;
@@ -32,7 +32,7 @@ export const createCampaignApi = async (data: {
   return res.data;
 };
 
-/* ================= UPDATE CAMPAIGN ================= */
+/*   UPDATE CAMPAIGN   */
 
 export const updateCampaignApi = async (
   campaignId: string,
@@ -46,14 +46,14 @@ export const updateCampaignApi = async (
   return res.data;
 };
 
-/* ================= DELETE CAMPAIGN ================= */
+/*   DELETE CAMPAIGN   */
 
 export const deleteCampaignApi = async (campaignId: string) => {
   const res = await api.delete(`/campaigns/${campaignId}`);
   return res.data;
 };
 
-/* ================= CAMPAIGN DROPDOWN ================= */
+/*   CAMPAIGN DROPDOWN   */
 
 export const getCampaignDropdownApi = async () => {
   const res = await api.get<
@@ -63,7 +63,7 @@ export const getCampaignDropdownApi = async () => {
   return res.data;
 };
 
-/* ================= CAMPAIGN TYPE DROPDOWN ================= */
+/*   CAMPAIGN TYPE DROPDOWN   */
 
 export const getCampaignTypeDropdownApi = async () => {
   const res = await api.get<

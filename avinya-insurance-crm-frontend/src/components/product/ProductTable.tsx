@@ -9,7 +9,7 @@ import TableSkeleton from "../common/TableSkeleton";
 const DROPDOWN_HEIGHT = 120;
 const DROPDOWN_WIDTH = 180;
 
-/* ===================== STATUS BADGE STYLES ===================== */
+/*   STATUS BADGE STYLES   */
 
 const productStatusStyles: Record<
   "active" | "inactive",
@@ -104,7 +104,7 @@ const ProductTable = ({
           </tr>
         </thead>
 
-        {/* ================= BODY ================= */}
+        {/*  BODY  */}
         {loading ? (
           <TableSkeleton rows={6} columns={6} />
         ) : (
@@ -161,7 +161,7 @@ const ProductTable = ({
         )}
       </table>
 
-      {/* ================= DROPDOWN ================= */}
+      {/*   DROPDOWN   */}
       {openProduct && (
         <div
           ref={dropdownRef}
@@ -179,7 +179,7 @@ const ProductTable = ({
         </div>
       )}
 
-      {/* ================= CONFIRM DELETE MODAL ================= */}
+      {/*   CONFIRM DELETE MODAL   */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
@@ -227,7 +227,7 @@ const ProductTable = ({
 
 export default ProductTable;
 
-/* ---------- HELPERS ---------- */
+/*   HELPERS   */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold">

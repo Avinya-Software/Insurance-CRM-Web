@@ -20,7 +20,7 @@ const Products = () => {
   const [selectedProduct, setSelectedProduct] =
     useState<Product | null>(null);
 
-  /* ---------------- API ---------------- */
+  /*  API  */
   const {
     data,
     isLoading,
@@ -40,7 +40,7 @@ const Products = () => {
   const totalRecords = data?.data?.totalRecords || 0;
   const totalPages = data?.data?.totalPages || 1;
 
-  /* ---------------- HANDLERS ---------------- */
+  /*   HANDLERS   */
 
   const handleAdd = () => {
     setSelectedProduct(null);
@@ -58,15 +58,15 @@ const Products = () => {
     setSelectedProduct(null);
   };
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <>
-      {/* 🔔 TOASTER */}
+      {/*  TOASTER */}
       <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
@@ -128,14 +128,14 @@ const Products = () => {
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/*   TABLE   */}
         <ProductTable
           data={products}
           loading={isLoading || isFetching}
           onEdit={handleEdit}
         />
 
-        {/* ================= PAGINATION ================= */}
+        {/*   PAGINATION   */}
         <Pagination
           page={pageNumber}
           totalPages={totalPages}
@@ -143,7 +143,7 @@ const Products = () => {
         />
       </div>
 
-      {/* ================= ADD / EDIT SHEET ================= */}
+      {/*   ADD / EDIT SHEET   */}
       <ProductUpsertSheet
         open={openSheet}
         product={selectedProduct}

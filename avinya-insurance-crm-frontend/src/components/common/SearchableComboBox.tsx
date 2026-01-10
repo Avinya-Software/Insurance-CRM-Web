@@ -107,7 +107,7 @@ const SearchableComboBox = <T extends ComboBoxItem>({
               filtered.map((item) => (
                 <div
                   key={item.value}
-                  className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-100 text-gray-900"
+                  className="px-3 py-2 text-sm cursor-pointer hover:bg-black-100 text-black-900"
                   onClick={() => {
                     onSelect(item);
                     setOpen(false);
@@ -117,7 +117,7 @@ const SearchableComboBox = <T extends ComboBoxItem>({
                 </div>
               ))
             ) : (
-              <div className="p-3 text-sm text-gray-500">
+              <div className="p-3 text-sm text-black-500">
                 {emptyText}
 
                 {onCreate && search && (

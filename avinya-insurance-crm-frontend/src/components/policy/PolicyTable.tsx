@@ -5,7 +5,7 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
 import TableSkeleton from "../common/TableSkeleton";
 
-/* ===================== BADGE STYLES ===================== */
+/*   BADGE STYLES   */
 
 const policyTypeStyles: Record<string, string> = {
   Fresh: "bg-blue-100 text-blue-700 border-blue-200",
@@ -20,7 +20,7 @@ const policyStatusStyles: Record<string, string> = {
   Cancelled: "bg-red-100 text-red-700 border-red-200",
 };
 
-/* ===================== CONSTANTS ===================== */
+/*   CONSTANTS   */
 
 const DROPDOWN_HEIGHT = 160;
 const DROPDOWN_WIDTH = 180;
@@ -32,7 +32,7 @@ interface Props {
   onRenewal: (policy: Policy) => void; // 🔥 NEW
 }
 
-/* ===================== COMPONENT ===================== */
+/*   COMPONENT   */
 
 const PolicyTable = ({
   data = [],
@@ -116,7 +116,7 @@ const PolicyTable = ({
           </tr>
         </thead>
 
-        {/* ================= BODY ================= */}
+        {/*  BODY  */}
         {loading ? (
           <TableSkeleton rows={6} columns={10} />
         ) : (
@@ -185,7 +185,7 @@ const PolicyTable = ({
         )}
       </table>
 
-      {/* ================= DROPDOWN ================= */}
+      {/*  DROPDOWN  */}
       {openPolicy && (
         <div
           ref={dropdownRef}
@@ -209,7 +209,7 @@ const PolicyTable = ({
         </div>
       )}
 
-      {/* ================= CONFIRM DELETE ================= */}
+      {/*  CONFIRM DELETE  */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
@@ -255,7 +255,7 @@ const PolicyTable = ({
 
 export default PolicyTable;
 
-/* ===================== HELPERS ===================== */
+/*   HELPERS   */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold">

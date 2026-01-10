@@ -1,17 +1,17 @@
-// ================= REQUESTS =================
+//   REQUESTS  
 export interface AdminLoginRequest {
   email: string;
   password: string;
 }
 
-// ================= RESPONSES =================
+//   RESPONSES  
 export interface AdminLoginResponse {
   email: string;
   token: string;
   expiresAt: string;
 }
 
-// ================= COMMON API WRAPPER =================
+//   COMMON API WRAPPER  
 export interface ApiWrapper<T> {
   statusCode: number;
   message: string;

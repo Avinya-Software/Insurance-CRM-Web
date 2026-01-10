@@ -26,7 +26,7 @@ const DEFAULT_FILTERS = {
 };
 
 const Leads = () => {
-  /* ---------------- STATE ---------------- */
+  /*   STATE   */
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
@@ -53,11 +53,11 @@ const Leads = () => {
     (state: RootState) => state.auth.advisorId
   );
 
-  /* ---------------- API ---------------- */
+  /*   API   */
 
   const { data, isLoading, isFetching } = useLeads(filters);
 
-  /* ---------------- HELPERS ---------------- */
+  /*   HELPERS   */
 
   const hasActiveFilters =
     filters.search ||
@@ -107,7 +107,7 @@ const Leads = () => {
       <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
-        {/* ================= HEADER ================= */}
+        {/*  HEADER  */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
@@ -174,7 +174,7 @@ const Leads = () => {
           </div>
         </div>
 
-        {/* ================= LEADS TABLE ================= */}
+        {/*   LEADS TABLE   */}
         <LeadTable
           data={data?.data ?? []}
           loading={isLoading || isFetching}
@@ -192,7 +192,7 @@ const Leads = () => {
           onAddCustomer={handleAddCustomerFromLead}
         />
 
-        {/* ================= PAGINATION ================= */}
+        {/*   PAGINATION   */}
         <div className="border-t px-4 py-3">
           <Pagination
             page={filters.pageNumber}
@@ -204,7 +204,7 @@ const Leads = () => {
         </div>
       </div>
 
-      {/* ================= FILTER SHEET ================= */}
+      {/*   FILTER SHEET   */}
       <LeadFilterSheet
         open={openFilterSheet}
         onClose={() => setOpenFilterSheet(false)}
@@ -213,7 +213,7 @@ const Leads = () => {
         onClear={clearAllFilters}
       />
 
-      {/* ================= OTHER SHEETS ================= */}
+      {/*   OTHER SHEETS   */}
       <LeadUpsertSheet
         open={openLeadSheet}
         onClose={() => {

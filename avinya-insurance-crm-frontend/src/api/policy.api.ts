@@ -1,6 +1,6 @@
 import api from "./axios";
 
-/* ================= UPSERT POLICY ================= */
+/*   UPSERT POLICY   */
 
 export const upsertPolicyApi = async (data: FormData) => {
   const res = await api.post("/policy/upsert", data, {
@@ -11,7 +11,7 @@ export const upsertPolicyApi = async (data: FormData) => {
   return res.data;
 };
 
-/* ================= GET POLICIES ================= */
+/*   GET POLICIES   */
 
 export const getPoliciesApi = async (params: {
   pageNumber: number;
@@ -27,7 +27,7 @@ export const getPoliciesApi = async (params: {
   return res.data;
 };
 
-/* ================= DROPDOWNS ================= */
+/*   DROPDOWNS   */
 
 export const getPolicyTypesDropdownApi = async () => {
   const res = await api.get<{ id: number; name: string }[]>(
@@ -43,7 +43,7 @@ export const getPolicyStatusesDropdownApi = async () => {
   return res.data;
 };
 
-/* ================= POLICY DOCUMENT PREVIEW ================= */
+/*   POLICY DOCUMENT PREVIEW   */
 
 export const previewPolicyDocumentApi = (
   policyId: string,
@@ -52,7 +52,7 @@ export const previewPolicyDocumentApi = (
   return `${api.defaults.baseURL}/policy/${policyId}/documents/${documentId}/preview`;
 };
 
-/* ================= POLICY DOCUMENT DOWNLOAD ================= */
+/*   POLICY DOCUMENT DOWNLOAD   */
 
 export const downloadPolicyDocumentApi = (
   policyId: string,
@@ -61,7 +61,7 @@ export const downloadPolicyDocumentApi = (
   return `${api.defaults.baseURL}/policy/${policyId}/documents/${documentId}/download`;
 };
 
-/* ================= POLICY DOCUMENT DELETE ================= */
+/*   POLICY DOCUMENT DELETE   */
 
 export const deletePolicyDocumentApi = async (
   policyId: string,
@@ -73,7 +73,7 @@ export const deletePolicyDocumentApi = async (
   return res.data;
 };
 
-/* ================= DELETE POLICY (BY ID) ================= */
+/*   DELETE POLICY (BY ID)   */
 
 export const deletePolicyApi = async (
   policyId: string

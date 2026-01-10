@@ -9,7 +9,7 @@ export const useDeleteAdvisor = () => {
       deleteAdvisorApi(userId),
 
     onSuccess: () => {
-      // 🔄 Refresh pending advisors list
+      // Refresh pending advisors list
       queryClient.invalidateQueries({
         queryKey: ["pending-advisors"]
       });

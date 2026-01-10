@@ -18,7 +18,7 @@ const Renewals = () => {
   const [selectedRenewal, setSelectedRenewal] =
     useState<any>(null);
 
-  /* ---------------- API ---------------- */
+  /*   API   */
 
   const { data, isLoading, isFetching, refetch } =
     useRenewals({
@@ -34,7 +34,7 @@ const Renewals = () => {
   const totalRecords = data?.totalCount || 0;
   const totalPages = Math.ceil(totalRecords / pageSize);
 
-  /* ---------------- HANDLERS ---------------- */
+  /*   HANDLERS   */
 
   const handleAdd = () => {
     setSelectedRenewal(null);
@@ -52,14 +52,14 @@ const Renewals = () => {
     setSelectedRenewal(null);
   };
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <>
       <Toaster position="top-right" />
 
       <div className="bg-white rounded-lg border">
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
@@ -119,14 +119,14 @@ const Renewals = () => {
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/*   TABLE   */}
         <RenewalTable
           data={renewals}
           loading={isLoading || isFetching}
           onEdit={handleEdit}
         />
 
-        {/* ================= PAGINATION ================= */}
+        {/*   PAGINATION   */}
         <Pagination
           page={pageNumber}
           totalPages={totalPages}
@@ -134,7 +134,7 @@ const Renewals = () => {
         />
       </div>
 
-      {/* ================= UPSERT SHEET ================= */}
+      {/*   UPSERT SHEET   */}
       <RenewalUpsertSheet
         open={openSheet}
         renewal={selectedRenewal}

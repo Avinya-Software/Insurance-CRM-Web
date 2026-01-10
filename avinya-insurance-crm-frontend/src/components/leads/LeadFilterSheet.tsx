@@ -58,7 +58,7 @@ const LeadFilterSheet = ({
       />
 
       <div className="w-96 bg-white h-full shadow-xl flex flex-col">
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-lg">
             Filter Leads
@@ -71,7 +71,7 @@ const LeadFilterSheet = ({
           </button>
         </div>
 
-        {/* ================= BODY ================= */}
+        {/*   BODY   */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <div className="flex items-center justify-center h-full">
@@ -177,7 +177,7 @@ const LeadFilterSheet = ({
           )}
         </div>
 
-        {/* ================= FOOTER ================= */}
+        {/*   FOOTER   */}
         <div className="px-6 py-4 border-t flex gap-3">
           <button
             className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
@@ -201,7 +201,7 @@ const LeadFilterSheet = ({
 
 export default LeadFilterSheet;
 
-/* ---------- Helpers ---------- */
+/*  Helpers  */
 
 const Input = ({
   label,

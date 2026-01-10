@@ -20,7 +20,7 @@ const Insurers = () => {
   const [openProductSheet, setOpenProductSheet] = useState(false);
   const [selectedInsurer, setSelectedInsurer] = useState<any | null>(null);
 
-  /* ---------------- FETCH DATA ---------------- */
+  /*   FETCH DATA   */
 
   const loadData = async () => {
     setLoading(true);
@@ -41,7 +41,7 @@ const Insurers = () => {
     loadData();
   }, [pageNumber, search]);
 
-  /* ---------------- HANDLERS ---------------- */
+  /*   HANDLERS   */
 
   const handleAddInsurer = () => {
     setSelectedInsurer(null);
@@ -68,7 +68,7 @@ const Insurers = () => {
     setSelectedInsurer(null);
   };
 
-  /* ================= UI ================= */
+  /*   UI   */
 
   return (
     <>
@@ -76,7 +76,7 @@ const Insurers = () => {
       <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
@@ -115,7 +115,7 @@ const Insurers = () => {
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/*   TABLE   */}
         <InsurerTable
           data={data?.data || []}
           loading={loading}
@@ -123,7 +123,7 @@ const Insurers = () => {
           onAddProduct={handleAddProduct}
         />
 
-        {/* ================= PAGINATION ================= */}
+        {/*   PAGINATION   */}
         <Pagination
           page={pageNumber}
           totalPages={data?.totalPages ?? 1}
@@ -131,7 +131,7 @@ const Insurers = () => {
         />
       </div>
 
-      {/* ================= INSURER UPSERT ================= */}
+      {/*   INSURER UPSERT   */}
       <InsurerUpsertSheet
         open={openInsurerSheet}
         insurer={selectedInsurer}
@@ -139,7 +139,7 @@ const Insurers = () => {
         onSuccess={handleInsurerSuccess}
       />
 
-      {/* ================= PRODUCT UPSERT ================= */}
+      {/*   PRODUCT UPSERT   */}
       <ProductUpsertSheet
         open={openProductSheet}
         insurerId={selectedInsurer?.insurerId}

@@ -22,7 +22,7 @@ const RenewalUpsertSheet = ({
   renewal,
   onSuccess,
 }: Props) => {
-  /* ---------------- LOCK BODY SCROLL ---------------- */
+  /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
     return () => {
@@ -30,7 +30,7 @@ const RenewalUpsertSheet = ({
     };
   }, [open]);
 
-  /* ---------------- FORM STATE ---------------- */
+  /*   FORM STATE   */
 
   const initialForm = {
     renewalId: null as string | null,
@@ -47,7 +47,7 @@ const RenewalUpsertSheet = ({
 
   const isFromPolicy = !!renewal?.policyId;
 
-  /* ---------------- API HOOKS ---------------- */
+  /*   API HOOKS   */
 
   const { mutateAsync, isPending } = useUpsertRenewal();
   const { data: customers, isLoading: cLoading } = useCustomerDropdown();
@@ -56,7 +56,7 @@ const RenewalUpsertSheet = ({
 
   const loadingDropdowns = cLoading || pLoading || sLoading;
 
-  /* ---------------- PREFILL ---------------- */
+  /*   PREFILL   */
 
 useEffect(() => {
   if (!open) {
@@ -98,7 +98,7 @@ useEffect(() => {
   setErrors({});
 }, [open, renewal, statuses, loadingDropdowns]);
 
-  /* ---------------- VALIDATION ---------------- */
+  /*   VALIDATION   */
 
   const parseReminderDays = (): number[] | null => {
     const raw = form.reminderDaysInput;
@@ -177,7 +177,7 @@ useEffect(() => {
     return true;
   };
 
-  /* ---------------- SAVE ---------------- */
+  /*   SAVE   */
 
   const handleSave = async () => {
     if (!validate()) return;
@@ -208,7 +208,7 @@ useEffect(() => {
 
   if (!open) return null;
 
-  /* ================= UI ================= */
+  /*  UI  */
 
   return (
     <>
@@ -344,7 +344,7 @@ useEffect(() => {
 
 export default RenewalUpsertSheet;
 
-/* ===================== HELPERS ===================== */
+/*  HELPERS  */
 
 const Input = ({
   label,

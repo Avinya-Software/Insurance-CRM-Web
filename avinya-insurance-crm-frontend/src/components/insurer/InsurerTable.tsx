@@ -81,7 +81,7 @@ const InsurerTable = ({
           </tr>
         </thead>
 
-        {/* ================= BODY ================= */}
+        {/*   BODY   */}
         {loading ? (
           <TableSkeleton rows={6} columns={5} />
         ) : (
@@ -121,7 +121,7 @@ const InsurerTable = ({
         )}
       </table>
 
-      {/* ================= DROPDOWN ================= */}
+      {/*   DROPDOWN   */}
       {openInsurer && (
         <div
           ref={dropdownRef}
@@ -142,7 +142,7 @@ const InsurerTable = ({
         </div>
       )}
 
-      {/* ================= CONFIRM DELETE MODAL ================= */}
+      {/*   CONFIRM DELETE MODAL   */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
@@ -190,7 +190,7 @@ const InsurerTable = ({
 
 export default InsurerTable;
 
-/* ---------- HELPERS ---------- */
+/*   HELPERS   */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold text-slate-700">

@@ -5,7 +5,7 @@ import type {
   LeadListResponse,
 } from "../interfaces/lead.interface";
 
-/* ================= GET LEADS (PAGINATED) ================= */
+/*   GET LEADS (PAGINATED)   */
 
 export const getLeadsApi = async (filters: LeadFilters) => {
   const res = await api.get<LeadListResponse>("/Lead", {
@@ -14,7 +14,7 @@ export const getLeadsApi = async (filters: LeadFilters) => {
   return res.data;
 };
 
-/* ================= LEAD STATUSES ================= */
+/*   LEAD STATUSES   */
 
 export const getLeadStatusesApi = async () => {
   const res = await api.get<{ id: number; name: string }[]>(
@@ -23,7 +23,7 @@ export const getLeadStatusesApi = async () => {
   return res.data;
 };
 
-/* ================= LEAD SOURCES ================= */
+/*   LEAD SOURCES   */
 
 export const getLeadSourcesApi = async () => {
   const res = await api.get<{ id: number; name: string }[]>(
@@ -32,14 +32,14 @@ export const getLeadSourcesApi = async () => {
   return res.data;
 };
 
-/* ================= CREATE / UPDATE LEAD ================= */
+/*   CREATE / UPDATE LEAD   */
 
 export const upsertLeadApi = async (data: any) => {
   const res = await api.post("/Lead", data);
   return res.data;
 };
 
-/* ================= DELETE LEAD (BY ID) ================= */
+/*   DELETE LEAD (BY ID)   */
 
 export const deleteLeadApi = async (
   leadId: string

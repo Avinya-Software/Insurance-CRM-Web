@@ -4,7 +4,7 @@ import type {
   CustomerResponse,
 } from "../interfaces/customer.interface";
 
-/* ================= CREATE / UPDATE CUSTOMER ================= */
+/*   CREATE / UPDATE CUSTOMER   */
 
 export const createCustomerApi = async (
   data: CreateCustomerRequest
@@ -36,7 +36,7 @@ export const createCustomerApi = async (
   return res.data;
 };
 
-/* ================= GET CUSTOMERS (PAGINATED) ================= */
+/*   GET CUSTOMERS (PAGINATED)   */
 
 export const getCustomersApi = async (params: {
   pageNumber: number;
@@ -47,14 +47,14 @@ export const getCustomersApi = async (params: {
   return res.data.data;
 };
 
-/* ================= CUSTOMER DROPDOWN ================= */
+/*   CUSTOMER DROPDOWN   */
 
 export const getCustomerDropdownApi = async () => {
   const res = await api.get("/Customer/dropdown");
   return res.data;
 };
 
-/* ================= KYC PREVIEW ================= */
+/*   KYC PREVIEW   */
 
 export const previewKycFileApi = (
   customerId: string,
@@ -63,7 +63,7 @@ export const previewKycFileApi = (
   return `${api.defaults.baseURL}/Customer/${customerId}/kyc/${documentId}/preview`;
 };
 
-/* ================= KYC DOWNLOAD ================= */
+/*   KYC DOWNLOAD   */
 
 export const downloadKycFileApi = (
   customerId: string,
@@ -72,7 +72,7 @@ export const downloadKycFileApi = (
   return `${api.defaults.baseURL}/Customer/${customerId}/kyc/${documentId}/download`;
 };
 
-/* ================= KYC DELETE ================= */
+/*   KYC DELETE   */
 
 export const deleteKycFileApi = async (
   customerId: string,
@@ -84,7 +84,7 @@ export const deleteKycFileApi = async (
   return res.data;
 };
 
-/* ================= DELETE CUSTOMER (BY ID) ================= */
+/*   DELETE CUSTOMER (BY ID)   */
 
 export const deleteCustomerApi = async (
   customerId: string

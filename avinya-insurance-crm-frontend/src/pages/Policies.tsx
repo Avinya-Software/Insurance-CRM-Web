@@ -21,7 +21,7 @@ const DEFAULT_FILTERS = {
 };
 
 const Policies = () => {
-  /* ---------------- STATE ---------------- */
+  /*   STATE   */
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
@@ -36,7 +36,7 @@ const Policies = () => {
 
   const { data, isLoading, isFetching } = usePolicies(filters);
 
-  /* ---------------- HELPERS ---------------- */
+  /*   HELPERS   */
 
   const hasActiveFilters =
     filters.search ||
@@ -51,7 +51,7 @@ const Policies = () => {
     toast.success("Filters cleared");
   };
 
-  /* ---------------- HANDLERS ---------------- */
+  /*   HANDLERS   */
 
   const handleAddPolicy = () => {
     setSelectedPolicy(null);
@@ -91,7 +91,7 @@ const Policies = () => {
       <Toaster position="top-right" />
 
       <div className="bg-white rounded-lg border">
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
@@ -156,7 +156,7 @@ const Policies = () => {
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/*   TABLE   */}
         <PolicyTable
           data={data?.data ?? []}
           loading={isLoading || isFetching}
@@ -164,7 +164,7 @@ const Policies = () => {
           onRenewal={handleCreateRenewal}
         />
 
-        {/* ================= PAGINATION ================= */}
+        {/*   PAGINATION   */}
         <div className="border-t px-4 py-3">
           <Pagination
             page={filters.pageNumber}
@@ -176,7 +176,7 @@ const Policies = () => {
         </div>
       </div>
 
-      {/* ================= FILTER SHEET ================= */}
+      {/*   FILTER SHEET   */}
       <PolicyFilterSheet
         open={openFilterSheet}
         filters={filters}
@@ -188,7 +188,7 @@ const Policies = () => {
         onClear={clearAllFilters}
       />
 
-      {/* ================= POLICY UPSERT ================= */}
+      {/*   POLICY UPSERT   */}
       <PolicyUpsertSheet
         open={openPolicySheet}
         policy={selectedPolicy}
@@ -199,7 +199,7 @@ const Policies = () => {
         onSuccess={handlePolicySuccess}
       />
 
-      {/* ================= RENEWAL UPSERT ================= */}
+      {/*   RENEWAL UPSERT   */}
       <RenewalUpsertSheet
         open={openRenewalSheet}
         renewal={selectedRenewal}

@@ -1,4 +1,4 @@
-// ---------- REQUESTS ----------
+//   REQUESTS  
 
 export interface AdvisorRegisterRequest {
   fullName: string;
@@ -12,7 +12,7 @@ export interface AdvisorLoginRequest {
   password: string;
 }
 
-// ---------- RESPONSES ----------
+//   RESPONSES  
 
 export interface AdvisorLoginResponse {
   advisorId: string;

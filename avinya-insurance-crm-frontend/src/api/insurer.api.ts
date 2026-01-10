@@ -1,7 +1,7 @@
 // src/api/insurer.api.ts
 import api from "./axios";
 
-/* ================= GET INSURERS (PAGINATED) ================= */
+/*   GET INSURERS (PAGINATED)   */
 
 export const getInsurersApi = async (
   pageNumber: number,
@@ -14,14 +14,14 @@ export const getInsurersApi = async (
   return res.data;
 };
 
-/* ================= CREATE / UPDATE INSURER ================= */
+/*   CREATE / UPDATE INSURER   */
 
 export const upsertInsurerApi = async (data: any) => {
   const res = await api.post("/Insurer", data);
   return res.data;
 };
 
-/* ================= GET INSURER PORTAL PASSWORD ================= */
+/*   GET INSURER PORTAL PASSWORD   */
 
 export const getInsurerPortalPasswordApi = async (
   insurerId: string
@@ -32,7 +32,7 @@ export const getInsurerPortalPasswordApi = async (
   return res.data;
 };
 
-/* ================= INSURER DROPDOWN ================= */
+/*   INSURER DROPDOWN   */
 
 export const getInsurerDropdownApi = async () => {
   const res = await api.get<
@@ -42,7 +42,7 @@ export const getInsurerDropdownApi = async () => {
   return res.data;
 };
 
-/* ================= DELETE INSURER (BY ID) ================= */
+/*   DELETE INSURER (BY ID)   */
 
 export const deleteInsurerApi = async (
   insurerId: string
