@@ -26,7 +26,7 @@ namespace Avinya.InsuranceCRM.API.Middleware
             }
             catch (ReflectionTypeLoadException ex)
             {
-                // 🔥 VERY IMPORTANT: log all loader exceptions
+                
                 foreach (var loaderException in ex.LoaderExceptions!)
                 {
                     _logger.LogError(loaderException, "Loader exception occurred");

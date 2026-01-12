@@ -30,3 +30,13 @@ export const getRenewalStatusesApi = async () => {
   const res = await api.get("/renewals/statuses");
   return res.data;
 };
+
+export const updateRenewalStatusApi = async (
+  renewalId: string,
+  statusId: number
+) => {
+  const res = await api.patch(
+    `/renewals/${renewalId}/status/${statusId}`
+  );
+  return res.data;
+};

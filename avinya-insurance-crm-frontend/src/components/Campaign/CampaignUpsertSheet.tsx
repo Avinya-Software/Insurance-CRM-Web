@@ -60,6 +60,9 @@ const CampaignUpsertSheet = ({
     channel: "Email",
   });
 
+  /*   VALIDATION ERRORS STATE   */
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   /*   RULE STATE   */
 
   const [ruleType, setRuleType] =
@@ -76,7 +79,10 @@ const CampaignUpsertSheet = ({
   /*   RESET / PREFILL   */
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setErrors({});
+      return;
+    }
 
     if (selectedCampaign) {
       //  EDIT MODE 
@@ -157,6 +163,7 @@ const CampaignUpsertSheet = ({
     setRuleType("OffsetDays");
     setOffsetRule({ field: "DOB", direction: "On", days: 0 });
     setFixedDate("");
+    setErrors({});
   };
 
   /*   APPLY TO ALL   */
@@ -171,94 +178,153 @@ const CampaignUpsertSheet = ({
     );
   };
 
+  /*   VALIDATION   */
+  const validate = () => {
+    const e: Record<string, string> = {};
+
+    if (!campaign.name.trim()) {
+      e.name = "Campaign name is required";
+    }
+
+    if (!campaign.campaignTypeId) {
+      e.campaignTypeId = "Campaign type is required";
+    }
+
+    if (!template.subject.trim()) {
+      e.subject = "Template subject is required";
+    }
+
+    if (!template.body.trim()) {
+      e.body = "Template body is required";
+    }
+
+    if (selectedCustomerIds.length === 0) {
+      e.customers = "At least one customer must be selected";
+    }
+
+    // Validate date logic
+    if (campaign.startDate && campaign.endDate) {
+      if (new Date(campaign.endDate) < new Date(campaign.startDate)) {
+        e.endDate = "End date cannot be before start date";
+      }
+    }
+
+    // Validate rule
+    if (ruleType === "FixedDate") {
+      if (!fixedDate) {
+        e.fixedDate = "Date is required for fixed date rule";
+      }
+    } else {
+      if (offsetRule.direction !== "On" && offsetRule.days === 0) {
+        e.offsetDays = "Days must be greater than 0 for before/after";
+      }
+      if (offsetRule.days < 0) {
+        e.offsetDays = "Days cannot be negative";
+      }
+    }
+
+    setErrors(e);
+
+    if (Object.keys(e).length > 0) {
+      toast.error("Please fix validation errors");
+      return false;
+    }
+
+    return true;
+  };
+
   /*   SUBMIT   */
 
   const handleSubmit = () => {
-  if (!campaign.name.trim()) return toast.error("Campaign name is required");
-  if (!campaign.campaignTypeId) return toast.error("Campaign type is required");
-  if (!template.subject.trim()) return toast.error("Template subject is required");
-  if (!template.body.trim()) return toast.error("Template body is required");
-  if (selectedCustomerIds.length === 0)
-    return toast.error("No customers selected");
+    if (!validate()) return;
 
-  const selectedCampaignType = campaignTypes.find(
-    (t) => t.campaignTypeId === campaign.campaignTypeId
-  );
-
-  let campaignRule: any;
-
-  if (ruleType === "FixedDate") {
-    if (!fixedDate) return toast.error("Please select a date");
-
-    campaignRule = {
-      ruleEntity: "System",
-      ruleField: "Date",
-      operator: "FixedDate",
-      ruleValue: fixedDate,
-      sortOrder: 0,
-      isActive: true,
-    };
-  } else {
-    const offset =
-      offsetRule.direction === "Before"
-        ? -offsetRule.days
-        : offsetRule.direction === "After"
-        ? offsetRule.days
-        : 0;
-
-    campaignRule = {
-      ruleEntity: "Customer",
-      ruleField: offsetRule.field,
-      operator: "OffsetDays",
-      ruleValue: offset.toString(),
-      sortOrder: 0,
-      isActive: true,
-    };
-  }
-
-  const payload = {
-    campaign: {
-      ...campaign,
-      campaignType: selectedCampaignType?.name || "Promotional",
-      startDate: campaign.startDate || null,
-      endDate: campaign.endDate || null,
-      createdAt: new Date().toISOString(),
-    },
-    templates: [
-      {
-        subject: template.subject,
-        body: template.body,
-        channel: template.channel,
-      },
-    ],
-    rules: [campaignRule],
-    customerIds: selectedCustomerIds,
-  };
-
-  // 🔥 DECIDE CREATE vs UPDATE
-  if (selectedCampaign?.campaignId) {
-    updateCampaign(
-      {
-        campaignId: selectedCampaign.campaignId,
-        data: payload,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Campaign updated");
-          onSuccess();
-        },
-      }
+    const selectedCampaignType = campaignTypes.find(
+      (t) => t.campaignTypeId === campaign.campaignTypeId
     );
-  } else {
-    createCampaign(payload, {
-      onSuccess: () => {
-        toast.success("Campaign created");
-        onSuccess();
-      },
-    });
-  }
-};
 
+    let campaignRule: any;
+
+    if (ruleType === "FixedDate") {
+      campaignRule = {
+        ruleEntity: "System",
+        ruleField: "Date",
+        operator: "FixedDate",
+        ruleValue: fixedDate,
+        sortOrder: 0,
+        isActive: true,
+      };
+    } else {
+      const offset =
+        offsetRule.direction === "Before"
+          ? -offsetRule.days
+          : offsetRule.direction === "After"
+          ? offsetRule.days
+          : 0;
+
+      campaignRule = {
+        ruleEntity: "Customer",
+        ruleField: offsetRule.field,
+        operator: "OffsetDays",
+        ruleValue: offset.toString(),
+        sortOrder: 0,
+        isActive: true,
+      };
+    }
+
+    const payload = {
+      campaign: {
+        ...campaign,
+        campaignType: selectedCampaignType?.name || "Promotional",
+        startDate: campaign.startDate || null,
+        endDate: campaign.endDate || null,
+        createdAt: new Date().toISOString(),
+      },
+      templates: [
+        {
+          subject: template.subject,
+          body: template.body,
+          channel: template.channel,
+        },
+      ],
+      rules: [campaignRule],
+      customerIds: selectedCustomerIds,
+    };
+
+    // 🔥 DECIDE CREATE vs UPDATE
+    if (selectedCampaign?.campaignId) {
+      updateCampaign(
+        {
+          campaignId: selectedCampaign.campaignId,
+          data: payload,
+        },
+        {
+          onSuccess: () => {
+            toast.success("Campaign updated");
+            onSuccess();
+            onClose();
+          },
+          onError: (error: any) => {
+            toast.error(
+              error.response?.data?.message || "Failed to update campaign"
+            );
+          },
+        }
+      );
+    } else {
+      createCampaign(payload, {
+        onSuccess: () => {
+          toast.success("Campaign created");
+          onSuccess();
+          onClose();
+        },
+        onError: (error: any) => {
+          toast.error(
+            error.response?.data?.message || "Failed to create campaign"
+          );
+        },
+      });
+    }
+  };
 
   if (!open) return null;
 
@@ -268,7 +334,7 @@ const CampaignUpsertSheet = ({
     <>
       <div
         className="fixed inset-0 bg-black/40 z-[60]"
-        onClick={isPending ? undefined : onClose}
+        onClick={isPending || updating ? undefined : onClose}
       />
 
       <div className="fixed top-0 right-0 h-screen w-[520px] bg-white z-[70] shadow-2xl flex flex-col">
@@ -277,7 +343,7 @@ const CampaignUpsertSheet = ({
           <h2 className="font-semibold text-lg">
             {selectedCampaign ? "Edit Campaign" : "Create Campaign"}
           </h2>
-          <button onClick={onClose} disabled={isPending}>
+          <button onClick={onClose} disabled={isPending || updating}>
             <X />
           </button>
         </div>
@@ -289,9 +355,13 @@ const CampaignUpsertSheet = ({
             label="Campaign Name"
             required
             value={campaign.name}
-            onChange={(v: string) =>
-              setCampaign({ ...campaign, name: v })
-            }
+            error={errors.name}
+            onChange={(v: string) => {
+              setCampaign({ ...campaign, name: v });
+              if (errors.name) {
+                setErrors({ ...errors, name: "" });
+              }
+            }}
           />
 
           {/* START / END DATE */}
@@ -300,151 +370,209 @@ const CampaignUpsertSheet = ({
               label="Start Date"
               type="date"
               value={campaign.startDate}
-              onChange={(v: string) =>
-                setCampaign({ ...campaign, startDate: v })
-              }
+              error={errors.startDate}
+              onChange={(v: string) => {
+                setCampaign({ ...campaign, startDate: v });
+                if (errors.startDate || errors.endDate) {
+                  setErrors({ ...errors, startDate: "", endDate: "" });
+                }
+              }}
             />
             <Input
               label="End Date"
               type="date"
               value={campaign.endDate}
-              onChange={(v: string) =>
-                setCampaign({ ...campaign, endDate: v })
-              }
+              error={errors.endDate}
+              onChange={(v: string) => {
+                setCampaign({ ...campaign, endDate: v });
+                if (errors.endDate) {
+                  setErrors({ ...errors, endDate: "" });
+                }
+              }}
             />
           </div>
 
           {/* TARGET CUSTOMERS */}
           <div>
-            <div>
-              <label className="text-sm font-medium">Target Customers</label>
+            <label className="text-sm font-medium">
+              Target Customers <span className="text-red-500">*</span>
+            </label>
 
-              <div className="mt-2 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={campaign.applyToAllCustomers}
-                  onChange={(e) => handleApplyToAllChange(e.target.checked)}
-                />
-                <span className="text-sm">
-                  Apply to all customers ({selectedCustomerIds.length})
-                </span>
-              </div>
-
-              {!campaign.applyToAllCustomers && (
-                <div className="mt-3">
-                 <MultiSelectDropdown
-                    items={customers.map((c) => ({
-                      value: c.customerId,
-                      label: c.fullName,
-                    }))}
-                    selectedValues={selectedCustomerIds}
-                    onChange={setSelectedCustomerIds}
-                    placeholder="Select customers"
-                  />
-                </div>
-              )}
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={campaign.applyToAllCustomers}
+                onChange={(e) => {
+                  handleApplyToAllChange(e.target.checked);
+                  if (errors.customers) {
+                    setErrors({ ...errors, customers: "" });
+                  }
+                }}
+              />
+              <span className="text-sm">
+                Apply to all customers ({selectedCustomerIds.length})
+              </span>
             </div>
 
-
             {!campaign.applyToAllCustomers && (
-              <div className="mt-3 max-h-[180px] overflow-y-auto border rounded-lg">
-                {customers.map((c) => (
-                  <label
-                    key={c.customerId}
-                    className="flex items-center gap-2 px-3 py-2 border-b text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedCustomerIds.includes(c.customerId)}
-                      onChange={(e) =>
-                        setSelectedCustomerIds((prev) =>
-                          e.target.checked
-                            ? [...prev, c.customerId]
-                            : prev.filter((id) => id !== c.customerId)
-                        )
-                      }
-                    />
-                    <span>{c.fullName}</span>
-                  </label>
-                ))}
+              <div className="mt-3">
+                <MultiSelectDropdown
+                  items={customers.map((c) => ({
+                    value: c.customerId,
+                    label: c.fullName,
+                  }))}
+                  selectedValues={selectedCustomerIds}
+                  onChange={(ids) => {
+                    setSelectedCustomerIds(ids);
+                    if (errors.customers) {
+                      setErrors({ ...errors, customers: "" });
+                    }
+                  }}
+                  placeholder="Select customers"
+                />
               </div>
+            )}
+
+            {errors.customers && (
+              <p className="text-xs text-red-600 mt-1">{errors.customers}</p>
             )}
           </div>
 
           {/* RULE TYPE */}
-          <select
-            className="input"
-            value={ruleType}
-            onChange={(e) =>
-              setRuleType(e.target.value as any)
-            }
-          >
-            <option value="OffsetDays">Relative Date</option>
-            <option value="FixedDate">Fixed Date</option>
-          </select>
+          <div>
+            <label className="text-sm font-medium">Rule Type</label>
+            <select
+              className="input w-full mt-1"
+              value={ruleType}
+              onChange={(e) => {
+                setRuleType(e.target.value as any);
+                setErrors({ ...errors, fixedDate: "", offsetDays: "" });
+              }}
+            >
+              <option value="OffsetDays">Relative Date</option>
+              <option value="FixedDate">Fixed Date</option>
+            </select>
+          </div>
 
           {/* RULE UI */}
           {ruleType === "OffsetDays" ? (
-            <div className="grid grid-cols-3 gap-3">
-              {/* CAMPAIGN TYPE DROPDOWN */}
-              <select
-                className="input w-full"
-                value={campaign.campaignTypeId ?? ""}
-                onChange={(e) =>
-                  setCampaign({
-                    ...campaign,
-                    campaignTypeId: Number(e.target.value),
-                  })
-                }
-              >
-                <option value="">Select type</option>
-                {campaignTypes.map((t) => (
-                  <option key={t.campaignTypeId} value={t.campaignTypeId}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              {/* DIRECTION */}
-              <select
-                className="input"
-                value={offsetRule.direction}
-                onChange={(e) =>
-                  setOffsetRule({ ...offsetRule, direction: e.target.value })
-                }
-              >
-                <option value="On">On</option>
-                <option value="Before">Before</option>
-                <option value="After">After</option>
-              </select>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium">
+                  Campaign Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className={`input w-full mt-1 ${
+                    errors.campaignTypeId ? "border-red-500" : ""
+                  }`}
+                  value={campaign.campaignTypeId ?? ""}
+                  onChange={(e) => {
+                    setCampaign({
+                      ...campaign,
+                      campaignTypeId: Number(e.target.value),
+                    });
+                    if (errors.campaignTypeId) {
+                      setErrors({ ...errors, campaignTypeId: "" });
+                    }
+                  }}
+                >
+                  <option value="">Select type</option>
+                  {campaignTypes.map((t) => (
+                    <option key={t.campaignTypeId} value={t.campaignTypeId}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.campaignTypeId && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {errors.campaignTypeId}
+                  </p>
+                )}
+              </div>
 
-              {/* DAYS */}
-              <input
-                type="number"
-                min={0}
-                className="input"
-                value={offsetRule.days}
-                onChange={(e) =>
-                  setOffsetRule({
-                    ...offsetRule,
-                    days: Number(e.target.value),
-                  })
-                }
-              />
+              <div className="grid grid-cols-2 gap-3">
+                {/* DIRECTION */}
+                <div>
+                  <label className="text-sm font-medium">Direction</label>
+                  <select
+                    className="input w-full mt-1"
+                    value={offsetRule.direction}
+                    onChange={(e) => {
+                      setOffsetRule({
+                        ...offsetRule,
+                        direction: e.target.value,
+                      });
+                      if (errors.offsetDays) {
+                        setErrors({ ...errors, offsetDays: "" });
+                      }
+                    }}
+                  >
+                    <option value="On">On</option>
+                    <option value="Before">Before</option>
+                    <option value="After">After</option>
+                  </select>
+                </div>
+
+                {/* DAYS */}
+                <div>
+                  <label className="text-sm font-medium">Days</label>
+                  <input
+                    type="number"
+                    min={0}
+                    className={`input w-full mt-1 ${
+                      errors.offsetDays ? "border-red-500" : ""
+                    }`}
+                    value={offsetRule.days}
+                    onChange={(e) => {
+                      setOffsetRule({
+                        ...offsetRule,
+                        days: Number(e.target.value),
+                      });
+                      if (errors.offsetDays) {
+                        setErrors({ ...errors, offsetDays: "" });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              {errors.offsetDays && (
+                <p className="text-xs text-red-600">{errors.offsetDays}</p>
+              )}
             </div>
           ) : (
             <Input
               label="Select Date"
+              required
               type="date"
               value={fixedDate}
-              onChange={(v: string) => setFixedDate(v)}
+              error={errors.fixedDate}
+              onChange={(v: string) => {
+                setFixedDate(v);
+                if (errors.fixedDate) {
+                  setErrors({ ...errors, fixedDate: "" });
+                }
+              }}
             />
           )}
 
           {/* TEMPLATE */}
-          <CampaignTemplateEditor
-            value={template}
-            onChange={setTemplate}
-          />
+          <div>
+            <CampaignTemplateEditor
+              value={template}
+              onChange={(t) => {
+                setTemplate(t);
+                if (errors.subject || errors.body) {
+                  setErrors({ ...errors, subject: "", body: "" });
+                }
+              }}
+            />
+            {errors.subject && (
+              <p className="text-xs text-red-600 mt-1">{errors.subject}</p>
+            )}
+            {errors.body && (
+              <p className="text-xs text-red-600 mt-1">{errors.body}</p>
+            )}
+          </div>
         </div>
 
         {/* FOOTER */}
@@ -452,15 +580,16 @@ const CampaignUpsertSheet = ({
           <button
             className="flex-1 border rounded-lg py-2"
             onClick={onClose}
+            disabled={isPending || updating}
           >
             Cancel
           </button>
           <button
-            disabled={isPending}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2"
+            disabled={isPending || updating}
+            className="flex-1 bg-blue-600 text-white rounded-lg py-2 disabled:opacity-50"
             onClick={handleSubmit}
           >
-            {isPending ? "Saving..." : "Save Campaign"}
+            {isPending || updating ? "Saving..." : "Save Campaign"}
           </button>
         </div>
       </div>
@@ -478,6 +607,7 @@ const Input = ({
   onChange,
   required,
   type = "text",
+  error,
 }: any) => (
   <div>
     <label className="text-sm font-medium">
@@ -485,9 +615,10 @@ const Input = ({
     </label>
     <input
       type={type}
-      className="input w-full"
+      className={`input w-full mt-1 ${error ? "border-red-500" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />
+    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
   </div>
 );

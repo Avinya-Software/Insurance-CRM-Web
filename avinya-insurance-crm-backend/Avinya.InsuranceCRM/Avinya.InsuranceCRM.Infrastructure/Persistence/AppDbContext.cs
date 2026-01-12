@@ -46,9 +46,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         // ---------------- CUSTOMER CONFIG ----------------
         builder.Entity<Customer>(entity =>
         {
-            entity.HasIndex(x => x.Email).IsUnique();
-            entity.HasIndex(x => x.PrimaryMobile).IsUnique();
-
+           
             // FK to AspNetUsers (Advisor)
             entity.HasOne<ApplicationUser>()
                   .WithMany()

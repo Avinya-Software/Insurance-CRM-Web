@@ -30,7 +30,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _logger = logger;
         }
 
-        // ---------------- REGISTER ----------------
+        //   REGISTER  
         [HttpPost("register")]
         public async Task<IActionResult> Register(AdvisorRegisterRequest request)
         {
@@ -85,7 +85,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             );
         }
 
-        // ---------------- LOGIN ----------------
+        //   LOGIN  
         [HttpPost("login")]
         public async Task<IActionResult> Login(AdvisorLoginRequest request)
         {

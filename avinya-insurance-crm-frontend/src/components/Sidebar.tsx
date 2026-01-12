@@ -86,16 +86,16 @@ const Sidebar = () => {
               label="Insurers"
             />
 
+             <NavItem
+              to="/products"
+              icon={<Package size={18} />}
+              label="Products"
+            />
+
             <NavItem
               to="/policies"
               icon={<FileText size={18} />}
               label="Policies"
-            />
-
-            <NavItem
-              to="/products"
-              icon={<Package size={18} />}
-              label="Products"
             />
 
             <NavItem

@@ -21,30 +21,6 @@ interface Props {
   onSuccess: () => void;
 }
 
-/*   VALIDATION   */
-
-const validateForm = (form: any) => {
-  const e: any = {};
-
-  if (!form.customerId) e.customerId = "Customer is required";
-  if (!form.policyId) e.policyId = "Policy is required";
-  if (!form.claimTypeId) e.claimTypeId = "Claim type is required";
-  if (!form.claimStageId) e.claimStageId = "Claim stage is required";
-  if (!form.claimHandlerId) e.claimHandlerId = "Handler is required";
-  if (!form.incidentDate) e.incidentDate = "Incident date is required";
-  if (!form.claimAmount || form.claimAmount <= 0)
-    e.claimAmount = "Claim amount must be greater than 0";
-  if (
-    form.approvedAmount &&
-    Number(form.approvedAmount) > Number(form.claimAmount)
-  )
-    e.approvedAmount = "Approved amount cannot exceed claim amount";
-  if (form.tatDays !== null && form.tatDays < 0)
-    e.tatDays = "TAT must be 0 or greater";
-
-  return e;
-};
-
 const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   /*   LOCK BODY SCROLL   */
   useEffect(() => {
@@ -65,7 +41,6 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
   /*   API HOOKS   */
   const { mutateAsync, isPending } = useCreateClaim();
-
 
   /*   DROPDOWNS   */
   const { data: customers, isLoading: customersLoading } = useCustomerDropdown();
@@ -91,7 +66,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
   const [form, setForm] = useState(initialForm);
   const [documents, setDocuments] = useState<File[]>([]);
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   /*   POLICIES (DEPENDENT)   */
   const { data: policies, isLoading: policiesLoading } = usePolicies(
@@ -109,7 +84,15 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
   /*   PREFILL   */
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setForm(initialForm);
+      setErrors({});
+      setDocuments([]);
+      setExistingDocuments([]);
+      return;
+    }
+
+    if (loadingDropdowns) return;
 
     if (claim) {
       setForm({
@@ -148,17 +131,81 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     }
 
     setErrors({});
-  }, [open, claim, claimTypes, claimStages, claimHandlers]);
+  }, [open, claim, claimTypes, claimStages, claimHandlers, loadingDropdowns]);
+
+  /*   VALIDATION   */
+  const validate = () => {
+    const e: Record<string, string> = {};
+
+    if (!form.customerId) {
+      e.customerId = "Customer is required";
+    }
+
+    if (!form.policyId) {
+      e.policyId = "Policy is required";
+    }
+
+    if (!form.claimTypeId) {
+      e.claimTypeId = "Claim type is required";
+    }
+
+    if (!form.claimStageId) {
+      e.claimStageId = "Claim stage is required";
+    }
+
+    if (!form.claimHandlerId) {
+      e.claimHandlerId = "Handler is required";
+    }
+
+    if (!form.incidentDate) {
+      e.incidentDate = "Incident date is required";
+    } else {
+      // Check if incident date is not in the future
+      const incidentDate = new Date(form.incidentDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (incidentDate > today) {
+        e.incidentDate = "Incident date cannot be in the future";
+      }
+    }
+
+    if (!form.claimAmount || form.claimAmount === "") {
+      e.claimAmount = "Claim amount is required";
+    } else if (Number(form.claimAmount) <= 0) {
+      e.claimAmount = "Claim amount must be greater than 0";
+    }
+
+    if (form.approvedAmount && form.approvedAmount !== "") {
+      const approved = Number(form.approvedAmount);
+      const claimed = Number(form.claimAmount);
+
+      if (approved < 0) {
+        e.approvedAmount = "Approved amount cannot be negative";
+      } else if (approved > claimed) {
+        e.approvedAmount = "Approved amount cannot exceed claim amount";
+      }
+    }
+
+    if (form.tatDays !== null && form.tatDays !== undefined) {
+      if (Number(form.tatDays) < 0) {
+        e.tatDays = "TAT must be 0 or greater";
+      }
+    }
+
+    setErrors(e);
+
+    if (Object.keys(e).length > 0) {
+      toast.error("Please fix validation errors");
+      return false;
+    }
+
+    return true;
+  };
 
   /*  SAVE  */
   const handleSave = async () => {
-    const e = validateForm(form);
-    setErrors(e);
-
-    if (Object.keys(e).length) {
-      toast.error("Please fix validation errors");
-      return;
-    }
+    if (!validate()) return;
 
     try {
       await mutateAsync({ ...form, documents });
@@ -202,60 +249,64 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
             </div>
           ) : (
             <div className="space-y-4">
-              <SearchableComboBox
+              <div>
+                <SearchableComboBox
                   label="Customer"
-                  items={customers.map((c) => ({
+                  items={(customers || []).map((c) => ({
                     value: c.customerId,
                     label: c.fullName,
                   }))}
                   value={form.customerId}
                   placeholder="Select customer"
-                  onSelect={(item) =>
+                  onSelect={(item) => {
                     setForm({
                       ...form,
                       customerId: item?.value || "",
                       policyId: "", // reset policy on customer change
-                    })
-                  }
+                    });
+                    if (errors.customerId) {
+                      setErrors({ ...errors, customerId: "" });
+                    }
+                  }}
                 />
-
                 {errors.customerId && (
                   <p className="text-sm text-red-500 mt-1">{errors.customerId}</p>
                 )}
+              </div>
 
-
-             <div
+              <div
                 className={
                   !form.customerId || policiesLoading
                     ? "opacity-50 pointer-events-none"
                     : ""
                 }
               >
-        <SearchableComboBox
-        label="Policy"
-          items={(policies?.data || []).map((p) => ({
-            value: p.policyId,
-            label: p.policyNumber,
-          }))}
-          value={form.policyId}
-          placeholder={
-            policiesLoading
-              ? "Loading policies..."
-              : "Select policy"
-          }
-          onSelect={(item) =>
-            setForm({
-              ...form,
-              policyId: item?.value || "",
-            })
-          }
-        />
-      </div>
-
-      {errors.policyId && (
-        <p className="text-sm text-red-500 mt-1">{errors.policyId}</p>
-      )}
-
+                <SearchableComboBox
+                  label="Policy"
+                  items={(policies?.data || []).map((p) => ({
+                    value: p.policyId,
+                    label: p.policyNumber,
+                  }))}
+                  value={form.policyId}
+                  placeholder={
+                    policiesLoading
+                      ? "Loading policies..."
+                      : "Select policy"
+                  }
+                  onSelect={(item) => {
+                    setForm({
+                      ...form,
+                      policyId: item?.value || "",
+                    });
+                    if (errors.policyId) {
+                      setErrors({ ...errors, policyId: "" });
+                    }
+                  }}
+                />
+                {errors.policyId && (
+                  <p className="text-sm text-red-500 mt-1">{errors.policyId}</p>
+                )}
+              </div>
 
               <Select
                 label="Claim Type"
@@ -265,12 +316,15 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 options={claimTypes}
                 idKey="claimTypeId"
                 labelKey="typeName"
-                onChange={(v) =>
+                onChange={(v) => {
                   setForm({
                     ...form,
-                    claimTypeId: (v),
-                  })
-                }
+                    claimTypeId: v,
+                  });
+                  if (errors.claimTypeId) {
+                    setErrors({ ...errors, claimTypeId: "" });
+                  }
+                }}
               />
 
               <Select
@@ -281,12 +335,15 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 options={claimStages}
                 idKey="claimStageId"
                 labelKey="stageName"
-                onChange={(v) =>
+                onChange={(v) => {
                   setForm({
                     ...form,
-                    claimStageId: (v),
-                  })
-                }
+                    claimStageId: v,
+                  });
+                  if (errors.claimStageId) {
+                    setErrors({ ...errors, claimStageId: "" });
+                  }
+                }}
               />
 
               <Select
@@ -297,12 +354,15 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 options={claimHandlers}
                 idKey="claimHandlerId"
                 labelKey="handlerName"
-                onChange={(v) =>
+                onChange={(v) => {
                   setForm({
                     ...form,
-                    claimHandlerId: (v),
-                  })
-                }
+                    claimHandlerId: v,
+                  });
+                  if (errors.claimHandlerId) {
+                    setErrors({ ...errors, claimHandlerId: "" });
+                  }
+                }}
               />
 
               <Input
@@ -311,7 +371,12 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 type="date"
                 value={form.incidentDate}
                 error={errors.incidentDate}
-                onChange={(v) => setForm({ ...form, incidentDate: v })}
+                onChange={(v) => {
+                  setForm({ ...form, incidentDate: v });
+                  if (errors.incidentDate) {
+                    setErrors({ ...errors, incidentDate: "" });
+                  }
+                }}
               />
 
               <Input
@@ -320,7 +385,12 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 type="number"
                 value={form.claimAmount}
                 error={errors.claimAmount}
-                onChange={(v) => setForm({ ...form, claimAmount: v })}
+                onChange={(v) => {
+                  setForm({ ...form, claimAmount: v });
+                  if (errors.claimAmount || errors.approvedAmount) {
+                    setErrors({ ...errors, claimAmount: "", approvedAmount: "" });
+                  }
+                }}
               />
 
               <Input
@@ -328,12 +398,15 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 type="number"
                 value={form.approvedAmount}
                 error={errors.approvedAmount}
-                onChange={(v) =>
+                onChange={(v) => {
                   setForm({
                     ...form,
                     approvedAmount: v,
-                  })
-                }
+                  });
+                  if (errors.approvedAmount) {
+                    setErrors({ ...errors, approvedAmount: "" });
+                  }
+                }}
               />
 
               <Input
@@ -341,12 +414,15 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                 type="number"
                 value={form.tatDays}
                 error={errors.tatDays}
-                onChange={(v) =>
+                onChange={(v) => {
                   setForm({
                     ...form,
-                    tatDays: v === "" ? null : Number(v),
-                  })
-                }
+                    tatDays: v === "" ? 0 : Number(v),
+                  });
+                  if (errors.tatDays) {
+                    setErrors({ ...errors, tatDays: "" });
+                  }
+                }}
               />
 
               <Textarea

@@ -1,8 +1,11 @@
 import { useState, useRef } from "react";
-import { MoreVertical, X, RefreshCcw } from "lucide-react";
+import { MoreVertical, X, RefreshCcw, Check } from "lucide-react";
 import type { Policy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
+import { useUpdatePolicyStatus } from "../../hooks/policy/useUpdatePolicyStatus";
+import { useQuery } from "@tanstack/react-query";
+import { getPolicyStatusesDropdownApi } from "../../api/policy.api";
 import TableSkeleton from "../common/TableSkeleton";
 
 /*   BADGE STYLES   */
@@ -22,14 +25,14 @@ const policyStatusStyles: Record<string, string> = {
 
 /*   CONSTANTS   */
 
-const DROPDOWN_HEIGHT = 160;
-const DROPDOWN_WIDTH = 180;
+const DROPDOWN_HEIGHT = 260;
+const DROPDOWN_WIDTH = 220;
 
 interface Props {
   data: Policy[];
   loading?: boolean;
   onEdit: (policy: Policy) => void;
-  onRenewal: (policy: Policy) => void; // 🔥 NEW
+  onRenewal: (policy: Policy) => void;
 }
 
 /*   COMPONENT   */
@@ -43,14 +46,27 @@ const PolicyTable = ({
   const [openPolicy, setOpenPolicy] = useState<Policy | null>(null);
   const [confirmDelete, setConfirmDelete] =
     useState<Policy | null>(null);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
 
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  useOutsideClick(dropdownRef, () => setOpenPolicy(null));
+  useOutsideClick(dropdownRef, () => {
+    setOpenPolicy(null);
+    setShowStatusMenu(false);
+  });
 
   const { mutate: deletePolicy, isPending } =
     useDeletePolicy();
+
+  const { mutate: updateStatus, isPending: updatingStatus } =
+    useUpdatePolicyStatus();
+
+  /* 🔥 Fetch policy statuses */
+  const { data: statuses = [] } = useQuery({
+    queryKey: ["policy-statuses"],
+    queryFn: getPolicyStatusesDropdownApi,
+  });
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -71,20 +87,13 @@ const PolicyTable = ({
     });
 
     setOpenPolicy(policy);
+    setShowStatusMenu(false);
   };
 
-  const handleEdit = () => {
-    if (!openPolicy) return;
-    const p = openPolicy;
+  const handleAction = (cb: () => void) => {
     setOpenPolicy(null);
-    setTimeout(() => onEdit(p), 0);
-  };
-
-  const handleRenewal = () => {
-    if (!openPolicy) return;
-    const p = openPolicy;
-    setOpenPolicy(null);
-    setTimeout(() => onRenewal(p), 0);
+    setShowStatusMenu(false);
+    setTimeout(cb, 0);
   };
 
   const handleDelete = () => {
@@ -96,6 +105,23 @@ const PolicyTable = ({
         setOpenPolicy(null);
       },
     });
+  };
+
+  const handleStatusChange = (statusId: number) => {
+    if (!openPolicy) return;
+
+    updateStatus(
+      {
+        policyId: openPolicy.policyId,
+        statusId,
+      },
+      {
+        onSuccess: () => {
+          setOpenPolicy(null);
+          setShowStatusMenu(false);
+        },
+      }
+    );
   };
 
   return (
@@ -116,7 +142,6 @@ const PolicyTable = ({
           </tr>
         </thead>
 
-        {/*  BODY  */}
         {loading ? (
           <TableSkeleton rows={6} columns={10} />
         ) : (
@@ -124,7 +149,7 @@ const PolicyTable = ({
             {data.length === 0 ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   className="text-center py-12 text-slate-500"
                 >
                   No policies found
@@ -138,12 +163,10 @@ const PolicyTable = ({
                 >
                   <Td>{p.policyNumber}</Td>
 
-                  {/* POLICY TYPE */}
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyTypeStyles[p.policyTypeName] ||
-                        "bg-gray-100 text-gray-600 border-gray-200"
+                        policyTypeStyles[p.policyTypeName]
                       }`}
                     >
                       {p.policyTypeName}
@@ -153,12 +176,10 @@ const PolicyTable = ({
                   <Td>{p.insurerName}</Td>
                   <Td>{p.productName}</Td>
 
-                  {/* POLICY STATUS */}
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyStatusStyles[p.policyStatusName] ||
-                        "bg-gray-100 text-gray-600 border-gray-200"
+                        policyStatusStyles[p.policyStatusName]
                       }`}
                     >
                       {p.policyStatusName}
@@ -185,20 +206,30 @@ const PolicyTable = ({
         )}
       </table>
 
-      {/*  DROPDOWN  */}
+      {/*   ACTION DROPDOWN   */}
       {openPolicy && (
         <div
           ref={dropdownRef}
-          className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg"
-          style={style}
           onClick={(e) => e.stopPropagation()}
+          className="fixed z-50 w-[220px] bg-white border rounded-lg shadow-lg overflow-hidden"
+          style={style}
         >
-          <MenuItem label="Edit Policy" onClick={handleEdit} />
+          <MenuItem
+            label="Edit Policy"
+            onClick={() => handleAction(() => onEdit(openPolicy))}
+          />
 
           <MenuItem
             label="Create Renewal"
             icon={<RefreshCcw size={14} />}
-            onClick={handleRenewal}
+            onClick={() =>
+              handleAction(() => onRenewal(openPolicy))
+            }
+          />
+
+          <MenuItem
+            label="Change Status"
+            onClick={() => setShowStatusMenu((p) => !p)}
           />
 
           <MenuItem
@@ -206,10 +237,34 @@ const PolicyTable = ({
             danger
             onClick={() => setConfirmDelete(openPolicy)}
           />
+
+          {/* 🔥 STATUS SUBMENU */}
+          {showStatusMenu && (
+            <div className="border-t">
+              {statuses
+                .filter(
+                  (s) =>
+                    s.name !== openPolicy.policyStatusName
+                )
+                .map((status) => (
+                  <button
+                    key={status.id}
+                    onClick={() =>
+                      handleStatusChange(status.id)
+                    }
+                    disabled={updatingStatus}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2"
+                  >
+                    <Check size={14} />
+                    {status.name}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/*  CONFIRM DELETE  */}
+      {/*   CONFIRM DELETE   */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
@@ -279,7 +334,10 @@ const MenuItem = ({
   danger?: boolean;
 }) => (
   <button
-    onClick={onClick}
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
     className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-100 ${
       danger ? "text-red-600 hover:bg-red-50" : ""
     }`}

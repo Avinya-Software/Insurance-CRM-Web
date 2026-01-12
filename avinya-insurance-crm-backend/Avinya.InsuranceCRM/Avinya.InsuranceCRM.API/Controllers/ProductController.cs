@@ -24,7 +24,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _logger = logger;
         }
 
-        /* ================= ADD / UPDATE ================= */
+        /*   ADD / UPDATE   */
 
         [HttpPost]
         public async Task<IActionResult> UpsertProduct(
@@ -35,13 +35,13 @@ namespace Avinya.InsuranceCRM.API.Controllers
             if (string.IsNullOrEmpty(advisorId))
                 return Unauthorized("Invalid token");
 
-            /* ---------- CREATE ---------- */
+            /*  CREATE  */
             if (!request.ProductId.HasValue || request.ProductId == Guid.Empty)
             {
                 var product = new Product
                 {
                     ProductId = Guid.NewGuid(),
-                    AdvisorId = advisorId,          // 🔐 JWT enforced
+                    AdvisorId = advisorId,          
                     InsurerId = request.InsurerId,
                     ProductCategoryId = request.ProductCategoryId,
                     ProductName = request.ProductName,
@@ -87,7 +87,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
 
-        /* ================= DROPDOWN ================= */
+        /*   DROPDOWN   */
 
         [HttpGet("dropdown")]
         public async Task<IActionResult> GetDropdown(
@@ -110,7 +110,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             }));
         }
 
-        /* ================= PAGED LIST ================= */
+        /*   PAGED LIST   */
 
         [HttpGet]
         public async Task<IActionResult> GetProducts(
@@ -155,7 +155,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             }, "Products fetched successfully"));
         }
 
-        /* ================= DELETE ================= */
+        /*   DELETE   */
 
         [HttpDelete("{productId:guid}")]
         public async Task<IActionResult> DeleteProduct(Guid productId)
@@ -179,7 +179,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
 
-        /* ================= PRODUCT CATEGORY DROPDOWN ================= */
+        /*   PRODUCT CATEGORY DROPDOWN   */
 
         [HttpGet("ProductCategorydropdown")]
         public async Task<IActionResult> GetProductCategoryDropdown()

@@ -21,11 +21,11 @@ public class LeadController : ControllerBase
         _customerRepo = customerRepo;
     }
 
-    /* ================= CREATE / UPDATE ================= */
+    /*   CREATE / UPDATE   */
 
     [HttpPost]
     public async Task<IActionResult> CreateOrUpdate(
-        CreateOrUpdateLeadRequest request)
+     CreateOrUpdateLeadRequest request)
     {
         var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -61,8 +61,9 @@ public class LeadController : ControllerBase
         /* ---------------- CREATE ---------------- */
 
         Guid? customerId = request.CustomerId;
+        Customer? customer = null;
 
-        // Create customer if not exists
+        // 1️⃣ Create customer if not exists
         if (!customerId.HasValue)
         {
             if (string.IsNullOrWhiteSpace(request.FullName) ||
@@ -72,7 +73,7 @@ public class LeadController : ControllerBase
                     "FullName and Mobile are required to create customer");
             }
 
-            var customer = new Customer
+            customer = new Customer
             {
                 CustomerId = Guid.NewGuid(),
                 FullName = request.FullName,
@@ -87,10 +88,11 @@ public class LeadController : ControllerBase
             customerId = customer.CustomerId;
         }
 
+        // 2️⃣ Create lead
         var newLead = new Lead
         {
             LeadId = Guid.NewGuid(),
-            LeadNo = await _repo.GenerateLeadNoAsync(),
+            LeadNo = await _repo.GenerateLeadNoAsync(advisorId),
             CustomerId = customerId,
             FullName = request.FullName,
             Email = request.Email,
@@ -105,6 +107,15 @@ public class LeadController : ControllerBase
 
         await _repo.AddAsync(newLead);
 
+        // 3️⃣ Update customer with LeadId (ONLY if auto-created)
+        if (customer != null)
+        {
+            customer.LeadId = newLead.LeadId;
+            customer.UpdatedAt = DateTime.UtcNow;
+
+            await _customerRepo.UpdateAsync(customer);
+        }
+
         return Ok(new
         {
             newLead.LeadId,
@@ -113,7 +124,8 @@ public class LeadController : ControllerBase
         });
     }
 
-    /* ================= SEARCH + PAGINATION ================= */
+
+    /*   SEARCH + PAGINATION   */
 
     [HttpGet]
     public async Task<IActionResult> GetPaged(
@@ -168,7 +180,7 @@ public class LeadController : ControllerBase
         });
     }
 
-    /* ================= DELETE ================= */
+    /*   DELETE   */
 
     [HttpDelete("{leadId:guid}")]
     public async Task<IActionResult> Delete(Guid leadId)
@@ -189,7 +201,7 @@ public class LeadController : ControllerBase
         return Ok("Lead deleted successfully");
     }
 
-    /* ================= DROPDOWNS ================= */
+    /*   DROPDOWNS   */
 
     [HttpGet("lead-statuses")]
     public async Task<IActionResult> GetLeadStatuses()
@@ -214,4 +226,28 @@ public class LeadController : ControllerBase
             Name = x.SourceName
         }));
     }
+    [HttpPatch("{leadId:guid}/status/{statusId:int}")]
+    public async Task<IActionResult> UpdateStatus(
+    Guid leadId,
+    int statusId,
+    [FromQuery] string? notes)
+    {
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(advisorId))
+            return Unauthorized("Advisor not found in token");
+
+        var updated = await _repo.UpdateLeadStatusAsync(
+            advisorId,
+            leadId,
+            statusId,
+            notes
+        );
+
+        if (!updated)
+            return NotFound("Lead not found");
+
+        return Ok("Lead status updated successfully");
+    }
+
 }

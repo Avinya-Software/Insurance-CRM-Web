@@ -24,7 +24,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _env = env;
         }
 
-        /* ================= GET POLICIES ================= */
+        /*   GET POLICIES   */
 
         [HttpGet]
         public async Task<IActionResult> GetPolicies(
@@ -57,7 +57,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok(result);
         }
 
-        /* ================= UPSERT POLICY ================= */
+        /*   UPSERT POLICY   */
 
         [HttpPost("upsert")]
         [Consumes("multipart/form-data")]
@@ -91,7 +91,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 PolicyCode = request.PolicyCode
             };
 
-            /* -------- POLICY DOCUMENT UPLOAD -------- */
+            /*   POLICY DOCUMENT UPLOAD   */
             if (request.PolicyDocuments != null && request.PolicyDocuments.Any())
             {
                 var uploadRoot = Path.Combine(
@@ -132,7 +132,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
 
-        /* ================= POLICY DOCUMENT PREVIEW ================= */
+        /*   POLICY DOCUMENT PREVIEW   */
 
         [HttpGet("{policyId:guid}/documents/{documentId}/preview")]
         public async Task<IActionResult> PreviewPolicyDocument(
@@ -161,7 +161,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             );
         }
 
-        /* ================= POLICY DOCUMENT DOWNLOAD ================= */
+        /*   POLICY DOCUMENT DOWNLOAD   */
 
         [HttpGet("{policyId:guid}/documents/{documentId}/download")]
         public async Task<IActionResult> DownloadPolicyDocument(
@@ -187,7 +187,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return PhysicalFile(filePath, contentType, fileName);
         }
 
-        /* ================= POLICY DOCUMENT DELETE ================= */
+        /*   POLICY DOCUMENT DELETE   */
 
         [HttpDelete("{policyId:guid}/documents/{documentId}")]
         public async Task<IActionResult> DeletePolicyDocument(
@@ -238,7 +238,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok("Policy document deleted successfully");
         }
 
-        /* ================= DELETE POLICY ================= */
+        /*   DELETE POLICY   */
 
         [HttpDelete("{policyId:guid}")]
         public async Task<IActionResult> DeletePolicy(Guid policyId)
@@ -253,7 +253,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             if (policy == null)
                 return NotFound("Policy not found");
 
-            /* -------- DELETE POLICY DOCUMENTS -------- */
+            /*   DELETE POLICY DOCUMENTS   */
             var policyFolder = Path.Combine(
                 _env.ContentRootPath,
                 "Uploads",
@@ -266,13 +266,13 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 Directory.Delete(policyFolder, recursive: true);
             }
 
-            /* -------- DELETE POLICY FROM DB -------- */
+            /*   DELETE POLICY FROM DB   */
             await _policyRepository.DeleteByIdAsync(advisorId, policyId);
 
             return Ok("Policy deleted successfully");
         }
 
-        /* ================= DROPDOWNS ================= */
+        /*   DROPDOWNS   */
 
         [HttpGet("policy-types-dropdown")]
         public async Task<IActionResult> GetPolicyTypesDropdown()
@@ -298,27 +298,54 @@ namespace Avinya.InsuranceCRM.API.Controllers
             }));
         }
 
-        /* ================= POLICY DROPDOWN ================= */
+        /*   POLICY DROPDOWN   */
 
         [HttpGet("policy-dropdown")]
-        public async Task<IActionResult> GetPolicyDropdown()
+        public async Task<IActionResult> GetPolicyDropdown(
+        Guid? customerId = null  
+        )
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(advisorId))
                 return Unauthorized("Invalid token.");
 
-            var policies = await _policyRepository.GetPoliciesForDropdownAsync(advisorId);
+            var policies = await _policyRepository
+                .GetPoliciesForDropdownAsync(advisorId, customerId);
 
             return Ok(policies.Select(x => new
             {
                 id = x.PolicyId,
                 policyNumber = x.PolicyNumber,
-                policyCode = x.PolicyCode
+                policyCode = x.PolicyCode,
+                renewalDate = x.RenewalDate,
+                premiumGross = x.PremiumGross
             }));
         }
+        [HttpPatch("{policyId:guid}/status/{statusId:int}")]
+        public async Task<IActionResult> UpdatePolicyStatus(
+        Guid policyId,
+        int statusId)
+        {
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        /* ================= HELPERS ================= */
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token.");
+
+            var updated = await _policyRepository.UpdatePolicyStatusAsync(
+                advisorId,
+                policyId,
+                statusId
+            );
+
+            if (!updated)
+                return NotFound("Policy not found");
+
+            return Ok("Policy status updated successfully");
+        }
+
+
+        /*   HELPERS   */
 
         private string? FindPolicyDocument(Guid policyId, string documentId)
         {

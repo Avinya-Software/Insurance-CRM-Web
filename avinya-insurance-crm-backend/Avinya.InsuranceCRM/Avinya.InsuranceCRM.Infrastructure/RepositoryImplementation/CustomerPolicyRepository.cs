@@ -259,19 +259,52 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
         }
 
         public async Task<List<CustomerPolicy>> GetPoliciesForDropdownAsync(
-            string advisorId)
+     string advisorId,
+     Guid? customerId
+ )
         {
-            return await _context.CustomerPolicies
+            var query = _context.CustomerPolicies
                 .AsNoTracking()
-                .Where(x => x.AdvisorId == advisorId)
+                .Where(x => x.AdvisorId == advisorId);
+
+            // 🔥 FILTER ONLY WHEN customerId IS PROVIDED
+            if (customerId.HasValue)
+            {
+                query = query.Where(x => x.CustomerId == customerId.Value);
+            }
+
+            return await query
                 .OrderBy(x => x.PolicyNumber)
                 .Select(x => new CustomerPolicy
                 {
                     PolicyId = x.PolicyId,
                     PolicyNumber = x.PolicyNumber,
-                    PolicyCode = x.PolicyCode
+                    PolicyCode = x.PolicyCode,
+                    RenewalDate = x.RenewalDate,
+                    PremiumGross = x.PremiumGross
                 })
                 .ToListAsync();
         }
+        public async Task<bool> UpdatePolicyStatusAsync(
+        string advisorId,
+        Guid policyId,
+        int policyStatusId)
+        {
+            var policy = await _context.CustomerPolicies
+                .FirstOrDefaultAsync(x =>
+                    x.PolicyId == policyId &&
+                    x.AdvisorId == advisorId);
+
+            if (policy == null)
+                return false;
+
+            policy.PolicyStatusId = policyStatusId;
+            policy.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+
     }
 }

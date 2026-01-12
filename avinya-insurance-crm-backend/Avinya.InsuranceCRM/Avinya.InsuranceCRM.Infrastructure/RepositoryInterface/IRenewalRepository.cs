@@ -38,5 +38,11 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
         /* ================= MASTER DROPDOWN ================= */
 
         Task<List<RenewalStatusMaster>> GetRenewalStatusesAsync();
+        Task<bool> UpdateRenewalStatusAsync(
+        string advisorId,
+        Guid renewalId,
+        int renewalStatusId
+    );
+
     }
 }

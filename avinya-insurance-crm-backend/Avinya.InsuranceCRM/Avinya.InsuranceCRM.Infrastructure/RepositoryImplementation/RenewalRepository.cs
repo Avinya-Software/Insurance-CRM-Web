@@ -169,5 +169,25 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 .OrderBy(x => x.RenewalStatusId)
                 .ToListAsync();
         }
+        public async Task<bool> UpdateRenewalStatusAsync(
+    string advisorId,
+    Guid renewalId,
+    int renewalStatusId)
+        {
+            var renewal = await _context.Renewals
+                .FirstOrDefaultAsync(x =>
+                    x.RenewalId == renewalId &&
+                    x.AdvisorId == advisorId);
+
+            if (renewal == null)
+                return false;
+
+            renewal.RenewalStatusId = renewalStatusId;
+            renewal.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
     }
 }

@@ -9,9 +9,7 @@ namespace Avinya.InsuranceCRM.API.Helpers
 {
     public static class JwtTokenHelper
     {
-        // ======================================================
         // ADVISOR TOKEN
-        // ======================================================
         public static (string token, DateTime expiresAt) GenerateToken(
             ApplicationUser user,
             Advisor advisor,
@@ -59,9 +57,7 @@ namespace Avinya.InsuranceCRM.API.Helpers
             );
         }
 
-        // ======================================================
         // ADMIN TOKEN
-        // ======================================================
         public static (string token, DateTime expiresAt) GenerateAdminToken(
             ApplicationUser user,
             IConfiguration configuration)

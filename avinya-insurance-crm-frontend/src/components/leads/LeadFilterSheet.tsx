@@ -88,7 +88,7 @@ const LeadFilterSheet = ({
                     fullName: v,
                   })
                 }
-                placeholder="Search by name..."
+                placeholder="Search by name"
               />
 
               <Input

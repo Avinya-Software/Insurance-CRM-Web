@@ -37,7 +37,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _logger = logger;
         }
 
-        // ---------------- LOGIN ----------------
+        //   LOGIN  
         [HttpPost("login")]
         public async Task<IActionResult> Login(AdminLoginRequest request)
         {
@@ -88,7 +88,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             );
         }
 
-        // ---------------- PENDING ADVISORS ----------------
+        //   PENDING ADVISORS  
         [Authorize(Roles = "SuperAdmin")]
         [HttpGet("pending-advisors")]
         public async Task<IActionResult> PendingAdvisors()
@@ -97,7 +97,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok(ApiResponse<object>.Success(result));
         }
 
-        // ---------------- APPROVE ADVISOR ----------------
+        //   APPROVE ADVISOR  
         [Authorize(Roles = "SuperAdmin")]
         [HttpPost("approve/{userId}")]
         public async Task<IActionResult> Approve(string userId)
@@ -118,7 +118,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             );
         }
 
-        // ---------------- DISABLE / REJECT ADVISOR ----------------
+        //   DISABLE / REJECT ADVISOR  
         [Authorize(Roles = "SuperAdmin")]
         [HttpDelete("delete/{userId}")]
         public async Task<IActionResult> Delete(string userId)
@@ -138,7 +138,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 ApiResponse<string>.Success("Advisor account rejected successfully")
             );
         }
-        // ---------------- ADVISORS BY STATUS & DATE ----------------
+        //   ADVISORS BY STATUS & DATE  
         [Authorize(Roles = "SuperAdmin")]
         [HttpGet("advisors-by-status")]
         public async Task<IActionResult> GetAdvisorsByStatus(

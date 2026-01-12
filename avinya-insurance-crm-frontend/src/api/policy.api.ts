@@ -87,11 +87,28 @@ export interface PolicyDropdownItem {
   id: string;
   policyNumber: string;
   policyCode?: string | null;
+  renewalDate?: string | null;
+  premiumGross?: number | null;
 }
 
-export const getPolicyDropdownApi = async () => {
+export const getPolicyDropdownApi = async (
+  customerId?: string
+) => {
   const res = await api.get<PolicyDropdownItem[]>(
-    "/policy/policy-dropdown"
+    "/policy/policy-dropdown",
+    {
+      params: customerId ? { customerId } : {},
+    }
+  );
+
+  return res.data;
+};
+export const updatePolicyStatusApi = async (
+  policyId: string,
+  statusId: number
+) => {
+  const res = await api.patch(
+    `/policy/${policyId}/status/${statusId}`
   );
   return res.data;
 };

@@ -18,7 +18,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _renewalRepository = renewalRepository;
         }
 
-        /* ================= UPSERT ================= */
+        /*   UPSERT   */
 
         [HttpPost("upsert")]
         public async Task<IActionResult> Upsert(
@@ -43,7 +43,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
 
-        /* ================= LIST ================= */
+        /*   LIST   */
 
         [HttpGet]
         public async Task<IActionResult> GetRenewals(
@@ -68,7 +68,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok(result);
         }
 
-        /* ================= GET BY ID ================= */
+        /*   GET BY ID   */
 
         [HttpGet("{renewalId:guid}")]
         public async Task<IActionResult> GetById(Guid renewalId)
@@ -89,7 +89,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok(renewal);
         }
 
-        /* ================= DELETE ================= */
+        /*   DELETE   */
 
         [HttpDelete("{renewalId:guid}")]
         public async Task<IActionResult> Delete(Guid renewalId)
@@ -107,7 +107,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok("Renewal deleted successfully");
         }
 
-        /* ================= STATUS DROPDOWN ================= */
+        /*  STATUS DROPDOWN  */
 
         [HttpGet("statuses")]
         public async Task<IActionResult> GetStatuses()
@@ -120,5 +120,27 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 name = x.StatusName
             }));
         }
+        [HttpPatch("{renewalId:guid}/status/{statusId:int}")]
+        public async Task<IActionResult> UpdateRenewalStatus(
+        Guid renewalId,
+        int statusId)
+        {
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Invalid token.");
+
+            var updated = await _renewalRepository.UpdateRenewalStatusAsync(
+                advisorId,
+                renewalId,
+                statusId
+            );
+
+            if (!updated)
+                return NotFound("Renewal not found");
+
+            return Ok("Renewal status updated successfully");
+        }
+
     }
 }

@@ -143,6 +143,9 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                   className="border-t hover:bg-slate-50"
                 >
                   <Td>
+                    <div className="font-medium">
+                      {claim.customer.fullName}
+                    </div>
                     <div className="text-xs text-gray-500">
                       {claim.customer.email}
                     </div>

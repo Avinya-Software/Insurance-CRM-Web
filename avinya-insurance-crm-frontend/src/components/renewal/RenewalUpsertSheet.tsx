@@ -51,7 +51,7 @@ const RenewalUpsertSheet = ({
 
   const { mutateAsync, isPending } = useUpsertRenewal();
   const { data: customers, isLoading: cLoading } = useCustomerDropdown();
-  const { data: policies, isLoading: pLoading } = usePolicyDropdown();
+  const { data: policies, isLoading: pLoading } = usePolicyDropdown(form.customerId || undefined);
   const { data: statuses, isLoading: sLoading } = useRenewalStatuses();
 
   const loadingDropdowns = cLoading || pLoading || sLoading;
@@ -68,25 +68,34 @@ useEffect(() => {
   if (loadingDropdowns) return;
 
   if (renewal) {
-    // 🔥 MAP STATUS NAME → STATUS ID
     const mappedStatusId =
-      renewal.renewalStatusId ??
-      statuses?.find(
-        (s: any) =>
-          s.statusName?.toLowerCase() ===
-          renewal.status?.toLowerCase()
-      )?.renewalStatusId ??
-      0;
+  statuses?.find(
+    (s: any) =>
+      s.name?.toLowerCase() ===
+      renewal.status?.toLowerCase()
+  )?.id ?? 0;
+
+
+    const selectedPolicy = policies?.find(
+      (p: any) => p.id === renewal.policyId
+    );
 
     setForm({
       renewalId: renewal.renewalId ?? null,
       customerId: renewal.customerId || "",
       policyId: renewal.policyId || "",
       renewalStatusId: mappedStatusId,
-      renewalDate: renewal.renewalDate
-        ? renewal.renewalDate.split("T")[0]
-        : "",
-      renewalPremium: renewal.renewalPremium ?? 0,
+      renewalDate:
+        renewal.renewalDate
+          ? renewal.renewalDate.split("T")[0]
+          : selectedPolicy?.renewalDate
+          ? selectedPolicy.renewalDate.split("T")[0]
+          : "",
+      renewalPremium:
+        renewal.renewalPremium ??
+        selectedPolicy?.premiumGross ??
+        renewal.premiumGross ??
+        0,
       reminderDaysInput: renewal.reminderDatesJson
         ? JSON.parse(renewal.reminderDatesJson).join(",")
         : "90,60,30,15,7,1",
@@ -94,10 +103,7 @@ useEffect(() => {
   } else {
     setForm(initialForm);
   }
-
-  setErrors({});
-}, [open, renewal, statuses, loadingDropdowns]);
-
+}, [open, renewal, statuses, policies, loadingDropdowns]);
   /*   VALIDATION   */
 
   const parseReminderDays = (): number[] | null => {
@@ -196,7 +202,7 @@ useEffect(() => {
         reminderDatesJson: JSON.stringify(reminderDays), // ✅ FINAL JSON
       });
 
-      toast.success("Renewal saved successfully");
+      // toast.success("Renewal saved successfully");
       onClose();
       onSuccess();
     } catch (error: any) {
@@ -256,27 +262,37 @@ useEffect(() => {
 
 
               <Select
-                label="Policy"
-                required
-                value={form.policyId}
-                error={errors.policyId}
-                options={policies || []}
-                valueKey="id"
-                labelKey="policyNumber"
-                disabled={isFromPolicy}
-                onChange={(v) =>
-                  setForm({ ...form, policyId: v })
-                }
-              />
+                  label="Policy"
+                  required
+                  value={form.policyId}
+                  error={errors.policyId}
+                  options={policies || []}
+                  valueKey="id"
+                  labelKey="policyNumber"
+                  disabled={isFromPolicy}
+                  onChange={(v) => {
+                  const selectedPolicy = policies?.find(
+                    (p: any) => p.id === v
+                  );
 
-              <Select
+                  setForm({
+                    ...form,
+                    policyId: v,
+                    renewalDate: selectedPolicy?.renewalDate
+                      ? selectedPolicy.renewalDate.split("T")[0]
+                      : "",
+                    renewalPremium: selectedPolicy?.premiumGross ?? 0,
+                  });
+                }}
+                />
+             <Select
                 label="Renewal Status"
                 required
                 value={form.renewalStatusId}
                 error={errors.renewalStatusId}
                 options={statuses || []}
-                valueKey="renewalStatusId"
-                labelKey="statusName"
+                valueKey="id"
+                labelKey="name"
                 onChange={(v) =>
                   setForm({
                     ...form,
@@ -284,7 +300,6 @@ useEffect(() => {
                   })
                 }
               />
-
               <Input
                 type="date"
                 label="Renewal Date"

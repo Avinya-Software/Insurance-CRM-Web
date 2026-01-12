@@ -38,9 +38,15 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
 
         /* ================= HELPERS ================= */
 
-        Task<string> GenerateLeadNoAsync();
+        Task<string> GenerateLeadNoAsync(string advisorId);
 
         Task<List<LeadStatus>> GetLeadStatusesAsync();
         Task<List<LeadSource>> GetLeadSourcesAsync();
+        Task<bool> UpdateLeadStatusAsync(
+        string advisorId,
+        Guid leadId,
+        int leadStatusId,
+        string? notes
+        );
     }
 }

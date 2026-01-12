@@ -16,7 +16,7 @@ public class CampaignController : ControllerBase
         _repository = repository;
     }
 
-    /* ================= CREATE ================= */
+    /*   CREATE   */
 
     [HttpPost]
     public async Task<IActionResult> Create(
@@ -37,7 +37,7 @@ public class CampaignController : ControllerBase
             campaign);
     }
 
-    /* ================= GET BY ID ================= */
+    /*   GET BY ID   */
 
     [HttpGet("{campaignId}")]
     public async Task<IActionResult> GetById(Guid campaignId)
@@ -54,7 +54,7 @@ public class CampaignController : ControllerBase
         return Ok(campaign);
     }
 
-    /* ================= GET PAGED ================= */
+    /*   GET PAGED   */
 
     [HttpGet]
     public async Task<IActionResult> GetPaged(
@@ -77,7 +77,7 @@ public class CampaignController : ControllerBase
         });
     }
 
-    /* ================= UPDATE ================= */
+    /*   UPDATE   */
 
     [HttpPut("{campaignId}")]
     public async Task<IActionResult> Update(
@@ -97,7 +97,7 @@ public class CampaignController : ControllerBase
         return NoContent();
     }
 
-    /* ================= DELETE ================= */
+    /*   DELETE   */
 
     [HttpDelete("{campaignId}")]
     public async Task<IActionResult> Delete(Guid campaignId)
@@ -111,7 +111,7 @@ public class CampaignController : ControllerBase
         return NoContent();
     }
 
-    /* ================= DROPDOWN ================= */
+    /*   DROPDOWN   */
 
     [HttpGet("dropdown")]
     public async Task<IActionResult> Dropdown()

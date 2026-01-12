@@ -45,7 +45,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
             Customer customer;
 
-            /* ================= UPDATE ================= */
+            /*   UPDATE   */
             if (request.CustomerId.HasValue)
             {
                 customer = await _customerRepository.GetByIdAsync(
@@ -101,7 +101,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
                 await _customerRepository.UpdateAsync(customer);
             }
-            /* ================= CREATE ================= */
+            /*   CREATE   */
             else
             {
                 if (await _customerRepository.ExistsByMobileAsync(
@@ -157,7 +157,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 }
             }
 
-            /* ================= KYC FILE UPLOAD ================= */
+            /*   KYC FILE UPLOAD   */
             if (request.KycFiles != null && request.KycFiles.Any())
             {
                 var uploadRoot = Path.Combine(
@@ -213,7 +213,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
         }
 
 
-        /* ================= GET ALL ================= */
+        /*   GET ALL   */
 
         [HttpGet]
         public async Task<IActionResult> GetAllCustomers(
@@ -262,7 +262,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
         }
 
 
-        /* ================= KYC PREVIEW ================= */
+        /*   KYC PREVIEW   */
 
         [HttpGet("{customerId:guid}/kyc/{documentId}/preview")]
         public IActionResult PreviewKyc(Guid customerId, string documentId)
@@ -293,7 +293,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             );
         }
 
-        /* ================= KYC DOWNLOAD ================= */
+        /*   KYC DOWNLOAD   */
 
         [HttpGet("{customerId:guid}/kyc/{documentId}/download")]
         public IActionResult DownloadKyc(Guid customerId, string documentId)
@@ -358,7 +358,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok(ApiResponse<string>.Success("Customer deleted successfully"));
         }
 
-        /* ================= DELETE KYC FILE ================= */
+        /*   DELETE KYC FILE   */
 
         [HttpDelete("{customerId:guid}/kyc/{documentId}")]
         public async Task<IActionResult> DeleteKycFile(
@@ -421,7 +421,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
 
 
-        /* ================= DROPDOWN ================= */
+        /*   DROPDOWN   */
         [HttpGet("dropdown")]
         public async Task<IActionResult> GetCustomerDropdown()
         {
@@ -447,7 +447,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
         }
 
 
-        /* ================= HELPERS ================= */
+        /*   HELPERS   */
 
         private static string GetContentType(string path)
         {

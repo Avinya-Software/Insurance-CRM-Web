@@ -27,7 +27,8 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
         );
 
         Task<List<CustomerPolicy>> GetPoliciesForDropdownAsync(
-            string advisorId
+            string advisorId, Guid? customerId
+
         );
 
         /* ================= CREATE / UPDATE ================= */
@@ -48,5 +49,10 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
 
         Task<List<PolicyTypeMaster>> GetPolicyTypesAsync();
         Task<List<PolicyStatusMaster>> GetPolicyStatusesAsync();
+        Task<bool> UpdatePolicyStatusAsync(
+              string advisorId,
+              Guid policyId,
+              int policyStatusId
+          );
     }
 }

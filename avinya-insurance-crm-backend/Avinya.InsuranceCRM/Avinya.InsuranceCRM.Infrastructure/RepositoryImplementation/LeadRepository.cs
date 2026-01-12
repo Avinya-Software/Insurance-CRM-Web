@@ -131,48 +131,62 @@ public class LeadRepository : ILeadRepository
 
     /* ================= DELETE ================= */
 
-    public async Task<bool> DeleteAsync(
-        string advisorId,
-        Guid leadId)
+    public async Task<bool> DeleteAsync(string advisorId, Guid leadId)
     {
+        // 1. Get the lead (advisor-scoped)
         var lead = await _context.Leads
-            .FirstOrDefaultAsync(x =>
-                x.LeadId == leadId &&
-                x.AdvisorId == advisorId);
+            .FirstOrDefaultAsync(l =>
+                l.LeadId == leadId &&
+                l.AdvisorId == advisorId);
 
         if (lead == null)
             return false;
 
-        // Optional safety check
-        // if (lead.IsConverted || lead.CustomerId != null)
-        //     return false;
+        var customer = await _context.Customers
+            .FirstOrDefaultAsync(c =>
+                c.LeadId == lead.LeadId &&
+                c.AdvisorId == advisorId);
 
         _context.Leads.Remove(lead);
+
+        if (customer != null)
+        {
+            _context.Customers.Remove(customer);
+        }
+
+        // 5. Save once (transaction-safe)
         await _context.SaveChangesAsync();
 
         return true;
     }
 
+
     /* ================= HELPERS ================= */
 
-    public async Task<string> GenerateLeadNoAsync()
+    public async Task<string> GenerateLeadNoAsync(string advisorId)
     {
         var lastLeadNo = await _context.Leads
+            .Where(x => x.AdvisorId == advisorId)
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => x.LeadNo)
             .FirstOrDefaultAsync();
 
         int nextNumber = 1;
 
-        if (!string.IsNullOrEmpty(lastLeadNo))
+        if (!string.IsNullOrWhiteSpace(lastLeadNo))
         {
             var numericPart = lastLeadNo.Split('-').Last();
-            int.TryParse(numericPart, out nextNumber);
-            nextNumber++;
+
+            if (int.TryParse(numericPart, out int lastNumber))
+            {
+                nextNumber = lastNumber + 1;
+            }
         }
 
         return $"LEAD-{nextNumber:D3}";
     }
+
+
 
     public async Task<List<LeadStatus>> GetLeadStatusesAsync()
     {
@@ -187,4 +201,29 @@ public class LeadRepository : ILeadRepository
             .OrderBy(x => x.LeadSourceId)
             .ToListAsync();
     }
+    public async Task<bool> UpdateLeadStatusAsync(
+    string advisorId,
+    Guid leadId,
+    int leadStatusId,
+    string? notes)
+    {
+        var lead = await _context.Leads
+            .FirstOrDefaultAsync(x =>
+                x.LeadId == leadId &&
+                x.AdvisorId == advisorId);
+
+        if (lead == null)
+            return false;
+
+        lead.LeadStatusId = leadStatusId;
+        lead.Notes = notes;
+        lead.UpdatedAt = DateTime.UtcNow;
+
+        // Business rules
+        lead.IsConverted = leadStatusId == 5;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
 }

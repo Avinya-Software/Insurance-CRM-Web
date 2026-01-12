@@ -22,7 +22,7 @@ public class LeadFollowUpController : ControllerBase
         _followUpRepo = followUpRepo;
     }
 
-    /* ================= CREATE FOLLOW-UP ================= */
+    /*   CREATE FOLLOW-UP   */
 
     [HttpPost]
     public async Task<IActionResult> Create(
@@ -73,7 +73,7 @@ public class LeadFollowUpController : ControllerBase
         });
     }
 
-    /* ================= GET FOLLOW-UPS BY LEAD ================= */
+    /*   GET FOLLOW-UPS BY LEAD   */
 
     [HttpGet("by-lead/{leadId:guid}")]
     public async Task<IActionResult> GetByLeadId(Guid leadId)

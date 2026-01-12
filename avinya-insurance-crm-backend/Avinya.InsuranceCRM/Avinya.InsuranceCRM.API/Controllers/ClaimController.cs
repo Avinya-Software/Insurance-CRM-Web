@@ -23,7 +23,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _env = env;
         }
 
-        /* ================= CREATE / UPDATE CLAIM ================= */
+        /*   CREATE / UPDATE CLAIM   */
 
         [HttpPost]
         [Consumes("multipart/form-data")]
@@ -127,7 +127,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
 
-        /* ================= GET PAGED ================= */
+        /*   GET PAGED   */
 
         [HttpGet]
         public async Task<IActionResult> GetPaged(
@@ -212,7 +212,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
 
-        /* ================= DELETE CLAIM ================= */
+        /*   DELETE CLAIM   */
 
         [HttpDelete("{claimId:guid}")]
         public async Task<IActionResult> DeleteClaim(Guid claimId)
@@ -244,7 +244,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok("Claim deleted successfully");
         }
 
-        /* ================= DOCUMENT PREVIEW ================= */
+        /*   DOCUMENT PREVIEW   */
 
         [HttpGet("{claimId:guid}/documents/{documentId}/preview")]
         public IActionResult PreviewDocument(Guid claimId, string documentId)
@@ -273,7 +273,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             );
         }
 
-        /* ================= DOCUMENT DOWNLOAD ================= */
+        /*   DOCUMENT DOWNLOAD   */
 
         [HttpGet("{claimId:guid}/documents/{documentId}/download")]
         public IActionResult DownloadDocument(Guid claimId, string documentId)
@@ -302,7 +302,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             );
         }
 
-        /* ================= DELETE DOCUMENT ================= */
+        /*   DELETE DOCUMENT   */
 
         [HttpDelete("{claimId:guid}/documents/{documentId}")]
         public async Task<IActionResult> DeleteDocument(
@@ -355,7 +355,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok("Document deleted successfully");
         }
 
-        /* ================= HELPERS ================= */
+        /*   HELPERS   */
 
         private static string GetContentType(string path)
         {

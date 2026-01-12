@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  // baseURL: "https://localhost:7113/api",
-  baseURL: "https://uatinsuranceapi.avinyasoftware.com/api",
+  baseURL: "https://localhost:7113/api",
+  // baseURL: "https://uatinsuranceapi.avinyasoftware.com/api",
 });
 
 api.interceptors.request.use((config) => {

@@ -1,8 +1,11 @@
 import { useState, useRef } from "react";
-import { MoreVertical, X } from "lucide-react";
+import { MoreVertical, X, Check } from "lucide-react";
 import type { Lead } from "../../interfaces/lead.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteLead } from "../../hooks/lead/useDeleteLead";
+import { useUpdateLeadStatus } from "../../hooks/lead/useUpdateLeadStatus";
+import { useQuery } from "@tanstack/react-query";
+import { getLeadStatusesApi } from "../../api/lead.api";
 import TableSkeleton from "../common/TableSkeleton";
 
 /*   STATUS BADGE STYLES   */
@@ -18,8 +21,8 @@ const leadStatusStyles: Record<string, string> = {
 
 /*   TYPES   */
 
-const DROPDOWN_HEIGHT = 240;
-const DROPDOWN_WIDTH = 210;
+const DROPDOWN_HEIGHT = 280;
+const DROPDOWN_WIDTH = 230;
 
 interface LeadTableProps {
   data: Lead[];
@@ -42,10 +45,10 @@ const LeadTable = ({
   onCreateFollowUp,
   onViewFollowUps,
   onRowClick,
-  onAddCustomer,
 }: LeadTableProps) => {
   const [openLead, setOpenLead] = useState<Lead | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
 
   const [style, setStyle] = useState<{ top: number; left: number }>({
     top: 0,
@@ -53,9 +56,20 @@ const LeadTable = ({
   });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  useOutsideClick(dropdownRef, () => setOpenLead(null));
+  useOutsideClick(dropdownRef, () => {
+    setOpenLead(null);
+    setShowStatusMenu(false);
+  });
 
   const { mutate: deleteLead, isPending } = useDeleteLead();
+  const { mutate: updateStatus, isPending: updatingStatus } =
+    useUpdateLeadStatus();
+
+  /* 🔥 Fetch statuses */
+  const { data: statuses = [] } = useQuery({
+    queryKey: ["lead-statuses"],
+    queryFn: getLeadStatusesApi,
+  });
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -76,10 +90,12 @@ const LeadTable = ({
     });
 
     setOpenLead(lead);
+    setShowStatusMenu(false);
   };
 
   const handleAction = (cb: () => void) => {
     setOpenLead(null);
+    setShowStatusMenu(false);
     setTimeout(cb, 0);
   };
 
@@ -92,6 +108,23 @@ const LeadTable = ({
         setOpenLead(null);
       },
     });
+  };
+
+  const handleStatusChange = (statusId: number) => {
+    if (!openLead) return;
+
+    updateStatus(
+      {
+        leadId: openLead.leadId,
+        statusId,
+      },
+      {
+        onSuccess: () => {
+          setOpenLead(null);
+          setShowStatusMenu(false);
+        },
+      }
+    );
   };
 
   return (
@@ -110,17 +143,13 @@ const LeadTable = ({
           </tr>
         </thead>
 
-        {/*   BODY   */}
         {loading ? (
           <TableSkeleton rows={6} columns={8} />
         ) : (
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td
-                  colSpan={8}
-                  className="text-center py-12 text-slate-500"
-                >
+                <td colSpan={8} className="text-center py-12 text-slate-500">
                   No leads found
                 </td>
               </tr>
@@ -140,12 +169,10 @@ const LeadTable = ({
                   <Td>{lead.email}</Td>
                   <Td>{lead.mobile}</Td>
 
-                  {/* 🔥 STATUS BADGE */}
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        leadStatusStyles[lead.leadStatus] ||
-                        "bg-gray-100 text-gray-700 border-gray-200"
+                        leadStatusStyles[lead.leadStatus]
                       }`}
                     >
                       {lead.leadStatus}
@@ -155,9 +182,7 @@ const LeadTable = ({
                   <Td>{lead.leadSource}</Td>
 
                   <Td>
-                    {new Date(
-                      lead.createdAt
-                    ).toLocaleDateString()}
+                    {new Date(lead.createdAt).toLocaleDateString()}
                   </Td>
 
                   <Td className="text-left">
@@ -175,12 +200,12 @@ const LeadTable = ({
         )}
       </table>
 
-      {/*   DROPDOWN   */}
+      {/*   ACTION DROPDOWN   */}
       {openLead && (
         <div
           ref={dropdownRef}
           onClick={(e) => e.stopPropagation()}
-          className="fixed z-50 w-[210px] bg-white border rounded-lg shadow-lg overflow-hidden"
+          className="fixed z-50 w-[230px] bg-white border rounded-lg shadow-lg overflow-hidden"
           style={{ top: style.top, left: style.left }}
         >
           {openLead.leadStatus !== "Lost" &&
@@ -188,19 +213,8 @@ const LeadTable = ({
               <>
                 <MenuItem
                   label="Edit Lead"
-                  onClick={() =>
-                    handleAction(() => onEdit(openLead))
-                  }
+                  onClick={() => handleAction(() => onEdit(openLead))}
                 />
-
-                {/* <MenuItem
-                  label="Add Customer"
-                  onClick={() =>
-                    handleAction(() =>
-                      onAddCustomer?.(openLead)
-                    )
-                  }
-                /> */}
 
                 <MenuItem
                   label="Create Follow Up"
@@ -210,15 +224,18 @@ const LeadTable = ({
                     )
                   }
                 />
+
+                <MenuItem
+                  label="Change Status"
+                  onClick={() => setShowStatusMenu((p) => !p)}
+                />
               </>
             )}
 
           <MenuItem
             label="View Follow Ups"
             onClick={() =>
-              handleAction(() =>
-                onViewFollowUps?.(openLead)
-              )
+              handleAction(() => onViewFollowUps?.(openLead))
             }
           />
 
@@ -227,6 +244,27 @@ const LeadTable = ({
             danger
             onClick={() => setConfirmDelete(openLead)}
           />
+
+          {/* 🔥 STATUS SUBMENU */}
+          {showStatusMenu && (
+            <div className="border-t mt-1">
+              {statuses
+                .filter((s) => s.name !== openLead.leadStatus)
+                .map((status) => (
+                  <button
+                    key={status.id}
+                    onClick={() =>
+                      handleStatusChange(status.id)
+                    }
+                    disabled={updatingStatus}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2"
+                  >
+                    <Check size={14} />
+                    {status.name}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -238,9 +276,7 @@ const LeadTable = ({
               <h3 className="text-lg font-semibold">
                 Delete Lead
               </h3>
-              <button
-                onClick={() => setConfirmDelete(null)}
-              >
+              <button onClick={() => setConfirmDelete(null)}>
                 <X size={18} />
               </button>
             </div>
@@ -281,9 +317,7 @@ export default LeadTable;
 /*   HELPERS   */
 
 const Th = ({ children, className = "" }: any) => (
-  <th
-    className={`px-4 py-3 text-left font-semibold ${className}`}
-  >
+  <th className={`px-4 py-3 text-left font-semibold ${className}`}>
     {children}
   </th>
 );
@@ -309,9 +343,7 @@ const MenuItem = ({
       onClick();
     }}
     className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-100 ${
-      danger
-        ? "text-red-600 hover:bg-red-50"
-        : ""
+      danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
     {danger && <X size={14} />}

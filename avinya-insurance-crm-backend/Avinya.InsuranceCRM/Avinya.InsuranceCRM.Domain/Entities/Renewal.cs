@@ -12,6 +12,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         /* ================= TENANCY ================= */
 
         // 🔐 Enforces advisor-level isolation
+        [ValidateNever]
         public string AdvisorId { get; set; } = null!;
 
         /* ================= FOREIGN KEYS ================= */

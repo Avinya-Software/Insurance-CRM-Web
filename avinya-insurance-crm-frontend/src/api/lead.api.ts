@@ -49,3 +49,18 @@ export const deleteLeadApi = async (
   );
   return res.data;
 };
+export const updateLeadStatusApi = async (
+  leadId: string,
+  statusId: number,
+  notes?: string
+) => {
+  const res = await api.patch(
+    `/Lead/${leadId}/status/${statusId}`,
+    null,
+    {
+      params: notes ? { notes } : undefined,
+    }
+  );
+
+  return res.data;
+};

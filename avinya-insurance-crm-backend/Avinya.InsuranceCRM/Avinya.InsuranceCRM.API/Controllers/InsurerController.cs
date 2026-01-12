@@ -20,7 +20,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _repo = repo;
         }
 
-        /* ================= CREATE / UPDATE ================= */
+        /*   CREATE / UPDATE   */
 
         [HttpPost]
         public async Task<IActionResult> CreateOrUpdate(
@@ -83,7 +83,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok("Insurer created successfully");
         }
 
-        /* ================= SHOW PORTAL PASSWORD ================= */
+        /*   SHOW PORTAL PASSWORD   */
 
         [HttpGet("{id:guid}/portal-password")]
         public async Task<IActionResult> GetPortalPassword(Guid id)
@@ -104,7 +104,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
 
-        /* ================= PAGED LIST ================= */
+        /*   PAGED LIST   */
 
         [HttpGet]
         public async Task<IActionResult> GetPaged(
@@ -145,7 +145,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             });
         }
 
-        /* ================= DROPDOWN ================= */
+        /*   DROPDOWN   */
 
         [HttpGet("dropdown")]
         public async Task<IActionResult> GetDropdown()
@@ -164,7 +164,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             }));
         }
 
-        /* ================= DELETE ================= */
+        /*   DELETE   */
 
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)

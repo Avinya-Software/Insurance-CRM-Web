@@ -17,7 +17,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _context = context;
         }
 
-        // ---------------- CLAIM TYPE DROPDOWN ----------------
+        //   CLAIM TYPE DROPDOWN  
         [HttpGet("claim-types")]
         public async Task<IActionResult> GetClaimTypes()
         {
@@ -34,7 +34,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok(data);
         }
 
-        // ---------------- CLAIM STAGE DROPDOWN ----------------
+        //   CLAIM STAGE DROPDOWN  
         [HttpGet("claim-stages")]
         public async Task<IActionResult> GetClaimStages()
         {
@@ -51,7 +51,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return Ok(data);
         }
 
-        // ---------------- CLAIM HANDLER DROPDOWN ----------------
+        //   CLAIM HANDLER DROPDOWN  
         [HttpGet("claim-handlers")]
         public async Task<IActionResult> GetClaimHandlers()
         {
