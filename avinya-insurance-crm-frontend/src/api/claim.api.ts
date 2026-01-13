@@ -90,3 +90,21 @@ export const deleteClaimApi = async (
   );
   return res.data;
 };
+
+/*   UPDATE CLAIM STAGE   */
+
+export const updateClaimStageApi = async (
+  claimId: string,
+  stageId: number,
+  notes?: string
+) => {
+  const res = await api.patch(
+    `/claim/${claimId}/stage/${stageId}`,
+    null,
+    {
+      params: notes ? { notes } : undefined,
+    }
+  );
+
+  return res.data;
+};

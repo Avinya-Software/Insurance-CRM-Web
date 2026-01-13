@@ -1,4 +1,5 @@
 ﻿using Avinya.InsuranceCRM.Domain.Entities;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
     {
         Task AddAsync(LeadFollowUp followUp);
         Task<List<LeadFollowUp>> GetByLeadIdAsync(Guid leadId);
+        Task<IDbContextTransaction> BeginTransactionAsync();
 
     }
 }

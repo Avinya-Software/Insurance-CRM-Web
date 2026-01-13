@@ -9,6 +9,7 @@ import { getAdvisorIdFromToken } from "../../utils/jwt";
 import { useCampaignTypeDropdown } from "../../hooks/campaigns/useCampaignTypeDropdown";
 import { useUpdateCampaign } from "../../hooks/campaigns/useUpdateCampaign";
 import MultiSelectDropdown from "../common/MultiSelectDropdown";
+import Spinner from "../common/Spinner";
 
 interface Props {
   open: boolean;
@@ -576,22 +577,29 @@ const CampaignUpsertSheet = ({
         </div>
 
         {/* FOOTER */}
-        <div className="px-6 py-4 border-t flex gap-3">
-          <button
-            className="flex-1 border rounded-lg py-2"
-            onClick={onClose}
-            disabled={isPending || updating}
-          >
-            Cancel
-          </button>
-          <button
-            disabled={isPending || updating}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 disabled:opacity-50"
-            onClick={handleSubmit}
-          >
-            {isPending || updating ? "Saving..." : "Save Campaign"}
-          </button>
-        </div>
+       <div className="px-6 py-4 border-t flex gap-3">
+        <button
+          className="flex-1 border rounded-lg py-2"
+          onClick={onClose}
+          disabled={isPending || updating}
+        >
+          Cancel
+        </button>
+
+        <button
+          disabled={isPending || updating}
+          className="flex-1 bg-blue-600 text-white rounded-lg py-2 disabled:opacity-50"
+          onClick={handleSubmit}
+        >
+          <span className="flex items-center justify-center gap-2">
+            {(isPending || updating) && <Spinner />}
+            <span>
+              {isPending || updating ? "Saving..." : "Save Campaign"}
+            </span>
+          </span>
+        </button>
+      </div>
+
       </div>
     </>
   );

@@ -301,6 +301,29 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 Path.GetFileName(filePath)
             );
         }
+        [HttpPatch("{claimId:guid}/stage/{stageId:int}")]
+        public async Task<IActionResult> UpdateStage(
+        Guid claimId,
+        int stageId,
+        [FromQuery] string? notes)
+        {
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(advisorId))
+                return Unauthorized("Advisor not found in token");
+
+            var updated = await _claimRepository.UpdateClaimStageAsync(
+                advisorId,
+                claimId,
+                stageId,
+                notes
+            );
+
+            if (!updated)
+                return NotFound("Claim not found");
+
+            return Ok("Claim stage updated successfully");
+        }
 
         /*   DELETE DOCUMENT   */
 

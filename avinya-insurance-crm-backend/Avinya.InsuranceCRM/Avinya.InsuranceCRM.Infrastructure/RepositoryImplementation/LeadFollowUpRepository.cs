@@ -1,6 +1,7 @@
 ﻿using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,5 +31,10 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 .OrderByDescending(x => x.FollowUpDate)
                 .ToListAsync();
         }
+        public Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return _context.Database.BeginTransactionAsync();
+        }
+
     }
 }

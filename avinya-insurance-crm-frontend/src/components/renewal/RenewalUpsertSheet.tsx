@@ -46,64 +46,57 @@ const RenewalUpsertSheet = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isFromPolicy = !!renewal?.policyId;
-
+ 
   /*   API HOOKS   */
 
   const { mutateAsync, isPending } = useUpsertRenewal();
   const { data: customers, isLoading: cLoading } = useCustomerDropdown();
-  const { data: policies, isLoading: pLoading } = usePolicyDropdown(form.customerId || undefined);
+const shouldLoadPolicies = !!form.customerId;
+
+const { data: policies } = usePolicyDropdown(
+  shouldLoadPolicies ? form.customerId : undefined
+);
   const { data: statuses, isLoading: sLoading } = useRenewalStatuses();
 
-  const loadingDropdowns = cLoading || pLoading || sLoading;
+  const loadingDropdowns = cLoading  || sLoading;
+  const selectedCustomer =
+  customers?.find(c => c.customerId === form.customerId);
 
   /*   PREFILL   */
 
-useEffect(() => {
+  useEffect(() => {
   if (!open) {
     setForm(initialForm);
     setErrors({});
     return;
   }
 
-  if (loadingDropdowns) return;
-
-  if (renewal) {
+  // Prefill ONLY when editing / coming from policy
+  if (renewal && statuses?.length) {
     const mappedStatusId =
-  statuses?.find(
-    (s: any) =>
-      s.name?.toLowerCase() ===
-      renewal.status?.toLowerCase()
-  )?.id ?? 0;
+      statuses.find(
+        (s: any) =>
+          s.name?.toLowerCase() ===
+          renewal.status?.toLowerCase()
+      )?.id ?? 0;
 
-
-    const selectedPolicy = policies?.find(
-      (p: any) => p.id === renewal.policyId
-    );
-
-    setForm({
+    setForm((prev) => ({
+      ...prev,
       renewalId: renewal.renewalId ?? null,
-      customerId: renewal.customerId || "",
-      policyId: renewal.policyId || "",
+      customerId: renewal.customerId ?? "",
+      policyId: renewal.policyId ?? "",
       renewalStatusId: mappedStatusId,
-      renewalDate:
-        renewal.renewalDate
-          ? renewal.renewalDate.split("T")[0]
-          : selectedPolicy?.renewalDate
-          ? selectedPolicy.renewalDate.split("T")[0]
-          : "",
-      renewalPremium:
-        renewal.renewalPremium ??
-        selectedPolicy?.premiumGross ??
-        renewal.premiumGross ??
-        0,
+      renewalDate: renewal.renewalDate
+        ? renewal.renewalDate.split("T")[0]
+        : "",
+      renewalPremium: renewal.renewalPremium ?? 0,
       reminderDaysInput: renewal.reminderDatesJson
         ? JSON.parse(renewal.reminderDatesJson).join(",")
         : "90,60,30,15,7,1",
-    });
-  } else {
-    setForm(initialForm);
+    }));
   }
-}, [open, renewal, statuses, policies, loadingDropdowns]);
+}, [open, renewal, statuses]);
+
   /*   VALIDATION   */
 
   const parseReminderDays = (): number[] | null => {
@@ -241,36 +234,33 @@ useEffect(() => {
               <div className={isFromPolicy ? "opacity-50 pointer-events-none" : ""}>
                 <SearchableComboBox
                   label="Customer"
+                  required
                   items={(customers || []).map((c) => ({
                     value: c.customerId,
                     label: c.fullName,
                   }))}
                   value={form.customerId}
+                  error={errors.customerId}
                   placeholder="Select customer"
-                  onSelect={(item) =>
+                  onSelect={(item) => {
                     setForm({
                       ...form,
                       customerId: item?.value || "",
-                    })
-                  }
+                    });
+                  }}
                 />
               </div>
 
-              {errors.customerId && (
-                <p className="text-sm text-red-500 mt-1">{errors.customerId}</p>
-              )}
-
-
               <Select
-                  label="Policy"
-                  required
-                  value={form.policyId}
-                  error={errors.policyId}
-                  options={policies || []}
-                  valueKey="id"
-                  labelKey="policyNumber"
-                  disabled={isFromPolicy}
-                  onChange={(v) => {
+                label="Policy"
+                required
+                value={form.policyId}
+                error={errors.policyId}
+                options={policies || []}
+                valueKey="id"
+                labelKey="policyNumber"
+                disabled={isFromPolicy}
+                onChange={(v) => {
                   const selectedPolicy = policies?.find(
                     (p: any) => p.id === v
                   );
@@ -284,8 +274,9 @@ useEffect(() => {
                     renewalPremium: selectedPolicy?.premiumGross ?? 0,
                   });
                 }}
-                />
-             <Select
+              />
+
+              <Select
                 label="Renewal Status"
                 required
                 value={form.renewalStatusId}
@@ -300,6 +291,7 @@ useEffect(() => {
                   })
                 }
               />
+
               <Input
                 type="date"
                 label="Renewal Date"
@@ -346,9 +338,11 @@ useEffect(() => {
 
           <button
             disabled={isPending || loadingDropdowns}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2"
+            className="flex-1 bg-blue-600 text-white rounded-lg py-2
+                      flex items-center justify-center gap-2"
             onClick={handleSave}
           >
+            {isPending && <Spinner />}
             {isPending ? "Saving..." : "Save"}
           </button>
         </div>

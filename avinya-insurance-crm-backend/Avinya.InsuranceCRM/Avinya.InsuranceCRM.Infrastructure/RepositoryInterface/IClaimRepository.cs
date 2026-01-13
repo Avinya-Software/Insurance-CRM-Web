@@ -45,5 +45,12 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
             string advisorId,
             Guid claimId
         );
+
+        Task<bool> UpdateClaimStageAsync(
+    string advisorId,
+            Guid claimId,
+            int claimStageId,
+            string? notes
+        );
     }
 }

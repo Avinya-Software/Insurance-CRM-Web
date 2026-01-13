@@ -1,7 +1,10 @@
 import { useState, useRef } from "react";
-import { MoreVertical, X } from "lucide-react";
+import { MoreVertical, X, Check } from "lucide-react";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteClaim } from "../../hooks/claim/useDeleteClaim";
+import { useUpdateClaimStage } from "../../hooks/claim/useUpdateClaimStage";
+import { useQuery } from "@tanstack/react-query";
+import { getClaimStagesApi } from "../../api/claim-master.api";
 import TableSkeleton from "../common/TableSkeleton";
 
 /*   BADGE STYLES   */
@@ -63,22 +66,47 @@ interface Props {
   onEdit: (claim: Claim) => void;
 }
 
-const DROPDOWN_HEIGHT = 120;
-const DROPDOWN_WIDTH = 180;
+const DROPDOWN_HEIGHT = 220;
+const DROPDOWN_WIDTH = 220;
 
 /*   COMPONENT   */
 
-const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
-  const [openClaim, setOpenClaim] = useState<Claim | null>(null);
-  const [style, setStyle] = useState({ top: 0, left: 0 });
+const ClaimTable = ({
+  data,
+  loading = false,
+  onEdit,
+}: Props) => {
+  const [openClaim, setOpenClaim] =
+    useState<Claim | null>(null);
   const [confirmDelete, setConfirmDelete] =
     useState<Claim | null>(null);
+  const [showStageMenu, setShowStageMenu] =
+    useState(false);
+
+  const [style, setStyle] = useState({
+    top: 0,
+    left: 0,
+  });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  useOutsideClick(dropdownRef, () => setOpenClaim(null));
+  useOutsideClick(dropdownRef, () => {
+    setOpenClaim(null);
+    setShowStageMenu(false);
+  });
 
   const { mutate: deleteClaim, isPending } =
     useDeleteClaim();
+
+  const {
+    mutate: updateStage,
+    isPending: updatingStage,
+  } = useUpdateClaimStage();
+
+  /* 🔥 Fetch claim stages */
+  const { data: stages = [] } = useQuery({
+    queryKey: ["claim-stages"],
+    queryFn: getClaimStagesApi,
+  });
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -86,13 +114,20 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
   ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    const spaceBelow = viewportHeight - rect.bottom;
+    const openUpwards = spaceBelow < DROPDOWN_HEIGHT;
 
     setStyle({
-      top: rect.bottom + 6,
+      top: openUpwards
+        ? rect.top - DROPDOWN_HEIGHT - 6
+        : rect.bottom + 6,
       left: rect.right - DROPDOWN_WIDTH,
     });
 
     setOpenClaim(claim);
+    setShowStageMenu(false);
   };
 
   const handleDelete = () => {
@@ -104,6 +139,25 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
         setOpenClaim(null);
       },
     });
+  };
+
+  const handleStageChange = (
+    claimStageId: number
+  ) => {
+    if (!openClaim) return;
+
+    updateStage(
+      {
+        claimId: openClaim.claimId,
+        stageId: claimStageId,
+      },
+      {
+        onSuccess: () => {
+          setOpenClaim(null);
+          setShowStageMenu(false);
+        },
+      }
+    );
   };
 
   return (
@@ -122,7 +176,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
             <Th>Amount</Th>
             <Th>Status</Th>
             <Th>Created</Th>
-            <Th className="text-right">Actions</Th>
+            <Th className="text-left">Actions</Th>
           </tr>
         </thead>
 
@@ -156,7 +210,6 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                   <Td>{claim.insurer.insurerName}</Td>
                   <Td>{claim.product.productName}</Td>
 
-                  {/* 🔥 CLAIM TYPE BADGE */}
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -168,7 +221,6 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                     </span>
                   </Td>
 
-                  {/* 🔥 CLAIM STAGE BADGE */}
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -207,11 +259,12 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
         )}
       </table>
 
-      {/*  DROPDOWN  */}
+      {/*   ACTION DROPDOWN   */}
       {openClaim && (
         <div
           ref={dropdownRef}
-          className="fixed bg-white border text-left rounded shadow z-50 min-w-[160px]"
+          onClick={(e) => e.stopPropagation()}
+          className="fixed z-50 w-[220px] bg-white border rounded-lg shadow-lg overflow-hidden"
           style={style}
         >
           <MenuItem
@@ -223,16 +276,48 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
           />
 
           <MenuItem
+            label="Change Stage"
+            onClick={() =>
+              setShowStageMenu((p) => !p)
+            }
+          />
+
+          <MenuItem
             label="Delete Claim"
             danger
-            onClick={() => {
-              setConfirmDelete(openClaim);
-            }}
+            onClick={() => setConfirmDelete(openClaim)}
           />
+
+          {/* 🔥 STAGE SUBMENU */}
+          {showStageMenu && (
+            <div className="border-t mt-1">
+              {stages
+                .filter(
+                  (s: any) =>
+                    s.stageName !==
+                    openClaim.claimStage
+                )
+                .map((stage: any) => (
+                  <button
+                    key={stage.claimStageId}
+                    onClick={() =>
+                      handleStageChange(
+                        stage.claimStageId
+                      )
+                    }
+                    disabled={updatingStage}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2"
+                  >
+                    <Check size={14} />
+                    {stage.stageName}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/*  CONFIRM DELETE  */}
+      {/*   CONFIRM DELETE   */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[400px] p-6 shadow-lg">
@@ -241,14 +326,17 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                 Delete Claim
               </h3>
               <button
-                onClick={() => setConfirmDelete(null)}
+                onClick={() =>
+                  setConfirmDelete(null)
+                }
               >
                 <X size={18} />
               </button>
             </div>
 
             <p className="text-sm text-gray-600 mb-6">
-              Are you sure you want to delete this claim?
+              Are you sure you want to delete this
+              claim?
               <br />
               <span className="text-red-600 font-medium">
                 This action cannot be undone.
@@ -257,7 +345,9 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setConfirmDelete(null)}
+                onClick={() =>
+                  setConfirmDelete(null)
+                }
                 className="px-4 py-2 border rounded hover:bg-gray-100"
               >
                 Cancel
@@ -290,10 +380,8 @@ const Th = ({ children }: any) => (
   </th>
 );
 
-const Td = ({ children, className = "" }: any) => (
-  <td className={`px-4 py-3 ${className}`}>
-    {children}
-  </td>
+const Td = ({ children }: any) => (
+  <td className="px-4 py-3">{children}</td>
 );
 
 const MenuItem = ({
@@ -302,11 +390,12 @@ const MenuItem = ({
   danger = false,
 }: any) => (
   <button
-    onClick={onClick}
-    className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${
-      danger
-        ? "text-red-600 hover:bg-red-50"
-        : ""
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-100 ${
+      danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
     {danger && <X size={14} />}

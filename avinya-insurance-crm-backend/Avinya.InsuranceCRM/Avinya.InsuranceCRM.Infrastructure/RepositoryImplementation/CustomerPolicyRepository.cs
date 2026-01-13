@@ -16,8 +16,8 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
         /* ================= UPSERT ================= */
 
         public async Task<CustomerPolicy> UpsertAsync(
-            CustomerPolicy policy,
-            string advisorId)
+     CustomerPolicy policy,
+     string advisorId)
         {
             var entity = await _context.CustomerPolicies
                 .FirstOrDefaultAsync(x =>
@@ -25,9 +25,13 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                     x.AdvisorId == advisorId
                 );
 
+            bool isNewPolicy = false;
+
             /* ================= CREATE ================= */
             if (entity == null)
             {
+                isNewPolicy = true;
+
                 entity = new CustomerPolicy
                 {
                     PolicyId = policy.PolicyId == Guid.Empty
@@ -66,6 +70,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             entity.RenewalDate = policy.RenewalDate;
             entity.BrokerCode = policy.BrokerCode;
             entity.PolicyCode = policy.PolicyCode;
+            entity.PaymentDone = policy.PaymentDone;
 
             /* ================= DOCUMENT UPDATE (APPEND MODE) ================= */
             if (!string.IsNullOrWhiteSpace(policy.PolicyDocumentRef))
@@ -78,22 +83,48 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 {
                     var existingFiles = entity.PolicyDocumentRef
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(f => f.Trim())
-                        .ToList();
+                        .Select(f => f.Trim());
 
                     var newFiles = policy.PolicyDocumentRef
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(f => f.Trim())
-                        .ToList();
+                        .Select(f => f.Trim());
 
-                    var allFiles = existingFiles.Union(newFiles).ToList();
-                    entity.PolicyDocumentRef = string.Join(",", allFiles);
+                    entity.PolicyDocumentRef =
+                        string.Join(",", existingFiles.Union(newFiles));
+                }
+            }
+
+            /* ================= LEAD CONVERSION LOGIC ================= */
+            if (isNewPolicy)
+            {
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(x =>
+                        x.CustomerId == policy.CustomerId &&
+                        x.AdvisorId == advisorId
+                    );
+
+                if (customer?.LeadId != null)
+                {
+                    var lead = await _context.Leads
+                        .FirstOrDefaultAsync(x =>
+                            x.LeadId == customer.LeadId &&
+                            x.AdvisorId == advisorId
+                        );
+
+                    if (lead != null && !lead.IsConverted)
+                    {
+                        lead.LeadStatusId = 5; // ✅ Converted
+                        lead.IsConverted = true;
+                        lead.CustomerId = customer.CustomerId;
+                        lead.UpdatedAt = DateTime.UtcNow;
+                    }
                 }
             }
 
             await _context.SaveChangesAsync();
             return entity;
         }
+
 
         /* ================= GET POLICIES ================= */
 
@@ -160,6 +191,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                     x.CustomerId,
                     x.InsurerId,
                     x.ProductId,
+                    x.PaymentDone,
 
                     PolicyStatusName = x.PolicyStatus.StatusName,
                     PolicyTypeName = x.PolicyType.TypeName,

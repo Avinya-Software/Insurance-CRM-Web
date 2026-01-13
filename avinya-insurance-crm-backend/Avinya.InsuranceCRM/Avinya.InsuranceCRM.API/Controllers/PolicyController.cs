@@ -88,7 +88,9 @@ namespace Avinya.InsuranceCRM.API.Controllers
                 PaymentDueDate = request.PaymentDueDate,
                 RenewalDate = request.RenewalDate,
                 BrokerCode = request.BrokerCode,
-                PolicyCode = request.PolicyCode
+                PolicyCode = request.PolicyCode,
+                PaymentDone = request.PaymentDone
+
             };
 
             /*   POLICY DOCUMENT UPLOAD   */

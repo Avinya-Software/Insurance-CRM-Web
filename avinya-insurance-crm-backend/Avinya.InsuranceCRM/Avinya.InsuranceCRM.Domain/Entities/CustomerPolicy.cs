@@ -38,8 +38,8 @@ public class CustomerPolicy
     // ---------------- FINANCIAL ----------------
     public decimal PremiumNet { get; set; }
     public decimal PremiumGross { get; set; }
-
     public string? PaymentMode { get; set; }
+    public bool PaymentDone { get; set; } = false;
     public DateTime? PaymentDueDate { get; set; }
     public DateTime? RenewalDate { get; set; }
 

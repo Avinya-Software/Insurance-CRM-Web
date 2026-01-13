@@ -5,6 +5,7 @@ import {
   upsertInsurerApi,
   getInsurerPortalPasswordApi,
 } from "../../api/insurer.api";
+import Spinner from "../common/Spinner";
 
 interface Props {
   open: boolean;
@@ -306,7 +307,10 @@ const InsurerUpsertSheet = ({
             className="flex-1 bg-blue-600 text-white rounded-lg py-2"
             onClick={handleSave}
           >
-            {saving ? "Saving..." : "Save"}
+            <span className="flex items-center justify-center gap-2">
+              {saving && <Spinner />}
+              <span>{saving ? "Saving..." : "Save"}</span>
+            </span>
           </button>
         </div>
       </div>

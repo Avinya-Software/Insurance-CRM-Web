@@ -26,53 +26,65 @@ public class LeadFollowUpController : ControllerBase
 
     [HttpPost]
     public async Task<IActionResult> Create(
-        CreateLeadFollowUpRequest request)
+    CreateLeadFollowUpRequest request)
     {
         var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrEmpty(advisorId))
             return Unauthorized("Advisor not found in token");
 
-        /* 1️⃣ Validate Lead (Advisor-scoped) */
-        var lead = await _leadRepo.GetByIdAsync(
-            advisorId,
-            request.LeadId
-        );
+        /* 1️⃣ Validate Lead (Advisor scoped) */
+        var lead = await _leadRepo.GetByIdAsync(advisorId, request.LeadId);
 
         if (lead == null)
             return NotFound("Lead not found");
 
-        /* ❌ Optional business rule */
+        /* ❌ Business rule */
         if (lead.LeadStatusId == 5 || lead.LeadStatusId == 6)
-            return BadRequest("Follow-up not allowed for Converted/Lost leads");
+            return BadRequest("Follow-up not allowed for Converted or Lost leads");
 
-        /* 2️⃣ Create Follow-Up */
-        var followUp = new LeadFollowUp
+        /* 2️⃣ Transaction (important) */
+        using var transaction = await _followUpRepo.BeginTransactionAsync();
+
+        try
         {
-            FollowUpId = Guid.NewGuid(),
-            LeadId = request.LeadId,
-            FollowUpDate = request.FollowUpDate,
-            NextFollowUpDate = request.NextFollowUpDate,
-            Remark = request.Remark,
-            CreatedBy = Guid.Parse(advisorId),
-            CreatedAt = DateTime.UtcNow
-        };
+            /* 3️⃣ Create Follow-Up */
+            var followUp = new LeadFollowUp
+            {
+                FollowUpId = Guid.NewGuid(),
+                LeadId = request.LeadId,
+                FollowUpDate = request.FollowUpDate,
+                NextFollowUpDate = request.NextFollowUpDate,
+                Remark = request.Remark,
+                CreatedBy = Guid.Parse(advisorId),
+                CreatedAt = DateTime.UtcNow
+            };
 
-        await _followUpRepo.AddAsync(followUp);
+            await _followUpRepo.AddAsync(followUp);
 
-        /* 3️⃣ Update Lead Status → Follow Up (4) */
-        lead.LeadStatusId = 4;
-        lead.UpdatedAt = DateTime.UtcNow;
+            /* 4️⃣ Update Lead Status → Follow Up */
+            if (lead.LeadStatusId != 4) // avoid unnecessary update
+            {
+                lead.LeadStatusId = 4; // Follow Up
+                lead.UpdatedAt = DateTime.UtcNow;
 
-        await _leadRepo.UpdateAsync(lead);
+                await _leadRepo.UpdateAsync(lead);
+            }
 
-        return Ok(new
+            await transaction.CommitAsync();
+
+            return Ok(new
+            {
+                Message = "Follow-up created successfully",
+                FollowUpId = followUp.FollowUpId
+            });
+        }
+        catch
         {
-            Message = "Follow-up created successfully",
-            FollowUpId = followUp.FollowUpId
-        });
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
-
     /*   GET FOLLOW-UPS BY LEAD   */
 
     [HttpGet("by-lead/{leadId:guid}")]

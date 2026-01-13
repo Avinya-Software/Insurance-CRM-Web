@@ -13,6 +13,7 @@ export interface Policy {
   insurerName?:string;
   productName?:string;
   policyStatusName?:string;
+  paymentDone: boolean;
   
   startDate: string;
   endDate: string;

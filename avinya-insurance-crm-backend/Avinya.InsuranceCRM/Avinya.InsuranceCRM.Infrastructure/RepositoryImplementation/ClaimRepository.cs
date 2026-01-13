@@ -167,5 +167,42 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context.Claims.Remove(claim);
             await _context.SaveChangesAsync();
         }
+        public async Task<bool> UpdateClaimStageAsync(
+    string advisorId,
+    Guid claimId,
+    int claimStageId,
+    string? notes)
+        {
+            var claim = await _context.Claims
+                .FirstOrDefaultAsync(c =>
+                    c.ClaimId == claimId &&
+                    c.AdvisorId == advisorId);
+
+            if (claim == null)
+                return false;
+
+            claim.ClaimStageId = claimStageId;
+
+            if (!string.IsNullOrWhiteSpace(notes))
+                claim.Notes = notes;
+
+            // Optional: auto status mapping
+            claim.Status = claimStageId switch
+            {
+                1 => "Open",        
+                2 => "Open",       
+                3 => "In Review",  
+                4 => "Approved",
+                5 => "Rejected",
+                6 => "Closed",      
+                _ => claim.Status
+            };
+
+            claim.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
     }
 }

@@ -6,6 +6,7 @@ import { useLeadStatuses } from "../../hooks/lead/useLeadStatuses";
 import { useLeadSources } from "../../hooks/lead/useLeadSources";
 import { getCustomerDropdownApi } from "../../api/customer.api";
 import SearchableComboBox from "../common/SearchableComboBox";
+import Spinner from "../common/Spinner";
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -300,12 +301,15 @@ const LeadUpsertSheet = ({
           >
             Cancel
           </button>
-          <button
+         <button
             disabled={isPending}
             className="flex-1 bg-blue-600 text-white rounded-lg py-2"
             onClick={handleSave}
           >
-            {isPending ? "Saving..." : "Save"}
+            <span className="flex items-center justify-center gap-2">
+              {isPending && <Spinner/>}
+              <span>{isPending ? "Saving..." : "Save"}</span>
+            </span>
           </button>
         </div>
       </div>

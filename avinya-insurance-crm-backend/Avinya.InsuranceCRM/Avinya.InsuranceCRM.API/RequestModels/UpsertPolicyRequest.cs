@@ -35,6 +35,7 @@ public class UpsertPolicyRequest
     public string? PolicyDocumentRef { get; set; }
     public string? BrokerCode { get; set; }
     public string? PolicyCode { get; set; }
+    public bool PaymentDone { get; set; } = false;
     public List<IFormFile>? PolicyDocuments { get; set; }
 
 }

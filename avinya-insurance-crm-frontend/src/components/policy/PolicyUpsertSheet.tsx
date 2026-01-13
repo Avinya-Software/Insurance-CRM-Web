@@ -66,6 +66,7 @@ const PolicyUpsertSheet = ({
     renewalDate: "",
     brokerCode: "",
     policyCode: "",
+    paymentDone: false,
   };
 
   const [form, setForm] = useState(initialForm);
@@ -114,6 +115,7 @@ const PolicyUpsertSheet = ({
           : "",
         brokerCode: policy.brokerCode ?? "",
         policyCode: policy.policyCode ?? "",
+        paymentDone: policy.paymentDone ?? false,
       });
 
       setExistingDocuments(
@@ -277,14 +279,15 @@ const PolicyUpsertSheet = ({
                 }
               />
 
-
-             <SearchableComboBox
-             label="Insurer"
-                items={insurers.map((i) => ({
+              <SearchableComboBox
+                label="Insurer"
+                required
+                items={(insurers || []).map((i) => ({
                   value: i.insurerId,
                   label: i.insurerName,
                 }))}
                 value={form.insurerId}
+                error={errors.insurerId}
                 placeholder="Select insurer"
                 onSelect={(item) =>
                   setForm({
@@ -295,17 +298,15 @@ const PolicyUpsertSheet = ({
                 }
               />
 
-              {errors.insurerId && (
-                <p className="text-sm text-red-500 mt-1">{errors.insurerId}</p>
-              )}
-
               <SearchableComboBox
                 label="Product"
-                items={products.map((p) => ({
+                required
+                items={(products || []).map((p) => ({
                   value: p.productId,
                   label: p.productName,
                 }))}
                 value={form.productId}
+                error={errors.productId}
                 placeholder={
                   form.insurerId ? "Select product" : "Select insurer first"
                 }
@@ -317,9 +318,6 @@ const PolicyUpsertSheet = ({
                 }
               />
 
-              {errors.productId && (
-                <p className="text-sm text-red-500 mt-1">{errors.productId}</p>
-              )}
               <Select
                 label="Policy Type"
                 required
@@ -410,15 +408,38 @@ const PolicyUpsertSheet = ({
                 onChange={(v) => setForm({ ...form, paymentMode: v })}
               />
 
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="checkbox"
+                  checked={form.paymentDone}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      paymentDone: e.target.checked,
+                      paymentDueDate: e.target.checked ? "" : form.paymentDueDate, // ✅ clear
+                    })
+                  }
+                  className="h-4 w-4"
+                />
+                <label className="text-sm">
+                  Payment Completed
+                </label>
+              </div>
+
+
+             {!form.paymentDone && (
               <Input
                 type="date"
                 label="Payment Due Date"
                 value={form.paymentDueDate}
                 error={errors.paymentDueDate}
                 min={form.startDate}
-                onChange={(v) => setForm({ ...form, paymentDueDate: v })}
+                onChange={(v) =>
+                  setForm({ ...form, paymentDueDate: v })
+                }
               />
-
+            )}
+            
               <Input
                 type="date"
                 label="Renewal Date"

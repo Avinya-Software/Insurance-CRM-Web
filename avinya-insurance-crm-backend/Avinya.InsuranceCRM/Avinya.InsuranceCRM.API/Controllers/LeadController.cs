@@ -249,5 +249,4 @@ public class LeadController : ControllerBase
 
         return Ok("Lead status updated successfully");
     }
-
 }
