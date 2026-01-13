@@ -296,5 +296,37 @@ Avinya Insurance CRM
 
         await SendEmailAsync(advisorEmail, subject, body);
     }
+    public async Task SendRenewalReminderToAdvisorAsync(
+    string advisorEmail,
+    string customerName,
+    string policyNumber,
+    DateTime renewalDate,
+    int daysBefore,
+    decimal premium)
+    {
+        if (string.IsNullOrWhiteSpace(advisorEmail))
+            return;
+
+        var subject = $"Renewal Reminder – {daysBefore} days left | Policy {policyNumber}";
+
+        var body = $@"
+Hello Advisor,
+
+This is a reminder that a customer's policy is due for renewal.
+
+Customer Name: {customerName}
+Policy Number: {policyNumber}
+Renewal Date: {renewalDate:dd MMM yyyy}
+Premium Amount: ₹{premium:N2}
+Days Remaining: {daysBefore}
+
+Please follow up with the customer to ensure timely renewal.
+
+Regards,
+Avinya Insurance CRM
+";
+
+        await SendEmailAsync(advisorEmail, subject, body);
+    }
 
 }

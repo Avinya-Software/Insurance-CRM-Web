@@ -17,7 +17,8 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             _scopeFactory = scopeFactory;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(
+            CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -36,6 +37,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
 
                 try
                 {
+                    // ⏱ Run once every 24 hours
                     await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
                 }
                 catch (OperationCanceledException)
@@ -45,7 +47,8 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             }
         }
 
-        private async Task ProcessPayments(CancellationToken stoppingToken)
+        private async Task ProcessPayments(
+            CancellationToken stoppingToken)
         {
             using var scope = _scopeFactory.CreateScope();
 
@@ -56,45 +59,65 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             var today = DateTime.UtcNow.Date;
             var tomorrow = today.AddDays(1);
 
-            // 🔔 T-1 Reminder
+            /* ============================================================
+             * 1️⃣ PAYMENT REMINDER (T-1) – SEND ONLY ONCE
+             * ============================================================ */
+
             var reminderPolicies = await db.CustomerPolicies
                 .Include(p => p.Customer)
                 .Where(p =>
                     !p.PaymentDone &&
                     p.PaymentDueDate.HasValue &&
                     p.PaymentDueDate.Value.Date == tomorrow &&
-                    p.PolicyStatusId != 3
+                    p.PolicyStatusId != 3 // Not lapsed
                 )
                 .ToListAsync(stoppingToken);
 
             foreach (var policy in reminderPolicies)
             {
-                // Customer
+                if (stoppingToken.IsCancellationRequested)
+                    return;
+
+                // ❌ Already reminded
+                if (policy.HasPaymentReminderBeenSent("T-1"))
+                    continue;
+
+                // 📧 CUSTOMER
                 if (!string.IsNullOrWhiteSpace(policy.Customer.Email))
                 {
-                    await emailService.SendPolicyPaymentReminderToCustomerAsync(
-                        policy.Customer.Email,
-                        policy.PolicyNumber,
-                        policy.PaymentDueDate!.Value,
-                        policy.PremiumGross
-                    );
+                    await emailService
+                        .SendPolicyPaymentReminderToCustomerAsync(
+                            policy.Customer.Email,
+                            policy.PolicyNumber,
+                            policy.PaymentDueDate!.Value,
+                            policy.PremiumGross
+                        );
                 }
 
-                // Advisor
-                var advisor = await userManager.FindByIdAsync(policy.Customer.AdvisorId);
+                // 📧 ADVISOR
+                var advisor = await userManager
+                    .FindByIdAsync(policy.Customer.AdvisorId);
+
                 if (!string.IsNullOrWhiteSpace(advisor?.Email))
                 {
-                    await emailService.SendPolicyPaymentReminderToAdvisorAsync(
-                        advisor.Email,
-                        policy.PolicyNumber,
-                        policy.Customer.FullName,
-                        policy.PaymentDueDate!.Value,
-                        policy.PremiumGross
-                    );
+                    await emailService
+                        .SendPolicyPaymentReminderToAdvisorAsync(
+                            advisor.Email,
+                            policy.PolicyNumber,
+                            policy.Customer.FullName,
+                            policy.PaymentDueDate!.Value,
+                            policy.PremiumGross
+                        );
                 }
+
+                // ✅ LOG REMINDER
+                policy.AddPaymentReminderLog("T-1");
             }
 
-            // 🔴 Auto lapse
+            /* ============================================================
+             * 2️⃣ AUTO LAPSE (PAYMENT OVERDUE)
+             * ============================================================ */
+
             var lapsedPolicies = await db.CustomerPolicies
                 .Where(p =>
                     !p.PaymentDone &&
@@ -106,7 +129,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
 
             foreach (var policy in lapsedPolicies)
             {
-                policy.PolicyStatusId = 3;
+                policy.PolicyStatusId = 3; // 🔴 Lapsed
                 policy.UpdatedAt = DateTime.UtcNow;
             }
 

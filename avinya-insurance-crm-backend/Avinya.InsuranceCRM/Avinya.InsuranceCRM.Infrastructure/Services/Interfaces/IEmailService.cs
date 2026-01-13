@@ -55,6 +55,12 @@ namespace Avinya.InsuranceCRM.Infrastructure.Services.Interfaces
             DateTime renewalDate,
             decimal premium
         );
-
+        Task SendRenewalReminderToAdvisorAsync(
+       string advisorEmail,
+       string customerName,
+       string policyNumber,
+       DateTime renewalDate,
+       int daysBefore,
+       decimal premium);
     }
 }

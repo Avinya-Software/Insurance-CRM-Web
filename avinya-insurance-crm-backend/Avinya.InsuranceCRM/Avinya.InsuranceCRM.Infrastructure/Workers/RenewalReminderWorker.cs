@@ -1,5 +1,8 @@
-﻿using Avinya.InsuranceCRM.Infrastructure.Persistence;
+﻿using Avinya.InsuranceCRM.Infrastructure.Identity;
+using Avinya.InsuranceCRM.Infrastructure.Persistence;
 using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Text.Json;
@@ -20,10 +23,27 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                await ProcessReminders(stoppingToken);
+                try
+                {
+                    await ProcessReminders(stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Normal shutdown
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[RenewalReminderWorker] {ex}");
+                }
 
-                // Runs once every 24 hours
-                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // App stopping
+                }
             }
         }
 
@@ -32,17 +52,16 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
         {
             using var scope = _scopeFactory.CreateScope();
 
-            var db = scope.ServiceProvider
-                .GetRequiredService<AppDbContext>();
-
-            var emailService = scope.ServiceProvider
-                .GetRequiredService<IEmailService>();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
             var today = DateTime.UtcNow.Date;
 
-            var renewals = db.Renewals
+            var renewals = await db.Renewals
+                .Include(r => r.Customer)
                 .Where(r => r.RenewalDate >= today)
-                .ToList();
+                .ToListAsync(stoppingToken);
 
             foreach (var renewal in renewals)
             {
@@ -69,7 +88,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                     if (renewal.HasReminderBeenSent(days))
                         continue;
 
-                    // ✅ SEND EMAIL
+                    /* ================= CUSTOMER EMAIL ================= */
                     await emailService.SendRenewalReminderAsync(
                         renewal.CustomerId,
                         renewal.PolicyId,
@@ -78,7 +97,23 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                         renewal.RenewalPremium
                     );
 
-                    // ✅ LOG REMINDER (DOMAIN METHOD)
+                    /* ================= ADVISOR EMAIL ================= */
+                    var advisor = await userManager
+                        .FindByIdAsync(renewal.Customer.AdvisorId);
+
+                    if (!string.IsNullOrWhiteSpace(advisor?.Email))
+                    {
+                        await emailService.SendRenewalReminderToAdvisorAsync(
+                            advisor.Email,
+                            renewal.Customer.FullName,
+                            renewal.Policy.PolicyNumber,
+                            renewal.RenewalDate,
+                            days,
+                            renewal.RenewalPremium
+                        );
+                    }
+
+                    // ✅ LOG REMINDER (ONCE)
                     renewal.AddReminderLog(days, "Email");
                 }
             }

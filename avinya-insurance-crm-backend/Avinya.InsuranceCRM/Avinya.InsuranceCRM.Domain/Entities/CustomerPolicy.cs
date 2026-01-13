@@ -1,5 +1,6 @@
 ﻿using Avinya.InsuranceCRM.Domain.Entities;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 
 public class CustomerPolicy
 {
@@ -51,5 +52,41 @@ public class CustomerPolicy
     // ---------------- AUDIT ----------------
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+    public class PaymentReminderLogItem
+    {
+        public string Type { get; set; } = null!; // "T-1", "T"
+        public DateTime SentOn { get; set; }
+    }
+    public string? PaymentReminderLog { get; private set; }
 
+    public bool HasPaymentReminderBeenSent(string type)
+    {
+        if (string.IsNullOrWhiteSpace(PaymentReminderLog))
+            return false;
+
+        var logs = JsonSerializer.Deserialize<List<PaymentReminderLogItem>>(
+            PaymentReminderLog);
+
+        return logs?.Any(x => x.Type == type) == true;
+    }
+
+    public void AddPaymentReminderLog(string type)
+    {
+        var logs = string.IsNullOrWhiteSpace(PaymentReminderLog)
+            ? new List<PaymentReminderLogItem>()
+            : JsonSerializer.Deserialize<List<PaymentReminderLogItem>>(
+                PaymentReminderLog) ?? new List<PaymentReminderLogItem>();
+
+        if (logs.Any(x => x.Type == type))
+            return;
+
+        logs.Add(new PaymentReminderLogItem
+        {
+            Type = type,
+            SentOn = DateTime.UtcNow
+        });
+
+        PaymentReminderLog = JsonSerializer.Serialize(logs);
+    }
 }
+
