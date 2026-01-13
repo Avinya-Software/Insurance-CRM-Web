@@ -171,7 +171,7 @@ builder.Services.AddHostedService<CampaignWorker>();
 builder.Services.AddScoped<ICampaignEmailService, CampaignEmailService>();
 builder.Services.AddScoped<ICampaignRepository, CampaignRepository>();
 builder.Services.AddHostedService<PolicyPaymentWorker>();
-builder.Services.AddHostedService<RenewalExpiryWorker>();
+//builder.Services.AddHostedService<RenewalExpiryWorker>();
 
 
 #endregion
