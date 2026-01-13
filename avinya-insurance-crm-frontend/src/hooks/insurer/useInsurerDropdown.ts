@@ -5,7 +5,6 @@ export const useInsurerDropdown = () => {
   return useQuery({
     queryKey: ["insurer-dropdown"],
     queryFn: getInsurerDropdownApi,
-    staleTime: 5 * 60 * 1000, 
   });
 };
 

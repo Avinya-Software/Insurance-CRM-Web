@@ -5,6 +5,5 @@ export const useCampaignTypeDropdown = () => {
   return useQuery({
     queryKey: ["campaign-type-dropdown"],
     queryFn: getCampaignTypeDropdownApi,
-    staleTime: 1000 * 60 * 60, // 1 hour (master data)
   });
 };

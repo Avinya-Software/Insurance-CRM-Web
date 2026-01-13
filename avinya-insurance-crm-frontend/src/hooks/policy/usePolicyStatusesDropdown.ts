@@ -5,6 +5,5 @@ export const usePolicyStatusesDropdown = () => {
   return useQuery({
     queryKey: ["policy-statuses-dropdown"],
     queryFn: getPolicyStatusesDropdownApi,
-    staleTime: 10 * 60 * 1000,
   });
 };

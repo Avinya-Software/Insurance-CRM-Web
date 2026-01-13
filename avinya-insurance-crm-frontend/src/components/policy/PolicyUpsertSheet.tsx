@@ -38,7 +38,6 @@ const PolicyUpsertSheet = ({
 
   /*   POLICY DOCUMENT ACTIONS   */
   const [existingDocuments, setExistingDocuments] = useState<string[]>([]);
-  const isLoading = false;
   const { preview, download, remove } = usePolicyDocumentActions(
     (deletedId) => {
       setExistingDocuments((prev) =>
@@ -75,7 +74,7 @@ const PolicyUpsertSheet = ({
 
   /*   API HOOKS   */
 
-  const { mutateAsync } = useUpsertPolicy();
+  const { mutateAsync, isPending } = useUpsertPolicy();
 
   const { data: customers, isLoading: cLoading } = useCustomerDropdown();
   const { data: insurers, isLoading: iLoading } = useInsurerDropdown();
@@ -87,6 +86,7 @@ const PolicyUpsertSheet = ({
     usePolicyStatusesDropdown();
 
   const loadingDropdowns = cLoading || iLoading || pLoading || tLoading || sLoading;
+  const isLoading = isPending;
 
   /*   PREFILL   */
 
@@ -162,12 +162,10 @@ const PolicyUpsertSheet = ({
     if (!form.startDate) e.startDate = "Start date is required";
     if (!form.endDate) e.endDate = "End date is required";
 
-    // Date validation business rules
     if (form.startDate && form.endDate) {
       const startDate = new Date(form.startDate);
       const endDate = new Date(form.endDate);
 
-      // Rule 1: End Date must be on or after Start Date
       if (endDate < startDate) {
         e.endDate = "End date cannot be before start date";
       }
@@ -177,7 +175,6 @@ const PolicyUpsertSheet = ({
       const startDate = new Date(form.startDate);
       const paymentDueDate = new Date(form.paymentDueDate);
 
-      // Rule 2: Payment Due Date must be on or after Start Date
       if (paymentDueDate < startDate) {
         e.paymentDueDate = "Payment due date cannot be before start date";
       }
@@ -187,7 +184,6 @@ const PolicyUpsertSheet = ({
       const endDate = new Date(form.endDate);
       const renewalDate = new Date(form.renewalDate);
 
-      // Rule 3: Renewal Date must be on or after End Date
       if (renewalDate < endDate) {
         e.renewalDate = "Renewal date cannot be before end date";
       }
@@ -439,7 +435,7 @@ const PolicyUpsertSheet = ({
                 }
               />
             )}
-            
+
               <Input
                 type="date"
                 label="Renewal Date"

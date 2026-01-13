@@ -5,6 +5,5 @@ export const usePolicyTypesDropdown = () => {
   return useQuery({
     queryKey: ["policy-types-dropdown"],
     queryFn: getPolicyTypesDropdownApi,
-    staleTime: 10 * 60 * 1000,
   });
 };
