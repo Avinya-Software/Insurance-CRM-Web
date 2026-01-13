@@ -26,8 +26,15 @@ const PIE_COLORS = ["#2563eb", "#16a34a", "#dc2626", "#f59e0b"];
 const Dashboard = () => {
   const { data, loading, refresh } = useDashboardOverview();
 
-  if (loading) return <div className="p-6">Loading dashboard...</div>;
-  if (!data) return <div className="p-6 text-red-500">No data</div>;
+  /* ================= LOADING STATE ================= */
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (!data) {
+    return <div className="p-6 text-red-500">No data</div>;
+  }
 
   /* ================= DATA ================= */
 
@@ -148,10 +155,8 @@ const Dashboard = () => {
         </div>
       </Section>
 
-      {/* ================= CHARTS ================= */}
-
+      {/* CHARTS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* MONTHLY POLICY TREND */}
         <ChartCard title="Monthly Premium Trend (Paid vs Pending)">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlyPolicyTrend}>
@@ -164,20 +169,17 @@ const Dashboard = () => {
                 dataKey="paidPremium"
                 stroke="#16a34a"
                 strokeWidth={3}
-                name="Paid Premium"
               />
               <Line
                 type="monotone"
                 dataKey="pendingPremium"
                 stroke="#f59e0b"
                 strokeWidth={3}
-                name="Pending Premium"
               />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        {/* PRODUCT WISE SALES */}
         <ChartCard title="Product-wise Collected Premium">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={productWiseSales}>
@@ -190,7 +192,6 @@ const Dashboard = () => {
         </ChartCard>
       </div>
 
-      {/* CLAIM STAGE BREAKUP */}
       <ChartCard title="Claim Stage Breakup">
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
@@ -215,6 +216,39 @@ const Dashboard = () => {
     </div>
   );
 };
+
+/* ================= SKELETON LOADER ================= */
+
+const Skeleton = ({ className = "" }: any) => (
+  <div className={`animate-pulse bg-slate-200 rounded ${className}`} />
+);
+
+const DashboardSkeleton = () => (
+  <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
+    <Skeleton className="h-8 w-48" />
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Skeleton className="h-24" />
+      <Skeleton className="h-24" />
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Skeleton className="h-20" />
+      <Skeleton className="h-20" />
+      <Skeleton className="h-20" />
+      <Skeleton className="h-20" />
+    </div>
+
+    <Skeleton className="h-40" />
+
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Skeleton className="h-80" />
+      <Skeleton className="h-80" />
+    </div>
+
+    <Skeleton className="h-80" />
+  </div>
+);
 
 /* ================= COMPONENTS ================= */
 
