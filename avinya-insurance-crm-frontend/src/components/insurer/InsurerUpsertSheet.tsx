@@ -117,7 +117,7 @@ const InsurerUpsertSheet = ({
 
     setErrors(e);
 
-    if (Object.keys(e).length > 0) {
+    if (Object.keys(e).length) {
       toast.error("Please fix validation errors", {
         duration: 3000,
       });

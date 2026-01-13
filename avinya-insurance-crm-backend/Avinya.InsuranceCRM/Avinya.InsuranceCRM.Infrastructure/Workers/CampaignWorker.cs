@@ -16,20 +16,36 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             _scopeFactory = scopeFactory;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override async Task ExecuteAsync(
+            CancellationToken stoppingToken)
         {
+            // ⏰ FIRST RUN → wait until next 8 AM IST
+            await DelayUntilNextEightAM(stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
                     await ProcessCampaigns(stoppingToken);
                 }
+                catch (OperationCanceledException)
+                {
+                    // Normal shutdown
+                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[CampaignWorker] Fatal error: {ex}");
                 }
 
-                await Task.Delay(TimeSpan.FromHours(6), stoppingToken);
+                try
+                {
+                    // ⏱ Run again after 24 hours (next 8 AM)
+                    await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // App stopping
+                }
             }
         }
 
@@ -51,7 +67,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                     (c.StartDate == null || c.StartDate <= today) &&
                     (c.EndDate == null || c.EndDate >= today) &&
                     (
-                        // 🔑 CampaignTypeId OR CampaignType fallback
                         new[] { 2, 3, 4, 5 }.Contains(c.CampaignTypeId) ||
                         c.CampaignType == "Birthday" ||
                         c.CampaignType == "Policy Renewal" ||
@@ -114,8 +129,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             {
                 if (token.IsCancellationRequested)
                     return;
-
-                Console.WriteLine($"[CampaignWorker] Customer={customer.CustomerId}, Email={customer.Email}");
 
                 // ================= RULE ENGINE =================
 
@@ -197,7 +210,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             }
         }
 
-        /* ================= RULE ENGINE (FINAL) ================= */
+        /* ================= RULE ENGINE ================= */
 
         private async Task<bool> ShouldRunForToday(
             CampaignRule rule,
@@ -206,16 +219,13 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             DateTime today,
             CancellationToken token)
         {
-            // ✅ System.Date (FixedDate)
             if (rule.RuleEntity == "System" &&
                 rule.RuleField == "Date" &&
                 rule.Operator == "FixedDate")
             {
-                var fixedDate = DateTime.Parse(rule.RuleValue).Date;
-                return fixedDate == today;
+                return DateTime.Parse(rule.RuleValue).Date == today;
             }
 
-            // 🎂 Birthday logic (ignore year)
             if (rule.RuleEntity == "Customer" &&
                 rule.RuleField == "DOB" &&
                 rule.Operator == "OffsetDays")
@@ -228,13 +238,9 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                     customer.DOB.Value.Month,
                     customer.DOB.Value.Day);
 
-                var triggerDate = dobThisYear
-                    .AddDays(int.Parse(rule.RuleValue));
-
-                return triggerDate == today;
+                return dobThisYear.AddDays(int.Parse(rule.RuleValue)) == today;
             }
 
-            // 🔁 Policy-based rules
             DateTime? baseDate = rule.RuleEntity switch
             {
                 "Policy" when rule.RuleField == "EndDate" =>
@@ -266,10 +272,8 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             if (!baseDate.HasValue)
                 return false;
 
-            var finalTrigger = baseDate.Value.Date
-                .AddDays(int.Parse(rule.RuleValue));
-
-            return finalTrigger == today;
+            return baseDate.Value.Date
+                .AddDays(int.Parse(rule.RuleValue)) == today;
         }
 
         /* ================= TEMPLATE TOKENS ================= */
@@ -296,8 +300,29 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             }
             catch (DbUpdateException)
             {
-                // ignore duplicates
+                // Ignore duplicate logs
             }
+        }
+
+        /* ================= TIME HELPER ================= */
+
+        private static async Task DelayUntilNextEightAM(
+            CancellationToken stoppingToken)
+        {
+            var utcNow = DateTime.UtcNow;
+
+            var istZone =
+                TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+
+            var istNow =
+                TimeZoneInfo.ConvertTimeFromUtc(utcNow, istZone);
+
+            var nextRun = istNow.Date.AddHours(8);
+
+            if (istNow >= nextRun)
+                nextRun = nextRun.AddDays(1);
+
+            await Task.Delay(nextRun - istNow, stoppingToken);
         }
     }
 }

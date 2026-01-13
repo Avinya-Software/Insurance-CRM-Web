@@ -84,7 +84,7 @@ const Renewals = () => {
             <div className="flex gap-4">
               <input
                 type="text"
-                placeholder="Search customer or policy..."
+                placeholder="Search Customer or policy..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);

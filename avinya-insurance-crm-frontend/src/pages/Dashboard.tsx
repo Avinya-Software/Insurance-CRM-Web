@@ -77,7 +77,7 @@ const Dashboard = () => {
     <div className="p-6 space-y-6 bg-slate-50 min-h-screen">
       {/* HEADER */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <h1 className="text-4xl font-serif font-semibold text-slate-900">Dashboard</h1>
         <button
           onClick={refresh}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"

@@ -7,8 +7,17 @@ interface Props {
   onSuccess: () => void;
 }
 
+/* 🔧 Helper: current datetime for <input type="datetime-local" /> */
+const getNowForDateTimeLocal = () => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+};
+
 const FollowUpForm = ({ leadId, onSuccess }: Props) => {
-  const [followUpDate, setFollowUpDate] = useState("");
+  const [followUpDate, setFollowUpDate] = useState<string>(
+    getNowForDateTimeLocal() // ✅ DEFAULT TODAY
+  );
   const [nextFollowUpDate, setNextFollowUpDate] = useState("");
   const [remark, setRemark] = useState("");
   const [saving, setSaving] = useState(false);
@@ -18,8 +27,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
   const followUpRef = useRef<HTMLInputElement>(null);
   const nextFollowUpRef = useRef<HTMLInputElement>(null);
 
-  /*   AUTO FIX INVALID NEXT DATE   */
-
+  /* 🔄 AUTO FIX INVALID NEXT DATE */
   useEffect(() => {
     if (
       followUpDate &&
@@ -28,10 +36,9 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
     ) {
       setNextFollowUpDate("");
     }
-  }, [followUpDate]);
+  }, [followUpDate, nextFollowUpDate]);
 
-  /*   VALIDATION   */
-
+  /* ✅ VALIDATION */
   const validate = () => {
     const e: Record<string, string> = {};
 
@@ -61,39 +68,35 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
     return Object.keys(e).length === 0;
   };
 
-  /*   SUBMIT   */
-
+  /* 🚀 SUBMIT */
   const handleSubmit = async () => {
-  if (!validate()) return;
+    if (!validate()) return;
 
-  try {
-    setSaving(true);
+    try {
+      setSaving(true);
 
-    await createFollowUpApi({
-      leadId,
-      followUpDate,
-      nextFollowUpDate,
-      remark,
-    });
+      await createFollowUpApi({
+        leadId,
+        followUpDate,
+        nextFollowUpDate,
+        remark,
+      });
 
-    toast.success("Follow up created successfully", {
-      id: "followup-create-success", // ✅ prevents duplicates
-    });
+      toast.success("Follow up created successfully", {
+        id: "followup-create-success",
+      });
 
-    onSuccess(); // close sheet AFTER toast
-  } catch (err: any) {
-    toast.error(
-      err?.message || "Failed to create follow up"
-    );
-  } finally {
-    setSaving(false);
-  }
-};
-
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create follow up");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
-      {/*   FOLLOW UP DATE   */}
+      {/* FOLLOW UP DATE */}
       <div>
         <label className="text-sm font-medium">
           Follow Up Date <span className="text-red-500">*</span>
@@ -121,7 +124,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
         )}
       </div>
 
-      {/*   NEXT FOLLOW UP DATE   */}
+      {/* NEXT FOLLOW UP DATE */}
       <div>
         <label className="text-sm font-medium">
           Next Follow Up Date <span className="text-red-500">*</span>
@@ -134,14 +137,12 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
           <input
             ref={nextFollowUpRef}
             type="datetime-local"
-            min={followUpDate || undefined} // 🔥 disables earlier dates
+            min={followUpDate || undefined}
             className={`input w-full ${
               errors.nextFollowUpDate ? "border-red-500" : ""
             }`}
             value={nextFollowUpDate}
-            onChange={(e) =>
-              setNextFollowUpDate(e.target.value)
-            }
+            onChange={(e) => setNextFollowUpDate(e.target.value)}
           />
         </div>
 
@@ -152,7 +153,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
         )}
       </div>
 
-      {/*   REMARK   */}
+      {/* REMARK */}
       <div>
         <label className="text-sm font-medium">
           Remark <span className="text-red-500">*</span>
@@ -174,7 +175,7 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
         )}
       </div>
 
-      {/*   SAVE   */}
+      {/* SAVE */}
       <button
         onClick={handleSubmit}
         disabled={saving}

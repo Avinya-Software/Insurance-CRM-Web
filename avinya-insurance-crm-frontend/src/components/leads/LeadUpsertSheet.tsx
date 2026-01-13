@@ -7,6 +7,7 @@ import { useLeadSources } from "../../hooks/lead/useLeadSources";
 import { getCustomerDropdownApi } from "../../api/customer.api";
 import SearchableComboBox from "../common/SearchableComboBox";
 import Spinner from "../common/Spinner";
+import { toast } from "react-hot-toast";
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -158,9 +159,12 @@ const LeadUpsertSheet = ({
 
     if (!form.leadSourceId)
       e.leadSourceId = "Lead source is required";
-
+    if (Object.keys(e).length) {
+      toast.error("Please fix validation errors");
+      return false;
+    }
     setErrors(e);
-    return Object.keys(e).length === 0;
+    
   };
 
   /*  SAVE  */
@@ -216,7 +220,7 @@ const LeadUpsertSheet = ({
             label: `${c.fullName} (${c.email})`,
           }))}
           value={selectedCustomerId}
-          placeholder="Search customer..."
+          placeholder="Search Customer..."
           emptyText="No customer found"
           createText="Add new customer"
           onSelect={(item) => {

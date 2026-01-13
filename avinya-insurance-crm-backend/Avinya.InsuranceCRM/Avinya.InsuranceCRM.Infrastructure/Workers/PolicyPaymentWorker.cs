@@ -20,6 +20,9 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
         protected override async Task ExecuteAsync(
             CancellationToken stoppingToken)
         {
+            // ⏰ FIRST: wait until next 8 AM IST
+            await DelayUntilNextEightAM(stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -37,7 +40,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
 
                 try
                 {
-                    // ⏱ Run once every 24 hours
+                    // ⏱ Run again after 24 hours (next 8 AM)
                     await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
                 }
                 catch (OperationCanceledException)
@@ -85,29 +88,27 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                 // 📧 CUSTOMER
                 if (!string.IsNullOrWhiteSpace(policy.Customer.Email))
                 {
-                    await emailService
-                        .SendPolicyPaymentReminderToCustomerAsync(
-                            policy.Customer.Email,
-                            policy.PolicyNumber,
-                            policy.PaymentDueDate!.Value,
-                            policy.PremiumGross
-                        );
+                    await emailService.SendPolicyPaymentReminderToCustomerAsync(
+                        policy.Customer.Email,
+                        policy.PolicyNumber,
+                        policy.PaymentDueDate!.Value,
+                        policy.PremiumGross
+                    );
                 }
 
                 // 📧 ADVISOR
-                var advisor = await userManager
-                    .FindByIdAsync(policy.Customer.AdvisorId);
+                var advisor = await userManager.FindByIdAsync(
+                    policy.Customer.AdvisorId);
 
                 if (!string.IsNullOrWhiteSpace(advisor?.Email))
                 {
-                    await emailService
-                        .SendPolicyPaymentReminderToAdvisorAsync(
-                            advisor.Email,
-                            policy.PolicyNumber,
-                            policy.Customer.FullName,
-                            policy.PaymentDueDate!.Value,
-                            policy.PremiumGross
-                        );
+                    await emailService.SendPolicyPaymentReminderToAdvisorAsync(
+                        advisor.Email,
+                        policy.PolicyNumber,
+                        policy.Customer.FullName,
+                        policy.PaymentDueDate!.Value,
+                        policy.PremiumGross
+                    );
                 }
 
                 // ✅ LOG REMINDER
@@ -134,6 +135,31 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             }
 
             await db.SaveChangesAsync(stoppingToken);
+        }
+
+        /* ============================================================
+         * ⏰ HELPER: WAIT UNTIL NEXT 8 AM (IST)
+         * ============================================================ */
+        private static async Task DelayUntilNextEightAM(
+            CancellationToken stoppingToken)
+        {
+            var utcNow = DateTime.UtcNow;
+
+            // 🇮🇳 India Standard Time
+            var istZone =
+                TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+
+            var istNow =
+                TimeZoneInfo.ConvertTimeFromUtc(utcNow, istZone);
+
+            var nextRun = istNow.Date.AddHours(8); // 8:00 AM
+
+            if (istNow >= nextRun)
+                nextRun = nextRun.AddDays(1);
+
+            var delay = nextRun - istNow;
+
+            await Task.Delay(delay, stoppingToken);
         }
     }
 }

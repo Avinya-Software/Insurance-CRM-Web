@@ -123,7 +123,7 @@ const Customers = () => {
               <div className="relative w-[360px]">
                 <input
                   type="text"
-                  placeholder="Search customers..."
+                  placeholder="Search Customers..."
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);

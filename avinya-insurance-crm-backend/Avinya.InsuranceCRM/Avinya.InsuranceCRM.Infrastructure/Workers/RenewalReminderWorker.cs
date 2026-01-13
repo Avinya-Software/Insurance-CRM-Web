@@ -21,6 +21,9 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
         protected override async Task ExecuteAsync(
             CancellationToken stoppingToken)
         {
+            // ⏰ FIRST RUN → wait until next 8 AM IST
+            await DelayUntilNextEightAM(stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -38,6 +41,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
 
                 try
                 {
+                    // ⏱ Run again after 24 hours (next 8 AM)
                     await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
                 }
                 catch (OperationCanceledException)
@@ -60,6 +64,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
 
             var renewals = await db.Renewals
                 .Include(r => r.Customer)
+                .Include(r => r.Policy)
                 .Where(r => r.RenewalDate >= today)
                 .ToListAsync(stoppingToken);
 
@@ -89,13 +94,16 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                         continue;
 
                     /* ================= CUSTOMER EMAIL ================= */
-                    await emailService.SendRenewalReminderAsync(
-                        renewal.CustomerId,
-                        renewal.PolicyId,
-                        renewal.RenewalDate,
-                        days,
-                        renewal.RenewalPremium
-                    );
+                    if (!string.IsNullOrWhiteSpace(renewal.Customer.Email))
+                    {
+                        await emailService.SendRenewalReminderAsync(
+                            renewal.CustomerId,
+                            renewal.PolicyId,
+                            renewal.RenewalDate,
+                            days,
+                            renewal.RenewalPremium
+                        );
+                    }
 
                     /* ================= ADVISOR EMAIL ================= */
                     var advisor = await userManager
@@ -113,12 +121,36 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                         );
                     }
 
-                    // ✅ LOG REMINDER (ONCE)
+                    // ✅ LOG REMINDER (ONCE PER DAY PER RULE)
                     renewal.AddReminderLog(days, "Email");
                 }
             }
 
             await db.SaveChangesAsync(stoppingToken);
+        }
+
+        /* ============================================================
+         * ⏰ HELPER: WAIT UNTIL NEXT 8 AM (IST)
+         * ============================================================ */
+        private static async Task DelayUntilNextEightAM(
+            CancellationToken stoppingToken)
+        {
+            var utcNow = DateTime.UtcNow;
+
+            var istZone =
+                TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+
+            var istNow =
+                TimeZoneInfo.ConvertTimeFromUtc(utcNow, istZone);
+
+            var nextRun = istNow.Date.AddHours(8); // 8:00 AM IST
+
+            if (istNow >= nextRun)
+                nextRun = nextRun.AddDays(1);
+
+            var delay = nextRun - istNow;
+
+            await Task.Delay(delay, stoppingToken);
         }
     }
 }
