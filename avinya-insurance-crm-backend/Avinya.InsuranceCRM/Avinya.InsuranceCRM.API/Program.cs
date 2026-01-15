@@ -1,8 +1,10 @@
-﻿using Avinya.InsuranceCRM.API.Middleware;
+﻿using Avinya.InsuranceCRM.API.Controllers;
+using Avinya.InsuranceCRM.API.Middleware;
 using Avinya.InsuranceCRM.API.Seeders;
 using Avinya.InsuranceCRM.Infrastructure.Email;
 using Avinya.InsuranceCRM.Infrastructure.Identity;
 using Avinya.InsuranceCRM.Infrastructure.Persistence;
+using Avinya.InsuranceCRM.Infrastructure.Repository;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
@@ -160,6 +162,7 @@ builder.Services.AddScoped<ILeadFollowUpRepository, LeadFollowUpRepository>();
 builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
 builder.Services.AddScoped<IRenewalRepository, RenewalRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<ISystemEventRepository, SystemEventRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.Configure<SmtpSettings>(
@@ -171,6 +174,7 @@ builder.Services.AddHostedService<CampaignWorker>();
 builder.Services.AddScoped<ICampaignEmailService, CampaignEmailService>();
 builder.Services.AddScoped<ICampaignRepository, CampaignRepository>();
 builder.Services.AddHostedService<PolicyPaymentWorker>();
+builder.Services.AddHostedService<EventManagementWorker>();
 //builder.Services.AddHostedService<RenewalExpiryWorker>();
 
 
@@ -266,5 +270,6 @@ app.UseSwaggerUI(c =>
 app.MapControllers();
 app.MapGet("/", () => "Insurance CRM API running 🚀");
 #endregion
+
 
 app.Run();

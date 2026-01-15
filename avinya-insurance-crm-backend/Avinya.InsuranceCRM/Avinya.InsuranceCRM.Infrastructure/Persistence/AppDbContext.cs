@@ -37,6 +37,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CampaignLog> CampaignLogs => Set<CampaignLog>();
     public DbSet<CampaignCustomer> CampaignCustomers => Set<CampaignCustomer>();
     public DbSet<MasterCampaignType> MasterCampaignTypes => Set<MasterCampaignType>();
+    public DbSet<SystemEvent> SystemEvents => Set<SystemEvent>();
 
     // ---------------- MODEL CONFIG ----------------
     protected override void OnModelCreating(ModelBuilder builder)
@@ -368,6 +369,16 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(x => x.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
         });
+        builder.Entity<SystemEvent>()
+        .HasIndex(e => new
+        {
+            e.EventType,
+            e.EventDate,
+            e.LeadId,
+            e.PolicyId
+        })
+        .IsUnique();
+
 
 
         // ---------------- LEAD STATUS MASTER DATA ----------------

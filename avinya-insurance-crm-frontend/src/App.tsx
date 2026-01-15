@@ -15,6 +15,7 @@ import Lead from "./pages/Lead";
 import Product from "./pages/Product";
 import Campaign from "./pages/Campaign ";
 import Insurer from "./pages/Insurer";
+import TasksPage from "./pages/TasksPage";
 import { Toaster } from "react-hot-toast";
 
 /* -------- ADMIN PAGES -------- */
@@ -55,7 +56,7 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/campaign" element={<Campaign />} />
           <Route path="/products" element={<Product />} />
-
+          <Route path="/tasks" element={<TasksPage />} />
           {/* -------- ADMIN ROUTES -------- */}
           <Route path="/admin" element={<AdminDashboard />} />
           <Route

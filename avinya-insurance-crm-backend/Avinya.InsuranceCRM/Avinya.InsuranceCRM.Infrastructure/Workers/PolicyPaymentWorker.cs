@@ -50,8 +50,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             }
         }
 
-        private async Task ProcessPayments(
-            CancellationToken stoppingToken)
+        private async Task ProcessPayments(CancellationToken stoppingToken)
         {
             using var scope = _scopeFactory.CreateScope();
 
@@ -63,32 +62,28 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             var tomorrow = today.AddDays(1);
 
             /* ============================================================
-             * 1️⃣ PAYMENT REMINDER (T-1) – SEND ONLY ONCE
+             * 1️⃣ T – PAYMENT DUE TODAY (URGENT WARNING)
              * ============================================================ */
 
-            var reminderPolicies = await db.CustomerPolicies
+            var dueTodayPolicies = await db.CustomerPolicies
                 .Include(p => p.Customer)
                 .Where(p =>
                     !p.PaymentDone &&
                     p.PaymentDueDate.HasValue &&
-                    p.PaymentDueDate.Value.Date == tomorrow &&
-                    p.PolicyStatusId != 3 // Not lapsed
+                    p.PaymentDueDate.Value.Date == today &&
+                    p.PolicyStatusId != 3
                 )
                 .ToListAsync(stoppingToken);
 
-            foreach (var policy in reminderPolicies)
+            foreach (var policy in dueTodayPolicies)
             {
-                if (stoppingToken.IsCancellationRequested)
-                    return;
-
-                // ❌ Already reminded
-                if (policy.HasPaymentReminderBeenSent("T-1"))
+                if (policy.HasPaymentReminderBeenSent("T"))
                     continue;
 
                 // 📧 CUSTOMER
                 if (!string.IsNullOrWhiteSpace(policy.Customer.Email))
                 {
-                    await emailService.SendPolicyPaymentReminderToCustomerAsync(
+                    await emailService.SendPolicyCancellationWarningToCustomerAsync(
                         policy.Customer.Email,
                         policy.PolicyNumber,
                         policy.PaymentDueDate!.Value,
@@ -97,12 +92,11 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                 }
 
                 // 📧 ADVISOR
-                var advisor = await userManager.FindByIdAsync(
-                    policy.Customer.AdvisorId);
+                var advisor = await userManager.FindByIdAsync(policy.Customer.AdvisorId);
 
                 if (!string.IsNullOrWhiteSpace(advisor?.Email))
                 {
-                    await emailService.SendPolicyPaymentReminderToAdvisorAsync(
+                    await emailService.SendPolicyCancellationWarningToAdvisorAsync(
                         advisor.Email,
                         policy.PolicyNumber,
                         policy.Customer.FullName,
@@ -111,26 +105,57 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
                     );
                 }
 
-                // ✅ LOG REMINDER
-                policy.AddPaymentReminderLog("T-1");
+                policy.AddPaymentReminderLog("T");
             }
 
             /* ============================================================
-             * 2️⃣ AUTO LAPSE (PAYMENT OVERDUE)
+             * 2️⃣ T+1 – PAYMENT OVERDUE → FINAL WARNING + LAPSE
              * ============================================================ */
 
-            var lapsedPolicies = await db.CustomerPolicies
+            var overduePolicies = await db.CustomerPolicies
+                .Include(p => p.Customer)
                 .Where(p =>
                     !p.PaymentDone &&
                     p.PaymentDueDate.HasValue &&
-                    p.PaymentDueDate.Value.Date < today &&
+                    p.PaymentDueDate.Value.Date == tomorrow.AddDays(-1) && // yesterday
                     p.PolicyStatusId != 3
                 )
                 .ToListAsync(stoppingToken);
 
-            foreach (var policy in lapsedPolicies)
+            foreach (var policy in overduePolicies)
             {
-                policy.PolicyStatusId = 3; // 🔴 Lapsed
+                if (!policy.HasPaymentReminderBeenSent("T+1"))
+                {
+                    // 📧 CUSTOMER
+                    if (!string.IsNullOrWhiteSpace(policy.Customer.Email))
+                    {
+                        await emailService.SendPolicyCancellationWarningToCustomerAsync(
+                            policy.Customer.Email,
+                            policy.PolicyNumber,
+                            policy.PaymentDueDate!.Value,
+                            policy.PremiumGross
+                        );
+                    }
+
+                    // 📧 ADVISOR
+                    var advisor = await userManager.FindByIdAsync(policy.Customer.AdvisorId);
+
+                    if (!string.IsNullOrWhiteSpace(advisor?.Email))
+                    {
+                        await emailService.SendPolicyCancellationWarningToAdvisorAsync(
+                            advisor.Email,
+                            policy.PolicyNumber,
+                            policy.Customer.FullName,
+                            policy.PaymentDueDate!.Value,
+                            policy.PremiumGross
+                        );
+                    }
+
+                    policy.AddPaymentReminderLog("T+1");
+                }
+
+                // 🔴 AUTO LAPSE
+                policy.PolicyStatusId = 3;
                 policy.UpdatedAt = DateTime.UtcNow;
             }
 
@@ -152,7 +177,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
             var istNow =
                 TimeZoneInfo.ConvertTimeFromUtc(utcNow, istZone);
 
-            var nextRun = istNow.Date.AddHours(8); // 8:00 AM
+            var nextRun = istNow.Date.AddHours(10).AddMinutes(11); // 10:30 AM
 
             if (istNow >= nextRun)
                 nextRun = nextRun.AddDays(1);

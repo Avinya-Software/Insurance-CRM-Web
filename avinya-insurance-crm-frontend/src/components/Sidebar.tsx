@@ -12,6 +12,7 @@ import {
   Megaphone,
   LogOut,
   History,
+  ListTodo, 
 } from "lucide-react";
 
 /* ================= JWT HELPER ================= */
@@ -50,13 +51,23 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-slate-900 text-white h-screen flex flex-col">
-      {/* ---------- LOGO ---------- */}
-      <div className="px-6 py-5 text-xl font-bold border-b border-slate-800">
-        Avinya
-        <p className="text-xs text-slate-400">INSURANCE CRM</p>
-      </div>
+          <aside className="w-64 bg-slate-900 text-white h-screen flex flex-col">
+            {/* ---------- LOGO ---------- */}
+      <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <p className="text-xl font-bold">Avinya</p>
+          <p className="text-xs text-slate-400">INSURANCE CRM</p>
+        </div>
 
+        {/* VIEW TASKS */}
+        <NavLink
+          to="/tasks"
+          className="p-2 rounded-lg hover:bg-slate-800 transition"
+          title="View Tasks"
+        >
+          <ListTodo size={18} />
+        </NavLink>
+      </div>
       {/* ---------- NAV ---------- */}
       <nav className="flex-1 px-4 py-6 space-y-1">
         {/* ================= ADVISOR MENU ================= */}
