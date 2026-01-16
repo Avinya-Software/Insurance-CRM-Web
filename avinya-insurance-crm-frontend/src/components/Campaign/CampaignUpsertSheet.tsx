@@ -46,8 +46,6 @@ const CampaignUpsertSheet = ({
     campaignTypeId: undefined as number | undefined,
     channel: "Email",
     applyToAllCustomers: true,
-    startDate: "", // yyyy-mm-dd
-    endDate: "",   // yyyy-mm-dd
     advisorId: advisorId,
     isActive: true,
   });
@@ -92,12 +90,6 @@ const CampaignUpsertSheet = ({
         campaignTypeId: selectedCampaign.campaignTypeId,
         channel: selectedCampaign.channel || "Email",
         applyToAllCustomers: selectedCampaign.applyToAllCustomers ?? true,
-        startDate: selectedCampaign.startDate
-        ? selectedCampaign.startDate.split("T")[0]
-        : "",
-      endDate: selectedCampaign.endDate
-        ? selectedCampaign.endDate.split("T")[0]
-        : "",
         advisorId,
         isActive: selectedCampaign.isActive ?? true,
       });
@@ -148,8 +140,6 @@ const CampaignUpsertSheet = ({
       campaignTypeId: undefined,
       channel: "Email",
       applyToAllCustomers: true,
-      startDate: "",
-      endDate: "",
       advisorId,
       isActive: true,
     });
@@ -201,13 +191,6 @@ const CampaignUpsertSheet = ({
 
     if (selectedCustomerIds.length === 0) {
       e.customers = "At least one customer must be selected";
-    }
-
-    // Validate date logic
-    if (campaign.startDate && campaign.endDate) {
-      if (new Date(campaign.endDate) < new Date(campaign.startDate)) {
-        e.endDate = "End date cannot be before start date";
-      }
     }
 
     // Validate rule
@@ -276,8 +259,6 @@ const CampaignUpsertSheet = ({
       campaign: {
         ...campaign,
         campaignType: selectedCampaignType?.name || "Promotional",
-        startDate: campaign.startDate || null,
-        endDate: campaign.endDate || null,
         createdAt: new Date().toISOString(),
       },
       templates: [
@@ -358,40 +339,12 @@ const CampaignUpsertSheet = ({
             value={campaign.name}
             error={errors.name}
             onChange={(v: string) => {
-              setCampaign({ ...campaign, name: v });
+              setCampaign({ ...campaign, name: v.replace(/[^a-zA-Z ]/g, "") });
               if (errors.name) {
                 setErrors({ ...errors, name: "" });
               }
             }}
           />
-
-          {/* START / END DATE */}
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Start Date"
-              type="date"
-              value={campaign.startDate}
-              error={errors.startDate}
-              onChange={(v: string) => {
-                setCampaign({ ...campaign, startDate: v });
-                if (errors.startDate || errors.endDate) {
-                  setErrors({ ...errors, startDate: "", endDate: "" });
-                }
-              }}
-            />
-            <Input
-              label="End Date"
-              type="date"
-              value={campaign.endDate}
-              error={errors.endDate}
-              onChange={(v: string) => {
-                setCampaign({ ...campaign, endDate: v });
-                if (errors.endDate) {
-                  setErrors({ ...errors, endDate: "" });
-                }
-              }}
-            />
-          </div>
 
           {/* TARGET CUSTOMERS */}
           <div>
@@ -518,23 +471,25 @@ const CampaignUpsertSheet = ({
                 <div>
                   <label className="text-sm font-medium">Days</label>
                   <input
-                    type="number"
-                    min={0}
                     className={`input w-full mt-1 ${
                       errors.offsetDays ? "border-red-500" : ""
                     }`}
                     value={offsetRule.days}
                     onChange={(e) => {
+                      const digitsOnly = e.target.value.replace(/[^0-9]/g, "");
+
                       setOffsetRule({
                         ...offsetRule,
-                        days: Number(e.target.value),
+                        days: digitsOnly === "" ? 0 : Number(digitsOnly),
                       });
+
                       if (errors.offsetDays) {
                         setErrors({ ...errors, offsetDays: "" });
                       }
                     }}
                   />
                 </div>
+
               </div>
               {errors.offsetDays && (
                 <p className="text-xs text-red-600">{errors.offsetDays}</p>

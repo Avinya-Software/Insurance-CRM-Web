@@ -10,7 +10,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Persistence
         {
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
             //optionsBuilder.UseSqlServer("Server=190.92.174.109;Database=InsuranceCrmUat;User Id=insuranceuat;Password= insuranceuat@5039;TrustServerCertificate=True;");
-            optionsBuilder.UseSqlServer("Server=DESKTOP-73GFB8V\\DEVSQL;Database=AvinyaInsuranceCRMTesting;Trusted_Connection=True;TrustServerCertificate=True");
+            optionsBuilder.UseSqlServer("Server=DESKTOP-674T657\\AVINYA;Database=AvinyaInsuranceCRMTesting;Trusted_Connection=True;TrustServerCertificate=True");
             return new AppDbContext(optionsBuilder.Options);
         }
     }
