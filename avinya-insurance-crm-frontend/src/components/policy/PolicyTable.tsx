@@ -130,6 +130,7 @@ const PolicyTable = ({
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
             <Th>Policy Number</Th>
+            <Th>Customer</Th>
             <Th>Policy Type</Th>
             <Th>Insurer</Th>
             <Th>Product</Th>
@@ -162,7 +163,7 @@ const PolicyTable = ({
                   className="border-t h-[52px] hover:bg-slate-50"
                 >
                   <Td>{p.policyNumber}</Td>
-
+                  <Td>{p.customerName}</Td>    
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -172,7 +173,6 @@ const PolicyTable = ({
                       {p.policyTypeName}
                     </span>
                   </Td>
-
                   <Td>{p.insurerName}</Td>
                   <Td>{p.productName}</Td>
 
