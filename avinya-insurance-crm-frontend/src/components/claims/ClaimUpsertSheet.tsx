@@ -382,11 +382,11 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
               <Input
                 label="Claim Amount"
                 required
-                type="number"
                 value={form.claimAmount}
                 error={errors.claimAmount}
+                min={0}
                 onChange={(v) => {
-                  setForm({ ...form, claimAmount: v });
+                  setForm({ ...form, claimAmount: v.replace(/[^0-9]/g, "") });
                   if (errors.claimAmount || errors.approvedAmount) {
                     setErrors({ ...errors, claimAmount: "", approvedAmount: "" });
                   }
@@ -395,13 +395,13 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
               <Input
                 label="Approved Amount"
-                type="number"
                 value={form.approvedAmount}
                 error={errors.approvedAmount}
+                min={form.claimAmount}
                 onChange={(v) => {
                   setForm({
                     ...form,
-                    approvedAmount: v,
+                    approvedAmount: v.replace(/[^0-9]/g, ""),
                   });
                   if (errors.approvedAmount) {
                     setErrors({ ...errors, approvedAmount: "" });
@@ -411,13 +411,13 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
               <Input
                 label="TAT (Days)"
-                type="number"
                 value={form.tatDays}
                 error={errors.tatDays}
+                min={0}
                 onChange={(v) => {
                   setForm({
                     ...form,
-                    tatDays: v === "" ? 0 : Number(v),
+                    tatDays: v === "" ? 0 : Number(v.replace(/[^0-9]/g, "")),
                   });
                   if (errors.tatDays) {
                     setErrors({ ...errors, tatDays: "" });

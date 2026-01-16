@@ -112,6 +112,29 @@ const LeadUpsertSheet = ({
     setErrors({});
   }, [open, lead, statuses, sources]);
 
+
+  useEffect(() => {
+    if (!selectedCustomerId) return;
+  
+    if (lead) return;
+  
+    const customer = customers.find(
+      (c) => c.customerId === selectedCustomerId
+    );
+  
+    if (!customer) return;
+  
+    setForm((prev) => ({
+      ...prev,
+      customerId: customer.customerId,
+      fullName: customer.fullName ?? "",
+      email: customer.email ?? "",
+      mobile: customer.primaryMobile ?? "",
+      address: customer.address ?? "",
+    }));
+  }, [selectedCustomerId, customers, lead]);
+  
+
   /*   CUSTOMER SELECT   */
 
   const handleCustomerSelect = (customerId: string) => {
@@ -141,30 +164,30 @@ const LeadUpsertSheet = ({
 
   const validate = () => {
     const e: Record<string, string> = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const mobileRegex = /^[6-9]\d{9}$/;
 
     if (!form.fullName.trim())
       e.fullName = "Full name is required";
-
-    if (!form.email.trim())
-      e.email = "Email is required";
-    else if (!emailRegex.test(form.email))
-      e.email = "Invalid email";
 
     if (!form.mobile.trim())
       e.mobile = "Mobile is required";
     else if (!mobileRegex.test(form.mobile))
       e.mobile = "Invalid mobile number";
 
+    if(!form.leadStatusId)
+      e.leadStatusId = "Lead status is required";
+
     if (!form.leadSourceId)
       e.leadSourceId = "Lead source is required";
+
+      setErrors(e);
+
     if (Object.keys(e).length) {
       toast.error("Please fix validation errors");
       return false;
     }
-    setErrors(e);
     
+    return true;
   };
 
   /*  SAVE  */
@@ -227,7 +250,6 @@ const LeadUpsertSheet = ({
             setSelectedCustomerId(item?.value);
             
           }}
-          
         />
 
           <Input
@@ -236,15 +258,13 @@ const LeadUpsertSheet = ({
             value={form.fullName}
             error={errors.fullName}
             onChange={(v) =>
-              setForm({ ...form, fullName: v })
+              setForm({ ...form, fullName: v.replace(/[^a-zA-Z ]/g, "")})
             }
           />
 
           <Input
             label="Email"
-            required
             value={form.email}
-            error={errors.email}
             onChange={(v) =>
               setForm({ ...form, email: v })
             }
@@ -256,11 +276,11 @@ const LeadUpsertSheet = ({
             value={form.mobile}
             error={errors.mobile}
             onChange={(v) =>
-              setForm({ ...form, mobile: v })
+              setForm({ ...form, mobile: v.replace(/[^0-9]/g, "").slice(0, 10) })
             }
           />
 
-          <Input
+          <Textarea
             label="Address"
             value={form.address}
             onChange={(v) =>
@@ -270,8 +290,10 @@ const LeadUpsertSheet = ({
 
           <Select
             label="Lead Status"
+            required
             value={form.leadStatusId}
             options={statuses}
+            error={errors.leadStatusId}
             onChange={(v) =>
               setForm({ ...form, leadStatusId: v })
             }
