@@ -1,6 +1,7 @@
 export interface Policy {
   policyId: string;
   customerId: string;
+  customerName?: string;
   insurerId: string;
   productId: string;
 
