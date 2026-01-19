@@ -26,6 +26,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         [MaxLength(500)]
         public string? Address { get; set; }
         public Guid? LeadId { get; set; }
+        public Guid? CompanyId { get; set; }
         [Required]
         public string AdvisorId { get; set; } = null!;
         public DateTime? DOB { get; set; }

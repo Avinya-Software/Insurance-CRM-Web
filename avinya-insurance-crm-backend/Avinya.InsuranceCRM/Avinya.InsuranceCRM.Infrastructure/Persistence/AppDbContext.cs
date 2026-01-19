@@ -38,7 +38,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CampaignCustomer> CampaignCustomers => Set<CampaignCustomer>();
     public DbSet<MasterCampaignType> MasterCampaignTypes => Set<MasterCampaignType>();
     public DbSet<SystemEvent> SystemEvents => Set<SystemEvent>();
-
+    public DbSet<Company> Companies => Set<Company>();
     // ---------------- MODEL CONFIG ----------------
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Avinya.InsuranceCRM.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace Avinya.InsuranceCRM.Infrastructure.Identity;
 
 public class ApplicationUser : IdentityUser
 {
+    public Guid? CompanyId { get; set; }
+    public Company? Company { get; set; }
     public bool IsApproved { get; set; } = false;
     public bool IsActive { get; set; } = true;
 

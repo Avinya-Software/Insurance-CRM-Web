@@ -3,7 +3,9 @@ using Avinya.InsuranceCRM.API.Models;
 using Avinya.InsuranceCRM.API.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.Identity;
+using Avinya.InsuranceCRM.Infrastructure.Persistence;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,59 +19,84 @@ namespace Avinya.InsuranceCRM.API.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AdvisorController> _logger;
+        private readonly AppDbContext _context;
 
         public AdvisorController(
             IAdvisorRepository advisorRepository,
             UserManager<ApplicationUser> userManager,
             IConfiguration configuration,
-            ILogger<AdvisorController> logger)
+            ILogger<AdvisorController> logger,
+            AppDbContext context)
         {
             _advisorRepository = advisorRepository;
             _userManager = userManager;
             _configuration = configuration;
             _logger = logger;
+            _context = context;
         }
 
-        //   REGISTER  
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(AdvisorRegisterRequest request)
+        // =========================
+        // REGISTER ADVISOR (COMPANY)
+        // =========================
+        [Authorize(Roles = "CompanyAdmin")]
+        [HttpPost("register-advisor")]
+        public async Task<IActionResult> RegisterAdvisor(AdvisorRegisterRequest request)
         {
-            _logger.LogInformation("Advisor registration attempt: {Email}", request.Email);
+            // 🔐 Get CompanyId from JWT
+            var companyIdClaim = User.FindFirst("CompanyId")?.Value;
+            if (string.IsNullOrEmpty(companyIdClaim))
+            {
+                return Unauthorized(ApiResponse<string>.Fail(
+                    401,
+                    "Company context missing in token"
+                ));
+            }
 
+            var companyId = Guid.Parse(companyIdClaim);
+
+            // 🔍 Check if user already exists
             var existingUser = await _userManager.FindByEmailAsync(request.Email);
             if (existingUser != null)
             {
-                return BadRequest(
-                    ApiResponse<string>.Fail(400, "Email already registered")
-                );
+                var roles = await _userManager.GetRolesAsync(existingUser);
+
+                // ❌ One email = one role
+                if (roles.Any())
+                {
+                    return BadRequest(ApiResponse<string>.Fail(
+                        400,
+                        $"User already registered with role: {roles.First()}"
+                    ));
+                }
             }
 
+            // 1️⃣ Create Identity User
             var user = new ApplicationUser
             {
                 UserName = request.Email,
                 Email = request.Email,
-                IsApproved = false, // 🔥 must be approved by SuperAdmin
+                CompanyId = companyId,    // ✅ FROM JWT
+                IsApproved = true,
                 IsActive = true
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
-
             if (!result.Succeeded)
             {
-                return BadRequest(
-                    ApiResponse<string>.Fail(
-                        400,
-                        string.Join(", ", result.Errors.Select(e => e.Description))
-                    )
-                );
+                return BadRequest(ApiResponse<string>.Fail(
+                    400,
+                    string.Join(", ", result.Errors.Select(e => e.Description))
+                ));
             }
 
             await _userManager.AddToRoleAsync(user, "Advisor");
 
+            // 2️⃣ Create Advisor Profile
             var advisor = new Advisor
             {
                 AdvisorId = Guid.NewGuid(),
                 UserId = user.Id,
+                CompanyId = companyId,    // ✅ FROM JWT
                 FullName = request.FullName,
                 MobileNumber = request.MobileNumber,
                 IsActive = true,
@@ -78,74 +105,140 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
             await _advisorRepository.AddAsync(advisor);
 
-            return Ok(
-                ApiResponse<string>.Success(
-                    "Registration successful. Await admin approval."
-                )
-            );
+            return Ok(ApiResponse<object>.Success(new
+            {
+                advisor.AdvisorId,
+                advisor.FullName,
+                CompanyId = companyId
+            }, "Advisor registered successfully under company"));
         }
 
-        //   LOGIN  
+
+        // =========================
+        // REGISTER (COMPANY ADMIN)
+        // =========================
+        // ❗ One Email = One Role (STRICT)
+        [HttpPost("register-company")]
+        public async Task<IActionResult> RegisterCompanyAdmin(CompanyRegisterRequest request)
+        {
+            var existingUser = await _userManager.FindByEmailAsync(request.Email);
+
+            if (existingUser != null)
+            {
+                var roles = await _userManager.GetRolesAsync(existingUser);
+
+                // ❌ Block if user already has ANY role
+                if (roles.Any())
+                {
+                    return BadRequest(ApiResponse<string>.Fail(
+                        400,
+                        $"User already registered with role: {roles.First()}"
+                    ));
+                }
+            }
+
+            // 1️⃣ Create Company
+            var company = new Company
+            {
+                CompanyId = Guid.NewGuid(),
+                CompanyName = request.CompanyName,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Companies.Add(company);
+            await _context.SaveChangesAsync();
+
+            // 2️⃣ Create CompanyAdmin user (NOT approved)
+            var user = new ApplicationUser
+            {
+                UserName = request.Email,
+                Email = request.Email,
+                IsApproved = false, // needs SuperAdmin approval
+                IsActive = true,
+                CompanyId = company.CompanyId
+            };
+
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+            {
+                return BadRequest(ApiResponse<string>.Fail(
+                    400,
+                    string.Join(", ", result.Errors.Select(e => e.Description))
+                ));
+            }
+
+            await _userManager.AddToRoleAsync(user, "CompanyAdmin");
+
+            return Ok(ApiResponse<object>.Success(new
+            {
+                company.CompanyId,
+                company.CompanyName,
+                user.Email,
+                Role = "CompanyAdmin",
+                Status = "Pending SuperAdmin approval"
+            }, "Company registered successfully. Await SuperAdmin approval"));
+        }
+
+        // =========================
+        // LOGIN (ADVISOR / COMPANY)
+        // =========================
         [HttpPost("login")]
         public async Task<IActionResult> Login(AdvisorLoginRequest request)
         {
-            _logger.LogInformation("Advisor login attempt: {Email}", request.Email);
-
             var user = await _userManager.FindByEmailAsync(request.Email);
-
-            if (user == null)
+            if (user == null || !user.IsActive)
             {
-                return Unauthorized(
-                    ApiResponse<string>.Fail(401, "Invalid email or password")
-                );
-            }
-
-            if (!user.IsApproved)
-            {
-                return Unauthorized(
-                    ApiResponse<string>.Fail(403, "Account pending admin approval")
-                );
-            }
-
-            if (!user.IsActive)
-            {
-                return Unauthorized(
-                    ApiResponse<string>.Fail(403, "Account is disabled")
-                );
+                return Unauthorized(ApiResponse<string>.Fail(401, "Invalid credentials"));
             }
 
             var isValid = await _userManager.CheckPasswordAsync(user, request.Password);
-
             if (!isValid)
             {
-                return Unauthorized(
-                    ApiResponse<string>.Fail(401, "Invalid email or password")
-                );
+                return Unauthorized(ApiResponse<string>.Fail(401, "Invalid credentials"));
             }
 
-            var advisor = await _advisorRepository.GetByUserIdAsync(user.Id);
+            var roles = await _userManager.GetRolesAsync(user);
 
-            if (advisor == null)
+            if (!roles.Any())
             {
-                return Unauthorized(
-                    ApiResponse<string>.Fail(401, "Advisor profile not found")
-                );
+                return Unauthorized(ApiResponse<string>.Fail(403, "No role assigned to user"));
+            }
+
+            // Approval rule
+            if (roles.Contains("CompanyAdmin") && !user.IsApproved)
+            {
+                return Unauthorized(ApiResponse<string>.Fail(
+                    403,
+                    "CompanyAdmin account pending SuperAdmin approval"
+                ));
+            }
+
+            Advisor? advisor = null;
+            if (roles.Contains("Advisor"))
+            {
+                advisor = await _advisorRepository.GetByUserIdAsync(user.Id);
             }
 
             var (token, expiresAt) =
-                JwtTokenHelper.GenerateToken(user, advisor, _configuration);
+     await JwtTokenHelper.GenerateBaseToken(user, _userManager, _configuration);
 
-            return Ok(
-                ApiResponse<object>.Success(new
+
+            return Ok(ApiResponse<object>.Success(new
+            {
+                userId = user.Id,
+                user.Email,
+                user.CompanyId,
+                user.IsApproved,
+                Role = roles.First(), // ✅ guaranteed ONE role
+                AdvisorProfile = advisor == null ? null : new
                 {
                     advisor.AdvisorId,
                     advisor.FullName,
-                    advisor.MobileNumber,
-                    user.Email,
-                    Token = token,
-                    ExpiresAt = expiresAt
-                }, "Login successful")
-            );
+                    advisor.MobileNumber
+                },
+                Token = token,
+                ExpiresAt = expiresAt
+            }, "Login successful"));
         }
     }
 }

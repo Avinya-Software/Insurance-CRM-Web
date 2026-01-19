@@ -10,7 +10,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public Guid ProductId { get; set; } = Guid.NewGuid();
 
         /* ================= TENANT ================= */
-
+        public Guid? CompanyId { get; set; }
         [Required]
         public string AdvisorId { get; set; } = null!;
 

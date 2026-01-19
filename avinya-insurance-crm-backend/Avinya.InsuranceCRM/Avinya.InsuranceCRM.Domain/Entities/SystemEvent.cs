@@ -12,7 +12,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public Guid? LeadId { get; set; }
         public Guid? PolicyId { get; set; }
         public Guid? CustomerId { get; set; }
-
+        public Guid? CompanyId { get; set; }
         public string AdvisorId { get; set; } = null!;
 
         public DateTime EventDate { get; set; }

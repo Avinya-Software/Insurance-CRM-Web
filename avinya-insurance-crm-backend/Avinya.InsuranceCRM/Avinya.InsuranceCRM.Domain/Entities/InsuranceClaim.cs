@@ -9,6 +9,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         /* ================= TENANT ================= */
 
         // 🔐 MULTI-TENANT SAFETY
+        public Guid? CompanyId { get; set; }
         public string AdvisorId { get; set; } = null!;
 
         /* ================= RELATIONS ================= */

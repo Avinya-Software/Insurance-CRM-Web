@@ -19,6 +19,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public string? PortalPassword { get; set; }
 
         // 🔐 MULTI-TENANT SAFETY
+        public Guid? CompanyId { get; set; }
         public string AdvisorId { get; set; } = null!;
 
         public DateTime CreatedAt { get; set; }

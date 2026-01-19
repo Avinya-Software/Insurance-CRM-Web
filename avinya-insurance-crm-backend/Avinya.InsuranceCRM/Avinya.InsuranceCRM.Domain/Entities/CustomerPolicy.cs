@@ -16,7 +16,7 @@ public class CustomerPolicy
 
     public Guid ProductId { get; set; }
     public Product Product { get; set; } = null!;
-
+    public Guid? CompanyId { get; set; }
     public string AdvisorId { get; set; } = null!; // AspNetUsers
 
     // ---------------- POLICY MASTER FKs ----------------

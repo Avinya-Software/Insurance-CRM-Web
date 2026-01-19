@@ -1,23 +1,26 @@
 ﻿using Avinya.InsuranceCRM.Application.DTOs.Admin;
 using Avinya.InsuranceCRM.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
 {
     public interface IAdminService
     {
-        Task<List<PendingAdvisorDto>> GetPendingAdvisorsAsync();
-        Task ApproveAdvisorAsync(string userId, string approvedBy);
-        Task DisableAdvisorAsync(string userId);
-        Task<List<AdvisorStatusDto>> GetAdvisorsByStatusAsync(
-           string status,
-           DateTime? fromDate,
-           DateTime? toDate
-       );
-    }
+        /* ================= ADVISORS ================= */
 
+        Task<List<PendingAdvisorDto>> GetPendingAdvisorsAsync();
+
+        Task<List<AdvisorStatusDto>> GetAdvisorsByStatusAsync(
+            string status,
+            DateTime? fromDate,
+            DateTime? toDate);
+
+        /* ================= COMPANIES ================= */
+
+        Task<List<PendingCompanyDto>> GetPendingCompaniesAsync();
+
+        /* ================= APPROVAL / REJECTION ================= */
+
+        Task ApproveUserAsync(string userId, string approvedBy);
+        Task DisableUserAsync(string userId);
+    }
 }

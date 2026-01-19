@@ -19,7 +19,7 @@ public class Lead
     public LeadSource LeadSource { get; set; } = null!;
 
     public string? LeadSourceDescription { get; set; }
-
+    public Guid? CompanyId { get; set; }
     public string AdvisorId { get; set; } = null!;
 
     public bool IsConverted { get; set; }

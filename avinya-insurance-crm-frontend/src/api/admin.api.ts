@@ -62,3 +62,10 @@ export const getAdvisorsByStatusApi = async (
 
   return res.data;
 };
+// ✅ CORRECT
+export const getPendingCompaniesApi = async () => {
+  const res = await api.get<ApiWrapper<any[]>>(
+    "/admin/pending-companies"
+  );
+  return res.data;
+};

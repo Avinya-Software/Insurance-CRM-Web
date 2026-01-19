@@ -1,11 +1,7 @@
 import { useState } from "react";
-import {
-  CheckCircle,
-  Loader2,
-  XCircle
-} from "lucide-react";
+import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import { Toaster } from "react-hot-toast";
-import { usePendingAdvisors } from "../hooks/admin/usePendingAdvisors";
+import { usePendingCompanies } from "../hooks/admin/usePendingCompanies";
 import { useApproveAdvisor } from "../hooks/admin/useApproveAdvisor";
 import { useDeleteAdvisor } from "../hooks/admin/useDeleteAdvisor";
 import TableSkeleton from "../components/common/TableSkeleton";
@@ -13,7 +9,7 @@ import TableSkeleton from "../components/common/TableSkeleton";
 type ActionType = "approve" | "reject" | null;
 
 const AdminDashboard = () => {
-  const { data, isLoading } = usePendingAdvisors();
+  const { data, isLoading } = usePendingCompanies();
   const approveMutation = useApproveAdvisor();
   const deleteMutation = useDeleteAdvisor();
 
@@ -22,7 +18,7 @@ const AdminDashboard = () => {
   const [actionType, setActionType] =
     useState<ActionType>(null);
 
-  const advisors = data?.data || [];
+  const companies = data?.data || [];
 
   const confirmAction = () => {
     if (!selectedUserId || !actionType) return;
@@ -52,23 +48,23 @@ const AdminDashboard = () => {
       <Toaster position="top-right" />
 
       <div className="bg-white rounded-lg border">
-        {/*   HEADER   */}
+        {/* HEADER */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <h1 className="text-4xl font-serif font-semibold text-slate-900">
-            Pending Advisors
+            Pending Companies
           </h1>
           <p className="mt-1 text-sm text-slate-600">
-            {advisors.length} awaiting approval
+            {companies.length} awaiting approval
           </p>
         </div>
 
-        {/*   TABLE   */}
+        {/* TABLE */}
         <div className="relative overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead className="bg-slate-100 sticky top-0 z-10">
               <tr>
-                <Th>Name</Th>
-                <Th>Email</Th>
+                <Th>Company Name</Th>
+                <Th>Admin Email</Th>
                 <Th className="text-center">Actions</Th>
               </tr>
             </thead>
@@ -77,30 +73,31 @@ const AdminDashboard = () => {
               <TableSkeleton rows={6} columns={3} />
             ) : (
               <tbody>
-                {advisors.length === 0 ? (
+                {companies.length === 0 ? (
                   <tr>
                     <td
                       colSpan={3}
                       className="text-center py-12 text-slate-500"
                     >
-                      No pending advisors 🎉
+                      No pending companies 🎉
                     </td>
                   </tr>
                 ) : (
-                  advisors.map((a: any) => (
+                  companies.map((c: any) => (
                     <tr
-                      key={a.userId}
+                      key={c.companyId}
                       className="border-t h-[52px] hover:bg-slate-50"
                     >
                       <Td className="font-medium">
-                        {a.fullName}
+                        {c.companyName}
                       </Td>
-                      <Td>{a.email}</Td>
+                      <Td>{c.adminEmail}</Td>
+
                       <Td className="text-center">
                         <div className="flex justify-center gap-2">
                           <button
                             onClick={() => {
-                              setSelectedUserId(a.userId);
+                              setSelectedUserId(c.adminUserId);
                               setActionType("approve");
                             }}
                             className="inline-flex items-center gap-2 bg-green-700 text-white px-3 py-1.5 rounded text-sm hover:bg-green-800"
@@ -111,7 +108,7 @@ const AdminDashboard = () => {
 
                           <button
                             onClick={() => {
-                              setSelectedUserId(a.userId);
+                              setSelectedUserId(c.adminUserId);
                               setActionType("reject");
                             }}
                             className="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded text-sm hover:bg-red-700"
@@ -130,22 +127,20 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/*   CONFIRM MODAL   */}
+      {/* CONFIRM MODAL */}
       {selectedUserId && actionType && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
             <h3 className="text-lg font-semibold mb-3">
               {actionType === "approve"
-                ? "Approve Advisor"
-                : "Reject Advisor"}
+                ? "Approve Company"
+                : "Reject Company"}
             </h3>
 
             <p className="text-sm text-gray-600 mb-6">
               Are you sure you want to{" "}
-              {actionType === "approve"
-                ? "approve"
-                : "reject"}{" "}
-              this advisor?
+              {actionType === "approve" ? "approve" : "reject"}{" "}
+              this company?
             </p>
 
             <div className="flex justify-end gap-3">
@@ -167,10 +162,7 @@ const AdminDashboard = () => {
               >
                 {isActionLoading ? (
                   <span className="flex items-center gap-2">
-                    <Loader2
-                      size={16}
-                      className="animate-spin"
-                    />
+                    <Loader2 size={16} className="animate-spin" />
                     Processing...
                   </span>
                 ) : actionType === "approve" ? (
@@ -189,7 +181,7 @@ const AdminDashboard = () => {
 
 export default AdminDashboard;
 
-/*  HELPERS  */
+/* HELPERS */
 const Th = ({ children, className = "" }: any) => (
   <th
     className={`px-4 py-3 text-left font-semibold text-slate-700 ${className}`}

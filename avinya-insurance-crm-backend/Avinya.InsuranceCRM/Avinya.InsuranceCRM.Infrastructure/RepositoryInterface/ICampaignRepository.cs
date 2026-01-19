@@ -5,7 +5,9 @@ public interface ICampaignRepository
     /* ================= CREATE ================= */
 
     Task<Campaign> CreateCampaignAsync(
-        string advisorId,
+        Guid companyId,
+        string userId,
+        string role,
         Campaign campaign,
         List<CampaignTemplate> templates,
         List<CampaignRule> rules,
@@ -15,10 +17,14 @@ public interface ICampaignRepository
 
     Task<Campaign?> GetByIdAsync(
         Guid campaignId,
-        string advisorId);
+        Guid companyId,
+        string userId,
+        string role);
 
     Task<(List<Campaign> Items, int TotalCount)> GetPagedAsync(
-        string advisorId,
+        Guid companyId,
+        string userId,
+        string role,
         int pageNumber,
         int pageSize,
         string? search);
@@ -27,7 +33,9 @@ public interface ICampaignRepository
         Guid campaignId);
 
     Task<List<(Guid CampaignId, string Name)>> GetDropdownAsync(
-        string advisorId);
+        Guid companyId,
+        string userId,
+        string role);
 
     Task<List<(int CampaignTypeId, string Name)>> GetCampaignTypeDropdownAsync();
 
@@ -35,7 +43,9 @@ public interface ICampaignRepository
 
     Task UpdateCampaignAsync(
         Guid campaignId,
-        string advisorId,
+        Guid companyId,
+        string userId,
+        string role,
         Campaign campaign,
         List<CampaignTemplate> templates,
         List<CampaignRule> rules,
@@ -45,5 +55,7 @@ public interface ICampaignRepository
 
     Task DeleteCampaignAsync(
         Guid campaignId,
-        string advisorId);
+        Guid companyId,
+        string userId,
+        string role);
 }

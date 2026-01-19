@@ -10,7 +10,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public Guid RenewalId { get; set; }
 
         /* ================= TENANCY ================= */
-
+        public Guid? CompanyId { get; set; }
         // 🔐 Enforces advisor-level isolation
         [ValidateNever]
         public string AdvisorId { get; set; } = null!;

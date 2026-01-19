@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 [ApiController]
 [Route("api/campaigns")]
-[Authorize(Policy = "ApprovedAdvisor")]
+[Authorize(Roles = "Advisor,CompanyAdmin")]
 public class CampaignController : ControllerBase
 {
     private readonly ICampaignRepository _repository;
@@ -16,16 +16,20 @@ public class CampaignController : ControllerBase
         _repository = repository;
     }
 
-    /*   CREATE   */
+    /* ================= CREATE ================= */
 
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CampaignCreateRequest request)
     {
-        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+        var companyId = Guid.Parse(User.FindFirst("CompanyId")!.Value);
 
         var campaign = await _repository.CreateCampaignAsync(
-            advisorId,
+            companyId,
+            userId,
+            role,
             request.Campaign,
             request.Templates,
             request.Rules,
@@ -37,16 +41,20 @@ public class CampaignController : ControllerBase
             campaign);
     }
 
-    /*   GET BY ID   */
+    /* ================= GET BY ID ================= */
 
     [HttpGet("{campaignId}")]
     public async Task<IActionResult> GetById(Guid campaignId)
     {
-        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+        var companyId = Guid.Parse(User.FindFirst("CompanyId")!.Value);
 
         var campaign = await _repository.GetByIdAsync(
             campaignId,
-            advisorId);
+            companyId,
+            userId,
+            role);
 
         if (campaign == null)
             return NotFound();
@@ -54,7 +62,7 @@ public class CampaignController : ControllerBase
         return Ok(campaign);
     }
 
-    /*   GET PAGED   */
+    /* ================= GET PAGED ================= */
 
     [HttpGet]
     public async Task<IActionResult> GetPaged(
@@ -62,10 +70,14 @@ public class CampaignController : ControllerBase
         int pageSize = 10,
         string? search = null)
     {
-        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+        var companyId = Guid.Parse(User.FindFirst("CompanyId")!.Value);
 
         var result = await _repository.GetPagedAsync(
-            advisorId,
+            companyId,
+            userId,
+            role,
             pageNumber,
             pageSize,
             search);
@@ -77,18 +89,22 @@ public class CampaignController : ControllerBase
         });
     }
 
-    /*   UPDATE   */
+    /* ================= UPDATE ================= */
 
     [HttpPut("{campaignId}")]
     public async Task<IActionResult> Update(
         Guid campaignId,
         [FromBody] CampaignCreateRequest request)
     {
-        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+        var companyId = Guid.Parse(User.FindFirst("CompanyId")!.Value);
 
         await _repository.UpdateCampaignAsync(
             campaignId,
-            advisorId,
+            companyId,
+            userId,
+            role,
             request.Campaign,
             request.Templates,
             request.Rules,
@@ -97,28 +113,37 @@ public class CampaignController : ControllerBase
         return NoContent();
     }
 
-    /*   DELETE   */
+    /* ================= DELETE ================= */
 
     [HttpDelete("{campaignId}")]
     public async Task<IActionResult> Delete(Guid campaignId)
     {
-        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+        var companyId = Guid.Parse(User.FindFirst("CompanyId")!.Value);
 
         await _repository.DeleteCampaignAsync(
             campaignId,
-            advisorId);
+            companyId,
+            userId,
+            role);
 
         return NoContent();
     }
 
-    /*   DROPDOWN   */
+    /* ================= DROPDOWN ================= */
 
     [HttpGet("dropdown")]
     public async Task<IActionResult> Dropdown()
     {
-        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var role = User.FindFirstValue(ClaimTypes.Role)!;
+        var companyId = Guid.Parse(User.FindFirst("CompanyId")!.Value);
 
-        var data = await _repository.GetDropdownAsync(advisorId);
+        var data = await _repository.GetDropdownAsync(
+            companyId,
+            userId,
+            role);
 
         return Ok(data.Select(x => new
         {
@@ -126,6 +151,8 @@ public class CampaignController : ControllerBase
             name = x.Name
         }));
     }
+
+    /* ================= CAMPAIGN TYPES ================= */
 
     [HttpGet("campaign-types/dropdown")]
     public async Task<IActionResult> CampaignTypeDropdown()

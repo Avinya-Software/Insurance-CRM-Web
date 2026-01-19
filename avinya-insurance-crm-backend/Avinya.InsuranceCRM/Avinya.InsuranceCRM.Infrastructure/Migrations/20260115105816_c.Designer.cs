@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Avinya.InsuranceCRM.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260115105816_c")]
+    partial class c
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -25,9 +28,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                 {
                     b.Property<Guid>("AdvisorId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CompanyId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -79,9 +79,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -364,24 +361,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Avinya.InsuranceCRM.Domain.Entities.Company", b =>
-                {
-                    b.Property<Guid>("CompanyId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("CompanyId");
-
-                    b.ToTable("Companies");
-                });
-
             modelBuilder.Entity("Avinya.InsuranceCRM.Domain.Entities.Customer", b =>
                 {
                     b.Property<Guid>("CustomerId")
@@ -398,9 +377,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
 
                     b.Property<DateTime?>("Anniversary")
                         .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -475,9 +451,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                     b.Property<int>("ClaimTypeId")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -532,9 +505,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                     b.Property<string>("AdvisorId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ContactDetails")
                         .HasColumnType("nvarchar(max)");
@@ -633,7 +603,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         new
                         {
                             LeadSourceId = 1,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3594),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(770),
                             DisplayOrder = 0,
                             IsActive = true,
                             SourceName = "Website"
@@ -641,7 +611,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         new
                         {
                             LeadSourceId = 2,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3596),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(772),
                             DisplayOrder = 0,
                             IsActive = true,
                             SourceName = "Referral"
@@ -649,7 +619,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         new
                         {
                             LeadSourceId = 3,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3597),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(772),
                             DisplayOrder = 0,
                             IsActive = true,
                             SourceName = "Agent"
@@ -657,7 +627,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         new
                         {
                             LeadSourceId = 4,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3598),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(773),
                             DisplayOrder = 0,
                             IsActive = true,
                             SourceName = "Campaign"
@@ -665,7 +635,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         new
                         {
                             LeadSourceId = 5,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3599),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(774),
                             DisplayOrder = 0,
                             IsActive = true,
                             SourceName = "Other"
@@ -703,42 +673,42 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         new
                         {
                             LeadStatusId = 1,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3300),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(597),
                             IsActive = true,
                             StatusName = "New"
                         },
                         new
                         {
                             LeadStatusId = 2,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3302),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(599),
                             IsActive = true,
                             StatusName = "Contacted"
                         },
                         new
                         {
                             LeadStatusId = 3,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3304),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(600),
                             IsActive = true,
                             StatusName = "Qualified"
                         },
                         new
                         {
                             LeadStatusId = 4,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3306),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(601),
                             IsActive = true,
                             StatusName = "Follow Up"
                         },
                         new
                         {
                             LeadStatusId = 5,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3307),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(603),
                             IsActive = true,
                             StatusName = "Converted"
                         },
                         new
                         {
                             LeadStatusId = 6,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3309),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(604),
                             IsActive = true,
                             StatusName = "Lost"
                         });
@@ -775,42 +745,42 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         new
                         {
                             CampaignTypeId = 1,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3919),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(992),
                             IsActive = true,
                             Name = "Promotional"
                         },
                         new
                         {
                             CampaignTypeId = 2,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3920),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(997),
                             IsActive = true,
                             Name = "Birthday"
                         },
                         new
                         {
                             CampaignTypeId = 3,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3921),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(998),
                             IsActive = true,
                             Name = "Policy Renewal"
                         },
                         new
                         {
                             CampaignTypeId = 4,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3923),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(999),
                             IsActive = true,
                             Name = "Payment Reminder"
                         },
                         new
                         {
                             CampaignTypeId = 5,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3924),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(1000),
                             IsActive = true,
                             Name = "Policy Expiry"
                         },
                         new
                         {
                             CampaignTypeId = 6,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3925),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(1001),
                             IsActive = true,
                             Name = "Custom"
                         });
@@ -843,28 +813,28 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         new
                         {
                             PolicyStatusId = 1,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3682),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(839),
                             IsActive = true,
                             StatusName = "Active"
                         },
                         new
                         {
                             PolicyStatusId = 2,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3684),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(843),
                             IsActive = true,
                             StatusName = "Lapsed"
                         },
                         new
                         {
                             PolicyStatusId = 3,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3685),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(844),
                             IsActive = true,
                             StatusName = "Cancelled"
                         },
                         new
                         {
                             PolicyStatusId = 4,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3687),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(845),
                             IsActive = true,
                             StatusName = "Pending"
                         });
@@ -897,21 +867,21 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         new
                         {
                             PolicyTypeId = 1,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3722),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(868),
                             IsActive = true,
                             TypeName = "Fresh"
                         },
                         new
                         {
                             PolicyTypeId = 2,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3724),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(871),
                             IsActive = true,
                             TypeName = "Renewal"
                         },
                         new
                         {
                             PolicyTypeId = 3,
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3726),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(872),
                             IsActive = true,
                             TypeName = "Lost"
                         });
@@ -929,9 +899,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
 
                     b.Property<string>("CommissionRules")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1002,28 +969,28 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         {
                             ProductCategoryId = 1,
                             CategoryName = "Term",
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3642),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(801),
                             IsActive = true
                         },
                         new
                         {
                             ProductCategoryId = 2,
                             CategoryName = "Health",
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3644),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(802),
                             IsActive = true
                         },
                         new
                         {
                             ProductCategoryId = 3,
                             CategoryName = "Motor",
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3646),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(804),
                             IsActive = true
                         },
                         new
                         {
                             ProductCategoryId = 4,
                             CategoryName = "Fire",
-                            CreatedAt = new DateTime(2026, 1, 15, 11, 32, 34, 756, DateTimeKind.Utc).AddTicks(3648),
+                            CreatedAt = new DateTime(2026, 1, 15, 10, 58, 15, 717, DateTimeKind.Utc).AddTicks(813),
                             IsActive = true
                         });
                 });
@@ -1037,9 +1004,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                     b.Property<string>("AdvisorId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1144,9 +1108,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -1205,9 +1166,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                     b.Property<string>("ApprovedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -1259,8 +1217,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CompanyId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -1334,9 +1290,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
 
                     b.Property<string>("BrokerCode")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1428,9 +1381,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                     b.Property<string>("AdvisorId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1742,15 +1692,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.Migrations
                     b.Navigation("Policy");
 
                     b.Navigation("RenewalStatus");
-                });
-
-            modelBuilder.Entity("Avinya.InsuranceCRM.Infrastructure.Identity.ApplicationUser", b =>
-                {
-                    b.HasOne("Avinya.InsuranceCRM.Domain.Entities.Company", "Company")
-                        .WithMany()
-                        .HasForeignKey("CompanyId");
-
-                    b.Navigation("Company");
                 });
 
             modelBuilder.Entity("CampaignRule", b =>

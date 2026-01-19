@@ -17,7 +17,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public int CampaignTypeId { get; set; } = 0;
 
         public string Channel { get; set; } = null!;
-
+        public Guid? CompanyId { get; set; }
         public string AdvisorId { get; set; } = null!;
         public bool IsActive { get; set; }
         public bool ApplyToAllCustomers { get; set; }
