@@ -1,5 +1,7 @@
 ﻿using Avinya.InsuranceCRM.API.ResponseModels;
+using Avinya.InsuranceCRM.Application.DTOs;
 using Avinya.InsuranceCRM.Application.RepositoryInterface;
+using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
@@ -8,32 +10,102 @@ using Microsoft.EntityFrameworkCore;
 public class LeadRepository : ILeadRepository
 {
     private readonly AppDbContext _context;
-    private readonly IEmailService _emailService;
 
-    public LeadRepository(
-        AppDbContext context,
-        IEmailService emailService)
+    public LeadRepository(AppDbContext context)
     {
         _context = context;
-        _emailService = emailService;
     }
 
-    /* ================= READ ================= */
 
-    public async Task<Lead?> GetByIdAsync(
+    public async Task<(Lead lead, bool isUpdate)> CreateOrUpdateAsync(
         string advisorId,
-        Guid leadId)
+        Guid? companyId,
+        CreateOrUpdateLeadRequest request)
     {
-        return await _context.Leads
-            .Include(x => x.LeadStatus)
-            .Include(x => x.LeadSource)
-            .FirstOrDefaultAsync(x =>
-                x.LeadId == leadId &&
+        if (string.IsNullOrEmpty(advisorId))
+            throw new UnauthorizedAccessException("Advisor not found");
+
+        if (request.LeadId.HasValue)
+        {
+            var lead = await _context.Leads.FirstOrDefaultAsync(x =>
+                x.LeadId == request.LeadId.Value &&
                 x.AdvisorId == advisorId);
+
+            if (lead == null)
+                throw new KeyNotFoundException("Lead not found");
+
+            lead.FullName = request.FullName;
+            lead.Email = request.Email;
+            lead.Mobile = request.Mobile;
+            lead.LeadStatusId = request.LeadStatusId;
+            lead.LeadSourceId = request.LeadSourceId;
+            lead.LeadSourceDescription = request.LeadSourceDescription;
+            lead.Address = request.Address;
+            lead.Notes = request.Notes;
+            lead.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return (lead, true);
+        }
+
+        Customer? customer = null;
+        Guid customerId = request.CustomerId ?? Guid.Empty;
+
+        if (!request.CustomerId.HasValue)
+        {
+            if (string.IsNullOrWhiteSpace(request.FullName) ||
+                string.IsNullOrWhiteSpace(request.Mobile))
+                throw new ArgumentException("FullName and Mobile are required");
+
+            customer = new Customer
+            {
+                CustomerId = Guid.NewGuid(),
+                FullName = request.FullName,
+                PrimaryMobile = request.Mobile,
+                Email = request.Email,
+                Address = request.Address,
+                AdvisorId = advisorId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.Customers.AddAsync(customer);
+            customerId = customer.CustomerId;
+        }
+
+        var newLead = new Lead
+        {
+            LeadId = Guid.NewGuid(),
+            LeadNo = await GenerateLeadNoAsync(advisorId),
+            CustomerId = customerId,
+            FullName = request.FullName,
+            Email = request.Email,
+            Mobile = request.Mobile,
+            LeadStatusId = request.LeadStatusId,
+            LeadSourceId = request.LeadSourceId,
+            LeadSourceDescription = request.LeadSourceDescription,
+            AdvisorId = advisorId,
+            Address = request.Address,
+            CompanyId = companyId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _context.Leads.AddAsync(newLead);
+
+        if (customer != null)
+        {
+            customer.LeadId = newLead.LeadId;
+            customer.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+        return (newLead, false);
     }
 
-    public async Task<PagedRecordResult<Lead>> GetPagedAsync(
+
+    public async Task<(IEnumerable<LeadListDto> Data, int TotalCount)> GetPagedAsync(
         string advisorId,
+        string role,
+        Guid? companyId,
         int pageNumber,
         int pageSize,
         string? search,
@@ -43,128 +115,92 @@ public class LeadRepository : ILeadRepository
         int? leadStatusId,
         int? leadSourceId)
     {
-        var query = _context.Leads
-            .Include(x => x.LeadStatus)
-            .Include(x => x.LeadSource)
-            .Where(x => x.AdvisorId == advisorId)
-            .AsQueryable();
 
-        /* 🔍 Global search */
+
+        IQueryable<Lead> query = _context.Leads
+        .Include(x => x.LeadStatus)
+        .Include(x => x.LeadSource);
+
+        if (role == "Advisor")
+        {
+            query = query.Where(x => x.AdvisorId == advisorId);
+        }
+        else if (role == "CompanyAdmin" && companyId.HasValue)
+        {
+            query = query.Where(x => x.CompanyId == companyId);
+        }
+
         if (!string.IsNullOrWhiteSpace(search))
-        {
-            search = search.ToLower();
-
             query = query.Where(x =>
-                x.FullName.ToLower().Contains(search) ||
-                (x.Email != null && x.Email.ToLower().Contains(search)) ||
-                (x.Mobile != null && x.Mobile.Contains(search)) ||
-                x.LeadNo.ToLower().Contains(search)
-            );
-        }
+                x.FullName.Contains(search) ||
+                x.Email.Contains(search) ||
+                x.Mobile.Contains(search));
 
-        /* 👤 Full Name */
         if (!string.IsNullOrWhiteSpace(fullName))
-        {
-            query = query.Where(x =>
-                x.FullName.ToLower().Contains(fullName.ToLower()));
-        }
+            query = query.Where(x => x.FullName.Contains(fullName));
 
-        /* 📧 Email */
         if (!string.IsNullOrWhiteSpace(email))
-        {
-            query = query.Where(x =>
-                x.Email != null &&
-                x.Email.ToLower().Contains(email.ToLower()));
-        }
+            query = query.Where(x => x.Email.Contains(email));
 
-        /* 📱 Mobile */
         if (!string.IsNullOrWhiteSpace(mobile))
-        {
-            query = query.Where(x =>
-                x.Mobile != null &&
-                x.Mobile.Contains(mobile));
-        }
+            query = query.Where(x => x.Mobile.Contains(mobile));
 
-        /* 🎯 Lead Status */
         if (leadStatusId.HasValue)
-        {
-            query = query.Where(x =>
-                x.LeadStatusId == leadStatusId.Value);
-        }
+            query = query.Where(x => x.LeadStatusId == leadStatusId);
 
-        /* 🎯 Lead Source */
         if (leadSourceId.HasValue)
+            query = query.Where(x => x.LeadSourceId == leadSourceId);
+
+        var totalCount = await query.CountAsync();
+
+        var data = await query
+        .OrderByDescending(x => x.CreatedAt)
+        .Skip((pageNumber - 1) * pageSize)
+        .Take(pageSize)
+        .Select(x => new LeadListDto
         {
-            query = query.Where(x =>
-                x.LeadSourceId == leadSourceId.Value);
-        }
+            LeadId = x.LeadId,
+            LeadNo = x.LeadNo,
+            FullName = x.FullName,
+            Email = x.Email,
+            Mobile = x.Mobile,
+            Address = x.Address,
 
-        var totalRecords = await query.CountAsync();
+            LeadStatusId = x.LeadStatusId,
+            LeadStatusName = x.LeadStatus.StatusName,
 
-        var leads = await query
-            .OrderByDescending(x => x.CreatedAt)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+            LeadSourceId = x.LeadSourceId,
+            LeadSourceName = x.LeadSource.SourceName,
+            LeadSourceDescription = x.LeadSourceDescription,
 
-        return new PagedRecordResult<Lead>
-        {
-            TotalRecords = totalRecords,
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            Data = leads
-        };
-    }
+            CompanyId = x.CompanyId,
+            AdvisorId = x.AdvisorId,
 
-    /* ================= CREATE / UPDATE ================= */
+            IsConverted = x.IsConverted,
+            CustomerId = x.CustomerId,
 
-    public async Task AddAsync(Lead lead)
-    {
-        _context.Leads.Add(lead);
-        await _context.SaveChangesAsync();
-    }
+            Notes = x.Notes,
+            CreatedAt = x.CreatedAt,
+            UpdatedAt = x.UpdatedAt,
 
-    public async Task UpdateAsync(Lead lead)
-    {
-        _context.Leads.Update(lead);
-        await _context.SaveChangesAsync();
-    }
+            FollowUps = x.FollowUps
+                .OrderByDescending(f => f.CreatedAt)
+                .Select(f => new LeadFollowUpDto
+                {
+                    FollowUpId = f.FollowUpId,
+                    FollowUpDate = f.FollowUpDate,
+                    NextFollowUpDate = f.NextFollowUpDate,
+                    CreatedAt = f.CreatedAt
+                })
+                .ToList()
+        })
+        .ToListAsync();
 
-    /* ================= DELETE ================= */
-
-    public async Task<bool> DeleteAsync(string advisorId, Guid leadId)
-    {
-        // 1. Get the lead (advisor-scoped)
-        var lead = await _context.Leads
-            .FirstOrDefaultAsync(l =>
-                l.LeadId == leadId &&
-                l.AdvisorId == advisorId);
-
-        if (lead == null)
-            return false;
-
-        var customer = await _context.Customers
-            .FirstOrDefaultAsync(c =>
-                c.LeadId == lead.LeadId &&
-                c.AdvisorId == advisorId);
-
-        _context.Leads.Remove(lead);
-
-        if (customer != null)
-        {
-            _context.Customers.Remove(customer);
-        }
-
-        // 5. Save once (transaction-safe)
-        await _context.SaveChangesAsync();
-
-        return true;
+    return (data, totalCount);
     }
 
 
-    /* ================= HELPERS ================= */
-
-    public async Task<string> GenerateLeadNoAsync(string advisorId)
+    private async Task<string> GenerateLeadNoAsync(string advisorId)
     {
         var lastLeadNo = await _context.Leads
             .Where(x => x.AdvisorId == advisorId)
@@ -172,59 +208,50 @@ public class LeadRepository : ILeadRepository
             .Select(x => x.LeadNo)
             .FirstOrDefaultAsync();
 
-        int nextNumber = 1;
+        int next = 1;
+        if (!string.IsNullOrEmpty(lastLeadNo) &&
+            int.TryParse(lastLeadNo.Split('-').Last(), out int n))
+            next = n + 1;
 
-        if (!string.IsNullOrWhiteSpace(lastLeadNo))
-        {
-            var numericPart = lastLeadNo.Split('-').Last();
-
-            if (int.TryParse(numericPart, out int lastNumber))
-            {
-                nextNumber = lastNumber + 1;
-            }
-        }
-
-        return $"LEAD-{nextNumber:D3}";
+        return $"LEAD-{next:D3}";
     }
-
-
 
     public async Task<List<LeadStatus>> GetLeadStatusesAsync()
-    {
-        return await _context.LeadStatuses
-            .OrderBy(x => x.LeadStatusId)
-            .ToListAsync();
-    }
+        => await _context.LeadStatuses.OrderBy(x => x.StatusName).ToListAsync();
 
     public async Task<List<LeadSource>> GetLeadSourcesAsync()
-    {
-        return await _context.LeadSources
-            .OrderBy(x => x.LeadSourceId)
-            .ToListAsync();
-    }
+        => await _context.LeadSources.OrderBy(x => x.SourceName).ToListAsync();
+
     public async Task<bool> UpdateLeadStatusAsync(
-    string advisorId,
-    Guid leadId,
-    int leadStatusId,
-    string? notes)
+        string advisorId,
+        Guid leadId,
+        int statusId,
+        string? notes)
     {
-        var lead = await _context.Leads
-            .FirstOrDefaultAsync(x =>
-                x.LeadId == leadId &&
-                x.AdvisorId == advisorId);
+        var lead = await _context.Leads.FirstOrDefaultAsync(x =>
+            x.LeadId == leadId &&
+            x.AdvisorId == advisorId);
 
-        if (lead == null)
-            return false;
+        if (lead == null) return false;
 
-        lead.LeadStatusId = leadStatusId;
+        lead.LeadStatusId = statusId;
         lead.Notes = notes;
         lead.UpdatedAt = DateTime.UtcNow;
-
-        // Business rules
-        lead.IsConverted = leadStatusId == 5;
 
         await _context.SaveChangesAsync();
         return true;
     }
 
+    public async Task<bool> DeleteAsync(string advisorId, Guid leadId)
+    {
+        var lead = await _context.Leads.FirstOrDefaultAsync(x =>
+            x.LeadId == leadId &&
+            x.AdvisorId == advisorId);
+
+        if (lead == null) return false;
+
+        _context.Leads.Remove(lead);
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }

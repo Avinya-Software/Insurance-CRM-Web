@@ -11,7 +11,6 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
     public interface ILeadFollowUpRepository
     {
         Task AddAsync(LeadFollowUp followUp);
-        Task<List<LeadFollowUp>> GetByLeadIdAsync(Guid leadId);
         Task<IDbContextTransaction> BeginTransactionAsync();
 
     }

@@ -25,13 +25,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context.LeadFollowUps.Add(followUp);
             await _context.SaveChangesAsync();
         }
-        public async Task<List<LeadFollowUp>> GetByLeadIdAsync(Guid leadId)
-        {
-            return await _context.LeadFollowUps
-                .Where(x => x.LeadId == leadId)
-                .OrderByDescending(x => x.FollowUpDate)
-                .ToListAsync();
-        }
+        
         public Task<IDbContextTransaction> BeginTransactionAsync()
         {
             return _context.Database.BeginTransactionAsync();

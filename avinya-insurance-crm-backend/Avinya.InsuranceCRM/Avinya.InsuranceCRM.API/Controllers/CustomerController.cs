@@ -31,186 +31,182 @@ namespace Avinya.InsuranceCRM.API.Controllers
             _env = env;
         }
 
-        // -------- CREATE OR UPDATE CUSTOMER --------
-        [HttpPost]
-        public async Task<IActionResult> CreateOrUpdateCustomer(
-     [FromForm] CreateCustomerRequest request)
-        {
-            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+     //   [HttpPost]
+     //   public async Task<IActionResult> CreateOrUpdateCustomer(
+     //[FromForm] CreateCustomerRequest request)
+     //   {
+     //       var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (string.IsNullOrEmpty(advisorId))
-            {
-                return Unauthorized(ApiResponse<string>.Fail(401, "Invalid advisor token"));
-            }
+     //       if (string.IsNullOrEmpty(advisorId))
+     //       {
+     //           return Unauthorized(ApiResponse<string>.Fail(401, "Invalid advisor token"));
+     //       }
 
-            Customer customer;
+     //       Customer customer;
 
-            /*   UPDATE   */
-            if (request.CustomerId.HasValue)
-            {
-                customer = await _customerRepository.GetByIdAsync(
-                    advisorId,
-                    request.CustomerId.Value
-                );
+     //       if (request.CustomerId.HasValue)
+     //       {
+     //           customer = await _customerRepository.GetByIdAsync(
+     //               advisorId,
+     //               request.CustomerId.Value
+     //           );
 
-                if (customer == null)
-                {
-                    return NotFound(ApiResponse<string>.Fail(404, "Customer not found"));
-                }
+     //           if (customer == null)
+     //           {
+     //               return NotFound(ApiResponse<string>.Fail(404, "Customer not found"));
+     //           }
 
-                if (!string.IsNullOrWhiteSpace(request.PrimaryMobile))
-                {
-                    var mobileExists =
-                        await _customerRepository.ExistsByMobileAsync(
-                            advisorId,
-                            request.PrimaryMobile,
-                            customer.CustomerId
-                        );
+     //           if (!string.IsNullOrWhiteSpace(request.PrimaryMobile))
+     //           {
+     //               var mobileExists =
+     //                   await _customerRepository.ExistsByMobileAsync(
+     //                       advisorId,
+     //                       request.PrimaryMobile,
+     //                       customer.CustomerId
+     //                   );
 
-                    if (mobileExists)
-                    {
-                        return BadRequest(ApiResponse<string>.Fail(400, "Mobile number already exists"));
-                    }
-                }
+     //               if (mobileExists)
+     //               {
+     //                   return BadRequest(ApiResponse<string>.Fail(400, "Mobile number already exists"));
+     //               }
+     //           }
 
-                if (!string.IsNullOrWhiteSpace(request.Email))
-                {
-                    var emailExists =
-                        await _customerRepository.ExistsByEmailAsync(
-                            advisorId,
-                            request.Email,
-                            customer.CustomerId
-                        );
+     //           if (!string.IsNullOrWhiteSpace(request.Email))
+     //           {
+     //               var emailExists =
+     //                   await _customerRepository.ExistsByEmailAsync(
+     //                       advisorId,
+     //                       request.Email,
+     //                       customer.CustomerId
+     //                   );
 
-                    if (emailExists)
-                    {
-                        return BadRequest(ApiResponse<string>.Fail(400, "Email already exists"));
-                    }
-                }
+     //               if (emailExists)
+     //               {
+     //                   return BadRequest(ApiResponse<string>.Fail(400, "Email already exists"));
+     //               }
+     //           }
 
-                customer.FullName = request.FullName;
-                customer.PrimaryMobile = request.PrimaryMobile;
-                customer.SecondaryMobile = request.SecondaryMobile;
-                customer.Email = request.Email;
-                customer.Address = request.Address;
-                customer.KYCStatus = request.KYCStatus;
-                customer.DOB = request.DOB;
-                customer.Anniversary = request.Anniversary;
-                customer.Notes = request.Notes;
-                customer.UpdatedAt = DateTime.UtcNow;
+     //           customer.FullName = request.FullName;
+     //           customer.PrimaryMobile = request.PrimaryMobile;
+     //           customer.SecondaryMobile = request.SecondaryMobile;
+     //           customer.Email = request.Email;
+     //           customer.Address = request.Address;
+     //           customer.KYCStatus = request.KYCStatus;
+     //           customer.DOB = request.DOB;
+     //           customer.Anniversary = request.Anniversary;
+     //           customer.Notes = request.Notes;
+     //           customer.UpdatedAt = DateTime.UtcNow;
 
-                await _customerRepository.UpdateAsync(customer);
-            }
-            /*   CREATE   */
-            else
-            {
-                if (await _customerRepository.ExistsByMobileAsync(
-                    advisorId,
-                    request.PrimaryMobile))
-                {
-                    return BadRequest(ApiResponse<string>.Fail(400, "Mobile number already exists"));
-                }
+     //           await _customerRepository.UpdateAsync(customer);
+     //       }
+     //       else
+     //       {
+     //           if (await _customerRepository.ExistsByMobileAsync(
+     //               advisorId,
+     //               request.PrimaryMobile))
+     //           {
+     //               return BadRequest(ApiResponse<string>.Fail(400, "Mobile number already exists"));
+     //           }
 
-                if (!string.IsNullOrWhiteSpace(request.Email) &&
-                    await _customerRepository.ExistsByEmailAsync(
-                        advisorId,
-                        request.Email))
-                {
-                    return BadRequest(ApiResponse<string>.Fail(400, "Email already exists"));
-                }
+     //           if (!string.IsNullOrWhiteSpace(request.Email) &&
+     //               await _customerRepository.ExistsByEmailAsync(
+     //                   advisorId,
+     //                   request.Email))
+     //           {
+     //               return BadRequest(ApiResponse<string>.Fail(400, "Email already exists"));
+     //           }
 
-                customer = new Customer
-                {
-                    CustomerId = Guid.NewGuid(),
-                    FullName = request.FullName,
-                    PrimaryMobile = request.PrimaryMobile,
-                    SecondaryMobile = request.SecondaryMobile,
-                    Email = request.Email,
-                    Address = request.Address,
-                    KYCStatus = request.KYCStatus,
-                    DOB = request.DOB,
-                    Anniversary = request.Anniversary,
-                    Notes = request.Notes,
-                    AdvisorId = advisorId,
-                    LeadId = request.LeadId,
-                    CreatedAt = DateTime.UtcNow
-                };
+     //           customer = new Customer
+     //           {
+     //               CustomerId = Guid.NewGuid(),
+     //               FullName = request.FullName,
+     //               PrimaryMobile = request.PrimaryMobile,
+     //               SecondaryMobile = request.SecondaryMobile,
+     //               Email = request.Email,
+     //               Address = request.Address,
+     //               KYCStatus = request.KYCStatus,
+     //               DOB = request.DOB,
+     //               Anniversary = request.Anniversary,
+     //               Notes = request.Notes,
+     //               AdvisorId = advisorId,
+     //               LeadId = request.LeadId,
+     //               CreatedAt = DateTime.UtcNow
+     //           };
 
-                await _customerRepository.AddAsync(customer);
+     //           await _customerRepository.AddAsync(customer);
 
-                if (request.LeadId.HasValue)
-                {
-                    var lead = await _leadRepository.GetByIdAsync(
-                        advisorId,
-                        request.LeadId.Value
-                    );
+     //           if (request.LeadId.HasValue)
+     //           {
+     //               var lead = await _leadRepository.GetByIdAsync(
+     //                   advisorId,
+     //                   request.LeadId.Value
+     //               );
 
-                    if (lead != null && !lead.IsConverted)
-                    {
-                        lead.IsConverted = true;
-                        lead.CustomerId = customer.CustomerId;
-                        lead.LeadStatusId = 5; // Converted
-                        lead.UpdatedAt = DateTime.UtcNow;
+     //               if (lead != null && !lead.IsConverted)
+     //               {
+     //                   lead.IsConverted = true;
+     //                   lead.CustomerId = customer.CustomerId;
+     //                   lead.LeadStatusId = 5; // Converted
+     //                   lead.UpdatedAt = DateTime.UtcNow;
 
-                        await _leadRepository.UpdateAsync(lead);
-                    }
-                }
-            }
+     //                   await _leadRepository.UpdateAsync(lead);
+     //               }
+     //           }
+     //       }
 
-            /*   KYC FILE UPLOAD   */
-            if (request.KycFiles != null && request.KycFiles.Any())
-            {
-                var uploadRoot = Path.Combine(
-                    _env.ContentRootPath,
-                    "Uploads",
-                    "KYC",
-                    customer.CustomerId.ToString()
-                );
+     //       if (request.KycFiles != null && request.KycFiles.Any())
+     //       {
+     //           var uploadRoot = Path.Combine(
+     //               _env.ContentRootPath,
+     //               "Uploads",
+     //               "KYC",
+     //               customer.CustomerId.ToString()
+     //           );
 
-                Directory.CreateDirectory(uploadRoot);
+     //           Directory.CreateDirectory(uploadRoot);
 
-                var savedFiles = new List<string>();
+     //           var savedFiles = new List<string>();
 
-                foreach (var file in request.KycFiles)
-                {
-                    if (file.Length == 0) continue;
+     //           foreach (var file in request.KycFiles)
+     //           {
+     //               if (file.Length == 0) continue;
 
-                    var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-                    var filePath = Path.Combine(uploadRoot, fileName);
+     //               var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+     //               var filePath = Path.Combine(uploadRoot, fileName);
 
-                    using var stream = new FileStream(filePath, FileMode.Create);
-                    await file.CopyToAsync(stream);
+     //               using var stream = new FileStream(filePath, FileMode.Create);
+     //               await file.CopyToAsync(stream);
 
-                    savedFiles.Add(fileName);
-                }
+     //               savedFiles.Add(fileName);
+     //           }
 
-                var existingFiles = string.IsNullOrWhiteSpace(customer.KYCFiles)
-                    ? new List<string>()
-                    : customer.KYCFiles.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+     //           var existingFiles = string.IsNullOrWhiteSpace(customer.KYCFiles)
+     //               ? new List<string>()
+     //               : customer.KYCFiles.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
 
-                existingFiles.AddRange(savedFiles);
+     //           existingFiles.AddRange(savedFiles);
 
-                customer.KYCFiles = string.Join(",", existingFiles);
-                customer.KYCStatus = "Uploaded";
-                customer.UpdatedAt = DateTime.UtcNow;
+     //           customer.KYCFiles = string.Join(",", existingFiles);
+     //           customer.KYCStatus = "Uploaded";
+     //           customer.UpdatedAt = DateTime.UtcNow;
 
-                await _customerRepository.UpdateAsync(customer);
-            }
+     //           await _customerRepository.UpdateAsync(customer);
+     //       }
 
-            return Ok(ApiResponse<object>.Success(
-                new
-                {
-                    customer.CustomerId,
-                    customer.FullName,
-                    customer.PrimaryMobile,
-                    customer.Email,
-                    customer.KYCFiles
-                },
-                request.CustomerId.HasValue
-                    ? "Customer updated successfully"
-                    : "Customer created successfully"
-            ));
-        }
+     //       return Ok(ApiResponse<object>.Success(
+     //           new
+     //           {
+     //               customer.CustomerId,
+     //               customer.FullName,
+     //               customer.PrimaryMobile,
+     //               customer.Email,
+     //               customer.KYCFiles
+     //           },
+     //           request.CustomerId.HasValue
+     //               ? "Customer updated successfully"
+     //               : "Customer created successfully"
+     //       ));
+     //   }
 
 
         /*   GET ALL   */
