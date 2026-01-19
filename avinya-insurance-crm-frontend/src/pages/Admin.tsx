@@ -61,11 +61,11 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  /*   ADVISOR LOGIN   */
-  const handleAdvisorLogin = () => {
+  /*   ADMIN LOGIN   */
+  const handleAdminLogin = () => {
     if (!validate()) return;
 
-    loginAdvisor(
+    loginAdmin(
       { email, password },
       {
         onSuccess: (res) => {
@@ -75,19 +75,17 @@ const Login = () => {
 
           dispatch(
             loginSuccess({
-              advisorId: data.advisorId,
-              fullName: data.fullName,
+              advisorId: null,
+              fullName: "Super Admin",
               email: data.email
             })
           );
 
-          navigate("/");
+          navigate("/admin");
         }
       }
     );
   };
-
-  
 
   const isLoading = advisorLoading || adminLoading;
   const errorMessage =
@@ -106,7 +104,7 @@ const Login = () => {
             Welcome Back
           </h1>
           <p className="text-gray-800">
-            Sign in to access your CRM dashboard
+            Sign in to access your CRM Super Admin dashboard
           </p>
         </div>
 
@@ -116,7 +114,7 @@ const Login = () => {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleAdvisorLogin();
+              handleAdminLogin();
             }}
             className="space-y-6">
             {/* Email */}
@@ -180,7 +178,6 @@ const Login = () => {
                     <Eye className="w-5 h-5" />
                   )}
                 </button>
-
               </div>
               {errors.password && (
                 <p className="text-xs text-red-600">{errors.password}</p>
@@ -197,11 +194,10 @@ const Login = () => {
             {/* Advisor Login */}
             <button
               type="submit"
-              onClick={handleAdvisorLogin}
+              onClick={handleAdminLogin}
               disabled={isLoading}
               className="w-full bg-slate-800 text-white py-3 rounded-lg font-medium hover:bg-slate-900 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              
               {advisorLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -214,24 +210,15 @@ const Login = () => {
                 </>
               )}
             </button>
-            </form>
+              </form>
           </div>
 
-
-          {/* Register Link */}
           <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center text-sm text-gray-800">
-            Don&apos;t have an account?{" "}
-            <Link
-              to="/register"
-              className="text-slate-800 hover:text-slate-700 font-semibold"
-            >
-              Create one now
-            </Link>
+            
           </div>
         </div>
       </div>
     </div>
-    
   );
 };
 

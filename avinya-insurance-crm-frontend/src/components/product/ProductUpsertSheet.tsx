@@ -233,13 +233,12 @@ const ProductUpsertSheet = ({
 
               <Input
                 label="Default Reminder Days"
-                type="number"
                 value={form.defaultReminderDays}
                 error={errors.defaultReminderDays}
                 onChange={(v) =>
                   setForm({
                     ...form,
-                    defaultReminderDays: Number(v),
+                    defaultReminderDays: Number(v.replace(/[^0-9]/g, "")),
                   })
                 }
               />

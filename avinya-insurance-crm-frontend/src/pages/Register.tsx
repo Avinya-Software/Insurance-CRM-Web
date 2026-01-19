@@ -128,6 +128,12 @@ const handleRegister = () => {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           <div className="p-8 space-y-5">
             {/* Full Name */}
+            <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleRegister();
+            }}
+            className="space-y-6">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 block">
                 Full Name
@@ -254,6 +260,7 @@ const handleRegister = () => {
 
             {/* Button */}
             <button
+              type="submit"
               onClick={handleRegister}
               disabled={isPending}
               className="w-full bg-slate-800 text-white py-3 rounded-lg font-medium hover:bg-slate-900 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
@@ -270,6 +277,7 @@ const handleRegister = () => {
                 </>
               )}
             </button>
+            </form>
           </div>
 
           {/* Login Link */}

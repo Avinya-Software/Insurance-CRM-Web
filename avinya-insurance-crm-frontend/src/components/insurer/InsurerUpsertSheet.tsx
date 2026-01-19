@@ -201,7 +201,7 @@ const InsurerUpsertSheet = ({
             value={form.insurerName}
             error={errors.insurerName}
             onChange={(v) =>
-              setForm({ ...form, insurerName: v })
+              setForm({ ...form, insurerName: v.replace(/[^a-zA-Z ]/g, "") })
             }
           />
 

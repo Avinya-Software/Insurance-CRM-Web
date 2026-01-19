@@ -87,6 +87,8 @@ const PolicyUpsertSheet = ({
 
   const loadingDropdowns = cLoading || iLoading || pLoading || tLoading || sLoading;
   const isLoading = isPending;
+  const today = new Date().toISOString().split("T")[0];
+
 
   /*   PREFILL   */
 
@@ -361,7 +363,8 @@ const PolicyUpsertSheet = ({
                 required
                 value={form.startDate}
                 error={errors.startDate}
-                onChange={(v) => setForm({ ...form, startDate: v })}
+                max={today}
+                onChange={(v) => setForm({ ...form, startDate: v, endDate : "",})}
               />
 
               <Input
@@ -371,29 +374,28 @@ const PolicyUpsertSheet = ({
                 value={form.endDate}
                 error={errors.endDate}
                 min={form.startDate}
+                disabled={!form.startDate} 
                 onChange={(v) => setForm({ ...form, endDate: v })}
               />
 
               <Input
-                type="number"
                 label="Premium Net"
                 value={form.premiumNet}
                 onChange={(v) =>
                   setForm({
                     ...form,
-                    premiumNet: Number(v),
+                    premiumNet: Number(v.replace(/[^0-9]/g, "")),
                   })
                 }
               />
 
               <Input
-                type="number"
                 label="Premium Gross"
                 value={form.premiumGross}
                 onChange={(v) =>
                   setForm({
                     ...form,
-                    premiumGross: Number(v),
+                    premiumGross: Number(v.replace(/[^0-9]/g, "")),
                   })
                 }
               />
@@ -448,13 +450,13 @@ const PolicyUpsertSheet = ({
               <Input
                 label="Broker Code"
                 value={form.brokerCode}
-                onChange={(v) => setForm({ ...form, brokerCode: v })}
+                onChange={(v) => setForm({ ...form, brokerCode: v.replace(/[^0-9]/g, "") })}
               />
 
               <Input
                 label="Policy Code"
                 value={form.policyCode}
-                onChange={(v) => setForm({ ...form, policyCode: v })}
+                onChange={(v) => setForm({ ...form, policyCode: v.replace(/[^0-9]/g, "") })}
               />
 
               {/*  EXISTING POLICY DOCUMENTS  */}
@@ -573,7 +575,6 @@ const Input = ({
   value,
   error,
   type = "text",
-  min,
   onChange,
 }: any) => (
   <div>
@@ -582,7 +583,6 @@ const Input = ({
     </label>
     <input
       type={type}
-      min={min}
       className={`input w-full ${error ? "border-red-500" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}

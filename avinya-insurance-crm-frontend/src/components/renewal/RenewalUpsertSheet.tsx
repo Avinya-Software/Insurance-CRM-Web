@@ -304,13 +304,12 @@ const { data: policies } = usePolicyDropdown(
               />
 
               <Input
-                type="number"
                 label="Renewal Premium"
                 value={form.renewalPremium}
                 onChange={(v) =>
                   setForm({
                     ...form,
-                    renewalPremium: Number(v),
+                    renewalPremium: Number(v.replace(/[^0-9]/g, "")),
                   })
                 }
               />

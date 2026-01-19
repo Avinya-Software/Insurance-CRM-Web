@@ -201,7 +201,7 @@ const CustomerUpsertSheet = ({
             required
             value={form.fullName}
             error={errors.fullName}
-            onChange={(v) => setForm({ ...form, fullName: v })}
+            onChange={(v) => setForm({ ...form, fullName: v.replace(/[^a-zA-Z ]/g, "") })}
           />
 
           <Input
@@ -210,7 +210,7 @@ const CustomerUpsertSheet = ({
             value={form.primaryMobile}
             error={errors.primaryMobile}
             onChange={(v) =>
-              setForm({ ...form, primaryMobile: v })
+              setForm({ ...form, primaryMobile: v.replace(/[^0-9]/g, "").slice(0, 10) })
             }
           />
 
@@ -218,7 +218,7 @@ const CustomerUpsertSheet = ({
             label="Secondary Mobile"
             value={form.secondaryMobile}
             onChange={(v) =>
-              setForm({ ...form, secondaryMobile: v })
+              setForm({ ...form, secondaryMobile: v.replace(/[^0-9]/g, "").slice(0, 10) })
             }
           />
 
@@ -230,7 +230,7 @@ const CustomerUpsertSheet = ({
             onChange={(v) => setForm({ ...form, email: v })}
           />
 
-          <Input
+          <Textarea
             label="Address"
             value={form.address}
             onChange={(v) => setForm({ ...form, address: v })}
@@ -240,6 +240,7 @@ const CustomerUpsertSheet = ({
             label="Date of Birth"
             type="date"
             value={form.dob}
+            max={new Date().toISOString().split("T")[0]}
             onChange={(v) => setForm({ ...form, dob: v })}
           />
 
@@ -248,7 +249,7 @@ const CustomerUpsertSheet = ({
             type="date"
             value={form.anniversary}
             error={errors.anniversary}
-            min={form.dob || undefined}
+            max={new Date().toISOString().split("T")[0]}
             onChange={(v) =>
               setForm({ ...form, anniversary: v })
             }
@@ -386,6 +387,7 @@ const Input = ({
   error,
   type = "text",
   min,
+  max,
   onChange,
 }: any) => (
   <div>
@@ -395,6 +397,7 @@ const Input = ({
     <input
       type={type}
       min={min}
+      max={max}
       className={`input w-full ${error ? "border-red-500" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
