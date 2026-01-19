@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Avinya.InsuranceCRM.Application\Avinya.InsuranceCRM.Application.csproj" />
+    <ProjectReference Include="..\Avinya.InsuranceCRM.Domain\Avinya.InsuranceCRM.Domain.csproj" />
     <ProjectReference Include="..\Avinya.InsuranceCRM.Infrastructure\Avinya.InsuranceCRM.Infrastructure.csproj" />
   </ItemGroup>
 

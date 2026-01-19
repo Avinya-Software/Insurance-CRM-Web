@@ -1,6 +1,8 @@
-﻿using Avinya.InsuranceCRM.API.ResponseModels;
+﻿using Avinya.InsuranceCRM.API.Helper;
+using Avinya.InsuranceCRM.Application.DTOs;
+using Avinya.InsuranceCRM.Application.RepositoryInterface;
+using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
@@ -14,7 +16,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context = context;
         }
 
-        /* ================= READ ================= */
 
         public async Task<Insurer?> GetByIdAsync(
             string advisorId,
@@ -26,52 +27,59 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                     x.AdvisorId == advisorId);
         }
 
-        public async Task<PagedRecordResult<Insurer>> GetPagedAsync(
+        public async Task<(IEnumerable<InsurerListDto> Insurers, int TotalCount)>GetFilteredAsync(
             string advisorId,
-            int pageNumber,
-            int pageSize,
-            string? search)
+            string role,
+            Guid? companyId,
+            string? search,
+            int page,
+            int pageSize)
         {
-            var query = _context.Insurers
-                .Where(x => x.AdvisorId == advisorId)
-                .AsQueryable();
+            IQueryable<Insurer> query = _context.Insurers;
+
+            if (role == "Advisor")
+                query = query.Where(x => x.AdvisorId == advisorId);
+            else if (role == "CompanyAdmin")
+                query = query.Where(x => x.CompanyId == companyId);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                search = search.ToLower();
-
                 query = query.Where(x =>
-                    x.InsurerName.ToLower().Contains(search) ||
-                    x.ShortCode.ToLower().Contains(search) ||
+                    x.InsurerName.Contains(search) ||
+                    x.ShortCode.Contains(search) ||
                     (x.ContactDetails != null &&
-                     x.ContactDetails.ToLower().Contains(search))
-                );
+                     x.ContactDetails.Contains(search)));
             }
 
-            var totalRecords = await query.CountAsync();
+            var totalCount = await query.CountAsync();
 
             var insurers = await query
-                .OrderBy(x => x.InsurerName)
-                .Skip((pageNumber - 1) * pageSize)
+                .OrderByDescending(x => x.CreatedAt)
+                .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(x => new InsurerListDto
+                {
+                    InsurerId = x.InsurerId,
+                    InsurerName = x.InsurerName,
+                    ShortCode = x.ShortCode,
+                    ContactDetails = x.ContactDetails,
+                    PortalUrl = x.PortalUrl,
+                    PortalUsername = x.PortalUsername,
+                    CreatedAt = x.CreatedAt
+                })
                 .ToListAsync();
 
-            return new PagedRecordResult<Insurer>
-            {
-                TotalRecords = totalRecords,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                Data = insurers
-            };
+            return (insurers, totalCount);
         }
 
-        public async Task<List<Insurer>> GetDropdownAsync(
+
+        public async Task<List<InsurerDropdown>> GetDropdownAsync(
             string advisorId)
         {
             return await _context.Insurers
                 .Where(x => x.AdvisorId == advisorId)
                 .OrderBy(x => x.InsurerName)
-                .Select(x => new Insurer
+                .Select(x => new InsurerDropdown
                 {
                     InsurerId = x.InsurerId,
                     InsurerName = x.InsurerName
@@ -79,21 +87,6 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 .ToListAsync();
         }
 
-        /* ================= CREATE / UPDATE ================= */
-
-        public async Task AddAsync(Insurer insurer)
-        {
-            _context.Insurers.Add(insurer);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Insurer insurer)
-        {
-            _context.Insurers.Update(insurer);
-            await _context.SaveChangesAsync();
-        }
-
-        /* ================= DELETE ================= */
 
         public async Task<bool> DeleteAsync(
             string advisorId,
@@ -112,5 +105,63 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
             return true;
         }
+
+        public async Task<(Insurer insurer, bool isUpdate)> CreateOrUpdateAsync(
+            string advisorId,
+            Guid companyId,
+            CreateOrUpdateInsurerRequest request)
+        {
+            if (string.IsNullOrEmpty(advisorId))
+                throw new UnauthorizedAccessException("Advisor not found");
+
+            if (request.InsurerId.HasValue)
+            {
+                var insurer = await _context.Insurers
+                    .FirstOrDefaultAsync(x =>
+                        x.InsurerId == request.InsurerId.Value &&
+                        x.AdvisorId == advisorId);
+
+                if (insurer == null)
+                    throw new KeyNotFoundException("Insurer not found");
+
+                insurer.InsurerName = request.InsurerName;
+                insurer.ShortCode = request.ShortCode;
+                insurer.ContactDetails = request.ContactDetails;
+                insurer.PortalUrl = request.PortalUrl;
+                insurer.PortalUsername = request.PortalUsername;
+
+                if (!string.IsNullOrWhiteSpace(request.PortalPassword))
+                    insurer.PortalPassword = EncryptionHelper.Encrypt(request.PortalPassword);
+
+                insurer.UpdatedAt = DateTime.UtcNow;
+
+                _context.Insurers.Update(insurer);
+                await _context.SaveChangesAsync();
+
+                return (insurer, true);
+            }
+
+            var newInsurer = new Insurer
+            {
+                InsurerId = Guid.NewGuid(),
+                InsurerName = request.InsurerName,
+                ShortCode = request.ShortCode,
+                ContactDetails = request.ContactDetails,
+                PortalUrl = request.PortalUrl,
+                PortalUsername = request.PortalUsername,
+                PortalPassword = string.IsNullOrWhiteSpace(request.PortalPassword)
+                    ? null
+                    : EncryptionHelper.Encrypt(request.PortalPassword),
+                AdvisorId = advisorId,
+                CompanyId = companyId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.Insurers.AddAsync(newInsurer);
+            await _context.SaveChangesAsync();
+
+            return (newInsurer, false);
+        }
+
     }
 }

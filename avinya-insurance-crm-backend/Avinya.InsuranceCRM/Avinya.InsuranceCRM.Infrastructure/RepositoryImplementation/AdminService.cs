@@ -1,7 +1,7 @@
 ﻿using Avinya.InsuranceCRM.Application.DTOs.Admin;
+using Avinya.InsuranceCRM.Application.RepositoryInterface;
 using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.Identity;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 

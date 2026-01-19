@@ -1,4 +1,5 @@
-﻿using Avinya.InsuranceCRM.API.RequestModels;
+﻿using Avinya.InsuranceCRM.Application.RepositoryInterface;
+using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.AspNetCore.Authorization;

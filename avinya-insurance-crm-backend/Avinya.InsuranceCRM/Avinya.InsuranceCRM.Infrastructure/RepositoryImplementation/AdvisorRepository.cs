@@ -1,9 +1,8 @@
-﻿using Avinya.InsuranceCRM.Domain.Entities;
-using Avinya.InsuranceCRM.Infrastructure.Persistence;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+﻿using Avinya.InsuranceCRM.Application.RepositoryInterface;
+using Avinya.InsuranceCRM.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
+namespace Avinya.InsuranceCRM.Infrastructure.RepositoryInterface
 {
     public class AdvisorRepository : IAdvisorRepository
     {

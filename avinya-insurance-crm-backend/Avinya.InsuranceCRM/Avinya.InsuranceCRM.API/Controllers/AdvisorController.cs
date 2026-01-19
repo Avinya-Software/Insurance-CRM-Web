@@ -1,10 +1,9 @@
-﻿using Avinya.InsuranceCRM.API.Helpers;
-using Avinya.InsuranceCRM.API.Models;
-using Avinya.InsuranceCRM.API.RequestModels;
+﻿using Avinya.InsuranceCRM.API.Models;
+using Avinya.InsuranceCRM.Application.RepositoryInterface;
+using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
+using Avinya.InsuranceCRM.Infrastructure.Helpers;
 using Avinya.InsuranceCRM.Infrastructure.Identity;
-using Avinya.InsuranceCRM.Infrastructure.Persistence;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

@@ -1,12 +1,12 @@
 ﻿using Avinya.InsuranceCRM.API.Controllers;
 using Avinya.InsuranceCRM.API.Middleware;
 using Avinya.InsuranceCRM.API.Seeders;
+using Avinya.InsuranceCRM.Application.Interfaces.Insurer;
+using Avinya.InsuranceCRM.Application.Services.Insurers;
 using Avinya.InsuranceCRM.Infrastructure.Email;
 using Avinya.InsuranceCRM.Infrastructure.Identity;
-using Avinya.InsuranceCRM.Infrastructure.Persistence;
 using Avinya.InsuranceCRM.Infrastructure.Repository;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+using Avinya.InsuranceCRM.Application.RepositoryInterface;
 using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
 using Avinya.InsuranceCRM.Infrastructure.Workers;
 using FluentValidation;
@@ -18,8 +18,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using System.ComponentModel.Design;
 using System.Security.Claims;
 using System.Text;
+using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+using Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -142,6 +145,17 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole("Advisor");
         policy.RequireClaim("IsApproved", "True");
     });
+
+    options.AddPolicy("ApprovedAdvisorOrCompanyAdmin", policy =>
+    {
+        policy.RequireAssertion(context =>
+            context.User.IsInRole("CompanyAdmin") ||
+            (
+                context.User.IsInRole("Advisor") &&
+                context.User.HasClaim("IsApproved", "True")
+            )
+        );
+    });
 });
 #endregion
 
@@ -152,9 +166,12 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 #endregion
 
 #region DEPENDENCY INJECTION
+//builder.Services.AddScoped<IAdvisorRepository, AdvisorRepository>();
 builder.Services.AddScoped<IAdvisorRepository, AdvisorRepository>();
+
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IInsurerRepository, InsurerRepository>();
+builder.Services.AddScoped<IInsurerService, InsurerServices>();
 builder.Services.AddScoped<ILeadRepository, LeadRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICustomerPolicyRepository, CustomerPolicyRepository>();
