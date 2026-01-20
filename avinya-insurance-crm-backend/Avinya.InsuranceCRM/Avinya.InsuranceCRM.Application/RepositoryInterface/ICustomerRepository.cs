@@ -1,48 +1,25 @@
-﻿using Avinya.InsuranceCRM.API.ResponseModels;
+﻿using Avinya.InsuranceCRM.Application.DTOs;
+using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
 
 namespace Avinya.InsuranceCRM.Application.RepositoryInterface
 {
     public interface ICustomerRepository
     {
-        /* ================= VALIDATIONS ================= */
-
-        Task<bool> ExistsByMobileAsync(string advisorId, string mobile);
-        Task<bool> ExistsByEmailAsync(string advisorId, string email);
-
-        Task<bool> ExistsByEmailAsync(
+        Task<(Customer customer, bool isUpdate)> CreateOrUpdateAsync(
             string advisorId,
-            string email,
-            Guid excludeCustomerId);
+            CreateCustomerRequest request);
 
-        Task<bool> ExistsByMobileAsync(
-            string advisorId,
-            string mobile,
-            Guid excludeCustomerId);
-
-        /* ================= CREATE / UPDATE ================= */
-
-        Task<Customer> AddAsync(Customer customer);
-        Task UpdateAsync(Customer customer);
-
-        /* ================= READ ================= */
-
-        Task<Customer?> GetByIdAsync(
-            string advisorId,
-            Guid customerId);
-
-        Task<PagedRecordResult<Customer>> GetAllAsync(
+        Task<(IEnumerable<CustomerListDto> Data, int TotalCount)> GetPagedAsync(
             string advisorId,
             int pageNumber,
             int pageSize,
             string? search);
 
+        Task<bool> DeleteAsync(string advisorId, Guid customerId);
         Task<List<Customer>> GetDropdownAsync(string advisorId);
+        Task<bool> DeleteKycFileAsync(string advisorId, Guid customerId, string documentId);
+        string? GetKycFilePath(Guid customerId, string documentId);
 
-        /* ================= DELETE ================= */
-
-        Task<bool> DeleteAsync(
-            string advisorId,
-            Guid customerId);
     }
 }

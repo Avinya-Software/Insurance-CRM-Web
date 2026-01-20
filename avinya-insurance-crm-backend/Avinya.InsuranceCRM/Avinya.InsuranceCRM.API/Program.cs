@@ -25,6 +25,8 @@ using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation;
 using Avinya.InsuranceCRM.Application.Interfaces.Lead;
 using Avinya.InsuranceCRM.Application.Services.Lead;
+using Avinya.InsuranceCRM.Application.Interfaces.Customer;
+using Avinya.InsuranceCRM.Application.Services.Customer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -172,6 +174,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddScoped<IAdvisorRepository, AdvisorRepository>();
 
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<ICustomerServices, CustomerServices>();
 builder.Services.AddScoped<IInsurerRepository, InsurerRepository>();
 builder.Services.AddScoped<IInsurerService, InsurerServices>();
 builder.Services.AddScoped<ILeadRepository, LeadRepository>();

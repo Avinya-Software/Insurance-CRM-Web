@@ -3,6 +3,7 @@ using Avinya.InsuranceCRM.Application.DTOs;
 using Avinya.InsuranceCRM.Application.RepositoryInterface;
 using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
+using Avinya.InsuranceCRM.Infrastructure.Helper;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
@@ -65,7 +66,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                     ContactDetails = x.ContactDetails,
                     PortalUrl = x.PortalUrl,
                     PortalUsername = x.PortalUsername,
-                    CreatedAt = x.CreatedAt
+                    CreatedAt = DateTimeHelper.ConvertUtcToLocal(x.CreatedAt)
                 })
                 .ToListAsync();
 
