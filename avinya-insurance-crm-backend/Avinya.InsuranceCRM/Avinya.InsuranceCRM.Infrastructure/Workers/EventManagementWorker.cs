@@ -53,7 +53,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.Workers
              * ============================================================ */
             var followUps = await db.LeadFollowUps
                 .Include(f => f.Lead)
-                .Where(f => f.FollowUpDate.Date == today)
+                .Where(f => f.NextFollowUpDate.Date == today)
                 .ToListAsync(stoppingToken);
 
             foreach (var followUp in followUps)

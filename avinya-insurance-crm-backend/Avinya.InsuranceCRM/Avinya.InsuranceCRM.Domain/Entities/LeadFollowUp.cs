@@ -13,11 +13,11 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         // ✅ Foreign Key
         public Guid LeadId { get; set; }
 
-        public DateTime FollowUpDate { get; set; }
-        public DateTime? NextFollowUpDate { get; set; }
+        public DateTime? UpdatedDate { get; set; }
+        public DateTime NextFollowUpDate { get; set; }
 
         public string? Remark { get; set; }
-
+        public int Status { get; set; }
         public Guid CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
 

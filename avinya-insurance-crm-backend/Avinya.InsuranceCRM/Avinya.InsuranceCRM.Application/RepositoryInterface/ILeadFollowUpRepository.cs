@@ -1,4 +1,7 @@
-﻿using Avinya.InsuranceCRM.Domain.Entities;
+﻿using Avinya.InsuranceCRM.Application.DTOs;
+using Avinya.InsuranceCRM.Application.DTOs.LeadFollowUp;
+using Avinya.InsuranceCRM.Application.RequestModels;
+using Avinya.InsuranceCRM.Domain.Entities;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
@@ -10,8 +13,15 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
 {
     public interface ILeadFollowUpRepository
     {
-        Task AddAsync(LeadFollowUp followUp);
-        Task<IDbContextTransaction> BeginTransactionAsync();
+        Task<(LeadFollowUp? Data, string? Error)> AddOrUpdateAsync(
+                Guid? followUpId,
+                Guid leadId,
+                string? notes,
+                DateTime nextFollowupDate,
+                int status,
+                Guid advisorId);
+
+        Task<(bool leadExists, List<LeadFollowupDTO>? followups)> GetFollowupHistoryAsync(Guid leadId);
 
     }
 }

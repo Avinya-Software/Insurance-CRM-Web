@@ -39,6 +39,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<MasterCampaignType> MasterCampaignTypes => Set<MasterCampaignType>();
     public DbSet<SystemEvent> SystemEvents => Set<SystemEvent>();
     public DbSet<Company> Companies => Set<Company>();
+    public DbSet<LeadFollowupStatus> LeadFollowupStatuses => Set<LeadFollowupStatus>();
+
     // ---------------- MODEL CONFIG ----------------
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -379,6 +381,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         })
         .IsUnique();
 
+        builder.Entity<LeadFollowupStatus>(entity =>
+        {
+            entity.ToTable("LeadFollowupStatus"); // ✅ FIX
+            entity.HasKey(e => e.LeadFollowupStatusID);
+        });
+
 
 
         // ---------------- LEAD STATUS MASTER DATA ----------------
@@ -462,5 +470,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         new MasterCampaignType{CampaignTypeId = 5, Name = "Policy Expiry", IsActive = true, CreatedAt = DateTime.UtcNow },
         new MasterCampaignType{CampaignTypeId = 6,Name = "Custom",IsActive = true,CreatedAt = DateTime.UtcNow }
         );
+
+        builder.Entity<LeadFollowupStatus>().HasData(
+            new LeadFollowupStatus { LeadFollowupStatusID = 1, StatusName = "Pending" },
+            new LeadFollowupStatus { LeadFollowupStatusID = 2, StatusName = "In Progress" },
+            new LeadFollowupStatus { LeadFollowupStatusID = 3, StatusName = "Completed" }
+        );
+
     }
 }

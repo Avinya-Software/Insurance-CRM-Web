@@ -27,6 +27,8 @@ using Avinya.InsuranceCRM.Application.Interfaces.Lead;
 using Avinya.InsuranceCRM.Application.Services.Lead;
 using Avinya.InsuranceCRM.Application.Interfaces.Customer;
 using Avinya.InsuranceCRM.Application.Services.Customer;
+using Avinya.InsuranceCRM.Application.Interfaces.LeadFollowUp;
+using Avinya.InsuranceCRM.Application.Services.LeadFollowUp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -182,6 +184,7 @@ builder.Services.AddScoped<ILeadService, LeadService>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICustomerPolicyRepository, CustomerPolicyRepository>();
 builder.Services.AddScoped<ILeadFollowUpRepository, LeadFollowUpRepository>();
+builder.Services.AddScoped<ILeadFollowUpServices, LeadFollowUpServices>();
 builder.Services.AddScoped<IClaimRepository, ClaimRepository>();
 builder.Services.AddScoped<IRenewalRepository, RenewalRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();

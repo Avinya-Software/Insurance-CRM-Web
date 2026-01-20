@@ -190,7 +190,6 @@ public class LeadRepository : ILeadRepository
                 .Select(f => new LeadFollowUpDto
                 {
                     FollowUpId = f.FollowUpId,
-                    FollowUpDate = f.FollowUpDate,
                     NextFollowUpDate = f.NextFollowUpDate,
                     CreatedAt = f.CreatedAt
                 })

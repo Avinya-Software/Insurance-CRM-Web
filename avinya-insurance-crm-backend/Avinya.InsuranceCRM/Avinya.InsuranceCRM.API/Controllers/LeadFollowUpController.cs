@@ -1,84 +1,40 @@
-﻿using Avinya.InsuranceCRM.Application.RepositoryInterface;
+﻿using Avinya.InsuranceCRM.Application.Interfaces.LeadFollowUp;
 using Avinya.InsuranceCRM.Application.RequestModels;
-using Avinya.InsuranceCRM.Application.ResponseModels;
-using Avinya.InsuranceCRM.Domain.Entities;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 [ApiController]
 [Route("api/lead-followups")]
-[Authorize(Policy = "ApprovedAdvisor")]
+[Authorize(Policy = "ApprovedAdvisorOrCompanyAdmin")]
 public class LeadFollowUpController : ControllerBase
 {
-    private readonly ILeadRepository _leadRepo;
-    private readonly ILeadFollowUpRepository _followUpRepo;
+    private readonly ILeadFollowUpServices _service;
 
-    public LeadFollowUpController(
-        ILeadRepository leadRepo,
-        ILeadFollowUpRepository followUpRepo)
+    public LeadFollowUpController(ILeadFollowUpServices service)
     {
-        _leadRepo = leadRepo;
-        _followUpRepo = followUpRepo;
+        _service = service;
     }
 
-    /*   CREATE FOLLOW-UP   */
+    [HttpPost]
+    public async Task<IActionResult> Create(
+        CreateLeadFollowUpRequest request)
+    {
+        var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    //[HttpPost]
-    //public async Task<IActionResult> Create(
-    //CreateLeadFollowUpRequest request)
-    //{
-    //    var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var response = await _service.CreateOrUpdateAsync(advisorId, request);
 
-    //    if (string.IsNullOrEmpty(advisorId))
-    //        return Unauthorized("Advisor not found in token");
+        return StatusCode(response.StatusCode, response);
+    }
 
-    //    var lead = await _leadRepo.GetByIdAsync(advisorId, request.LeadId);
+    [HttpGet("lead/{leadId}")]
+    public async Task<IActionResult> GetLeadFollowupHistory(Guid leadId)
+    {
+        var result = await _service.GetFollowupHistoryAsync(leadId);
 
-    //    if (lead == null)
-    //        return NotFound("Lead not found");
+        if (result.StatusCode == 404)
+            return NotFound(result);
 
-    //    if (lead.LeadStatusId == 5 || lead.LeadStatusId == 6)
-    //        return BadRequest("Follow-up not allowed for Converted or Lost leads");
-
-    //    using var transaction = await _followUpRepo.BeginTransactionAsync();
-
-    //    try
-    //    {
-    //        var followUp = new LeadFollowUp
-    //        {
-    //            FollowUpId = Guid.NewGuid(),
-    //            LeadId = request.LeadId,
-    //            FollowUpDate = request.FollowUpDate,
-    //            NextFollowUpDate = request.NextFollowUpDate,
-    //            Remark = request.Remark,
-    //            CreatedBy = Guid.Parse(advisorId),
-    //            CreatedAt = DateTime.UtcNow
-    //        };
-
-    //        await _followUpRepo.AddAsync(followUp);
-
-    //        if (lead.LeadStatusId != 4) 
-    //        {
-    //            lead.LeadStatusId = 4; 
-    //            lead.UpdatedAt = DateTime.UtcNow;
-
-    //            await _leadRepo.UpdateAsync(lead);
-    //        }
-
-    //        await transaction.CommitAsync();
-
-    //        return Ok(new
-    //        {
-    //            Message = "Follow-up created successfully",
-    //            FollowUpId = followUp.FollowUpId
-    //        });
-    //    }
-    //    catch
-    //    {
-    //        await transaction.RollbackAsync();
-    //        throw;
-    //    }
-    //}
+        return Ok(result);
+    }
 }
