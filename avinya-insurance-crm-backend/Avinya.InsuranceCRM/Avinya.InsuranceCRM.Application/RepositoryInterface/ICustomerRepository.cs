@@ -8,10 +8,13 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
     {
         Task<(Customer customer, bool isUpdate)> CreateOrUpdateAsync(
             string advisorId,
+            Guid? companyId,
             CreateCustomerRequest request);
 
         Task<(IEnumerable<CustomerListDto> Data, int TotalCount)> GetPagedAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             string? search);

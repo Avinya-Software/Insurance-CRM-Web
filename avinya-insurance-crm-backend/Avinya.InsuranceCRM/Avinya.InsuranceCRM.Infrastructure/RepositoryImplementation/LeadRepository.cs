@@ -66,7 +66,8 @@ public class LeadRepository : ILeadRepository
                 Email = request.Email,
                 Address = request.Address,
                 AdvisorId = advisorId,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                CompanyId = companyId
             };
 
             await _context.Customers.AddAsync(customer);

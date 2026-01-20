@@ -24,7 +24,12 @@ namespace Avinya.InsuranceCRM.API.Controllers
             [FromForm] CreateCustomerRequest request)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var response = await _service.CreateOrUpdateAsync(advisorId, request);
+            var companyIdClaim = User.FindFirstValue("CompanyId");
+            Guid? companyId = null;
+            if (Guid.TryParse(companyIdClaim, out var parsedCompanyId))
+                companyId = parsedCompanyId;
+
+            var response = await _service.CreateOrUpdateAsync(advisorId, companyId, request);
             return StatusCode(response.StatusCode, response);
         }
 
@@ -35,7 +40,14 @@ namespace Avinya.InsuranceCRM.API.Controllers
             string? search = null)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var response = await _service.GetPagedAsync(advisorId, pageNumber, pageSize, search);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var companyIdClaim = User.FindFirstValue("CompanyId");
+
+            Guid? companyId = Guid.TryParse(companyIdClaim, out var cid)
+                    ? cid
+                    : null;
+
+            var response = await _service.GetPagedAsync(advisorId, role,companyId, pageNumber, pageSize, search);
             return StatusCode(response.StatusCode, response);
         }
 

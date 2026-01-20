@@ -17,13 +17,17 @@ namespace Avinya.InsuranceCRM.Application.Services.Customer
 
         public async Task<ResponseModel> CreateOrUpdateAsync(
             string advisorId,
+            Guid? companyId,
             CreateCustomerRequest request)
         {
             if (string.IsNullOrEmpty(advisorId))
                 return new ResponseModel(401, "Invalid advisor token");
 
+            if (!companyId.HasValue)
+                return new ResponseModel(401, "Invalid CompanyId in token");
+
             var (customer, isUpdate) =
-                await _repo.CreateOrUpdateAsync(advisorId, request);
+                await _repo.CreateOrUpdateAsync(advisorId, companyId.Value, request);
 
             return new ResponseModel(
                 200,
@@ -40,12 +44,14 @@ namespace Avinya.InsuranceCRM.Application.Services.Customer
 
         public async Task<ResponseModel> GetPagedAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             string? search)
         {
             var (data, totalCount) =
-                await _repo.GetPagedAsync(advisorId, pageNumber, pageSize, search);
+                await _repo.GetPagedAsync(advisorId, role,companyId, pageNumber, pageSize, search);
 
             return new ResponseModel(200, "Customers fetched successfully", new
             {

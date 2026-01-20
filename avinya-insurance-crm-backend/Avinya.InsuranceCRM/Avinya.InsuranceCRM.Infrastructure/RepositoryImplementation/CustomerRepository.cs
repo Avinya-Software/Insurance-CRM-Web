@@ -21,6 +21,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
         public async Task<(Customer customer, bool isUpdate)> CreateOrUpdateAsync(
             string advisorId,
+            Guid? companyId,
             CreateCustomerRequest request)
         {
             if (request.CustomerId.HasValue)
@@ -69,6 +70,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 Anniversary = request.Anniversary,
                 Notes = request.Notes,
                 AdvisorId = advisorId,
+                CompanyId = companyId,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -79,15 +81,23 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
         }
 
         public async Task<(IEnumerable<CustomerListDto> Data, int TotalCount)> GetPagedAsync(
-    string advisorId,
-    int pageNumber,
-    int pageSize,
-    string? search)
+            string advisorId,
+            string role,
+            Guid? companyId,
+            int pageNumber,
+            int pageSize,
+            string? search)
         {
-            var baseQuery =
-                from customer in _context.Customers.AsNoTracking()
-                where customer.AdvisorId == advisorId
-                select customer;
+            IQueryable<Customer> baseQuery = _context.Customers.AsNoTracking();
+
+            if (role == "Advisor")
+            {
+                baseQuery = baseQuery.Where(x => x.AdvisorId == advisorId);
+            }
+            else if (role == "CompanyAdmin" && companyId.HasValue)
+            {
+                baseQuery = baseQuery.Where(x => x.CompanyId == companyId);
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
             {
