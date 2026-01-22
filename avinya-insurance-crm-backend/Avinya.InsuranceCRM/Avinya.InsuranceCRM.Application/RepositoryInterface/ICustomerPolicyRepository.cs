@@ -7,6 +7,8 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
     {
         Task<object> GetPoliciesAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             string? search,
@@ -27,7 +29,7 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
             Guid? customerId
         );
 
-        Task<(CustomerPolicy policy, bool isUpdate)> CreateOrUpdateAsync(
+        Task<(PolicyUpsertResponseDto response, bool isUpdate)> CreateOrUpdateAsync(
             string advisorId,
             Guid companyId,
             UpsertPolicyRequest request);

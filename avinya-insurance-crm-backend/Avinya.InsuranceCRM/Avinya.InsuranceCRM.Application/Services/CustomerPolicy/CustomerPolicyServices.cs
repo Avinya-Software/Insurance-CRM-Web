@@ -17,6 +17,8 @@ namespace Avinya.InsuranceCRM.Application.Services.CustomerPolicy
 
         public async Task<ResponseModel> GetPoliciesAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             string? search,
@@ -28,6 +30,8 @@ namespace Avinya.InsuranceCRM.Application.Services.CustomerPolicy
         {
             var data = await _repo.GetPoliciesAsync(
                 advisorId,
+                role,
+                companyId,
                 pageNumber,
                 pageSize,
                 search,

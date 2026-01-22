@@ -19,126 +19,188 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _env = env;
         }
 
-        public async Task<(CustomerPolicy policy, bool isUpdate)> CreateOrUpdateAsync(
+        public async Task<(PolicyUpsertResponseDto response, bool isUpdate)> CreateOrUpdateAsync(
     string advisorId,
     Guid companyId,
     UpsertPolicyRequest request)
         {
-            CustomerPolicy policy;
             bool isUpdate = request.PolicyId.HasValue;
+            Guid policyId;
+            string policyNumber;
+            CustomerPolicy policyEntity;
 
             if (isUpdate)
             {
-                policy = await _context.CustomerPolicies
+                policyEntity = await _context.CustomerPolicies
                     .FirstOrDefaultAsync(x =>
                         x.PolicyId == request.PolicyId.Value &&
                         x.AdvisorId == advisorId);
 
-                if (policy == null)
+                if (policyEntity == null)
                     throw new KeyNotFoundException("Policy not found");
 
-                policy.CustomerId = request.CustomerId;
-                policy.InsurerId = request.InsurerId;
-                policy.ProductId = request.ProductId;
-                policy.PolicyStatusId = request.PolicyStatusId;
-                policy.PolicyTypeId = request.PolicyTypeId;
+                policyEntity.CustomerId = request.CustomerId;
+                policyEntity.InsurerId = request.InsurerId;
+                policyEntity.ProductId = request.ProductId;
+                policyEntity.PolicyStatusId = request.PolicyStatusId;
+                policyEntity.PolicyTypeId = request.PolicyTypeId;
 
-                policy.RegistrationNo = request.RegistrationNo;
-                policy.StartDate = request.StartDate;
-                policy.EndDate = request.EndDate;
-                policy.PremiumNet = request.PremiumNet;
-                policy.PremiumGross = request.PremiumGross;
+                policyEntity.RegistrationNo = request.RegistrationNo;
+                policyEntity.StartDate = request.StartDate;
+                policyEntity.EndDate = request.EndDate;
+                policyEntity.PremiumNet = request.PremiumNet;
+                policyEntity.PremiumGross = request.PremiumGross;
 
-                policy.PaymentMode = request.PaymentMode;
-                policy.PaymentDueDate = request.PaymentDueDate;
-                policy.RenewalDate = request.RenewalDate;
+                policyEntity.PaymentMode = request.PaymentMode;
+                policyEntity.PaymentDueDate = request.PaymentDueDate;
+                policyEntity.RenewalDate = request.RenewalDate;
 
-                policy.BrokerCode = request.BrokerCode;
-                policy.PolicyCode = request.PolicyCode;
-                policy.PaymentDone = request.PaymentDone;
+                policyEntity.BrokerCode = request.BrokerCode;
+                policyEntity.PolicyCode = request.PolicyCode;
+                policyEntity.PaymentDone = request.PaymentDone;
+                policyEntity.UpdatedAt = DateTime.UtcNow;
 
-                policy.UpdatedAt = DateTime.UtcNow;
+                policyId = policyEntity.PolicyId;
+                policyNumber = policyEntity.PolicyNumber!;
             }
             else
             {
-                policy = new CustomerPolicy
+                policyId = Guid.NewGuid();
+                policyNumber = await GeneratePolicyNumberAsync(advisorId);
+
+                policyEntity = new CustomerPolicy
                 {
-                    PolicyId = Guid.NewGuid(),
+                    PolicyId = policyId,
                     AdvisorId = advisorId,
                     CompanyId = companyId,
-
                     CustomerId = request.CustomerId,
                     InsurerId = request.InsurerId,
                     ProductId = request.ProductId,
                     PolicyStatusId = request.PolicyStatusId,
                     PolicyTypeId = request.PolicyTypeId,
-
                     RegistrationNo = request.RegistrationNo,
                     StartDate = request.StartDate,
                     EndDate = request.EndDate,
                     PremiumNet = request.PremiumNet,
                     PremiumGross = request.PremiumGross,
-
                     PaymentMode = request.PaymentMode,
                     PaymentDueDate = request.PaymentDueDate,
                     RenewalDate = request.RenewalDate,
-
                     BrokerCode = request.BrokerCode,
                     PolicyCode = request.PolicyCode,
                     PaymentDone = request.PaymentDone,
-
-                    PolicyNumber = await GeneratePolicyNumberAsync(advisorId),
+                    PolicyNumber = policyNumber,
                     CreatedAt = DateTime.UtcNow
                 };
 
-                _context.CustomerPolicies.Add(policy);
+                _context.CustomerPolicies.Add(policyEntity);
+
+                var lead = await _context.Leads
+                    .FirstOrDefaultAsync(x =>
+                    x.CustomerId == request.CustomerId &&
+                    x.AdvisorId == advisorId);
+
+                if (lead != null)
+                {
+                    lead.LeadStatusId = 5; 
+                    lead.IsConverted = true;
+                    lead.UpdatedAt = DateTime.UtcNow;
+                }
+
             }
 
             if (request.PolicyDocuments != null && request.PolicyDocuments.Any())
             {
-                var uploadRoot = Path.Combine(
-                    _env.ContentRootPath,
+                var folderPath = Path.Combine(
+                    _env.WebRootPath,
                     "Uploads",
                     "Policies",
-                    policy.PolicyId.ToString()
+                    policyId.ToString()
                 );
 
-                Directory.CreateDirectory(uploadRoot);
+                if (!Directory.Exists(folderPath))
+                    Directory.CreateDirectory(folderPath);
 
-                var savedFiles = new List<string>();
+                var savedPaths = new List<string>();
 
-                foreach (var file in request.PolicyDocuments)
+                foreach (var base64 in request.PolicyDocuments)
                 {
-                    if (file.Length == 0) continue;
+                    if (string.IsNullOrWhiteSpace(base64))
+                        continue;
 
-                    var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-                    var filePath = Path.Combine(uploadRoot, fileName);
+                    string cleanBase64 = base64.Contains(",")
+                        ? base64.Split(',').Last()
+                        : base64;
 
-                    using var stream = new FileStream(filePath, FileMode.Create);
-                    await file.CopyToAsync(stream);
+                    byte[] fileBytes;
+                    try
+                    {
+                        fileBytes = Convert.FromBase64String(cleanBase64);
+                    }
+                    catch
+                    {
+                        continue; 
+                    }
 
-                    savedFiles.Add(fileName);
+                    string extension =
+                        base64.StartsWith("data:image/jpeg") ? ".jpg" :
+                        base64.StartsWith("data:image/png") ? ".png" :
+                        base64.StartsWith("data:application/pdf") ? ".pdf" :
+                        ".png";
+
+                    var fileName = $"{Guid.NewGuid()}{extension}";
+                    var physicalPath = Path.Combine(folderPath, fileName);
+
+                    await File.WriteAllBytesAsync(physicalPath, fileBytes);
+
+                    var webPath = $"/Uploads/Policies/{policyId}/{fileName}";
+                    savedPaths.Add(webPath);
                 }
 
-                // Append existing documents (important for update)
-                var existingFiles = policy.PolicyDocumentRef?
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(x => x.Trim())
-                    .ToList() ?? new List<string>();
+                if (savedPaths.Any())
+                {
+                    var existing = policyEntity.PolicyDocumentRef?
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .ToList() ?? new List<string>();
 
-                existingFiles.AddRange(savedFiles);
-
-                policy.PolicyDocumentRef = string.Join(",", existingFiles);
+                    existing.AddRange(savedPaths);
+                    policyEntity.PolicyDocumentRef = string.Join(",", existing);
+                }
             }
 
+
             await _context.SaveChangesAsync();
-            return (policy, isUpdate);
+
+            var responseDto = new PolicyUpsertResponseDto
+            {
+                PolicyId = policyId,
+                CustomerId = policyEntity.CustomerId,
+                InsurerId = policyEntity.InsurerId,
+                ProductId = policyEntity.ProductId,
+                PolicyStatusId = policyEntity.PolicyStatusId,
+                PolicyTypeId = policyEntity.PolicyTypeId,
+                PolicyNumber = policyNumber,
+                PolicyCode = policyEntity.PolicyCode,
+                BrokerCode = policyEntity.BrokerCode,
+                RegistrationNo = policyEntity.RegistrationNo,
+                StartDate = policyEntity.StartDate,
+                EndDate = policyEntity.EndDate,
+                RenewalDate = policyEntity.RenewalDate,
+                PremiumNet = policyEntity.PremiumNet,
+                PremiumGross = policyEntity.PremiumGross,
+                PaymentMode = policyEntity.PaymentMode,
+                PaymentDueDate = policyEntity.PaymentDueDate,
+                PaymentDone = policyEntity.PaymentDone,
+                PolicyDocuments = policyEntity.PolicyDocumentRef
+            };
+
+            return (responseDto, isUpdate);
         }
-
-
 
         public async Task<object> GetPoliciesAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             string? search,
@@ -148,9 +210,23 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             Guid? insurerId,
             Guid? productId)
         {
-            var query = _context.CustomerPolicies
-                .AsNoTracking()
-                .Where(x => x.AdvisorId == advisorId);
+            IQueryable<CustomerPolicy> query = _context.CustomerPolicies
+            .AsNoTracking()
+            .Include(x => x.Customer)
+            .Include(x => x.Insurer)
+            .Include(x => x.Product)
+            .Include(x => x.PolicyStatus)
+            .Include(x => x.PolicyType);
+
+            if (role == "Advisor")
+            {
+                query = query.Where(x => x.AdvisorId == advisorId);
+            }
+            else if (role == "CompanyAdmin" && companyId.HasValue)
+            {
+                query = query.Where(x => x.CompanyId == companyId);
+            }
+
 
             if (!string.IsNullOrWhiteSpace(search))
                 query = query.Where(x =>

@@ -8,6 +8,8 @@ namespace Avinya.InsuranceCRM.Application.Interfaces.CustomerPolicy
     {
         Task<ResponseModel> GetPoliciesAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             string? search,

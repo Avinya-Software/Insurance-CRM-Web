@@ -26,4 +26,8 @@
     <ProjectReference Include="..\Avinya.InsuranceCRM.Infrastructure\Avinya.InsuranceCRM.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
 </Project>

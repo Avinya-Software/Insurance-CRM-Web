@@ -22,18 +22,24 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetPolicies(
-            int pageNumber = 1,
-            int pageSize = 10,
-            string? search = null,
-            int? policyStatusId = null,
-            int? policyTypeId = null,
-            Guid? customerId = null,
-            Guid? insurerId = null,
-            Guid? productId = null)
+        int pageNumber = 1,
+        int pageSize = 10,
+        string? search = null,
+        int? policyStatusId = null,
+        int? policyTypeId = null,
+        Guid? customerId = null,
+        Guid? insurerId = null,
+        Guid? productId = null)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var companyIdClaim = User.FindFirstValue("CompanyId");
+            Guid? companyId = Guid.TryParse(companyIdClaim, out var cid) ? cid : null;
+
             var response = await _service.GetPoliciesAsync(
                 advisorId,
+                role,
+                companyId,
                 pageNumber,
                 pageSize,
                 search,
@@ -46,16 +52,14 @@ namespace Avinya.InsuranceCRM.API.Controllers
             return StatusCode(response.StatusCode, response);
         }
 
+
         [HttpPost("upsert")]
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> Upsert([FromForm] UpsertPolicyRequest request)
+        public async Task<IActionResult> Upsert([FromBody] UpsertPolicyRequest request)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var companyIdClaim = User.FindFirstValue("CompanyId");
-            Guid? companyId = null;
-            if (Guid.TryParse(companyIdClaim, out var parsedCompanyId))
-                companyId = parsedCompanyId;
+            Guid? companyId = Guid.TryParse(companyIdClaim, out var cid) ? cid : null;
 
             var response = await _service.CreateOrUpdateAsync(
                 advisorId,
@@ -64,6 +68,7 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
             return StatusCode(response.StatusCode, response);
         }
+
 
         [HttpDelete("{policyId:guid}")]
         public async Task<IActionResult> Delete(Guid policyId)

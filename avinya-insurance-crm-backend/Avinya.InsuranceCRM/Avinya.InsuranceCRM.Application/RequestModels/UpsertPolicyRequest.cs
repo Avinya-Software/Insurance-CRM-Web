@@ -1,23 +1,19 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Avinya.InsuranceCRM.Application.DTOs;
+using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
 public class UpsertPolicyRequest
 {
-    public Guid? PolicyId { get; set; } // NULL = ADD, NOT NULL = UPDATE
+    public Guid? PolicyId { get; set; }
 
-    [Required]
     public Guid CustomerId { get; set; }
 
-    [Required]
     public Guid InsurerId { get; set; }
 
-    [Required]
     public Guid ProductId { get; set; }
 
-    [Required]
     public int PolicyStatusId { get; set; }
 
-    [Required]
     public int PolicyTypeId { get; set; }
 
     public string? RegistrationNo { get; set; }
@@ -32,10 +28,9 @@ public class UpsertPolicyRequest
     public DateTime? PaymentDueDate { get; set; }
     public DateTime? RenewalDate { get; set; }
 
-    public string? PolicyDocumentRef { get; set; }
     public string? BrokerCode { get; set; }
     public string? PolicyCode { get; set; }
     public bool PaymentDone { get; set; } = false;
-    public List<IFormFile>? PolicyDocuments { get; set; }
+    public List<string>? PolicyDocuments { get; set; }
 
 }
