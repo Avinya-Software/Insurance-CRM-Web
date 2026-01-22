@@ -1,4 +1,5 @@
-﻿using Avinya.InsuranceCRM.Domain.Entities;
+﻿using Avinya.InsuranceCRM.Application.RequestModels;
+using Avinya.InsuranceCRM.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,14 +8,12 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
 {
     public interface IClaimRepository
     {
-        /* ================= READ ================= */
+        Task<(UpsertClaimRequest claim, bool isUpdate)> CreateOrUpdateAsync(
+        string advisorId,
+        Guid companyId,
+        UpsertClaimRequest request);
 
-        Task<InsuranceClaim?> GetByIdAsync(
-            string advisorId,
-            Guid claimId
-        );
-
-        Task<(int TotalRecords, List<InsuranceClaim> Data)> GetPagedAsync(
+        Task<(IEnumerable<InsuranceClaim> Data, int TotalCount)> GetPagedAsync(
             string advisorId,
             int pageNumber,
             int pageSize,
@@ -24,33 +23,21 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
             int? claimTypeId,
             int? claimStageId,
             int? claimHandlerId,
-            string? status
-        );
+            string? status);
 
-        /* ================= CREATE / UPDATE ================= */
+        Task<bool> DeleteAsync(string advisorId, Guid claimId);
 
-        Task AddAsync(
-            InsuranceClaim claim,
-            string advisorId
-        );
-
-        Task UpdateAsync(
-            InsuranceClaim claim,
-            string advisorId
-        );
-
-        /* ================= DELETE ================= */
-
-        Task DeleteByIdAsync(
+        Task<bool> UpdateStageAsync(
             string advisorId,
-            Guid claimId
-        );
-
-        Task<bool> UpdateClaimStageAsync(
-    string advisorId,
             Guid claimId,
-            int claimStageId,
-            string? notes
-        );
+            int stageId,
+            string? notes);
+
+        Task<bool> DeleteDocumentAsync(
+            string advisorId,
+            Guid claimId,
+            string documentId);
+
+        string? GetDocumentPath(Guid claimId, string documentId);
     }
 }

@@ -28,7 +28,6 @@ namespace Avinya.InsuranceCRM.Application.RequestModels
 
         public string? Notes { get; set; }
 
-        // ✅ FILES (multipart/form-data)
-        public List<IFormFile>? Documents { get; set; }
+        public List<string>? Documents { get; set; }
     }
 }
