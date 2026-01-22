@@ -1,8 +1,8 @@
-﻿using Avinya.InsuranceCRM.API.ResponseModels;
+﻿using Avinya.InsuranceCRM.Application.DTOs.Product;
 using Avinya.InsuranceCRM.Application.RepositoryInterface;
 using Avinya.InsuranceCRM.Domain.Entities;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Dynamic.Core;
 
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 {
@@ -15,147 +15,163 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context = context;
         }
 
-        /* ================= CREATE ================= */
-
-        public async Task<Product> AddAsync(Product product)
-        {
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
-            return product;
-        }
-
-        /* ================= READ ================= */
-
-        public async Task<Product?> GetByIdAsync(
+        public async Task<(Guid productId, bool isUpdate)> CreateOrUpdateAsync(
             string advisorId,
-            Guid productId)
+            Guid? companyId,
+            UpsertProductRequest request)
         {
-            return await _context.Products
-                .Include(x => x.ProductCategory)
-                .FirstOrDefaultAsync(x =>
-                    x.ProductId == productId &&
+            if (request.ProductId.HasValue)
+            {
+                var product = await _context.Products.FirstOrDefaultAsync(x =>
+                    x.ProductId == request.ProductId &&
                     x.AdvisorId == advisorId);
+
+                if (product == null)
+                    throw new KeyNotFoundException("Product not found");
+
+                product.ProductName = request.ProductName;
+                product.ProductCode = request.ProductCode;
+                product.ProductCategoryId = request.ProductCategoryId;
+                product.DefaultReminderDays = request.DefaultReminderDays;
+                product.CommissionRules = request.CommissionRules;
+                product.IsActive = request.IsActive;
+                product.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                return (product.ProductId, true);
+            }
+
+            var newProduct = new Product
+            {
+                ProductId = Guid.NewGuid(),
+                AdvisorId = advisorId,
+                CompanyId = companyId,
+                InsurerId = request.InsurerId,
+                ProductCategoryId = request.ProductCategoryId,
+                ProductName = request.ProductName,
+                ProductCode = request.ProductCode,
+                DefaultReminderDays = request.DefaultReminderDays,
+                CommissionRules = request.CommissionRules,
+                IsActive = request.IsActive,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Products.Add(newProduct);
+            await _context.SaveChangesAsync();
+
+            return (newProduct.ProductId, false);
         }
 
-        public async Task<PagedRecordResult<Product>> GetPagedAsync(
+        public async Task<(IEnumerable<ProductListDto>, int)> GetPagedAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             int? productCategoryId,
             string? search)
         {
-            var query = _context.Products
-                .Include(p => p.ProductCategory)
-                .Where(p => p.AdvisorId == advisorId)
-                .AsQueryable();
+            IQueryable<Product> baseQuery = _context.Products
+                .Include(x => x.ProductCategory)
+                .AsNoTracking();
 
-            /* -------- CATEGORY FILTER -------- */
+            if (role == "Advisor")
+            {
+                baseQuery = baseQuery.Where(x => x.AdvisorId == advisorId);
+            }
+            else if (role == "CompanyAdmin" && companyId.HasValue)
+            {
+                baseQuery = baseQuery.Where(x => x.CompanyId == companyId);
+            }
+
+
             if (productCategoryId.HasValue)
-            {
-                query = query.Where(p =>
-                    p.ProductCategoryId == productCategoryId.Value);
-            }
+                baseQuery = baseQuery.Where(x => x.ProductCategoryId == productCategoryId);
 
-            /* -------- SEARCH FILTER -------- */
             if (!string.IsNullOrWhiteSpace(search))
-            {
-                search = search.ToLower();
+                baseQuery = baseQuery.Where(x =>
+                    x.ProductName.Contains(search) ||
+                    x.ProductCode.Contains(search));
 
-                query = query.Where(p =>
-                    p.ProductName.ToLower().Contains(search) ||
-                    p.ProductCode.ToLower().Contains(search) ||
-                    (p.CommissionRules != null &&
-                     p.CommissionRules.ToLower().Contains(search))
-                );
-            }
+            var totalCount = await baseQuery.CountAsync();
 
-            var totalRecords = await query.CountAsync();
-
-            var products = await query
-                .OrderByDescending(p => p.CreatedAt)
+            var data = await baseQuery
+                .OrderByDescending(x => x.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
-
-            return new PagedRecordResult<Product>
-            {
-                TotalRecords = totalRecords,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                Data = products
-            };
-        }
-
-        public async Task<List<Product>> GetDropdownAsync(
-            string advisorId,
-            Guid? insurerId)
-        {
-            var query = _context.Products
-                .Where(x =>
-                    x.AdvisorId == advisorId &&
-                    x.IsActive)
-                .AsQueryable();
-
-            if (insurerId.HasValue && insurerId != Guid.Empty)
-            {
-                query = query.Where(x => x.InsurerId == insurerId.Value);
-            }
-
-            return await query
-                .OrderBy(x => x.ProductName)
-                .Select(x => new Product
+                .Select(x => new ProductListDto
                 {
                     ProductId = x.ProductId,
-                    ProductName = x.ProductName
+                    InsurerId = x.InsurerId,
+                    ProductName = x.ProductName,
+                    ProductCode = x.ProductCode,
+                    ProductCategoryId = x.ProductCategoryId,
+                    ProductCategoryName = x.ProductCategory.CategoryName,
+                    DefaultReminderDays = x.DefaultReminderDays,
+                    IsActive = x.IsActive,
+                    CreatedAt = x.CreatedAt
                 })
                 .ToListAsync();
+
+            return (data, totalCount);
         }
 
-        /* ================= UPDATE ================= */
 
-        public async Task UpdateAsync(Product product)
-        {
-            _context.Products.Update(product);
-            await _context.SaveChangesAsync();
-        }
-
-        /* ================= DELETE ================= */
-
-        public async Task<bool> DeleteAsync(
-            string advisorId,
-            Guid productId)
+        public async Task<bool> DeleteAsync(string advisorId, Guid productId)
         {
             var product = await _context.Products
                 .FirstOrDefaultAsync(x =>
                     x.ProductId == productId &&
                     x.AdvisorId == advisorId);
 
-            if (product == null)
-                return false;
-
-            // 🚫 Do not delete if used in policies (advisor-safe)
-            var isUsed = await _context.CustomerPolicies
-                .AnyAsync(p =>
-                    p.ProductId == productId &&
-                    p.AdvisorId == advisorId);
-
-            if (isUsed)
-                return false;
+            if (product == null) return false;
 
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
-
             return true;
         }
 
-        /* ================= DROPDOWNS ================= */
-
-        public async Task<List<ProductCategory>> GetProductCategoryDropdownAsync()
+        public async Task<List<ProductDropdownDto>> GetDropdownAsync(
+            string advisorId,
+            string role,
+            Guid? companyId,
+            Guid? insurerId)
         {
-            return await _context.ProductCategories
-                .Where(x => x.IsActive)
-                .OrderBy(x => x.CategoryName)
-                .ToListAsync();
+            IQueryable<Product> query = _context.Products
+                .AsNoTracking()
+                .Where(x => x.IsActive);
+
+            if (role == "Advisor")
+            {
+                query = query.Where(x => x.AdvisorId == advisorId);
+            }
+            else if (role == "CompanyAdmin" && companyId.HasValue)
+            {
+                query = query.Where(x => x.CompanyId == companyId);
+            }
+
+            if (insurerId.HasValue)
+                query = query.Where(x => x.InsurerId == insurerId);
+
+            return await query
+            .OrderBy(x => x.ProductName)
+            .Select(x => new ProductDropdownDto
+            {
+                ProductId = x.ProductId,
+                ProductName = x.ProductName
+            })
+            .ToListAsync();
         }
+
+        public async Task<List<object>> GetCategoryDropdownAsync()
+            => await _context.ProductCategories
+                .Where(x => x.IsActive)
+                .Select(x => new
+                {
+                    x.ProductCategoryId,
+                    x.CategoryName
+                })
+                .Cast<object>()
+                .ToListAsync();
     }
 }

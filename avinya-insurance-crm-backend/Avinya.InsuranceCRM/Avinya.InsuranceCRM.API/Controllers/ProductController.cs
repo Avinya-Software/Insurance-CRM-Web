@@ -1,8 +1,5 @@
-﻿using Avinya.InsuranceCRM.API.Models;
-using Avinya.InsuranceCRM.Application.RepositoryInterface;
-using Avinya.InsuranceCRM.Application.RequestModels;
-using Avinya.InsuranceCRM.Domain.Entities;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+﻿using Avinya.InsuranceCRM.Application.DTOs.Product;
+using Avinya.InsuranceCRM.Application.Interfaces.Product;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,187 +8,83 @@ namespace Avinya.InsuranceCRM.API.Controllers
 {
     [ApiController]
     [Route("api/products")]
-    [Authorize(Policy = "ApprovedAdvisor")]
+    [Authorize(Policy = "ApprovedAdvisorOrCompanyAdmin")]
     public class ProductController : ControllerBase
     {
-        private readonly IProductRepository _productRepository;
-        private readonly ILogger<ProductController> _logger;
+        private readonly IProductServices _service;
 
-        public ProductController(
-            IProductRepository productRepository,
-            ILogger<ProductController> logger)
+        public ProductController(IProductServices service)
         {
-            _productRepository = productRepository;
-            _logger = logger;
+            _service = service;
         }
-
-        /*   ADD / UPDATE   */
 
         [HttpPost]
-        public async Task<IActionResult> UpsertProduct(
-            [FromBody] UpsertProductRequest request)
+        public async Task<IActionResult> CreateOrUpdate(
+            UpsertProductRequest request)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var companyIdClaim = User.FindFirstValue("CompanyId");
 
-            if (string.IsNullOrEmpty(advisorId))
-                return Unauthorized("Invalid token");
+            Guid? companyId = Guid.TryParse(companyIdClaim, out var cid)
+                ? cid
+                : null;
 
-            /*  CREATE  */
-            if (!request.ProductId.HasValue || request.ProductId == Guid.Empty)
-            {
-                var product = new Product
-                {
-                    ProductId = Guid.NewGuid(),
-                    AdvisorId = advisorId,          
-                    InsurerId = request.InsurerId,
-                    ProductCategoryId = request.ProductCategoryId,
-                    ProductName = request.ProductName,
-                    ProductCode = request.ProductCode,
-                    DefaultReminderDays = request.DefaultReminderDays,
-                    CommissionRules = request.CommissionRules,
-                    IsActive = request.IsActive,
-                    CreatedAt = DateTime.UtcNow
-                };
+            var response =
+                await _service.CreateOrUpdateAsync(advisorId, companyId, request);
 
-                await _productRepository.AddAsync(product);
-
-                return Ok(new
-                {
-                    Message = "Product created successfully",
-                    ProductId = product.ProductId
-                });
-            }
-
-            /* ---------- UPDATE ---------- */
-            var existingProduct = await _productRepository.GetByIdAsync(
-                advisorId,
-                request.ProductId.Value
-            );
-
-            if (existingProduct == null)
-                return NotFound("Product not found");
-
-            existingProduct.ProductName = request.ProductName;
-            existingProduct.ProductCode = request.ProductCode;
-            existingProduct.ProductCategoryId = request.ProductCategoryId;
-            existingProduct.DefaultReminderDays = request.DefaultReminderDays;
-            existingProduct.CommissionRules = request.CommissionRules;
-            existingProduct.IsActive = request.IsActive;
-            existingProduct.UpdatedAt = DateTime.UtcNow;
-
-            await _productRepository.UpdateAsync(existingProduct);
-
-            return Ok(new
-            {
-                Message = "Product updated successfully",
-                ProductId = existingProduct.ProductId
-            });
+            return StatusCode(response.StatusCode, response);
         }
-
-        /*   DROPDOWN   */
-
-        [HttpGet("dropdown")]
-        public async Task<IActionResult> GetDropdown(
-            [FromQuery] Guid? insurerId)
-        {
-            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(advisorId))
-                return Unauthorized("Invalid token");
-
-            var products = await _productRepository.GetDropdownAsync(
-                advisorId,
-                insurerId
-            );
-
-            return Ok(products.Select(x => new
-            {
-                x.ProductId,
-                x.ProductName
-            }));
-        }
-
-        /*   PAGED LIST   */
 
         [HttpGet]
-        public async Task<IActionResult> GetProducts(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] int? productCategoryId = null,
-            [FromQuery] string? search = null)
+        public async Task<IActionResult> GetPaged(
+            int pageNumber = 1,
+            int pageSize = 10,
+            int? productCategoryId = null,
+            string? search = null)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var companyIdClaim = User.FindFirstValue("CompanyId");
 
-            if (string.IsNullOrEmpty(advisorId))
-                return Unauthorized("Invalid token");
+            Guid? companyId = Guid.TryParse(companyIdClaim, out var cid)
+                ? cid
+                : null;
 
-            var result = await _productRepository.GetPagedAsync(
-                advisorId,
-                pageNumber,
-                pageSize,
-                productCategoryId,
-                search
-            );
+            var response =
+                await _service.GetPagedAsync(
+                    advisorId, role, companyId, pageNumber, pageSize, productCategoryId, search);
 
-            return Ok(ApiResponse<object>.Success(new
-            {
-                result.TotalRecords,
-                result.PageNumber,
-                result.PageSize,
-                TotalPages = (int)Math.Ceiling(
-                    result.TotalRecords / (double)pageSize
-                ),
-                Products = result.Data.Select(p => new
-                {
-                    p.ProductId,
-                    p.ProductName,
-                    p.ProductCode,
-                    ProductCategory = p.ProductCategory.CategoryName,
-                    p.DefaultReminderDays,
-                    p.InsurerId,
-                    p.CommissionRules,
-                    p.IsActive,
-                    p.CreatedAt
-                })
-            }, "Products fetched successfully"));
+            return StatusCode(response.StatusCode, response);
         }
-
-        /*   DELETE   */
 
         [HttpDelete("{productId:guid}")]
-        public async Task<IActionResult> DeleteProduct(Guid productId)
+        public async Task<IActionResult> Delete(Guid productId)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(advisorId))
-                return Unauthorized("Invalid token");
-
-            var deleted = await _productRepository.DeleteAsync(
-                advisorId,
-                productId
-            );
-
-            if (!deleted)
-                return NotFound("Product not found or cannot be deleted");
-
-            return Ok(new
-            {
-                Message = "Product deleted successfully"
-            });
+            var response = await _service.DeleteAsync(advisorId, productId);
+            return StatusCode(response.StatusCode, response);
         }
 
-        /*   PRODUCT CATEGORY DROPDOWN   */
-
-        [HttpGet("ProductCategorydropdown")]
-        public async Task<IActionResult> GetProductCategoryDropdown()
+        [HttpGet("dropdown")]
+        public async Task<IActionResult> Dropdown(Guid? insurerId)
         {
-            var categories = await _productRepository.GetProductCategoryDropdownAsync();
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var companyIdClaim = User.FindFirstValue("CompanyId");
 
-            return Ok(categories.Select(p => new
-            {
-                id = p.ProductCategoryId,
-                name = p.CategoryName
-            }));
+            Guid? companyId = Guid.TryParse(companyIdClaim, out var cid)
+                ? cid
+                : null;
+
+            var response = await _service.GetDropdownAsync(advisorId, role, companyId, insurerId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("product-category-dropdown")]
+        public async Task<IActionResult> CategoryDropdown()
+        {
+            var response = await _service.GetCategoryDropdownAsync();
+            return StatusCode(response.StatusCode, response);
         }
     }
 }

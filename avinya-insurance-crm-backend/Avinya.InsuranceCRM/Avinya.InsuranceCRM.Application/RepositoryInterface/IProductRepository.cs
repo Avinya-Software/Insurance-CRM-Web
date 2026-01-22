@@ -1,45 +1,32 @@
-﻿using Avinya.InsuranceCRM.API.ResponseModels;
+﻿using Avinya.InsuranceCRM.Application.DTOs.Product;
 using Avinya.InsuranceCRM.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Avinya.InsuranceCRM.Application.RepositoryInterface
 {
     public interface IProductRepository
     {
-        /* ================= CREATE / UPDATE ================= */
-
-        Task<Product> AddAsync(Product product);
-        Task UpdateAsync(Product product);
-
-        /* ================= READ ================= */
-
-        Task<Product?> GetByIdAsync(
+        Task<(Guid productId, bool isUpdate)> CreateOrUpdateAsync(
             string advisorId,
-            Guid productId
-        );
+            Guid? companyId,
+            UpsertProductRequest request);
 
-        Task<PagedRecordResult<Product>> GetPagedAsync(
+        Task<(IEnumerable<ProductListDto> Data, int TotalCount)> GetPagedAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             int? productCategoryId,
-            string? search
-        );
+            string? search);
 
-        Task<List<Product>> GetDropdownAsync(
+        Task<bool> DeleteAsync(string advisorId, Guid productId);
+
+        Task<List<ProductDropdownDto>> GetDropdownAsync(
             string advisorId,
-            Guid? insurerId
-        );
+             string role,
+            Guid? companyId,
+            Guid? insurerId);
 
-        Task<List<ProductCategory>> GetProductCategoryDropdownAsync();
-
-        /* ================= DELETE ================= */
-
-        Task<bool> DeleteAsync(
-            string advisorId,
-            Guid productId
-        );
+        Task<List<object>> GetCategoryDropdownAsync();
     }
 }

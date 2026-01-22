@@ -1,8 +1,8 @@
-﻿namespace Avinya.InsuranceCRM.Application.RequestModels
+﻿namespace Avinya.InsuranceCRM.Application.DTOs.Product
 {
     public class UpsertProductRequest
     {
-        public Guid? ProductId { get; set; } // NULL = ADD
+        public Guid? ProductId { get; set; }
 
         public Guid InsurerId { get; set; }
         public int ProductCategoryId { get; set; }
@@ -15,5 +15,4 @@
 
         public bool IsActive { get; set; } = true;
     }
-
 }
