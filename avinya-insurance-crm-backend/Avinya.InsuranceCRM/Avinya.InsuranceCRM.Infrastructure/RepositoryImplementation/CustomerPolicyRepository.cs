@@ -1,6 +1,7 @@
-﻿using Avinya.InsuranceCRM.Application.RepositoryInterface;
+﻿using Avinya.InsuranceCRM.Application.DTOs.CustomerPolicy;
+using Avinya.InsuranceCRM.Application.RepositoryInterface;
 using Avinya.InsuranceCRM.Domain.Entities;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
@@ -8,126 +9,133 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
     public class CustomerPolicyRepository : ICustomerPolicyRepository
     {
         private readonly AppDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public CustomerPolicyRepository(AppDbContext context)
+        public CustomerPolicyRepository(
+            AppDbContext context,
+            IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
-        /* ================= UPSERT ================= */
-
-        public async Task<CustomerPolicy> UpsertAsync(
-     CustomerPolicy policy,
-     string advisorId)
+        public async Task<(CustomerPolicy policy, bool isUpdate)> CreateOrUpdateAsync(
+    string advisorId,
+    Guid companyId,
+    UpsertPolicyRequest request)
         {
-            var entity = await _context.CustomerPolicies
-                .FirstOrDefaultAsync(x =>
-                    x.PolicyId == policy.PolicyId &&
-                    x.AdvisorId == advisorId
-                );
+            CustomerPolicy policy;
+            bool isUpdate = request.PolicyId.HasValue;
 
-            bool isNewPolicy = false;
-
-            /* ================= CREATE ================= */
-            if (entity == null)
+            if (isUpdate)
             {
-                isNewPolicy = true;
+                policy = await _context.CustomerPolicies
+                    .FirstOrDefaultAsync(x =>
+                        x.PolicyId == request.PolicyId.Value &&
+                        x.AdvisorId == advisorId);
 
-                entity = new CustomerPolicy
-                {
-                    PolicyId = policy.PolicyId == Guid.Empty
-                        ? Guid.NewGuid()
-                        : policy.PolicyId,
+                if (policy == null)
+                    throw new KeyNotFoundException("Policy not found");
 
-                    AdvisorId = advisorId,
-                    CreatedAt = DateTime.UtcNow,
+                policy.CustomerId = request.CustomerId;
+                policy.InsurerId = request.InsurerId;
+                policy.ProductId = request.ProductId;
+                policy.PolicyStatusId = request.PolicyStatusId;
+                policy.PolicyTypeId = request.PolicyTypeId;
 
-                    // ✅ GENERATED ONLY ONCE
-                    PolicyNumber = await GeneratePolicyNumberAsync(advisorId)
-                };
+                policy.RegistrationNo = request.RegistrationNo;
+                policy.StartDate = request.StartDate;
+                policy.EndDate = request.EndDate;
+                policy.PremiumNet = request.PremiumNet;
+                policy.PremiumGross = request.PremiumGross;
 
-                _context.CustomerPolicies.Add(entity);
+                policy.PaymentMode = request.PaymentMode;
+                policy.PaymentDueDate = request.PaymentDueDate;
+                policy.RenewalDate = request.RenewalDate;
+
+                policy.BrokerCode = request.BrokerCode;
+                policy.PolicyCode = request.PolicyCode;
+                policy.PaymentDone = request.PaymentDone;
+
+                policy.UpdatedAt = DateTime.UtcNow;
             }
-            /* ================= UPDATE ================= */
             else
             {
-                entity.UpdatedAt = DateTime.UtcNow;
-                // ❌ DO NOT TOUCH PolicyNumber
+                policy = new CustomerPolicy
+                {
+                    PolicyId = Guid.NewGuid(),
+                    AdvisorId = advisorId,
+                    CompanyId = companyId,
+
+                    CustomerId = request.CustomerId,
+                    InsurerId = request.InsurerId,
+                    ProductId = request.ProductId,
+                    PolicyStatusId = request.PolicyStatusId,
+                    PolicyTypeId = request.PolicyTypeId,
+
+                    RegistrationNo = request.RegistrationNo,
+                    StartDate = request.StartDate,
+                    EndDate = request.EndDate,
+                    PremiumNet = request.PremiumNet,
+                    PremiumGross = request.PremiumGross,
+
+                    PaymentMode = request.PaymentMode,
+                    PaymentDueDate = request.PaymentDueDate,
+                    RenewalDate = request.RenewalDate,
+
+                    BrokerCode = request.BrokerCode,
+                    PolicyCode = request.PolicyCode,
+                    PaymentDone = request.PaymentDone,
+
+                    PolicyNumber = await GeneratePolicyNumberAsync(advisorId),
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.CustomerPolicies.Add(policy);
             }
 
-            /* ================= COMMON FIELDS ================= */
-            entity.CustomerId = policy.CustomerId;
-            entity.InsurerId = policy.InsurerId;
-            entity.ProductId = policy.ProductId;
-            entity.PolicyStatusId = policy.PolicyStatusId;
-            entity.PolicyTypeId = policy.PolicyTypeId;
-            entity.RegistrationNo = policy.RegistrationNo;
-            entity.StartDate = policy.StartDate;
-            entity.EndDate = policy.EndDate;
-            entity.PremiumNet = policy.PremiumNet;
-            entity.PremiumGross = policy.PremiumGross;
-            entity.PaymentMode = policy.PaymentMode;
-            entity.PaymentDueDate = policy.PaymentDueDate;
-            entity.RenewalDate = policy.RenewalDate;
-            entity.BrokerCode = policy.BrokerCode;
-            entity.PolicyCode = policy.PolicyCode;
-            entity.PaymentDone = policy.PaymentDone;
-
-            /* ================= DOCUMENT UPDATE (APPEND MODE) ================= */
-            if (!string.IsNullOrWhiteSpace(policy.PolicyDocumentRef))
+            if (request.PolicyDocuments != null && request.PolicyDocuments.Any())
             {
-                if (string.IsNullOrWhiteSpace(entity.PolicyDocumentRef))
+                var uploadRoot = Path.Combine(
+                    _env.ContentRootPath,
+                    "Uploads",
+                    "Policies",
+                    policy.PolicyId.ToString()
+                );
+
+                Directory.CreateDirectory(uploadRoot);
+
+                var savedFiles = new List<string>();
+
+                foreach (var file in request.PolicyDocuments)
                 {
-                    entity.PolicyDocumentRef = policy.PolicyDocumentRef;
+                    if (file.Length == 0) continue;
+
+                    var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                    var filePath = Path.Combine(uploadRoot, fileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await file.CopyToAsync(stream);
+
+                    savedFiles.Add(fileName);
                 }
-                else
-                {
-                    var existingFiles = entity.PolicyDocumentRef
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(f => f.Trim());
 
-                    var newFiles = policy.PolicyDocumentRef
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .Select(f => f.Trim());
+                // Append existing documents (important for update)
+                var existingFiles = policy.PolicyDocumentRef?
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .ToList() ?? new List<string>();
 
-                    entity.PolicyDocumentRef =
-                        string.Join(",", existingFiles.Union(newFiles));
-                }
-            }
+                existingFiles.AddRange(savedFiles);
 
-            /* ================= LEAD CONVERSION LOGIC ================= */
-            if (isNewPolicy)
-            {
-                var customer = await _context.Customers
-                    .FirstOrDefaultAsync(x =>
-                        x.CustomerId == policy.CustomerId &&
-                        x.AdvisorId == advisorId
-                    );
-
-                if (customer?.LeadId != null)
-                {
-                    var lead = await _context.Leads
-                        .FirstOrDefaultAsync(x =>
-                            x.LeadId == customer.LeadId &&
-                            x.AdvisorId == advisorId
-                        );
-
-                    if (lead != null && !lead.IsConverted)
-                    {
-                        lead.LeadStatusId = 5; // ✅ Converted
-                        lead.IsConverted = true;
-                        lead.CustomerId = customer.CustomerId;
-                        lead.UpdatedAt = DateTime.UtcNow;
-                    }
-                }
+                policy.PolicyDocumentRef = string.Join(",", existingFiles);
             }
 
             await _context.SaveChangesAsync();
-            return entity;
+            return (policy, isUpdate);
         }
 
 
-        /* ================= GET POLICIES ================= */
 
         public async Task<object> GetPoliciesAsync(
             string advisorId,
@@ -145,12 +153,9 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 .Where(x => x.AdvisorId == advisorId);
 
             if (!string.IsNullOrWhiteSpace(search))
-            {
                 query = query.Where(x =>
                     x.PolicyNumber.Contains(search) ||
-                    x.RegistrationNo.Contains(search) ||
-                    x.CustomerId.ToString().Contains(search));
-            }
+                    x.RegistrationNo.Contains(search));
 
             if (policyStatusId.HasValue)
                 query = query.Where(x => x.PolicyStatusId == policyStatusId);
@@ -169,7 +174,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
             var totalRecords = await query.CountAsync();
 
-            var policies = await query
+            var data = await query
                 .OrderByDescending(x => x.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -182,27 +187,16 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                     x.EndDate,
                     x.PremiumNet,
                     x.PremiumGross,
-                    x.BrokerCode,
                     x.PolicyCode,
-                    x.PaymentDueDate,
                     x.PaymentMode,
+                    x.PaymentDueDate,
                     x.RenewalDate,
-                    x.PolicyStatusId,
-                    x.PolicyTypeId,
-                    x.CustomerId,
-                    x.InsurerId,
-                    x.ProductId,
                     x.PaymentDone,
-
                     PolicyStatusName = x.PolicyStatus.StatusName,
                     PolicyTypeName = x.PolicyType.TypeName,
-
                     CustomerName = x.Customer.FullName,
-                    CustomerEmail = x.Customer.Email,
-
                     InsurerName = x.Insurer.InsurerName,
                     ProductName = x.Product.ProductName,
-
                     x.PolicyDocumentRef,
                     x.CreatedAt
                 })
@@ -210,29 +204,16 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
             return new
             {
-                totalRecords,
-                pageNumber,
-                pageSize,
-                totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize),
-                data = policies
+                TotalRecords = totalRecords,
+                Page = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize),
+                Data = data
             };
         }
 
-        /* ================= GET POLICY BY ID ================= */
 
-        public async Task<CustomerPolicy?> GetByIdAsync(
-            string advisorId,
-            Guid policyId)
-        {
-            return await _context.CustomerPolicies
-                .FirstOrDefaultAsync(x =>
-                    x.PolicyId == policyId &&
-                    x.AdvisorId == advisorId);
-        }
-
-        /* ================= DELETE POLICY ================= */
-
-        public async Task DeleteByIdAsync(
+        public async Task<bool> DeleteByIdAsync(
             string advisorId,
             Guid policyId)
         {
@@ -242,69 +223,116 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                     x.AdvisorId == advisorId);
 
             if (policy == null)
-                return;
+                return false;
 
             _context.CustomerPolicies.Remove(policy);
             await _context.SaveChangesAsync();
+
+            var folder = Path.Combine(
+                _env.ContentRootPath,
+                "Uploads",
+                "Policies",
+                policyId.ToString());
+
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, true);
+
+            return true;
         }
 
-        /* ================= POLICY NUMBER GENERATOR ================= */
 
-        private async Task<string> GeneratePolicyNumberAsync(string advisorId)
+        public async Task<bool> DeleteDocumentAsync(
+            string advisorId,
+            Guid policyId,
+            string documentId)
         {
-            var lastPolicy = await _context.CustomerPolicies
-                .Where(x => x.AdvisorId == advisorId)
-                .OrderByDescending(x => x.CreatedAt)
-                .Select(x => x.PolicyNumber)
-                .FirstOrDefaultAsync();
+            var policy = await _context.CustomerPolicies
+                .FirstOrDefaultAsync(x =>
+                    x.PolicyId == policyId &&
+                    x.AdvisorId == advisorId);
 
-            int nextNumber = 1;
+            if (policy == null || string.IsNullOrWhiteSpace(policy.PolicyDocumentRef))
+                return false;
 
-            if (!string.IsNullOrWhiteSpace(lastPolicy))
-            {
-                var parts = lastPolicy.Split('-');
-                if (parts.Length == 2 &&
-                    int.TryParse(parts[1], out var last))
-                {
-                    nextNumber = last + 1;
-                }
-            }
+            var files = policy.PolicyDocumentRef.Split(",").ToList();
+            var file = files.FirstOrDefault(x => x.StartsWith(documentId + "_"));
+            if (file == null) return false;
 
-            return $"POL-{nextNumber:D6}";
+            var path = GetPolicyDocumentPath(policyId, documentId);
+            if (path != null && File.Exists(path))
+                File.Delete(path);
+
+            files.Remove(file);
+            policy.PolicyDocumentRef = files.Any()
+                ? string.Join(",", files)
+                : null;
+
+            policy.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return true;
         }
 
-        /* ================= DROPDOWNS ================= */
+        public string? GetPolicyDocumentPath(Guid policyId, string documentId)
+        {
+            var folder = Path.Combine(
+                _env.ContentRootPath,
+                "Uploads",
+                "Policies",
+                policyId.ToString());
+
+            if (!Directory.Exists(folder))
+                return null;
+
+            return Directory.GetFiles(folder)
+                .FirstOrDefault(f =>
+                    Path.GetFileName(f).StartsWith(documentId + "_"));
+        }
+
+
+        public async Task<bool> UpdatePolicyStatusAsync(
+            string advisorId,
+            Guid policyId,
+            int policyStatusId)
+        {
+            var policy = await _context.CustomerPolicies
+                .FirstOrDefaultAsync(x =>
+                    x.PolicyId == policyId &&
+                    x.AdvisorId == advisorId);
+
+            if (policy == null)
+                return false;
+
+            policy.PolicyStatusId = policyStatusId;
+            policy.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
 
         public async Task<List<PolicyTypeMaster>> GetPolicyTypesAsync()
-        {
-            return await _context.PolicyTypes
+            => await _context.PolicyTypes
                 .Where(x => x.IsActive)
                 .OrderBy(x => x.TypeName)
                 .ToListAsync();
-        }
 
         public async Task<List<PolicyStatusMaster>> GetPolicyStatusesAsync()
-        {
-            return await _context.PolicyStatuses
+            => await _context.PolicyStatuses
                 .Where(x => x.IsActive)
                 .OrderBy(x => x.StatusName)
                 .ToListAsync();
-        }
 
         public async Task<List<CustomerPolicy>> GetPoliciesForDropdownAsync(
-     string advisorId,
-     Guid? customerId
- )
+            string advisorId,
+            Guid? customerId)
         {
             var query = _context.CustomerPolicies
                 .AsNoTracking()
                 .Where(x => x.AdvisorId == advisorId);
 
-            // 🔥 FILTER ONLY WHEN customerId IS PROVIDED
             if (customerId.HasValue)
-            {
-                query = query.Where(x => x.CustomerId == customerId.Value);
-            }
+                query = query.Where(x => x.CustomerId == customerId);
 
             return await query
                 .OrderBy(x => x.PolicyNumber)
@@ -318,26 +346,38 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 })
                 .ToListAsync();
         }
-        public async Task<bool> UpdatePolicyStatusAsync(
-        string advisorId,
-        Guid policyId,
-        int policyStatusId)
+
+
+        private async Task<string> GeneratePolicyNumberAsync(string advisorId)
         {
-            var policy = await _context.CustomerPolicies
-                .FirstOrDefaultAsync(x =>
-                    x.PolicyId == policyId &&
-                    x.AdvisorId == advisorId);
+            var last = await _context.CustomerPolicies
+                .Where(x => x.AdvisorId == advisorId)
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => x.PolicyNumber)
+                .FirstOrDefaultAsync();
 
-            if (policy == null)
-                return false;
+            int next = last != null && int.TryParse(last.Split('-').Last(), out var n)
+                ? n + 1
+                : 1;
 
-            policy.PolicyStatusId = policyStatusId;
-            policy.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-            return true;
+            return $"POL-{next:D6}";
         }
 
+        public async Task<CustomerPolicy?> GetByIdAsync(
+        string advisorId,
+        Guid policyId)
+            {
+                return await _context.CustomerPolicies
+                    .AsNoTracking()
+                    .Include(x => x.Customer)
+                    .Include(x => x.Insurer)
+                    .Include(x => x.Product)
+                    .Include(x => x.PolicyStatus)
+                    .Include(x => x.PolicyType)
+                    .FirstOrDefaultAsync(x =>
+                        x.PolicyId == policyId &&
+                        x.AdvisorId == advisorId);
+            }
 
-    }
+        }
 }

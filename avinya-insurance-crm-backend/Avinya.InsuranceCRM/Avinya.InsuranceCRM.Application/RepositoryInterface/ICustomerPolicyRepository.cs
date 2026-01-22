@@ -1,14 +1,10 @@
-﻿using Avinya.InsuranceCRM.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Avinya.InsuranceCRM.Application.DTOs.CustomerPolicy;
+using Avinya.InsuranceCRM.Domain.Entities;
 
 namespace Avinya.InsuranceCRM.Application.RepositoryInterface
 {
     public interface ICustomerPolicyRepository
     {
-        /* ================= READ ================= */
-
         Task<object> GetPoliciesAsync(
             string advisorId,
             int pageNumber,
@@ -27,32 +23,30 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
         );
 
         Task<List<CustomerPolicy>> GetPoliciesForDropdownAsync(
-            string advisorId, Guid? customerId
-
+            string advisorId,
+            Guid? customerId
         );
 
-        /* ================= CREATE / UPDATE ================= */
+        Task<(CustomerPolicy policy, bool isUpdate)> CreateOrUpdateAsync(
+            string advisorId,
+            Guid companyId,
+            UpsertPolicyRequest request);
 
-        Task<CustomerPolicy> UpsertAsync(
-            CustomerPolicy policy,
-            string advisorId
-        );
-
-        /* ================= DELETE ================= */
-
-        Task DeleteByIdAsync(
+        Task<bool> DeleteByIdAsync(
             string advisorId,
             Guid policyId
         );
 
-        /* ================= MASTER DATA ================= */
-
+        Task<bool> DeleteDocumentAsync(
+            string advisorId,
+            Guid policyId,
+            string documentId
+        );
+        string? GetPolicyDocumentPath(
+            Guid policyId,
+            string documentId
+        );
         Task<List<PolicyTypeMaster>> GetPolicyTypesAsync();
         Task<List<PolicyStatusMaster>> GetPolicyStatusesAsync();
-        Task<bool> UpdatePolicyStatusAsync(
-              string advisorId,
-              Guid policyId,
-              int policyStatusId
-          );
     }
 }
