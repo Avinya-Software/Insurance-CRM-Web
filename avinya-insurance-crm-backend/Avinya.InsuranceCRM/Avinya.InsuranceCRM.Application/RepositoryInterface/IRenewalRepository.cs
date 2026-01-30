@@ -1,48 +1,20 @@
-﻿using Avinya.InsuranceCRM.Domain.Entities;
+﻿using Avinya.InsuranceCRM.Application.DTOs.Renewal;
 
 namespace Avinya.InsuranceCRM.Application.RepositoryInterface
 {
     public interface IRenewalRepository
     {
-        /* ================= UPSERT ================= */
-
-        Task<Renewal> UpsertAsync(
-            Renewal renewal,
-            string advisorId
-        );
-
-        /* ================= LIST WITH FILTERS ================= */
-
-        Task<object> GetRenewalsAsync(
+        Task<Guid> UpsertAsync(UpsertRenewalDto dto, string advisorId);
+        Task<(List<RenewalListDto> Data, int Total)> GetPagedAsync(
             string advisorId,
             int pageNumber,
             int pageSize,
             string? search,
-            int? renewalStatusId
-        );
+            int? renewalStatusId);
 
-        /* ================= SINGLE FETCH ================= */
-
-        Task<Renewal?> GetByIdAsync(
-            Guid renewalId,
-            string advisorId
-        );
-
-        /* ================= DELETE ================= */
-
-        Task DeleteByIdAsync(
-            Guid renewalId,
-            string advisorId
-        );
-
-        /* ================= MASTER DROPDOWN ================= */
-
-        Task<List<RenewalStatusMaster>> GetRenewalStatusesAsync();
-        Task<bool> UpdateRenewalStatusAsync(
-        string advisorId,
-        Guid renewalId,
-        int renewalStatusId
-    );
+        Task<bool> DeleteAsync(Guid renewalId, string advisorId);
+        Task<bool> UpdateStatusAsync(string advisorId, Guid renewalId, int statusId);
+        Task<List<RenewalStatusDropdownDto>> GetStatusesAsync();
 
     }
 }

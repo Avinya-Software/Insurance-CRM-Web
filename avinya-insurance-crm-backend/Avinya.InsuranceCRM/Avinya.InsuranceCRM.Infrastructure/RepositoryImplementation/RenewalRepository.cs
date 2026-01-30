@@ -1,6 +1,6 @@
-﻿using Avinya.InsuranceCRM.Application.RepositoryInterface;
+﻿using Avinya.InsuranceCRM.Application.DTOs.Renewal;
+using Avinya.InsuranceCRM.Application.RepositoryInterface;
 using Avinya.InsuranceCRM.Domain.Entities;
-using Avinya.InsuranceCRM.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
@@ -14,16 +14,11 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context = context;
         }
 
-        /* ================= UPSERT ================= */
-
-        public async Task<Renewal> UpsertAsync(
-            Renewal renewal,
-            string advisorId)
+        public async Task<Guid> UpsertAsync(UpsertRenewalDto dto, string advisorId)
         {
             Renewal entity;
 
-            /* ---------- CREATE ---------- */
-            if (renewal.RenewalId == Guid.Empty)
+            if (!dto.RenewalId.HasValue || dto.RenewalId == Guid.Empty)
             {
                 entity = new Renewal
                 {
@@ -35,33 +30,28 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
                 _context.Renewals.Add(entity);
             }
-            /* ---------- UPDATE ---------- */
             else
             {
-                entity = await _context.Renewals
-                    .FirstOrDefaultAsync(x =>
-                        x.RenewalId == renewal.RenewalId &&
-                        x.AdvisorId == advisorId
-                    ) ?? throw new KeyNotFoundException("Renewal not found");
+                entity = await _context.Renewals.FirstOrDefaultAsync(x =>
+                    x.RenewalId == dto.RenewalId &&
+                    x.AdvisorId == advisorId)
+                    ?? throw new KeyNotFoundException("Renewal not found");
 
                 entity.UpdatedAt = DateTime.UtcNow;
             }
 
-            /* ---------- COMMON FIELDS ---------- */
-            entity.PolicyId = renewal.PolicyId;
-            entity.CustomerId = renewal.CustomerId;
-            entity.RenewalDate = renewal.RenewalDate;
-            entity.RenewalPremium = renewal.RenewalPremium;
-            entity.RenewalStatusId = renewal.RenewalStatusId;
-            entity.ReminderDatesJson = renewal.ReminderDatesJson;
+            entity.PolicyId = dto.PolicyId;
+            entity.CustomerId = dto.CustomerId;
+            entity.RenewalDate = dto.RenewalDate;
+            entity.RenewalPremium = dto.RenewalPremium;
+            entity.RenewalStatusId = dto.RenewalStatusId;
+            entity.ReminderDatesJson = dto.ReminderDatesJson;
 
             await _context.SaveChangesAsync();
-            return entity;
+            return entity.RenewalId;
         }
 
-        /* ================= GET LIST ================= */
-
-        public async Task<object> GetRenewalsAsync(
+        public async Task<(List<RenewalListDto>, int)> GetPagedAsync(
             string advisorId,
             int pageNumber,
             int pageSize,
@@ -75,119 +65,80 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 .Include(x => x.RenewalStatus)
                 .Where(x => x.AdvisorId == advisorId);
 
-            /* ---------- SEARCH ---------- */
             if (!string.IsNullOrWhiteSpace(search))
             {
                 query = query.Where(x =>
                     x.Customer.FullName.Contains(search) ||
-                    x.Policy.PolicyCode.Contains(search)
-                );
+                    x.Policy.PolicyCode.Contains(search));
             }
 
-            /* ---------- FILTER ---------- */
             if (renewalStatusId.HasValue)
             {
-                query = query.Where(x =>
-                    x.RenewalStatusId == renewalStatusId.Value);
+                query = query.Where(x => x.RenewalStatusId == renewalStatusId);
             }
 
-            var totalRecords = await query.CountAsync();
+            var total = await query.CountAsync();
 
             var data = await query
                 .OrderByDescending(x => x.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new
+                .Select(x => new RenewalListDto
                 {
-                    x.RenewalId,
-                    x.RenewalDate,
-                    x.RenewalPremium,
-                    x.CustomerId,
-                    x.PolicyId,
-
-                    Status = x.RenewalStatus.StatusName,
+                    RenewalId = x.RenewalId,
+                    RenewalDate = x.RenewalDate,
+                    RenewalPremium = x.RenewalPremium,
+                    CustomerId = x.CustomerId,
+                    PolicyId = x.PolicyId,
                     CustomerName = x.Customer.FullName,
                     PolicyCode = x.Policy.PolicyCode,
-
-                    x.CreatedAt
+                    Status = x.RenewalStatus.StatusName,
+                    CreatedAt = x.CreatedAt
                 })
                 .ToListAsync();
 
-            return new
-            {
-                totalRecords,
-                pageNumber,
-                pageSize,
-                totalPages = (int)Math.Ceiling(
-                    totalRecords / (double)pageSize
-                ),
-                data
-            };
+            return (data, total);
         }
 
-        /* ================= GET BY ID ================= */
-
-        public async Task<Renewal?> GetByIdAsync(
-            Guid renewalId,
-            string advisorId)
-        {
-            return await _context.Renewals
-                .Include(x => x.Customer)
-                .Include(x => x.Policy)
-                .Include(x => x.RenewalStatus)
-                .FirstOrDefaultAsync(x =>
-                    x.RenewalId == renewalId &&
-                    x.AdvisorId == advisorId
-                );
-        }
-
-        /* ================= DELETE ================= */
-
-        public async Task DeleteByIdAsync(
-            Guid renewalId,
-            string advisorId)
+        public async Task<bool> DeleteAsync(Guid renewalId, string advisorId)
         {
             var renewal = await _context.Renewals
-                .FirstOrDefaultAsync(x =>
-                    x.RenewalId == renewalId &&
-                    x.AdvisorId == advisorId
-                );
-
-            if (renewal == null)
-                return;
-
-            _context.Renewals.Remove(renewal);
-            await _context.SaveChangesAsync();
-        }
-
-        /* ================= STATUS DROPDOWN ================= */
-
-        public async Task<List<RenewalStatusMaster>> GetRenewalStatusesAsync()
-        {
-            return await _context.RenewalStatuses
-                .Where(x => x.IsActive)
-                .OrderBy(x => x.RenewalStatusId)
-                .ToListAsync();
-        }
-        public async Task<bool> UpdateRenewalStatusAsync(
-    string advisorId,
-    Guid renewalId,
-    int renewalStatusId)
-        {
-            var renewal = await _context.Renewals
-                .FirstOrDefaultAsync(x =>
-                    x.RenewalId == renewalId &&
-                    x.AdvisorId == advisorId);
+                .FirstOrDefaultAsync(x => x.RenewalId == renewalId && x.AdvisorId == advisorId);
 
             if (renewal == null)
                 return false;
 
-            renewal.RenewalStatusId = renewalStatusId;
-            renewal.UpdatedAt = DateTime.UtcNow;
-
+            _context.Renewals.Remove(renewal);
             await _context.SaveChangesAsync();
             return true;
         }
 
+        public async Task<bool> UpdateStatusAsync(string advisorId, Guid renewalId, int statusId)
+        {
+            var renewal = await _context.Renewals
+                .FirstOrDefaultAsync(x => x.RenewalId == renewalId && x.AdvisorId == advisorId);
+
+            if (renewal == null)
+                return false;
+
+            renewal.RenewalStatusId = statusId;
+            renewal.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<List<RenewalStatusDropdownDto>> GetStatusesAsync()
+        {
+            return await _context.RenewalStatuses
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.RenewalStatusId)
+                .Select(x => new RenewalStatusDropdownDto
+                {
+                    Id = x.RenewalStatusId,
+                    Name = x.StatusName
+                })
+                .ToListAsync();
+        }
     }
 }

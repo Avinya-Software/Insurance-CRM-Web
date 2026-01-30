@@ -1,147 +1,72 @@
-﻿using Avinya.InsuranceCRM.Application.RepositoryInterface;
-using Avinya.InsuranceCRM.Domain.Entities;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
+﻿using System.Security.Claims;
+using Avinya.InsuranceCRM.Application.DTOs.Renewal;
+using Avinya.InsuranceCRM.Application.Interfaces.Renewal;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Avinya.InsuranceCRM.API.Controllers
 {
     [ApiController]
     [Route("api/renewals")]
-    [Authorize(Policy = "ApprovedAdvisor")]
+    [Authorize(Policy = "ApprovedAdvisorOrCompanyAdmin")]
     public class RenewalController : ControllerBase
     {
-        private readonly IRenewalRepository _renewalRepository;
+        private readonly IRenewalService _service;
 
-        public RenewalController(IRenewalRepository renewalRepository)
+        public RenewalController(IRenewalService service)
         {
-            _renewalRepository = renewalRepository;
+            _service = service;
         }
-
-        /*   UPSERT   */
 
         [HttpPost("upsert")]
-        public async Task<IActionResult> Upsert(
-            [FromBody] Renewal renewal)
+        public async Task<IActionResult> Upsert([FromBody] UpsertRenewalDto dto)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             if (string.IsNullOrEmpty(advisorId))
-                return Unauthorized("Invalid token");
+                return Unauthorized();
 
-            var result = await _renewalRepository.UpsertAsync(
-                renewal,
-                advisorId
-            );
-
-            return Ok(new
-            {
-                result.RenewalId,
-                Message = renewal.RenewalId == Guid.Empty
-                    ? "Renewal created successfully"
-                    : "Renewal updated successfully"
-            });
+            var response = await _service.UpsertAsync(advisorId, dto);
+            return StatusCode(response.StatusCode, response);
         }
 
-        /*   LIST   */
-
         [HttpGet]
-        public async Task<IActionResult> GetRenewals(
+        public async Task<IActionResult> Get(
             int pageNumber = 1,
             int pageSize = 10,
             string? search = null,
             int? renewalStatusId = null)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             if (string.IsNullOrEmpty(advisorId))
-                return Unauthorized("Invalid token");
+                return Unauthorized();
 
-            var result = await _renewalRepository.GetRenewalsAsync(
-                advisorId,
-                pageNumber,
-                pageSize,
-                search,
-                renewalStatusId
-            );
+            var response = await _service.GetPagedAsync(
+                advisorId, pageNumber, pageSize, search, renewalStatusId);
 
-            return Ok(result);
+            return StatusCode(response.StatusCode, response);
         }
-
-        /*   GET BY ID   */
-
-        [HttpGet("{renewalId:guid}")]
-        public async Task<IActionResult> GetById(Guid renewalId)
-        {
-            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(advisorId))
-                return Unauthorized("Invalid token");
-
-            var renewal = await _renewalRepository.GetByIdAsync(
-                renewalId,
-                advisorId
-            );
-
-            if (renewal == null)
-                return NotFound("Renewal not found");
-
-            return Ok(renewal);
-        }
-
-        /*   DELETE   */
 
         [HttpDelete("{renewalId:guid}")]
         public async Task<IActionResult> Delete(Guid renewalId)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(advisorId))
-                return Unauthorized("Invalid token");
-
-            await _renewalRepository.DeleteByIdAsync(
-                renewalId,
-                advisorId
-            );
-
-            return Ok("Renewal deleted successfully");
+            var response = await _service.DeleteAsync(advisorId, renewalId);
+            return StatusCode(response.StatusCode, response);
         }
 
-        /*  STATUS DROPDOWN  */
+        [HttpPatch("{renewalId:guid}/status/{statusId:int}")]
+        public async Task<IActionResult> UpdateStatus(Guid renewalId, int statusId)
+        {
+            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var response = await _service.UpdateStatusAsync(advisorId, renewalId, statusId);
+            return StatusCode(response.StatusCode, response);
+        }
 
         [HttpGet("statuses")]
         public async Task<IActionResult> GetStatuses()
         {
-            var statuses = await _renewalRepository.GetRenewalStatusesAsync();
-
-            return Ok(statuses.Select(x => new
-            {
-                id = x.RenewalStatusId,
-                name = x.StatusName
-            }));
+            var response = await _service.GetStatusesAsync();
+            return StatusCode(response.StatusCode, response);
         }
-        [HttpPatch("{renewalId:guid}/status/{statusId:int}")]
-        public async Task<IActionResult> UpdateRenewalStatus(
-        Guid renewalId,
-        int statusId)
-        {
-            var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(advisorId))
-                return Unauthorized("Invalid token.");
-
-            var updated = await _renewalRepository.UpdateRenewalStatusAsync(
-                advisorId,
-                renewalId,
-                statusId
-            );
-
-            if (!updated)
-                return NotFound("Renewal not found");
-
-            return Ok("Renewal status updated successfully");
-        }
-
     }
 }
