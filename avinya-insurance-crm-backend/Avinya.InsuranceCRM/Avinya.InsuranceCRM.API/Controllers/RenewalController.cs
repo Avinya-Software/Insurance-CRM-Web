@@ -22,10 +22,14 @@ namespace Avinya.InsuranceCRM.API.Controllers
         public async Task<IActionResult> Upsert([FromBody] UpsertRenewalDto dto)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var companyIdClaim = User.FindFirstValue("CompanyId");
+            Guid? companyId = null;
+            if (Guid.TryParse(companyIdClaim, out var parsedCompanyId))
+                companyId = parsedCompanyId;
             if (string.IsNullOrEmpty(advisorId))
                 return Unauthorized();
 
-            var response = await _service.UpsertAsync(advisorId, dto);
+            var response = await _service.UpsertAsync(advisorId, companyId, dto);
             return StatusCode(response.StatusCode, response);
         }
 
@@ -37,11 +41,18 @@ namespace Avinya.InsuranceCRM.API.Controllers
             int? renewalStatusId = null)
         {
             var advisorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var companyIdClaim = User.FindFirstValue("CompanyId");
+
+            Guid? companyId = Guid.TryParse(companyIdClaim, out var cid)
+                    ? cid
+                    : null;
+
             if (string.IsNullOrEmpty(advisorId))
                 return Unauthorized();
 
             var response = await _service.GetPagedAsync(
-                advisorId, pageNumber, pageSize, search, renewalStatusId);
+                advisorId, role, companyId, pageNumber, pageSize, search, renewalStatusId);
 
             return StatusCode(response.StatusCode, response);
         }

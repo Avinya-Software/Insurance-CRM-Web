@@ -7,9 +7,12 @@ namespace Avinya.InsuranceCRM.Application.Interfaces.Renewal
     {
         Task<ResponseModel> UpsertAsync(
             string advisorId,
+            Guid? companyId,
             UpsertRenewalDto dto);
         Task<ResponseModel> GetPagedAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             string? search,

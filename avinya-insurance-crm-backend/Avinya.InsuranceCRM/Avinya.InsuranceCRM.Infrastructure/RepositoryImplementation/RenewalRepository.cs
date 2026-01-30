@@ -14,7 +14,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             _context = context;
         }
 
-        public async Task<Guid> UpsertAsync(UpsertRenewalDto dto, string advisorId)
+        public async Task<Guid> UpsertAsync(UpsertRenewalDto dto, string advisorId, Guid? companyId)
         {
             Renewal entity;
 
@@ -46,24 +46,35 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             entity.RenewalPremium = dto.RenewalPremium;
             entity.RenewalStatusId = dto.RenewalStatusId;
             entity.ReminderDatesJson = dto.ReminderDatesJson;
+            entity.CompanyId = companyId;
 
             await _context.SaveChangesAsync();
             return entity.RenewalId;
         }
 
-        public async Task<(List<RenewalListDto>, int)> GetPagedAsync(
+        public async Task<(List<RenewalListDto> Data, int TotalCount)> GetPagedAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             string? search,
             int? renewalStatusId)
         {
-            var query = _context.Renewals
+            IQueryable<Renewal> query = _context.Renewals
                 .AsNoTracking()
                 .Include(x => x.Customer)
                 .Include(x => x.Policy)
-                .Include(x => x.RenewalStatus)
-                .Where(x => x.AdvisorId == advisorId);
+                .Include(x => x.RenewalStatus);
+
+            if (role == "Advisor")
+            {
+                query = query.Where(x => x.AdvisorId == advisorId);
+            }
+            else if (role == "CompanyAdmin" && companyId.HasValue)
+            {
+                query = query.Where(x => x.CompanyId == companyId);
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -74,10 +85,10 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
             if (renewalStatusId.HasValue)
             {
-                query = query.Where(x => x.RenewalStatusId == renewalStatusId);
+                query = query.Where(x => x.RenewalStatusId == renewalStatusId.Value);
             }
 
-            var total = await query.CountAsync();
+            var totalCount = await query.CountAsync();
 
             var data = await query
                 .OrderByDescending(x => x.CreatedAt)
@@ -97,8 +108,9 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 })
                 .ToListAsync();
 
-            return (data, total);
+            return (data, totalCount);
         }
+
 
         public async Task<bool> DeleteAsync(Guid renewalId, string advisorId)
         {

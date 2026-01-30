@@ -16,9 +16,10 @@ namespace Avinya.InsuranceCRM.Application.Services.Renewal
 
         public async Task<ResponseModel> UpsertAsync(
             string advisorId,
+            Guid? companyId,
             UpsertRenewalDto dto)
         {
-            var id = await _repo.UpsertAsync(dto, advisorId);
+            var id = await _repo.UpsertAsync(dto, advisorId, companyId.Value);
 
             return new ResponseModel(
                 200,
@@ -30,13 +31,15 @@ namespace Avinya.InsuranceCRM.Application.Services.Renewal
 
         public async Task<ResponseModel> GetPagedAsync(
             string advisorId,
+            string role,
+            Guid? companyId,
             int pageNumber,
             int pageSize,
             string? search,
             int? statusId)
         {
             var (data, total) = await _repo.GetPagedAsync(
-                advisorId, pageNumber, pageSize, search, statusId);
+                advisorId, role, companyId, pageNumber, pageSize, search, statusId);
 
             return new ResponseModel(200, "Renewals fetched successfully", new
             {
