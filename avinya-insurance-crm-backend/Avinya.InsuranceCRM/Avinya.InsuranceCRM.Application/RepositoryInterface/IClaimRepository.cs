@@ -1,8 +1,8 @@
-﻿using Avinya.InsuranceCRM.Application.RequestModels;
-using Avinya.InsuranceCRM.Domain.Entities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Avinya.InsuranceCRM.Application.RequestModels;
+using Avinya.InsuranceCRM.Domain.Entities;
 
 namespace Avinya.InsuranceCRM.Application.RepositoryInterface
 {
@@ -38,6 +38,6 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
             Guid claimId,
             string documentId);
 
-        string? GetDocumentPath(Guid claimId, string documentId);
+        string? GetDocumentBase64(Guid claimId, string documentId);
     }
 }

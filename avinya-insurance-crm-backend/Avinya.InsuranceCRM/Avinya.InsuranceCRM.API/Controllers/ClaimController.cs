@@ -82,11 +82,17 @@ namespace Avinya.InsuranceCRM.API.Controllers
         }
 
         [HttpGet("{claimId:guid}/documents/{documentId}/preview")]
-        public IActionResult Preview(Guid claimId, string documentId)
-            => _service.PreviewDocument(claimId, documentId);
+        public async Task<IActionResult> Preview(Guid claimId, string documentId)
+        {
+            var response = await _service.PreviewDocument(claimId, documentId);
+            return StatusCode(response.StatusCode, response);
+        }
 
         [HttpGet("{claimId:guid}/documents/{documentId}/download")]
-        public IActionResult Download(Guid claimId, string documentId)
-            => _service.DownloadDocument(claimId, documentId);
+        public async Task<IActionResult> Download(Guid claimId, string documentId)
+        {
+            var response = await _service.DownloadDocument(claimId, documentId);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

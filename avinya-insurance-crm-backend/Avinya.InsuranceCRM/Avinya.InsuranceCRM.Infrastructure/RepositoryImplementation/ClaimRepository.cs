@@ -63,50 +63,69 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
             if (request.Documents?.Any() == true)
             {
-                var uploadsRoot = Path.Combine(_env.WebRootPath, "Uploads");
-                Directory.CreateDirectory(uploadsRoot); 
-
-                var claimsRoot = Path.Combine(uploadsRoot, "Claims");
-                Directory.CreateDirectory(claimsRoot);
-
-                var claimFolderPath = Path.Combine(
-                    claimsRoot,
+                var folderPath = Path.Combine(
+                    _env.WebRootPath,
+                    "Uploads",
+                    "Claims",
                     claim.ClaimId.ToString()
                 );
 
-                Directory.CreateDirectory(claimFolderPath);
+                if (!Directory.Exists(folderPath))
+                    Directory.CreateDirectory(folderPath);
 
                 var savedFiles = new List<string>();
+                string allowedExtension = null;
 
-                foreach (var base64 in request.Documents)
+                foreach (var document in request.Documents)
                 {
-                    if (string.IsNullOrWhiteSpace(base64))
+                    if (string.IsNullOrWhiteSpace(document))
                         continue;
 
-                    var cleanBase64 = base64.Contains(",")
-                        ? base64.Split(',')[1]
-                        : base64;
+                    string header = null;
+                    string base64Data;
+
+                    if (document.Contains(","))
+                    {
+                        var parts = document.Split(',');
+                        if (parts.Length != 2)
+                            continue;
+
+                        header = parts[0];
+                        base64Data = parts[1];
+                    }
+                    else
+                    {
+                        base64Data = document;
+                    }
+
+                    string extension;
+
+                    if (header != null && header.Contains("application/pdf"))
+                        extension = ".pdf";
+                    else if (header != null && header.Contains("image/jpeg"))
+                        extension = ".jpg";
+                    else
+                        extension = ".jpg"; 
+
+                    if (allowedExtension == null)
+                        allowedExtension = extension;
+                    else if (allowedExtension != extension)
+                        continue;
 
                     byte[] fileBytes;
                     try
                     {
-                        fileBytes = Convert.FromBase64String(cleanBase64);
+                        fileBytes = Convert.FromBase64String(base64Data);
                     }
                     catch
                     {
                         continue;
                     }
 
-                    var extension =
-                        base64.StartsWith("data:image/jpeg") ? ".jpg" :
-                        base64.StartsWith("data:image/png") ? ".png" :
-                        base64.StartsWith("data:application/pdf") ? ".pdf" :
-                        ".bin";
+                    var fileName = $"claim_{DateTime.UtcNow.Ticks}{extension}";
+                    var filePath = Path.Combine(folderPath, fileName);
 
-                    var fileName = $"{Guid.NewGuid()}{extension}";
-                    var physicalPath = Path.Combine(claimFolderPath, fileName);
-
-                    await File.WriteAllBytesAsync(physicalPath, fileBytes);
+                    await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
 
                     var webPath = $"/Uploads/Claims/{claim.ClaimId}/{fileName}";
                     savedFiles.Add(webPath);
@@ -114,14 +133,15 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
                 if (savedFiles.Any())
                 {
-                    var existingDocs = claim.Documents?
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .ToList() ?? new List<string>();
+                    var existingDocs = string.IsNullOrEmpty(claim.Documents)
+                        ? new List<string>()
+                        : claim.Documents.Split(',').ToList();
 
                     existingDocs.AddRange(savedFiles);
                     claim.Documents = string.Join(",", existingDocs);
                 }
             }
+
 
             await _context.SaveChangesAsync();
 
@@ -243,17 +263,26 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             string documentId)
         {
             var claim = await _context.Claims.FirstOrDefaultAsync(x =>
-                x.ClaimId == claimId &&
-                x.AdvisorId == advisorId);
+        x.ClaimId == claimId &&
+        x.AdvisorId == advisorId);
 
             if (claim == null || string.IsNullOrWhiteSpace(claim.Documents))
                 return false;
 
-            var files = claim.Documents.Split(',').ToList();
-            var file = files.FirstOrDefault(x => x.StartsWith(documentId + "_"));
-            if (file == null) return false;
+            var files = claim.Documents
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .ToList();
 
-            File.Delete(GetDocumentPath(claimId, documentId)!);
+            var file = files.FirstOrDefault(x =>
+                Path.GetFileName(x).Equals(documentId, StringComparison.OrdinalIgnoreCase));
+
+            if (file == null)
+                return false;
+
+            var filePath = Path.Combine(_env.WebRootPath, "Uploads", "Claims", claimId.ToString(), documentId);
+            if (File.Exists(filePath))
+                File.Delete(filePath);
 
             files.Remove(file);
             claim.Documents = files.Any() ? string.Join(",", files) : null;
@@ -262,16 +291,23 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             return true;
         }
 
-        public string? GetDocumentPath(Guid claimId, string documentId)
+        public string? GetDocumentBase64(Guid claimId, string documentId)
         {
-            var folder = Path.Combine(
-                _env.ContentRootPath, "Uploads", "Claims", claimId.ToString());
+            var folder = Path.Combine(_env.WebRootPath, "Uploads", "Claims", claimId.ToString());
 
-            if (!Directory.Exists(folder)) return null;
+            if (!Directory.Exists(folder))
+                return null;
 
-            return Directory.GetFiles(folder)
-                .FirstOrDefault(x =>
-                    Path.GetFileName(x).StartsWith(documentId + "_"));
+            var filePath = Directory.GetFiles(folder)
+                .FirstOrDefault(x => Path.GetFileName(x).Equals(documentId, StringComparison.OrdinalIgnoreCase));
+
+            if (filePath == null || !File.Exists(filePath))
+                return null;
+
+            var fileBytes = File.ReadAllBytes(filePath);
+            var base64 = Convert.ToBase64String(fileBytes);
+
+            return base64; 
         }
 
     }

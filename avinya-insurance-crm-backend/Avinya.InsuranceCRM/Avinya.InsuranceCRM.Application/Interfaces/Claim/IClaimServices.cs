@@ -36,7 +36,7 @@ namespace Avinya.InsuranceCRM.Application.Interfaces.Claim
             Guid claimId,
             string documentId);
 
-        IActionResult PreviewDocument(Guid claimId, string documentId);
-        IActionResult DownloadDocument(Guid claimId, string documentId);
+        Task<ResponseModel> PreviewDocument(Guid claimId, string documentId);
+        Task<ResponseModel> DownloadDocument(Guid claimId, string documentId);
     }
 }

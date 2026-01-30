@@ -109,7 +109,7 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
             }
 
-            if (request.PolicyDocuments != null && request.PolicyDocuments.Any())
+            if (request.PolicyDocuments?.Any() == true)
             {
                 var folderPath = Path.Combine(
                     _env.WebRootPath,
@@ -121,50 +121,74 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 if (!Directory.Exists(folderPath))
                     Directory.CreateDirectory(folderPath);
 
-                var savedPaths = new List<string>();
+                var savedFiles = new List<string>();
+                string allowedExtension = null;
 
-                foreach (var base64 in request.PolicyDocuments)
+                foreach (var document in request.PolicyDocuments)
                 {
-                    if (string.IsNullOrWhiteSpace(base64))
+                    if (string.IsNullOrWhiteSpace(document))
                         continue;
 
-                    string cleanBase64 = base64.Contains(",")
-                        ? base64.Split(',').Last()
-                        : base64;
+                    string header = null;
+                    string base64Data;
+
+                    if (document.Contains(","))
+                    {
+                        var parts = document.Split(',');
+                        if (parts.Length != 2)
+                            continue;
+
+                        header = parts[0];
+                        base64Data = parts[1];
+                    }
+                    else
+                    {
+                        base64Data = document;
+                    }
+
+                    string extension;
+
+                    if (header != null && header.Contains("application/pdf"))
+                        extension = ".pdf";
+                    else if (header != null && header.Contains("image/jpeg"))
+                        extension = ".jpg";
+                    else if (header != null && header.Contains("image/png"))
+                        extension = ".png";
+                    else
+                        extension = ".png"; 
+
+                    if (allowedExtension == null)
+                        allowedExtension = extension;
+                    else if (allowedExtension != extension)
+                        continue; 
 
                     byte[] fileBytes;
                     try
                     {
-                        fileBytes = Convert.FromBase64String(cleanBase64);
+                        fileBytes = Convert.FromBase64String(base64Data);
                     }
                     catch
                     {
                         continue; 
                     }
 
-                    string extension =
-                        base64.StartsWith("data:image/jpeg") ? ".jpg" :
-                        base64.StartsWith("data:image/png") ? ".png" :
-                        base64.StartsWith("data:application/pdf") ? ".pdf" :
-                        ".png";
+                    var fileName = $"policy_{DateTime.UtcNow.Ticks}{extension}";
+                    var filePath = Path.Combine(folderPath, fileName);
 
-                    var fileName = $"{Guid.NewGuid()}{extension}";
-                    var physicalPath = Path.Combine(folderPath, fileName);
-
-                    await File.WriteAllBytesAsync(physicalPath, fileBytes);
+                    await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
 
                     var webPath = $"/Uploads/Policies/{policyId}/{fileName}";
-                    savedPaths.Add(webPath);
+                    savedFiles.Add(webPath);
                 }
 
-                if (savedPaths.Any())
+                if (savedFiles.Any())
                 {
-                    var existing = policyEntity.PolicyDocumentRef?
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                        .ToList() ?? new List<string>();
+                    var existingDocs = string.IsNullOrEmpty(policyEntity.PolicyDocumentRef)
+                        ? new List<string>()
+                        : policyEntity.PolicyDocumentRef.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
 
-                    existing.AddRange(savedPaths);
-                    policyEntity.PolicyDocumentRef = string.Join(",", existing);
+                    existingDocs.AddRange(savedFiles);
+                    policyEntity.PolicyDocumentRef = string.Join(",", existingDocs);
                 }
             }
 

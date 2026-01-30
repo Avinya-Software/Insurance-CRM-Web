@@ -23,5 +23,6 @@ namespace VaraPrints.Application.Models
             StatusMessage = message;
             Data = data;
         }
+
     }
 }

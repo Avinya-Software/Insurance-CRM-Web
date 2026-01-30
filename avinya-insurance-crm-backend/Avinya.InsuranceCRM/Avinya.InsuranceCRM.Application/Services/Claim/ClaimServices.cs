@@ -89,20 +89,24 @@ namespace Avinya.InsuranceCRM.Application.Services.Claim
                 ? new ResponseModel(200, "Document deleted successfully")
                 : new ResponseModel(404, "Document not found");
 
-        public IActionResult PreviewDocument(Guid claimId, string documentId)
+        public async Task<ResponseModel> PreviewDocument(Guid claimId, string documentId)
         {
-            var path = _repo.GetDocumentPath(claimId, documentId);
-            return path == null ? new NotFoundResult() :
-                new PhysicalFileResult(path, "application/octet-stream")
-                { EnableRangeProcessing = true };
+            var base64Content = _repo.GetDocumentBase64(claimId, documentId);
+
+            if (string.IsNullOrEmpty(base64Content))
+                return new ResponseModel(404, "Document not found");
+
+            return new ResponseModel(200, "Document fetched successfully", base64Content);
         }
 
-        public IActionResult DownloadDocument(Guid claimId, string documentId)
+        public async Task<ResponseModel> DownloadDocument(Guid claimId, string documentId)
         {
-            var path = _repo.GetDocumentPath(claimId, documentId);
-            return path == null ? new NotFoundResult() :
-                new PhysicalFileResult(path, "application/octet-stream")
-                { FileDownloadName = Path.GetFileName(path) };
+            var base64Content = _repo.GetDocumentBase64(claimId, documentId);
+            
+            if (base64Content == null)
+                return new ResponseModel(404, "Document not found");
+
+            return new ResponseModel(200, "Document fetched successfully", base64Content);
         }
     }
 }
