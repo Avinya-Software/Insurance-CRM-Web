@@ -1,4 +1,5 @@
-﻿using Avinya.InsuranceCRM.Application.Interfaces.Claim;
+﻿using Avinya.InsuranceCRM.Application.DTOs.Claim;
+using Avinya.InsuranceCRM.Application.Interfaces.Claim;
 using Avinya.InsuranceCRM.Application.RepositoryInterface;
 using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
@@ -107,6 +108,45 @@ namespace Avinya.InsuranceCRM.Application.Services.Claim
                 return new ResponseModel(404, "Document not found");
 
             return new ResponseModel(200, "Document fetched successfully", base64Content);
+        }
+
+        public async Task<ResponseModel> GetClaimTypesAsync()
+        {
+            var claimTypes = await _repo.GetClaimTypesAsync();
+
+            var data = claimTypes.Select(x => new Claimtypesdropdown
+            {
+                ClaimTypeId = x.ClaimTypeId,
+                TypeName = x.TypeName
+            }).ToList();
+
+            return new ResponseModel(200, "Claim types fetched successfully", data);
+        }
+
+        public async Task<ResponseModel> GetClaimStagesAsync()
+        {
+            var claimStages = await _repo.GetClaimStagesAsync();
+
+            var data = claimStages.Select(x => new Claimstagesdropdown
+            {
+                ClaimStageId = x.ClaimStageId,
+                StageName = x.StageName
+            }).ToList();
+
+            return new ResponseModel(200, "Claim stages fetched successfully", data);
+        }
+
+        public async Task<ResponseModel> GetClaimHandlersAsAsync()
+        {
+            var claimHandlers = await _repo.GetClaimHandlersAsync();
+
+            var data = claimHandlers.Select(x => new Claimhandlersdropdown 
+            {
+                ClaimHandlerId = x.ClaimHandlerId,
+                HandlerName = x.HandlerName
+            }).ToList();
+
+            return new ResponseModel(200, "Claim handlers fetched successfully", data);
         }
     }
 }

@@ -94,5 +94,26 @@ namespace Avinya.InsuranceCRM.API.Controllers
             var response = await _service.DownloadDocument(claimId, documentId);
             return StatusCode(response.StatusCode, response);
         }
+
+        [HttpGet("claim-types")]
+        public async Task<IActionResult> GetClaimTypes()
+        {
+            var response = await _service.GetClaimTypesAsync();
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("claim-stages")]
+        public async Task<IActionResult> GetClaimStages()
+        {
+            var response = await _service.GetClaimTypesAsync();
+            return StatusCode(response.StatusCode, response);
+        }
+
+        [HttpGet("claim-handlers")]        
+        public async Task<IActionResult> GetClaimHandlers()
+        {
+            var response = await _service.GetClaimTypesAsync();
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

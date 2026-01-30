@@ -310,5 +310,29 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             return base64; 
         }
 
+        public async Task<List<ClaimTypeMaster>> GetClaimTypesAsync()
+        {
+            return await _context.ClaimTypes
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.TypeName)
+                .ToListAsync();
+        }
+
+        public async Task<List<ClaimStageMaster>> GetClaimStagesAsync()
+        {
+            return await _context.ClaimStages
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.ClaimStageId)
+                .ToListAsync();
+        }
+
+        public async Task<List<ClaimHandlerMaster>> GetClaimHandlersAsync()
+        {
+            return await _context.ClaimHandlers
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.HandlerName)
+                .ToListAsync();
+        }
+
     }
 }

@@ -39,5 +39,9 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
             string documentId);
 
         string? GetDocumentBase64(Guid claimId, string documentId);
+        Task<List<ClaimTypeMaster>> GetClaimTypesAsync();
+        Task<List<ClaimStageMaster>> GetClaimStagesAsync();
+        Task<List<ClaimHandlerMaster>> GetClaimHandlersAsync();
+
     }
 }

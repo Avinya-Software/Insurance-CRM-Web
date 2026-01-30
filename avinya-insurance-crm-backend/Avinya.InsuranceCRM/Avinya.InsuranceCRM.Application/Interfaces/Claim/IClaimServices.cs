@@ -38,5 +38,10 @@ namespace Avinya.InsuranceCRM.Application.Interfaces.Claim
 
         Task<ResponseModel> PreviewDocument(Guid claimId, string documentId);
         Task<ResponseModel> DownloadDocument(Guid claimId, string documentId);
+
+        Task<ResponseModel> GetClaimTypesAsync();
+        Task<ResponseModel> GetClaimStagesAsync();
+        Task<ResponseModel> GetClaimHandlersAsAsync();
+
     }
 }
