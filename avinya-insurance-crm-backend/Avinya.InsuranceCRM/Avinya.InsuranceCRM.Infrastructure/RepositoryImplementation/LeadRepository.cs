@@ -4,8 +4,6 @@ using Avinya.InsuranceCRM.Application.RepositoryInterface;
 using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.Helper;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
-using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 public class LeadRepository : ILeadRepository

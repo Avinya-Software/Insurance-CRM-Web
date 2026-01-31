@@ -1,6 +1,6 @@
-﻿using Avinya.InsuranceCRM.Infrastructure.Identity;
+﻿using Avinya.InsuranceCRM.Application.Interfaces.Email;
+using Avinya.InsuranceCRM.Infrastructure.Identity;
 using Avinya.InsuranceCRM.Infrastructure.Persistence;
-using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

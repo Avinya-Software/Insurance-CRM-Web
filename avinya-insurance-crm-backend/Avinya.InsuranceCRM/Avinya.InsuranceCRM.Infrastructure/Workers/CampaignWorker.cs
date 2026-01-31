@@ -1,6 +1,5 @@
-﻿using Avinya.InsuranceCRM.Domain.Entities;
-using Avinya.InsuranceCRM.Infrastructure.Persistence;
-using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
+﻿using Avinya.InsuranceCRM.Application.Interfaces.Email;
+using Avinya.InsuranceCRM.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Avinya.InsuranceCRM.Infrastructure.Services.Interfaces
+namespace Avinya.InsuranceCRM.Application.Interfaces.Email
 {
     public interface IEmailService
     {

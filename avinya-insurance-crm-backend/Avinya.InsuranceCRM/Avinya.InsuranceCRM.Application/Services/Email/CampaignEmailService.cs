@@ -1,5 +1,5 @@
-﻿using Avinya.InsuranceCRM.Infrastructure.Email;
-using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
+﻿using Avinya.InsuranceCRM.Application.Interfaces.Email;
+using Avinya.InsuranceCRM.Infrastructure.Email;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
@@ -18,7 +18,6 @@ public class CampaignEmailService : ICampaignEmailService
      string subject,
      string body)
     {
-        // 🛑 ABSOLUTE GUARD (prevents this exception forever)
         if (string.IsNullOrWhiteSpace(toEmail))
             return;
 

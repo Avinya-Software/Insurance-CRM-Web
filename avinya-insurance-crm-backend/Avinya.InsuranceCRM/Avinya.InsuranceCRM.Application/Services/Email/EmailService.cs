@@ -1,20 +1,20 @@
-﻿using Avinya.InsuranceCRM.Infrastructure.Email;
-using Avinya.InsuranceCRM.Infrastructure.Persistence;
-using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
-using Microsoft.Extensions.Options;
-using System.Net;
+﻿using System.Net;
 using System.Net.Mail;
+using Avinya.InsuranceCRM.Application.Interfaces.Email;
+using Avinya.InsuranceCRM.Application.RepositoryInterface;
+using Avinya.InsuranceCRM.Infrastructure.Email;
+using Microsoft.Extensions.Options;
 
 public class EmailService : IEmailService
 {
-    private readonly AppDbContext _db;
+    private readonly IEmailRepository _repo;
     private readonly SmtpSettings _smtp;
 
     public EmailService(
-        AppDbContext db,
+        IEmailRepository repo,
         IOptions<SmtpSettings> smtpOptions)
     {
-        _db = db;
+        _repo = repo;
         _smtp = smtpOptions.Value;
     }
 
@@ -22,33 +22,33 @@ public class EmailService : IEmailService
     // RENEWAL REMINDER (EXISTING)
     // =====================================================
     public async Task SendRenewalReminderAsync(
-        Guid customerId,
-        Guid policyId,
-        DateTime renewalDate,
-        int daysBefore,
-        decimal premium)
+            Guid customerId,
+            Guid policyId,
+            DateTime renewalDate,
+            int daysBefore,
+            decimal premium)
     {
-        var customer = await _db.Customers.FindAsync(customerId);
-        if (customer == null || string.IsNullOrEmpty(customer.Email))
+        var email = await _repo.GetCustomerEmailAsync(customerId);
+        var name = await _repo.GetCustomerNameAsync(customerId);
+
+        if (string.IsNullOrWhiteSpace(email))
             return;
 
         var subject = $"Policy Renewal Reminder – {daysBefore} days left";
 
         var body = $@"
-Hello {customer.FullName},
+Hello {name},
 
 Your insurance policy is due for renewal in {daysBefore} days.
 
 Renewal Date: {renewalDate:dd MMM yyyy}
 Premium Amount: ₹{premium}
 
-Please contact your advisor to renew.
-
 Regards,
 Avinya Insurance CRM
 ";
 
-        await SendEmailAsync(customer.Email, subject, body);
+        await SendEmailAsync(email, subject, body);
     }
 
     // =====================================================

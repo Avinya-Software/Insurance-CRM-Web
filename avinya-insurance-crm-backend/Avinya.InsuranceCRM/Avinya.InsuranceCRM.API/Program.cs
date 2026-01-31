@@ -7,7 +7,6 @@ using Avinya.InsuranceCRM.Infrastructure.Email;
 using Avinya.InsuranceCRM.Infrastructure.Identity;
 using Avinya.InsuranceCRM.Infrastructure.Repository;
 using Avinya.InsuranceCRM.Application.RepositoryInterface;
-using Avinya.InsuranceCRM.Infrastructure.Services.Interfaces;
 using Avinya.InsuranceCRM.Infrastructure.Workers;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -37,6 +36,9 @@ using Avinya.InsuranceCRM.Application.Interfaces.Claim;
 using Avinya.InsuranceCRM.Application.Services.Claim;
 using Avinya.InsuranceCRM.Application.Interfaces.Renewal;
 using Avinya.InsuranceCRM.Application.Services.Renewal;
+using Avinya.InsuranceCRM.Application.Interfaces.Admin;
+using Avinya.InsuranceCRM.Application.Services.Admin;
+using Avinya.InsuranceCRM.Application.Interfaces.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -200,9 +202,11 @@ builder.Services.AddScoped<IClaimServices, ClaimServices>();
 builder.Services.AddScoped<IRenewalRepository, RenewalRepository>();
 builder.Services.AddScoped<IRenewalService, RenewalService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<ISystemEventRepository, SystemEventRepository>();
 
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IEmailRepository, EmailRepository>();
 builder.Services.Configure<SmtpSettings>(
     builder.Configuration.GetSection("Smtp"));
 
