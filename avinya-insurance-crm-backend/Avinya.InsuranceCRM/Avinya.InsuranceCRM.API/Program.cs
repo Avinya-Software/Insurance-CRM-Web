@@ -20,7 +20,6 @@ using Serilog;
 using System.ComponentModel.Design;
 using System.Security.Claims;
 using System.Text;
-using Avinya.InsuranceCRM.Infrastructure.RepositoryInterface;
 using Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation;
 using Avinya.InsuranceCRM.Application.Interfaces.Lead;
 using Avinya.InsuranceCRM.Application.Services.Lead;
@@ -39,6 +38,8 @@ using Avinya.InsuranceCRM.Application.Services.Renewal;
 using Avinya.InsuranceCRM.Application.Interfaces.Admin;
 using Avinya.InsuranceCRM.Application.Services.Admin;
 using Avinya.InsuranceCRM.Application.Interfaces.Email;
+using Avinya.InsuranceCRM.Application.Interfaces.Auth;
+using Avinya.InsuranceCRM.Application.Services.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -183,8 +184,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 #region DEPENDENCY INJECTION
 //builder.Services.AddScoped<IAdvisorRepository, AdvisorRepository>();
-builder.Services.AddScoped<IAdvisorRepository, AdvisorRepository>();
-
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerServices, CustomerServices>();
 builder.Services.AddScoped<IInsurerRepository, InsurerRepository>();

@@ -8,6 +8,7 @@ public class Advisor
     public string FullName { get; set; } = null!;
     public string MobileNumber { get; set; } = null!;
     public bool IsActive { get; set; } = true;
+    public string Email { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

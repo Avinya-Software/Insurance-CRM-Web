@@ -12,18 +12,15 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
     public class AdminRepository : IAdminRepository
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IAdvisorRepository _advisorRepo;
         private readonly AppDbContext _db;
         private readonly IConfiguration _config;
 
         public AdminRepository(
             UserManager<ApplicationUser> userManager,
-            IAdvisorRepository advisorRepo,
             AppDbContext db,
             IConfiguration config)
         {
             _userManager = userManager;
-            _advisorRepo = advisorRepo;
             _db = db;
             _config = config;
         }
@@ -55,30 +52,29 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
         public async Task<List<PendingAdvisorDto>> GetPendingAdvisorsAsync()
         {
-            var users = await _userManager.Users
-                .Where(x => !x.IsApproved && x.IsActive)
-                .ToListAsync();
+            var advisorRoleId = await _db.Roles
+                .Where(r => r.Name == "Advisor")
+                .Select(r => r.Id)
+                .FirstAsync();
 
-            var list = new List<PendingAdvisorDto>();
-
-            foreach (var user in users)
-            {
-                if (!await _userManager.IsInRoleAsync(user, "Advisor"))
-                    continue;
-
-
-                var advisor = await _advisorRepo.GetByUserIdAsync(user.Id);
-                if (advisor == null) continue;
-
-                list.Add(new PendingAdvisorDto
+            var data = await (
+                from u in _userManager.Users
+                join ur in _db.UserRoles on u.Id equals ur.UserId
+                join a in _db.Advisors on u.Id equals a.UserId
+                where ur.RoleId == advisorRoleId
+                      && !u.IsApproved
+                      && u.IsActive
+                      && a.IsActive
+                select new PendingAdvisorDto
                 {
-                    UserId = user.Id,
-                    AdvisorId = advisor.AdvisorId,
-                    FullName = advisor.FullName,
-                    Email = user.Email!
-                });
-            }
-            return list;
+                    UserId = u.Id,
+                    AdvisorId = a.AdvisorId,
+                    FullName = a.FullName,
+                    Email = u.Email!
+                }
+            ).AsNoTracking().ToListAsync();
+
+            return data;
         }
 
         public async Task<List<PendingCompanyDto>> GetPendingCompaniesAsync()
@@ -134,41 +130,46 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
         public async Task<List<AdvisorStatusDto>> GetAdvisorsByStatusAsync(string status, DateTime? from, DateTime? to)
         {
+            var advisorRoleId = await _db.Roles
+                .Where(r => r.Name == "Advisor")
+                .Select(r => r.Id)
+                .FirstAsync();
+
             var users = _userManager.Users.AsQueryable();
 
             if (status == "approved")
             {
                 users = users.Where(x => x.IsApproved && x.IsActive);
-                if (from.HasValue) users = users.Where(x => x.ApprovedAt >= from);
-                if (to.HasValue) users = users.Where(x => x.ApprovedAt <= to);
+
+                if (from.HasValue)
+                    users = users.Where(x => x.ApprovedAt >= from);
+
+                if (to.HasValue)
+                    users = users.Where(x => x.ApprovedAt <= to);
             }
             else
             {
                 users = users.Where(x => !x.IsActive);
             }
 
-            var result = new List<AdvisorStatusDto>();
-
-            foreach (var user in await users.ToListAsync())
-            {
-                if (!await _userManager.IsInRoleAsync(user, "Advisor"))
-                    continue;
-
-                var advisor = await _advisorRepo.GetByUserIdAsync(user.Id);
-                if (advisor == null) continue;
-
-                result.Add(new AdvisorStatusDto
+            var data = await (
+                from u in users
+                join ur in _db.UserRoles on u.Id equals ur.UserId
+                join a in _db.Advisors on u.Id equals a.UserId
+                where ur.RoleId == advisorRoleId
+                      && a.IsActive
+                select new AdvisorStatusDto
                 {
-                    UserId = user.Id,
-                    AdvisorId = advisor.AdvisorId,
-                    FullName = advisor.FullName,
-                    Email = user.Email!,
-                    ActionDate = user.ApprovedAt,
+                    UserId = u.Id,
+                    AdvisorId = a.AdvisorId,
+                    FullName = a.FullName,
+                    Email = u.Email!,
+                    ActionDate = u.ApprovedAt,
                     Status = status
-                });
-            }
+                }
+            ).AsNoTracking().ToListAsync();
 
-            return result;
+            return data;
         }
     }
 }

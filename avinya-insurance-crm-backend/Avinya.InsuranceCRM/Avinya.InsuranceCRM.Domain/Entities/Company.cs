@@ -12,5 +12,9 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public string CompanyName { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public string MobileNumber { get; set; } = null!;
+
+        public string Email { get; set; } 
     }
 }
