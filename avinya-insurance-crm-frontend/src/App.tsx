@@ -33,7 +33,7 @@ function App() {
         }}
       />
     <BrowserRouter>
-      <Routes>
+      <Routes> 
         {/* ================= PUBLIC ================= */}
         <Route path="/login" element={<Login />} />
         <Route path="/login/admin" element={<Admin />}></Route>
