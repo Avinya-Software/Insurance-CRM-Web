@@ -11,7 +11,7 @@ export const registerAdvisorApi = async (
   data: AdvisorRegisterRequest
 ) => {
   const res = await api.post<ApiWrapper<string>>(
-    "/Advisor/register",
+    "/auth/register",
     data
   );
   return res.data;
@@ -22,7 +22,7 @@ export const loginAdvisorApi = async (
   data: AdvisorLoginRequest
 ) => {
   const res = await api.post<ApiWrapper<AdvisorLoginResponse>>(
-    "/Advisor/login",
+    "/auth/login",
     data
   );
   return res.data;

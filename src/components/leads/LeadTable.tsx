@@ -172,14 +172,14 @@ const LeadTable = ({
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        leadStatusStyles[lead.leadStatus]
+                        leadStatusStyles[lead.leadStatusName]
                       }`}
                     >
-                      {lead.leadStatus}
+                      {lead.leadStatusName}
                     </span>
                   </Td>
 
-                  <Td>{lead.leadSource}</Td>
+                  <Td>{lead.leadSourceName}</Td>
 
                   <Td>
                     {new Date(lead.createdAt).toLocaleDateString()}
@@ -208,8 +208,8 @@ const LeadTable = ({
           className="fixed z-50 w-[230px] bg-white border rounded-lg shadow-lg overflow-hidden"
           style={{ top: style.top, left: style.left }}
         >
-          {openLead.leadStatus !== "Lost" &&
-            openLead.leadStatus !== "Converted" && (
+          {openLead.leadStatusName !== "Lost" &&
+            openLead.leadStatusName !== "Converted" && (
               <>
                 <MenuItem
                   label="Edit Lead"
@@ -249,7 +249,7 @@ const LeadTable = ({
           {showStatusMenu && (
             <div className="border-t mt-1">
               {statuses
-                .filter((s) => s.name !== openLead.leadStatus)
+                .filter((s) => s.name !== openLead.leadStatusName)
                 .map((status) => (
                   <button
                     key={status.id}
