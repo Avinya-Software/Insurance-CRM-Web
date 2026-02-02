@@ -8,10 +8,17 @@ import type {
 /*   GET LEADS (PAGINATED)   */
 
 export const getLeadsApi = async (filters: LeadFilters) => {
-  const res = await api.get<LeadListResponse>("/Lead", {
-    params: filters,
-  });
-  return res.data;
+  const res = await api.get("/Lead", { params: filters });
+
+  const apiData = res.data.data; 
+
+  return {
+    totalRecords: apiData.totalCount,
+    pageNumber: apiData.page,
+    pageSize: apiData.pageSize,
+    totalPages: apiData.totalPages,
+    data: apiData.data,
+  };
 };
 
 /*   LEAD STATUSES   */

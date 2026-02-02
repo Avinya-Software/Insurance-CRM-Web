@@ -28,10 +28,20 @@ export interface Lead {
   fullName: string;
   email: string;
   mobile: string;
+  address: string;
+  leadStatusId: number;
+  leadStatusName: string;
+  leadSourceId: number;
+  leadSourceName: string;
+  leadSourceDescription: string;
+  companyId: string | null;
+  advisorId: string;
+  isConverted: boolean;
   customerId: string | null;
-  leadStatus: string;
-  leadSource: string;
+  notes: string | null;
   createdAt: string;
+  updatedAt: string | null;
+  followUps: FollowUp[];
 }
 
 export interface LeadFilters {
@@ -51,4 +61,10 @@ export interface LeadListResponse {
   pageSize: number;
   totalPages: number;
   data: Lead[];
+}
+
+export interface FollowUp {
+  followUpId: string;
+  nextFollowUpDate: string;
+  createdAt: string;
 }
