@@ -1,20 +1,24 @@
 import { useRef, useState, useEffect } from "react";
-import { createFollowUpApi } from "../../api/leadFollowUp.api";
+import { useCreateFollowUp } from "../../hooks/leadFollowUp/useCreateFollowUp";
 import toast from "react-hot-toast";
+import { LeadFollowUp } from "../../interfaces/leadFollowUp.interface";
 
 interface Props {
   leadId: string;
+  statuses: any[];
+  mode?: "create" | "edit";
+  editData?: LeadFollowUp;
   onSuccess: () => void;
 }
 
-/* 🔧 Helper: current datetime for <input type="datetime-local" /> */
+
 const getNowForDateTimeLocal = () => {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
 };
 
-const FollowUpForm = ({ leadId, onSuccess }: Props) => {
+const FollowUpForm = ({ leadId, onSuccess, statuses  }: Props) => {
   const [followUpDate, setFollowUpDate] = useState<string>(
     getNowForDateTimeLocal() // ✅ DEFAULT TODAY
   );
@@ -26,6 +30,8 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
 
   const followUpRef = useRef<HTMLInputElement>(null);
   const nextFollowUpRef = useRef<HTMLInputElement>(null);
+  const [leadFollowupStatusId, setLeadFollowupStatusId] = useState<number | "">("");
+  const { mutateAsync, isPending } = useCreateFollowUp();
 
   /* 🔄 AUTO FIX INVALID NEXT DATE */
   useEffect(() => {
@@ -63,36 +69,38 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
     if (!remark.trim()) {
       e.remark = "Remark is required";
     }
+    if (!leadFollowupStatusId) {
+      e.leadFollowupStatusId = "Follow-up status is required";
+    }
 
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   /* 🚀 SUBMIT */
-  const handleSubmit = async () => {
-    if (!validate()) return;
+const handleSubmit = async () => {
+  if (!validate()) return;
 
-    try {
-      setSaving(true);
+  try {
+    const res = await mutateAsync({
+      leadId,
+      status: Number(leadFollowupStatusId),
+      followUpDate,
+      nextFollowUpDate,
+      remark,
+    });
 
-      await createFollowUpApi({
-        leadId,
-        followUpDate,
-        nextFollowUpDate,
-        remark,
-      });
+    toast.success(res?.statusMessage || "Follow up created successfully");
+    onSuccess();
+  } catch (err: any) {
+    toast.error(
+      err?.response?.data?.statusMessage ||
+      err?.message ||
+      "Failed to create follow up"
+    );
+  }
+};
 
-      toast.success("Follow up created successfully", {
-        id: "followup-create-success",
-      });
-
-      onSuccess();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to create follow up");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -174,6 +182,37 @@ const FollowUpForm = ({ leadId, onSuccess }: Props) => {
           </p>
         )}
       </div>
+
+        {/* FOLLOW-UP STATUS */}
+        <div>
+  <label className="text-sm font-medium">
+    Follow-up Status <span className="text-red-500">*</span>
+  </label>
+
+  <select
+    className={`input w-full ${
+      errors.leadFollowupStatusId ? "border-red-500" : ""
+    }`}
+    value={leadFollowupStatusId}
+    onChange={(e) => setLeadFollowupStatusId(Number(e.target.value))}
+  >
+    <option value="">Select status</option>
+
+    {statuses.map((s) => (
+      <option key={s.leadFollowupStatusID} value={s.leadFollowupStatusID}>
+        {s.statusName}
+      </option>
+    ))}
+  </select>
+
+  {errors.leadFollowupStatusId && (
+    <p className="text-xs text-red-600 mt-1">
+      {errors.leadFollowupStatusId}
+    </p>
+  )}
+</div>
+
+
 
       {/* SAVE */}
       <button
