@@ -37,4 +37,9 @@ public class LeadFollowUpController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpGet("lead-followup-statuses")]
+    public async Task<IActionResult> GetLeadFollowupStatuses()
+    => StatusCode(200, await _service.GetLeadFollowupStatusesAsync());
+
 }

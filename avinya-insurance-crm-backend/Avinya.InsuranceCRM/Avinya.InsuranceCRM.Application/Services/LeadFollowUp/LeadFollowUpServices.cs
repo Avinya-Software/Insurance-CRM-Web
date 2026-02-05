@@ -59,5 +59,9 @@ namespace Avinya.InsuranceCRM.Application.Services.LeadFollowUp
 
             return new ResponseModel(200, "Follow-up history fetched successfully", followups);
         }
+
+        public async Task<ResponseModel> GetLeadFollowupStatusesAsync()
+    => new ResponseModel(200, "Fetched successfully", await _repo.GetLeadFollowupStatusesAsync());
+
     }
 }

@@ -23,5 +23,7 @@ namespace Avinya.InsuranceCRM.Application.RepositoryInterface
 
         Task<(bool leadExists, List<LeadFollowupDTO>? followups)> GetFollowupHistoryAsync(Guid leadId);
 
+        Task<List<LeadFollowupStatus>> GetLeadFollowupStatusesAsync();
+
     }
 }

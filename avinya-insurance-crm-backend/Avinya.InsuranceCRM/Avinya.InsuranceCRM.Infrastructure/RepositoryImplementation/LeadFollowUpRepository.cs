@@ -111,5 +111,11 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
                 throw new Exception(ex.Message);
             }
         }
+
+        public async Task<List<LeadFollowupStatus>> GetLeadFollowupStatusesAsync()
+        => await _context.LeadFollowupStatuses
+        .OrderBy(x => x.StatusName)
+        .ToListAsync();
+
     }
 }
