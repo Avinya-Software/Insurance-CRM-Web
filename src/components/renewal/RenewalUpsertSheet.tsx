@@ -59,8 +59,8 @@ const { data: policies } = usePolicyDropdown(
   const { data: statuses, isLoading: sLoading } = useRenewalStatuses();
 
   const loadingDropdowns = cLoading  || sLoading;
-  const selectedCustomer =
-  customers?.find(c => c.customerId === form.customerId);
+  // const selectedCustomer =
+  // customers?.find(c => c.customerId === form.customerId);
 
   /*   PREFILL   */
 
