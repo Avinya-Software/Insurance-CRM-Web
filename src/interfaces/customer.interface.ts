@@ -32,12 +32,29 @@ export interface Customer {
   customerId: string;
   fullName: string;
   primaryMobile: string;
+  secondaryMobile?: string;
   email: string;
   address: string;
+  companyId?: string;
+  companyName?: string;
+  dob?: string | null;
+  anniversary?: string | null;
+  kycStatus?: string;
   createdAt: string;
+  campaigns?: CustomerCampaign[];
+}
+
+export interface CustomerCampaign {
+  CampaignCustomerId: string;
+  CampaignId: string;
+  Name: string;
+  CampaignType: string;
+  StartDate: string | null;
+  EndDate: string | null;
 }
 
 export interface CustomerPagedResponse {
+  data: any;
   totalRecords: number;
   pageNumber: number;
   pageSize: number;

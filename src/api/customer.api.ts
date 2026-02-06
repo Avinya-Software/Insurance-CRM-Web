@@ -44,6 +44,7 @@ export const getCustomersApi = async (params: {
   search?: string;
 }) => {
   const res = await api.get("/Customer", { params });
+  console.log(res.data);
   return res.data.data;
 };
 
