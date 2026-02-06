@@ -1,4 +1,4 @@
-import { UpsertPolicyPayload } from "../interfaces/policy.interface";
+import type { UpsertPolicyPayload } from "../interfaces/policy.interface";
 import api from "./axios";
 
 /*   UPSERT POLICY   */
