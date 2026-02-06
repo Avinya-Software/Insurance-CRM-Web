@@ -39,6 +39,7 @@ const PolicyFilterSheet = ({
   const loading =
     sLoading || tLoading || cLoading || iLoading || pLoading;
 
+
   useEffect(() => {
     setLocal(filters);
   }, [filters]);

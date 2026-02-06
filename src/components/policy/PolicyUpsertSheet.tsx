@@ -12,6 +12,7 @@ import { usePolicyDocumentActions } from "../../hooks/policy/usePolicyDocumentAc
 import SearchableComboBox from "../common/SearchableComboBox";
 
 import Spinner from "../common/Spinner";
+import { UpsertPolicyPayload } from "../../interfaces/policy.interface";
 
 interface Props {
   open: boolean;
@@ -53,8 +54,8 @@ const PolicyUpsertSheet = ({
     customerId: "",
     insurerId: "",
     productId: "",
-    policyTypeId: 0,
-    policyStatusId: 0,
+    policyTypeId: undefined as number | undefined,
+    policyStatusId: undefined as number | undefined,
     registrationNo: "",
     startDate: "",
     endDate: "",
@@ -67,10 +68,12 @@ const PolicyUpsertSheet = ({
     policyCode: "",
     paymentDone: false,
   };
+  
 
   const [form, setForm] = useState(initialForm);
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [base64Files, setBase64Files] = useState<string[]>([]);
 
   /*   API HOOKS   */
 
@@ -88,6 +91,15 @@ const PolicyUpsertSheet = ({
   const loadingDropdowns = cLoading || iLoading || pLoading || tLoading || sLoading;
   const isLoading = isPending;
   const today = new Date().toISOString().split("T")[0];
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
 
 
   /*   PREFILL   */
@@ -152,79 +164,112 @@ const PolicyUpsertSheet = ({
 
   const validate = () => {
     const e: Record<string, string> = {};
-
-    // Required field validation
-    if (!form.customerId) e.customerId = "Customer is required";
-    if (!form.insurerId) e.insurerId = "Insurer is required";
-    if (!form.productId) e.productId = "Product is required";
-    if (!form.policyTypeId) e.policyTypeId = "Policy type is required";
-    if (!form.policyStatusId) e.policyStatusId = "Policy status is required";
-    if (!form.registrationNo.trim())
+  
+    if (!form.customerId?.trim()) e.customerId = "Customer is required";
+    if (!form.insurerId?.trim()) e.insurerId = "Insurer is required";
+    if (!form.productId?.trim()) e.productId = "Product is required";
+  
+    if (!form.policyTypeId)
+      e.policyTypeId = "Policy type is required";
+  
+    if (!form.policyStatusId)
+      e.policyStatusId = "Policy status is required";
+  
+    if (!form.registrationNo?.trim())
       e.registrationNo = "Registration no is required";
+  
     if (!form.startDate) e.startDate = "Start date is required";
     if (!form.endDate) e.endDate = "End date is required";
-
+  
     if (form.startDate && form.endDate) {
-      const startDate = new Date(form.startDate);
-      const endDate = new Date(form.endDate);
-
-      if (endDate < startDate) {
+      if (new Date(form.endDate) < new Date(form.startDate)) {
         e.endDate = "End date cannot be before start date";
       }
     }
-
-    if (form.startDate && form.paymentDueDate) {
-      const startDate = new Date(form.startDate);
-      const paymentDueDate = new Date(form.paymentDueDate);
-
-      if (paymentDueDate < startDate) {
+  
+    if (!form.paymentDone && form.startDate && form.paymentDueDate) {
+      if (new Date(form.paymentDueDate) < new Date(form.startDate)) {
         e.paymentDueDate = "Payment due date cannot be before start date";
       }
     }
-
+  
     if (form.endDate && form.renewalDate) {
-      const endDate = new Date(form.endDate);
-      const renewalDate = new Date(form.renewalDate);
-
-      if (renewalDate < endDate) {
+      if (new Date(form.renewalDate) < new Date(form.endDate)) {
         e.renewalDate = "Renewal date cannot be before end date";
       }
     }
-
+  
     setErrors(e);
-
-    if (Object.keys(e).length) {
+  
+    if (Object.keys(e).length > 0) {
       toast.error("Please fix validation errors");
+      console.log("Validation failed:", e); // 👈 keep this while testing
       return false;
     }
-
+  
     return true;
   };
-
+  
+  
   /*   SAVE  */
 
   const handleSave = async () => {
     if (!validate()) return;
-
+  
     try {
-      const formData = new FormData();
-
-      Object.entries(form).forEach(([k, v]) => {
-        if (v !== null && v !== undefined && v !== "") {
-          formData.append(k, String(v));
-        }
-      });
-
-      files.forEach((f) => formData.append("PolicyDocuments", f));
-
-      await mutateAsync(formData);
-      // toast.success("Policy saved successfully");
+      const payload: UpsertPolicyPayload = {
+        policyId: form.policyId || null,
+        customerId: form.customerId,
+        insurerId: form.insurerId,
+        productId: form.productId,
+  
+        policyStatusId: Number(form.policyStatusId),
+        policyTypeId: Number(form.policyTypeId),
+  
+        policyNumber: form.policyCode || form.registrationNo,  
+  
+        registrationNo: form.registrationNo?.trim(),
+  
+        startDate: form.startDate
+          ? new Date(form.startDate + "T00:00:00").toISOString()
+          : null,
+  
+        endDate: form.endDate
+          ? new Date(form.endDate + "T00:00:00").toISOString()
+          : null,
+  
+        premiumNet: Number(form.premiumNet) || 0,
+        premiumGross: Number(form.premiumGross) || 0,
+  
+        paymentMode: form.paymentMode?.trim() || undefined,
+  
+        paymentDueDate:
+          !form.paymentDone && form.paymentDueDate
+            ? new Date(form.paymentDueDate + "T00:00:00").toISOString()
+            : null,
+  
+        renewalDate: form.renewalDate
+          ? new Date(form.renewalDate + "T00:00:00").toISOString()
+          : null,
+  
+        brokerCode: form.brokerCode?.trim() || undefined,
+        policyCode: form.policyCode?.trim() || undefined,
+  
+        paymentDone: Boolean(form.paymentDone),
+  
+        policyDocuments: Array.isArray(base64Files) ? base64Files : [],
+      };
+  
+      await mutateAsync(payload);
+      toast.success("Policy saved successfully");
       onClose();
       onSuccess();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Something went wrong");
+      toast.error(error?.response?.data?.message || "Something went wrong");
     }
   };
+  
+  
 
   if (!open) return null;
 
@@ -259,23 +304,23 @@ const PolicyUpsertSheet = ({
           ) : (
             <div className="space-y-4">
               <SearchableComboBox
-                label="Customer"
-                required
-                items={(customers || []).map((c) => ({
-                  value: c.customerId,
-                  label: c.fullName,
-                }))}
-                value={form.customerId}
-                error={errors.customerId}
-                disabled={!!customerId}
-                placeholder="Select customer"
-                onSelect={(item) =>
-                  setForm({
-                    ...form,
-                    customerId: item?.value || "",
-                  })
-                }
-              />
+                  label="Customer"
+                  required
+                  items={(customers || []).map((c) => ({
+                    value: c.customerId,
+                    label: c.fullName,
+                  }))}
+                  value={form.customerId}
+                  error={errors.customerId}
+                  disabled={!!customerId}
+                  placeholder="Select customer"
+                  onSelect={(item) =>
+                    setForm({
+                      ...form,
+                      customerId: item?.value || "",
+                    })
+                  }
+                />
 
               <SearchableComboBox
                 label="Insurer"
@@ -291,10 +336,10 @@ const PolicyUpsertSheet = ({
                   setForm({
                     ...form,
                     insurerId: item?.value || "",
-                    productId: "", // reset product on insurer change
+                    productId: "",
                   })
                 }
-              />
+/>
 
               <SearchableComboBox
                 label="Product"
@@ -316,31 +361,36 @@ const PolicyUpsertSheet = ({
                 }
               />
 
-              <Select
-                label="Policy Type"
-                required
-                value={form.policyTypeId}
-                error={errors.policyTypeId}
-                options={policyTypes}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    policyTypeId: Number(v),
-                  })
-                }
-              />
 
               <Select
                 label="Policy Status"
                 required
                 value={form.policyStatusId}
                 error={errors.policyStatusId}
-                options={policyStatuses}
+                options={policyStatuses}   // ✅ now always an array
+                valueKey="policyStatusId"
+                labelKey="statusName"
                 onChange={(v) =>
-                  setForm({
-                    ...form,
-                    policyStatusId: Number(v),
-                  })
+                  setForm((prev) => ({
+                    ...prev,
+                    policyStatusId: v ? Number(v) : undefined,
+                  }))
+                }
+              />
+
+              <Select
+                label="Policy Type"
+                required
+                value={form.policyTypeId}
+                error={errors.policyTypeId}
+                options={policyTypes}
+                valueKey="policyTypeId"
+                labelKey="typeName"  
+                onChange={(v) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    policyTypeId: v ? Number(v) : undefined,
+                  }))
                 }
               />
 
@@ -517,26 +567,30 @@ const PolicyUpsertSheet = ({
               )}
 
               {/* POLICY DOCUMENT UPLOAD  */}
-              <div>
-                <label className="text-sm font-medium">
-                  Add Policy Documents
-                </label>
-                <input
+              <input
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
                   disabled={isLoading}
-                  onChange={(e) =>
-                    setFiles(e.target.files ? Array.from(e.target.files) : [])
-                  }
+                  onChange={async (e) => {
+                    const selectedFiles = e.target.files
+                      ? Array.from(e.target.files)
+                      : [];
+
+                    setFiles(selectedFiles); // only for UI
+
+                    const base64List = await Promise.all(
+                      selectedFiles.map((file) => fileToBase64(file))
+                    );
+
+                    console.log("Base64 Files 👉", base64List);
+
+                    setBase64Files(base64List);   // ✅ store base64
+                  }}
                   className="block mt-1 text-sm"
                 />
-                {files.length > 0 && (
-                  <p className="text-xs text-gray-600 mt-1">
-                    {files.length} file(s) selected
-                  </p>
-                )}
-              </div>
+
+
             </div>
           )}
         </div>

@@ -1,4 +1,5 @@
 // src/api/insurer.api.ts
+import { InsurerDropdown, InsurerDropdownResponse } from "../interfaces/insurer.interface";
 import api from "./axios";
 
 /*   GET INSURERS (PAGINATED)   */
@@ -34,13 +35,11 @@ export const getInsurerPortalPasswordApi = async (
 
 /*   INSURER DROPDOWN   */
 
-export const getInsurerDropdownApi = async () => {
-  const res = await api.get<
-    { insurerId: string; insurerName: string }[]
-  >("/Insurer/dropdown");
-
-  return res.data;
+export const getInsurerDropdownApi = async (): Promise<InsurerDropdown[]> => {
+  const res = await api.get<InsurerDropdownResponse>("/Insurer/dropdown");
+  return res.data.data; 
 };
+
 
 /*   DELETE INSURER (BY ID)   */
 

@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getInsurerDropdownApi } from "../../api/insurer.api";
+import { InsurerDropdown } from "../../interfaces/insurer.interface";
 
 export const useInsurerDropdown = () => {
-  return useQuery({
+  return useQuery<InsurerDropdown[]>({
     queryKey: ["insurer-dropdown"],
     queryFn: getInsurerDropdownApi,
   });
