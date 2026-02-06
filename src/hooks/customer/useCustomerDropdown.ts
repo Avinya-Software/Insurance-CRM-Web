@@ -5,6 +5,9 @@ import type { CustomerDropdown } from "../../interfaces/customer.interface";
 export const useCustomerDropdown = () => {
   return useQuery<CustomerDropdown[]>({
     queryKey: ["customer-dropdown"],
-    queryFn: getCustomerDropdownApi,
+    queryFn: async () => {
+      const res = await getCustomerDropdownApi(); 
+      return res.data; 
+    },
   });
 };

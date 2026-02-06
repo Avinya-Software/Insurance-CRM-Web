@@ -1,37 +1,34 @@
 // src/interfaces/policy.interface.ts
 
-export interface Policy {
-  policyId: string;
-  customerId?: string;
-  customerName?: string;
-  insurerId?: string;
-  productId?: string;
+export interface UpsertPolicyPayload {
+  policyId?: string | null;
+  customerId: string;
+  insurerId: string;
+  productId: string;
 
-  policyTypeId?: number;
-  policyStatusId?: number;
+  policyTypeId: number;
+  policyStatusId: number;
 
   policyNumber: string;
   registrationNo?: string;
-  policyTypeName?: string;
-  insurerName?: string;
-  productName?: string;
-  policyStatusName?: string;
-  paymentDone: boolean;
 
-  startDate: string;
-  endDate: string;
+  startDate: string | null;
+  endDate: string | null;
 
   premiumNet: number;
   premiumGross: number;
 
   paymentMode?: string;
-  paymentDueDate?: string;
-  renewalDate?: string;
+  paymentDueDate?: string | null;
+  renewalDate?: string | null;
 
-  policyDocumentRef?: string;
   brokerCode?: string;
   policyCode?: string;
+  paymentDone: boolean;
+// ✅ base64 files
+policyDocuments: string[];
 }
+
 
 export interface PoliciesResponse {
   statusCode: number;
@@ -41,6 +38,14 @@ export interface PoliciesResponse {
     page: number;
     pageSize: number;
     totalPages: number;
-    data: Policy[];
+    data: UpsertPolicyPayload[];
   };
+}
+
+
+export interface PolicyStatus {
+  policyStatusId: number;
+  statusName: string;
+  isActive: boolean;
+  createdAt: string;
 }

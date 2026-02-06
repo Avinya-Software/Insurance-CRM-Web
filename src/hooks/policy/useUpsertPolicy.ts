@@ -1,13 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { upsertPolicyApi } from "../../api/policy.api";
+import { upsertPolicyApi, UpsertPolicyPayload } from "../../api/policy.api";
 
 export const useUpsertPolicy = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: upsertPolicyApi,
+    mutationFn: (payload: UpsertPolicyPayload) => upsertPolicyApi(payload),
     onSuccess: () => {
-      // refresh policies list later if needed
       queryClient.invalidateQueries({ queryKey: ["policies"] });
     },
   });

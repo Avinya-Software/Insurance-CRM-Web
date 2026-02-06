@@ -5,5 +5,6 @@ export const usePolicyStatusesDropdown = () => {
   return useQuery({
     queryKey: ["policy-statuses-dropdown"],
     queryFn: getPolicyStatusesDropdownApi,
+    select: (res: any) => Array.isArray(res?.data) ? res.data : [], 
   });
 };
