@@ -1,3 +1,4 @@
+import type { PoliciesResponse } from "../interfaces/policy.interface";
 import api from "./axios";
 
 /*   UPSERT POLICY   */
@@ -22,10 +23,12 @@ export const getPoliciesApi = async (params: {
   customerId?: string;
   insurerId?: string;
   productId?: string;
-}) => {
+}): Promise<PoliciesResponse> => {
   const res = await api.get("/policy", { params });
+  console.log(res.data);
   return res.data;
 };
+
 
 /*   DROPDOWNS   */
 
@@ -112,3 +115,5 @@ export const updatePolicyStatusApi = async (
   );
   return res.data;
 };
+export { PoliciesResponse };
+
