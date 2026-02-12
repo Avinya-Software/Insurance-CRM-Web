@@ -223,6 +223,8 @@ builder.Services.AddHostedService<EventManagementWorker>();
 
 #endregion
 
+builder.Services.AddHttpContextAccessor();
+
 #region SWAGGER
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -297,7 +299,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 #region PIPELINE
 app.UseRouting();
 app.UseCors("FrontendPolicy");
-
+app.UseStaticFiles();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseAuthentication();

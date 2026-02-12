@@ -4,7 +4,9 @@ using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
 using Avinya.InsuranceCRM.Infrastructure.Helper;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 {
@@ -12,11 +14,16 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
     {
         private readonly AppDbContext _context;
         private readonly IWebHostEnvironment _env;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IConfiguration _config;
 
-        public CustomerRepository(AppDbContext context, IWebHostEnvironment env)
+        public CustomerRepository(AppDbContext context, IWebHostEnvironment env, IHttpContextAccessor httpContextAccessor, IConfiguration config)
         {
             _context = context;
             _env = env;
+            _httpContextAccessor = httpContextAccessor;
+            _config = config;
+
         }
 
         public async Task<(Customer customer, bool isUpdate)> CreateOrUpdateAsync(
@@ -24,61 +31,99 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
             Guid? companyId,
             CreateCustomerRequest request)
         {
-            if (request.CustomerId.HasValue)
-            {
-                var customer = await _context.Customers.FirstOrDefaultAsync(x =>
-                    x.CustomerId == request.CustomerId &&
-                    x.AdvisorId == advisorId);
+                Customer customer;
+                bool isUpdate = request.CustomerId.HasValue;
 
-                if (customer == null)
-                    throw new KeyNotFoundException("Customer not found");
+                if (isUpdate)
+                {
+                    customer = await _context.Customers.FirstOrDefaultAsync(x =>
+                        x.CustomerId == request.CustomerId &&
+                        x.AdvisorId == advisorId)
+                        ?? throw new KeyNotFoundException("Customer not found");
 
-                if (await _context.Customers.AnyAsync(x =>
-                        x.AdvisorId == advisorId &&
-                        x.PrimaryMobile == request.PrimaryMobile &&
-                        x.CustomerId != customer.CustomerId))
-                    throw new Exception("Mobile already exists");
+                    customer.FullName = request.FullName;
+                    customer.PrimaryMobile = request.PrimaryMobile;
+                    customer.SecondaryMobile = request.SecondaryMobile;
+                    customer.Email = request.Email;
+                    customer.Address = request.Address;
+                    customer.DOB = request.DOB;
+                    customer.Anniversary = request.Anniversary;
+                    customer.Notes = request.Notes;
+                    customer.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    customer = new Customer
+                    {
+                        CustomerId = Guid.NewGuid(),
+                        FullName = request.FullName,
+                        PrimaryMobile = request.PrimaryMobile,
+                        SecondaryMobile = request.SecondaryMobile,
+                        Email = request.Email,
+                        Address = request.Address,
+                        DOB = request.DOB,
+                        Anniversary = request.Anniversary,
+                        Notes = request.Notes,
+                        AdvisorId = advisorId,
+                        CompanyId = companyId,
+                        CreatedAt = DateTime.UtcNow
+                    };
 
-                customer.FullName = request.FullName;
-                customer.PrimaryMobile = request.PrimaryMobile;
-                customer.SecondaryMobile = request.SecondaryMobile;
-                customer.Email = request.Email;
-                customer.Address = request.Address;
-                customer.DOB = request.DOB;
-                customer.Anniversary = request.Anniversary;
-                customer.Notes = request.Notes;
-                customer.UpdatedAt = DateTime.UtcNow;
+                    _context.Customers.Add(customer);
+                }
+
+                if (request.KYCFiles != null && request.KYCFiles.Any())
+                {
+                var uploadRoot = Path.Combine(
+                     _env.WebRootPath,
+                     "Uploads",
+                     "Customers",
+                     customer.CustomerId.ToString()
+                 );
+
+                if (!Directory.Exists(uploadRoot))
+                        Directory.CreateDirectory(uploadRoot);
+
+                    var newFiles = new List<string>();
+
+                    foreach (var file in request.KYCFiles)
+                    {
+                        var ext = Path.GetExtension(file.FileName).ToLower();
+                        var allowedExt = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+
+                        if (!allowedExt.Contains(ext))
+                            throw new Exception("Only jpg, jpeg, png and pdf files are allowed");
+
+                        var fileName = $"{Guid.NewGuid()}{ext}";
+                        var filePath = Path.Combine(uploadRoot, fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+
+                        newFiles.Add($"/Uploads/Customers/{customer.CustomerId}/{fileName}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(customer.KYCFiles))
+                    {
+                        var existingFiles = customer.KYCFiles.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+                        existingFiles.AddRange(newFiles);
+                        customer.KYCFiles = string.Join(",", existingFiles);
+                    }
+                    else
+                    {
+                        customer.KYCFiles = string.Join(",", newFiles);
+                    }
+
+                    customer.KYCUploadedDate = DateTime.UtcNow;
+                }
 
                 await _context.SaveChangesAsync();
-                return (customer, true);
-            }
-
-            if (await _context.Customers.AnyAsync(x =>
-                    x.AdvisorId == advisorId &&
-                    x.PrimaryMobile == request.PrimaryMobile))
-                throw new Exception("Mobile already exists");
-
-            var newCustomer = new Customer
-            {
-                CustomerId = Guid.NewGuid(),
-                FullName = request.FullName,
-                PrimaryMobile = request.PrimaryMobile,
-                SecondaryMobile = request.SecondaryMobile,
-                Email = request.Email,
-                Address = request.Address,
-                DOB = request.DOB,
-                Anniversary = request.Anniversary,
-                Notes = request.Notes,
-                AdvisorId = advisorId,
-                CompanyId = companyId,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Customers.Add(newCustomer);
-            await _context.SaveChangesAsync();
-
-            return (newCustomer, false);
+                return (customer, isUpdate);
+            
         }
+
 
         public async Task<(IEnumerable<CustomerListDto> Data, int TotalCount)> GetPagedAsync(
             string advisorId,
@@ -225,19 +270,19 @@ namespace Avinya.InsuranceCRM.Infrastructure.RepositoryImplementation
 
         public string? GetKycFilePath(Guid customerId, string documentId)
         {
-            var folder = Path.Combine(
-                _env.ContentRootPath,
-                "Uploads",
-                "KYC",
-                customerId.ToString()
-            );
-
-            if (!Directory.Exists(folder))
+            if (customerId == Guid.Empty || string.IsNullOrWhiteSpace(documentId))
                 return null;
 
-            return Directory.GetFiles(folder)
-                .FirstOrDefault(f =>
-                    Path.GetFileName(f).StartsWith(documentId + "_"));
+            if (documentId.Contains("..") || documentId.Contains("/") || documentId.Contains("\\"))
+                return null;
+
+            var baseUrl = _config["ApiSettings:BaseUrl"];
+
+            if (string.IsNullOrWhiteSpace(baseUrl))
+                return null;
+
+            return $"{baseUrl}/Uploads/Customers/{customerId}/{documentId}";
         }
+
     }
 }

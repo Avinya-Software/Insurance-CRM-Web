@@ -79,16 +79,17 @@ namespace Avinya.InsuranceCRM.API.Controllers
 
 
         [HttpGet("{customerId:guid}/kyc/{documentId}/preview")]
-        public IActionResult PreviewKyc(Guid customerId, string documentId)
+        public async Task<IActionResult> PreviewKyc(Guid customerId, string documentId)
         {
-            return _service.PreviewKyc(customerId, documentId);
+            var response = await _service.PreviewKyc(customerId, documentId);
+            return StatusCode(response.StatusCode, response);
         }
 
         [HttpGet("{customerId:guid}/kyc/{documentId}/download")]
-        public IActionResult DownloadKyc(Guid customerId, string documentId)
+        public async Task<IActionResult> DownloadKyc(Guid customerId, string documentId)
         {
-            return _service.DownloadKyc(customerId, documentId);
+            var response = await _service.DownloadKyc(customerId, documentId);
+            return StatusCode(response.StatusCode, response);
         }
-
     }
 }

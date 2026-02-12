@@ -1,4 +1,5 @@
 ﻿using Avinya.InsuranceCRM.Application.DTOs;
+using Avinya.InsuranceCRM.Application.DTOs.KYCFIle;
 using Avinya.InsuranceCRM.Application.RequestModels;
 using Avinya.InsuranceCRM.Domain.Entities;
 
