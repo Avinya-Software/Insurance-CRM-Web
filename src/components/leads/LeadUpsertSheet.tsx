@@ -47,8 +47,11 @@ const LeadUpsertSheet = ({
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
 
   useEffect(() => {
-    getCustomerDropdownApi().then(setCustomers);
-  }, []);
+    getCustomerDropdownApi().then((res) => {
+      setCustomers(res?.data ?? []); 
+    });
+  }, []);  
+  
 
   /*   FORM STATE   */
 
@@ -70,27 +73,29 @@ const LeadUpsertSheet = ({
 
   useEffect(() => {
     if (!open) return;
+    if (!statuses || !sources) return;
 
     if (lead) {
       // 🔥 MAP VALUE → ID FOR STATUS
       const mappedStatusId =
-        lead.leadStatusId ||
-        statuses?.find(
-          (s: any) =>
-            s.name?.toLowerCase() ===
-            lead.leadStatus?.toLowerCase()
-        )?.id ||
-        "";
+  String(
+    lead.leadStatusId ||
+    statuses?.find(
+      (s: any) =>
+        s.name?.toLowerCase() === lead.leadStatus?.toLowerCase()
+    )?.id ||
+    ""
+  );
 
-      // 🔥 MAP VALUE → ID FOR SOURCE
-      const mappedSourceId =
-        lead.leadSourceId ||
-        sources?.find(
-          (s: any) =>
-            s.name?.toLowerCase() ===
-            lead.leadSource?.toLowerCase()
-        )?.id ||
-        "";
+const mappedSourceId =
+  String(
+    lead.leadSourceId ||
+    sources?.find(
+      (s: any) =>
+        s.name?.toLowerCase() === lead.leadSource?.toLowerCase()
+    )?.id ||
+    ""
+  );
 
       setForm({
         customerId: lead.customerId ?? null,
@@ -237,20 +242,19 @@ const LeadUpsertSheet = ({
         </label>
 
         <SearchableComboBox
-        label="customer"
-          items={customers.map((c) => ({
-            value: c.customerId,
-            label: `${c.fullName} (${c.email})`,
-          }))}
-          value={selectedCustomerId}
-          placeholder="Search Customer..."
-          emptyText="No customer found"
-          createText="Add new customer"
-          onSelect={(item) => {
-            setSelectedCustomerId(item?.value);
-            
-          }}
-        />
+  label="customer"
+  items={(Array.isArray(customers) ? customers : []).map((c) => ({
+    value: c.customerId,
+    label: `${c.fullName} (${c.email})`,
+  }))}
+  value={selectedCustomerId}
+  placeholder="Search Customer..."
+  emptyText="No customer found"
+  createText="Add new customer"
+  onSelect={(item) => {
+    setSelectedCustomerId(item?.value);
+  }}
+/>
 
           <Input
             label="Full Name"
@@ -375,23 +379,25 @@ const Select = ({
     <label className="text-sm font-medium">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
+
     <select
       className={`input w-full ${error ? "border-red-500" : ""}`}
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
       <option value="">Select</option>
-      {options?.map((o: any) => (
+
+      {(Array.isArray(options) ? options : []).map((o: any) => (
         <option key={o.id} value={o.id}>
           {o.name}
         </option>
       ))}
     </select>
-    {error && (
-      <p className="text-xs text-red-600 mt-1">{error}</p>
-    )}
+
+    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
   </div>
 );
+
 
 const Textarea = ({ label, value, onChange }: any) => (
   <div>

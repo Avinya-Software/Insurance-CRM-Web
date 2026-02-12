@@ -24,20 +24,26 @@ export const getLeadsApi = async (filters: LeadFilters) => {
 /*   LEAD STATUSES   */
 
 export const getLeadStatusesApi = async () => {
-  const res = await api.get<{ id: number; name: string }[]>(
-    "/Lead/lead-statuses"
-  );
-  return res.data;
+  const res = await api.get("/Lead/lead-statuses");
+
+  return (res.data?.data ?? []).map((s: any) => ({
+    id: s.leadStatusId,
+    name: s.statusName,
+  }));
 };
+
 
 /*   LEAD SOURCES   */
 
 export const getLeadSourcesApi = async () => {
-  const res = await api.get<{ id: number; name: string }[]>(
-    "/Lead/lead-sources"
-  );
-  return res.data;
+  const res = await api.get("/Lead/lead-sources");
+
+  return (res.data?.data ?? []).map((s: any) => ({
+    id: s.leadSourceId,
+    name: s.sourceName,
+  }));
 };
+
 
 /*   CREATE / UPDATE LEAD   */
 

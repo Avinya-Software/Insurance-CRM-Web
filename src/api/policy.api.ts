@@ -1,15 +1,13 @@
+import type { UpsertPolicyPayload } from "../interfaces/policy.interface";
 import api from "./axios";
 
 /*   UPSERT POLICY   */
 
-export const upsertPolicyApi = async (data: FormData) => {
-  const res = await api.post("/policy/upsert", data, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+export const upsertPolicyApi = async (payload: UpsertPolicyPayload) => {
+  const res = await api.post("/policy/upsert", payload); // ✅ JSON body
   return res.data;
 };
+
 
 /*   GET POLICIES   */
 
@@ -33,6 +31,7 @@ export const getPolicyTypesDropdownApi = async () => {
   const res = await api.get<{ id: number; name: string }[]>(
     "/policy/policy-types-dropdown"
   );
+  console.log(res.data);
   return res.data;
 };
 
@@ -112,3 +111,5 @@ export const updatePolicyStatusApi = async (
   );
   return res.data;
 };
+export { UpsertPolicyPayload };
+

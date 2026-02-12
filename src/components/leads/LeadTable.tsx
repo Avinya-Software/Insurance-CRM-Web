@@ -70,7 +70,6 @@ const LeadTable = ({
     queryKey: ["lead-statuses"],
     queryFn: getLeadStatusesApi,
   });
-
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
     lead: Lead

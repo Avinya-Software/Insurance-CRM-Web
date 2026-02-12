@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import FollowUpForm from "./FollowUpForm";
+import { useLeadFollowupStatuses } from "../../hooks/leadFollowUp/useLeadFollowupStatuses";
 
 interface Props {
   open: boolean;
@@ -23,6 +24,8 @@ const LeadFollowUpCreateSheet = ({
       document.body.style.overflow = "unset";
     };
   }, [open]);
+
+  const { statuses } = useLeadFollowupStatuses(open);
 
   if (!open || !leadId) return null;
 
@@ -63,9 +66,10 @@ const LeadFollowUpCreateSheet = ({
 
         {/* Form */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          <FollowUpForm
-            leadId={leadId}
-            onSuccess={onSuccess}
+        <FollowUpForm
+          leadId={leadId}
+          onSuccess={onSuccess}
+          statuses={statuses}
           />
         </div>
       </div>

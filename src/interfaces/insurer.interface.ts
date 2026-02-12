@@ -21,3 +21,14 @@ export interface InsurerListResponse {
   totalPages: number;
   data: Insurer[];
 }
+
+export interface InsurerDropdown {
+  insurerId: string;
+  insurerName: string;
+}
+
+export interface InsurerDropdownResponse {
+  statusCode: number;
+  statusMessage: string;
+  data: InsurerDropdown[];
+}

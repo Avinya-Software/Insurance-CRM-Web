@@ -1,8 +1,13 @@
 export interface LeadFollowUp {
-  followUpId: string;
-  followUpDate: string;
-  nextFollowUpDate?: string;
+  followUpID: string;
+  leadID: string;
+  leadNo: string;
+  updatedDate?: string | null;
   remark?: string;
-  createdAt: string;
-  createdBy: string;
+  nextFollowupDate?: string | null;
+  status: number;
+  statusName: string;
+  followUpBy: string;
+  followUpByName: string;
+  createdDate: string;
 }
