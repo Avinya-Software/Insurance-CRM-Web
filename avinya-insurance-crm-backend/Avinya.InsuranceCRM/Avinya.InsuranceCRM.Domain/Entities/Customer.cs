@@ -31,6 +31,7 @@ namespace Avinya.InsuranceCRM.Domain.Entities
         public string AdvisorId { get; set; } = null!;
         public DateTime? DOB { get; set; }
         public DateTime? Anniversary { get; set; }
+        public DateTime? KYCUploadedDate { get; set; }
 
         [MaxLength(50)]
         public string? KYCStatus { get; set; }

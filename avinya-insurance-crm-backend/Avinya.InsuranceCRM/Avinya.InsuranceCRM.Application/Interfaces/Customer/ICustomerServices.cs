@@ -11,7 +11,7 @@ namespace Avinya.InsuranceCRM.Application.Interfaces.Customer
         Task<ResponseModel> DeleteAsync(string advisorId, Guid customerId);
         Task<ResponseModel> GetDropdownAsync(string advisorId);
         Task<ResponseModel> DeleteKycAsync(string advisorId, Guid customerId, string documentId);
-        IActionResult PreviewKyc(Guid customerId, string documentId);
-        IActionResult DownloadKyc(Guid customerId, string documentId);
+        Task<ResponseModel> PreviewKyc(Guid customerId, string documentId);
+        Task<ResponseModel> DownloadKyc(Guid customerId, string documentId);
     }
 }

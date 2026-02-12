@@ -16,6 +16,6 @@ namespace Avinya.InsuranceCRM.Application.RequestModels
         public DateTime? Anniversary { get; set; }
         public string? Notes { get; set; }
         public string? AdvisorId { get; set; }
-        public List<IFormFile>? KycFiles { get; set; }
+        public List<IFormFile>? KYCFiles { get; set; }
     }
 }

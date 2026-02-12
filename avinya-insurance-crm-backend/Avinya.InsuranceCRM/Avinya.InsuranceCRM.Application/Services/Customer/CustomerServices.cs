@@ -80,38 +80,24 @@ namespace Avinya.InsuranceCRM.Application.Services.Customer
                 ? new ResponseModel(200, "KYC document deleted successfully")
                 : new ResponseModel(404, "Document not found");
 
-        public IActionResult PreviewKyc(Guid customerId, string documentId)
+        public async Task<ResponseModel> PreviewKyc(Guid customerId, string documentId)
         {
-            var path = _repo.GetKycFilePath(customerId, documentId);
-            if (path == null) return new NotFoundResult();
+            var file = _repo.GetKycFilePath(customerId, documentId);
 
-            return new PhysicalFileResult(path, GetContentType(path))
-            {
-                EnableRangeProcessing = true
-            };
+            if (file == null)
+                return new ResponseModel(404, "KYC document not found", null);
+
+            return new ResponseModel(200, "KYC Document", file);
         }
 
-        public IActionResult DownloadKyc(Guid customerId, string documentId)
+        public async Task<ResponseModel> DownloadKyc(Guid customerId, string documentId)
         {
-            var path = _repo.GetKycFilePath(customerId, documentId);
-            if (path == null) return new NotFoundResult();
+            var file = _repo.GetKycFilePath(customerId, documentId);
 
-            return new PhysicalFileResult(path, GetContentType(path))
-            {
-                FileDownloadName = Path.GetFileName(path)
-            };
-        }
+            if (file == null)
+                return new ResponseModel(404, "KYC document not found", null);
 
-        private static string GetContentType(string path)
-        {
-            var ext = Path.GetExtension(path).ToLowerInvariant();
-            return ext switch
-            {
-                ".pdf" => "application/pdf",
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                _ => "application/octet-stream"
-            };
+            return new ResponseModel(200, "KYC Document", file);
         }
     }
 }

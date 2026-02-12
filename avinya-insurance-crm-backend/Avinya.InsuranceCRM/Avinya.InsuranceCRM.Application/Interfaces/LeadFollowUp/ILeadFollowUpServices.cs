@@ -10,5 +10,6 @@ namespace Avinya.InsuranceCRM.Application.Interfaces.LeadFollowUp
     CreateLeadFollowUpRequest request);
 
         Task<ResponseModel> GetFollowupHistoryAsync(Guid leadId);
+        Task<ResponseModel> GetLeadFollowupStatusesAsync();
     }
 }
