@@ -31,7 +31,9 @@ const CustomerUpsertSheet = ({
   }, [open]);
 
   /* KYC Actions for existing files */
-  const [existingKycFiles, setExistingKycFiles] = useState<{ fileName: string; url: string }[]>([]);
+  const [existingKycFiles, setExistingKycFiles] = useState<
+  { fileName: string; url: string }[]
+>([]);
 
 const { preview, download, remove } = useKycFileActions((deletedId) => {
   setExistingKycFiles((prev) =>
@@ -41,6 +43,7 @@ const { preview, download, remove } = useKycFileActions((deletedId) => {
     })
   );
 });
+
 
   /* Form state */
   const initialForm = {
@@ -59,7 +62,7 @@ const { preview, download, remove } = useKycFileActions((deletedId) => {
   const [kycFiles, setKycFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-
+  const customerId = customer?.customerId;
   /* Prefill form when editing */
   useEffect(() => {
     if (!open) return;
@@ -249,48 +252,48 @@ const { preview, download, remove } = useKycFileActions((deletedId) => {
               <label className="text-sm font-medium">Uploaded KYC Documents</label>
               <div className="space-y-2 mt-2">
               {existingKycFiles.map((file) => {
-                const documentId = file.url.split("/").pop()?.split(".")[0]; // extract id from URL
+                const documentId = getDocumentIdFromUrl(file.url);
 
                 return (
-                  <div
-                    key={file.url}
-                    className="flex justify-between items-center border rounded px-3 py-2 text-sm"
-                  >
+                  <div key={file.url} className="flex justify-between items-center border rounded px-3 py-2 text-sm">
                     <span className="truncate">{file.fileName}</span>
 
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => preview(customer.customerId, documentId!)}
-                        className="p-1 hover:bg-gray-100 rounded"
-                      >
-                        <Eye size={16} />
-                      </button>
+                    <button
+                      onClick={() => preview(file.url)}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <Eye size={16} />
+                    </button>
 
-                      <button
-                        onClick={() => download(customer.customerId, documentId!)}
+                    <button
+                        onClick={() => download(file.url, file.fileName)}
                         className="p-1 hover:bg-gray-100 rounded"
                       >
                         <Download size={16} />
                       </button>
 
-                      <button
-                        onClick={async () => {
-                          if (!confirm("Delete this document?")) return;
-                          try {
-                            await remove(customer.customerId, documentId!);
-                          } catch {
-                            toast.error("Failed to delete document");
-                          }
-                        }}
-                        className="p-1 hover:bg-red-100 text-red-600 rounded"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm("Delete this document?")) return;
+
+                        const documentId = file.url.split("/").pop()?.split(".")[0];
+                        if (!documentId) return;
+
+                        try {
+                          await remove(customer.customerId, documentId);
+                        } catch {
+                          toast.error("Failed to delete document");
+                        }
+                      }}
+                      className="p-1 hover:bg-red-100 text-red-600 rounded"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                     </div>
                   </div>
                 );
               })}
-
               </div>
             </div>
           )}
@@ -403,3 +406,9 @@ const Textarea = ({ label, value, onChange }: any) => (
     />
   </div>
 );
+const getDocumentIdFromUrl = (url: string) => {
+  return url.split("/").pop() ?? "";
+};
+
+
+

@@ -51,21 +51,18 @@ export const getCustomerDropdownApi = async () => {
 
 /*   KYC PREVIEW   */
 
-export const previewKycFileApi = (
-  customerId: string,
-  documentId: string
-) => {
-  return `${api.defaults.baseURL}/Customer/${customerId}/kyc/${documentId}/preview`;
+/* KYC PREVIEW */
+export const previewKycFileApi = (fileUrl: string) => {
+  console.log("Preview KYC file URL:", fileUrl);
+  return fileUrl;
 };
 
-/*   KYC DOWNLOAD   */
-
-export const downloadKycFileApi = (
-  customerId: string,
-  documentId: string
-) => {
-  return `${api.defaults.baseURL}/Customer/${customerId}/kyc/${documentId}/download`;
+/* KYC DOWNLOAD */
+export const downloadKycFileApi = (fileUrl: string) => {
+  console.log("Download KYC file URL:", fileUrl);
+  return fileUrl;
 };
+
 
 /*   KYC DELETE   */
 
