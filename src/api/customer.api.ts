@@ -6,35 +6,29 @@ import type {
 
 /*   CREATE / UPDATE CUSTOMER   */
 
-export const createCustomerApi = async (
-  data: CreateCustomerRequest
-) => {
+export const createCustomerApi = async (data: CreateCustomerRequest) => {
   const formData = new FormData();
 
   Object.entries(data).forEach(([key, value]) => {
     if (value === undefined || value === null) return;
 
     if (key === "kycFiles" && Array.isArray(value)) {
-      value.forEach((file) => {
-        formData.append("kycFiles", file);
-      });
+      value.forEach((file) => formData.append("kycFiles", file));
     } else {
-      formData.append(key, value as string);
+      // Ensure non-string types are converted properly
+      formData.append(key, typeof value === "string" ? value : JSON.stringify(value));
     }
   });
 
-  const res = await api.post<CustomerResponse>(
-    "/Customer",
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
+  const res = await api.post<CustomerResponse>("/Customer", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
   return res.data;
 };
+
 
 /*   GET CUSTOMERS (PAGINATED)   */
 
