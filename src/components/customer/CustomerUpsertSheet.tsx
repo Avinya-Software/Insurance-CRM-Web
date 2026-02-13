@@ -31,13 +31,16 @@ const CustomerUpsertSheet = ({
   }, [open]);
 
   /* KYC Actions for existing files */
-  const [existingKycFiles, setExistingKycFiles] = useState<string[]>([]);
-  const { preview, download, remove } = useKycFileActions(
-    (deletedId) =>
-      setExistingKycFiles((prev) =>
-        prev.filter((f) => !f.startsWith(deletedId + "_"))
-      )
+  const [existingKycFiles, setExistingKycFiles] = useState<{ fileName: string; url: string }[]>([]);
+
+const { preview, download, remove } = useKycFileActions((deletedId) => {
+  setExistingKycFiles((prev) =>
+    prev.filter((f) => {
+      const idFromUrl = f.url.split("/").pop()?.split(".")[0];
+      return idFromUrl !== deletedId;
+    })
   );
+});
 
   /* Form state */
   const initialForm = {
@@ -78,8 +81,8 @@ const CustomerUpsertSheet = ({
       });
 
       setExistingKycFiles(
-        customer.kycFiles
-          ? customer.kycFiles.split(",").filter(Boolean)
+        Array.isArray(customer.kycFiles)
+          ? customer.kycFiles
           : []
       );
     } else {
@@ -245,44 +248,49 @@ const CustomerUpsertSheet = ({
             <div>
               <label className="text-sm font-medium">Uploaded KYC Documents</label>
               <div className="space-y-2 mt-2">
-                {existingKycFiles.map((file) => {
-                  const documentId = file.split("_")[0];
-                  return (
-                    <div
-                      key={file}
-                      className="flex justify-between items-center border rounded px-3 py-2 text-sm"
-                    >
-                      <span className="truncate">{file}</span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => preview(customer.customerId, documentId)}
-                          className="p-1 hover:bg-gray-100 rounded"
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button
-                          onClick={() => download(customer.customerId, documentId)}
-                          className="p-1 hover:bg-gray-100 rounded"
-                        >
-                          <Download size={16} />
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (!confirm("Delete this document?")) return;
-                            try {
-                              await remove(customer.customerId, documentId);
-                            } catch {
-                              toast.error("Failed to delete document");
-                            }
-                          }}
-                          className="p-1 hover:bg-red-100 text-red-600 rounded"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+              {existingKycFiles.map((file) => {
+                const documentId = file.url.split("/").pop()?.split(".")[0]; // extract id from URL
+
+                return (
+                  <div
+                    key={file.url}
+                    className="flex justify-between items-center border rounded px-3 py-2 text-sm"
+                  >
+                    <span className="truncate">{file.fileName}</span>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => preview(customer.customerId, documentId!)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        <Eye size={16} />
+                      </button>
+
+                      <button
+                        onClick={() => download(customer.customerId, documentId!)}
+                        className="p-1 hover:bg-gray-100 rounded"
+                      >
+                        <Download size={16} />
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          if (!confirm("Delete this document?")) return;
+                          try {
+                            await remove(customer.customerId, documentId!);
+                          } catch {
+                            toast.error("Failed to delete document");
+                          }
+                        }}
+                        className="p-1 hover:bg-red-100 text-red-600 rounded"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
+
               </div>
             </div>
           )}
