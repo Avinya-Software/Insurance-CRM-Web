@@ -29,7 +29,32 @@ export interface UpsertPolicyPayload {
 policyDocuments: string[];
 }
 
+export interface Policy {
+  policyId: string;
 
+  policyNumber: string;
+
+  customerId: string;
+  customerName: string;
+
+  insurerId: string;
+  insurerName: string;
+
+  productId: string;
+  productName: string;
+
+  policyTypeId: number;
+  policyTypeName: string;
+
+  policyStatusId: number;
+  policyStatusName: string;
+
+  startDate: string | null;
+  endDate: string | null;
+
+  premiumNet: number;
+  premiumGross: number;
+}
 export interface PoliciesResponse {
   statusCode: number;
   statusMessage: string;
@@ -38,7 +63,7 @@ export interface PoliciesResponse {
     page: number;
     pageSize: number;
     totalPages: number;
-    data: UpsertPolicyPayload[];
+    data: Policy[];
   };
 }
 

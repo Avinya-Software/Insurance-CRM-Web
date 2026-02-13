@@ -7,11 +7,7 @@ export function getAdvisorIdFromToken(): string | null {
     const payloadJson = atob(payloadBase64);
     const payload = JSON.parse(payloadJson);
 
-    return (
-      payload[
-        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
-      ] ?? null
-    );
+    return payload["UserId"] ?? null;
   } catch (err) {
     console.error("Invalid token", err);
     return null;
