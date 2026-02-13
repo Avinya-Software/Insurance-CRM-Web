@@ -271,25 +271,29 @@ const { preview, download, remove } = useKycFileActions((deletedId) => {
                         className="p-1 hover:bg-gray-100 rounded"
                       >
                         <Download size={16} />
-                      </button>
-
-                    <button
-                      onClick={async () => {
-                        if (!confirm("Delete this document?")) return;
-
-                        const documentId = file.url.split("/").pop()?.split(".")[0];
-                        if (!documentId) return;
-
-                        try {
-                          await remove(customer.customerId, documentId);
-                        } catch {
-                          toast.error("Failed to delete document");
-                        }
-                      }}
-                      className="p-1 hover:bg-red-100 text-red-600 rounded"
-                    >
-                      <Trash2 size={16} />
                     </button>
+
+                      <button
+                          onClick={async () => {
+                            if (!confirm("Delete this document?")) return;
+
+                            // Get full filename including extension
+                            const documentId = file.url.split("/").pop(); 
+                            if (!documentId) return;
+
+                            try {
+                              await remove(customer.customerId, documentId);
+                              setExistingKycFiles((prev) =>
+                                prev.filter((f) => f.url.split("/").pop() !== documentId)
+                              );
+                            } catch {
+                              toast.error("Failed to delete document");
+                            }
+                          }}
+                          className="p-1 hover:bg-red-100 text-red-600 rounded"
+                        >
+                          <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 );

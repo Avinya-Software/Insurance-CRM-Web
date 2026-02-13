@@ -59,8 +59,8 @@ export const useKycFileActions = (
   const remove = async (customerId: string, documentId: string) => {
     await deleteKycFileApi(customerId, documentId);
     toast.success("Document deleted");
-    onDeleted?.(documentId);
+    onDeleted?.(documentId); 
   };
-
+  
   return { preview, download, remove };
 };
