@@ -134,12 +134,13 @@ const CustomerTable = ({
             <Th>Mobile</Th>
             <Th>Address</Th>
             <Th>Kyc Status</Th>
+            <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
         {loading ? (
-          <TableSkeleton rows={6} columns={5} />
+          <TableSkeleton rows={6} columns={7} />
         ) : (
           <tbody>
             {data.length === 0 ? (
@@ -175,6 +176,7 @@ const CustomerTable = ({
                       "-"
                     )}
                   </Td>
+                  <Td>{new Date(c.createdAt).toLocaleDateString()}</Td>
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, c)}
