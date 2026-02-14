@@ -61,3 +61,41 @@ export interface CustomerPagedResponse {
   totalPages: number;
   customers: Customer[];
 }
+
+export interface CustomerDetailsProps {
+  customerId: string;
+  onClose: () => void;
+}
+
+export interface CustomerDetailsResponse {
+  statusCode: number;
+  statusMessage: string;
+  data: CustomerDetails;
+}
+
+export interface CustomerDetails {
+  customerId: string;
+  fullName: string;
+  primaryMobile: string;
+  secondaryMobile?: string | null;
+  email: string;
+  address?: string | null;
+  leadId?: string | null;
+  companyId: string;
+  advisorId: string;
+  dob?: string | null;
+  anniversary?: string | null;
+  kycUploadedDate?: string | null;
+  kycStatus?: string;
+  kycFiles?: KycFile[];
+  notes?: string | null;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
+
+export interface KycFile {
+  fileName: string;
+  url: string;
+}
+
