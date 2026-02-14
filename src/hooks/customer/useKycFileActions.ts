@@ -1,6 +1,5 @@
 import toast from "react-hot-toast";
 import { deleteKycFileApi } from "../../api/customer.api";
-import api from "../../api/axios";
 
 export const useKycFileActions = (
   onDeleted?: (documentId: string) => void

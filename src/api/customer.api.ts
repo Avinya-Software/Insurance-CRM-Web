@@ -1,6 +1,8 @@
 import api from "./axios";
 import type {
   CreateCustomerRequest,
+  CustomerDetails,
+  CustomerDetailsResponse,
   CustomerResponse,
 } from "../interfaces/customer.interface";
 
@@ -85,4 +87,10 @@ export const deleteCustomerApi = async (
     `/Customer/${customerId}`
   );
   return res.data;
+};
+
+
+export const getCustomerDetailsApi = async (customerId: string): Promise<CustomerDetails> => {
+  const res = await api.get<CustomerDetailsResponse>(`/Customer/${customerId}`);
+  return res.data.data;
 };
