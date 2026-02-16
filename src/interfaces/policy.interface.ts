@@ -30,7 +30,6 @@ export interface UpsertPolicyPayload {
 
 export interface Policy {
   policyId: string;
-
   policyNumber: string;
 
   customerId: string;
@@ -48,12 +47,28 @@ export interface Policy {
   policyStatusId: number;
   policyStatusName: string;
 
+  registrationNo?: string;
+
   startDate: string | null;
   endDate: string | null;
 
   premiumNet: number;
   premiumGross: number;
+
+  paymentMode?: string;
+  paymentDueDate?: string | null;
+  renewalDate?: string | null;
+
+  brokerCode?: string;
+  policyCode?: string;
+  paymentDone: boolean;
+
+  policyDocuments?: {
+    fileName: string;
+    url: string;
+  }[];
 }
+
 export interface PoliciesResponse {
   statusCode: number;
   statusMessage: string;

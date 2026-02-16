@@ -38,15 +38,17 @@ const PolicyUpsertSheet = ({
   }, [open]);
 
   /*   POLICY DOCUMENT ACTIONS   */
-  const [existingDocuments, setExistingDocuments] = useState<string[]>([]);
-  const { preview, download, remove } = usePolicyDocumentActions(
-    (deletedId) => {
-      setExistingDocuments((prev) =>
-        prev.filter((f) => !f.startsWith(deletedId + "_"))
-      );
-    }
-  );
+  const [existingDocuments, setExistingDocuments] = useState<
+  { fileName: string; savedFileName: string }[]
+>([]);
 
+const { preview, download, remove } = usePolicyDocumentActions(
+  (deletedId) => {
+    setExistingDocuments((prev) =>
+      prev.filter((f) => !f.savedFileName.startsWith(deletedId + "_"))
+    );
+  }
+);
   /*   FORM STATE   */
 
   const initialForm = {
@@ -145,14 +147,18 @@ const PolicyUpsertSheet = ({
       });
   
       // Existing documents
-      const docs = policy.policyDocumentRef
-        ? policy.policyDocumentRef
-            .split(",")
-            .map((d: string) => d.trim())
-            .filter(Boolean)
-        : [];
-  
-      setExistingDocuments(docs);
+      const docs = policy.policyDocuments || [];
+
+        const mappedDocs = docs.map((d: any) => {
+          const savedFileName = d.url.split("/").pop() || "";
+
+          return {
+            fileName: d.fileName,
+            savedFileName,
+          };
+        });
+
+        setExistingDocuments(mappedDocs);
   
       // Clear newly selected files in edit mode
       setFiles([]);
@@ -552,58 +558,55 @@ const PolicyUpsertSheet = ({
                   </label>
 
                   <div className="space-y-2 mt-2">
-                    {existingDocuments.map((file) => {
-                      const [fileName, savedFileName] = file.split("|");
+                  {existingDocuments.map((file) => (
+                    <div
+                      key={file.savedFileName}
+                      className="flex justify-between items-center border rounded px-3 py-2 text-sm"
+                    >
+                      <span className="truncate">{file.fileName}</span>
 
-                      return (
-                        <div
-                          key={file}
-                          className="flex justify-between items-center border rounded px-3 py-2 text-sm"
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() =>
+                            preview(policy.policyId, file.savedFileName)
+                          }
+                          className="p-1 hover:bg-gray-100 rounded"
                         >
-                          <span className="truncate">{fileName}</span>
+                          <Eye size={16} />
+                        </button>
 
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() =>
-                                preview(policy.policyId, savedFileName)
-                              }
-                              className="p-1 hover:bg-gray-100 rounded"
-                            >
-                              <Eye size={16} />
-                            </button>
+                        <button
+                          onClick={() =>
+                            download(policy.policyId, file.savedFileName)
+                          }
+                          className="p-1 hover:bg-gray-100 rounded"
+                        >
+                          <Download size={16} />
+                        </button>
 
-                            <button
-                              onClick={() =>
-                                download(policy.policyId, savedFileName)
-                              }
-                              className="p-1 hover:bg-gray-100 rounded"
-                            >
-                              <Download size={16} />
-                            </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm("Delete this document?")) return;
 
-                            <button
-                              onClick={async () => {
-                                if (!confirm("Delete this document?")) return;
+                            try {
+                              await remove(policy.policyId, file.savedFileName);
 
-                                try {
-                                  await remove(policy.policyId, savedFileName);
-
-                                  // remove from UI after delete
-                                  setExistingDocuments((prev) =>
-                                    prev.filter((f) => f !== file)
-                                  );
-                                } catch {
-                                  toast.error("Failed to delete document");
-                                }
-                              }}
-                              className="p-1 hover:bg-red-100 text-red-600 rounded"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                              setExistingDocuments((prev) =>
+                                prev.filter(
+                                  (f) => f.savedFileName !== file.savedFileName
+                                )
+                              );
+                            } catch {
+                              toast.error("Failed to delete document");
+                            }
+                          }}
+                          className="p-1 hover:bg-red-100 text-red-600 rounded"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                   </div>
                 </div>
               )}

@@ -1,4 +1,4 @@
-import type { UpsertPolicyPayload } from "../interfaces/policy.interface";
+import type { PoliciesResponse, UpsertPolicyPayload } from "../interfaces/policy.interface";
 import api from "./axios";
 
 /*   UPSERT POLICY   */
@@ -24,8 +24,8 @@ export const getPoliciesApi = async (params: {
   customerId?: string;
   insurerId?: string;
   productId?: string;
-}) => {
-  const res = await api.get("/policy", { params });
+}): Promise<PoliciesResponse> => {
+  const res = await api.get<PoliciesResponse>("/policy", { params });
   return res.data;
 };
 
