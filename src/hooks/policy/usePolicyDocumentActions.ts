@@ -5,43 +5,59 @@ import toast from "react-hot-toast";
 export const usePolicyDocumentActions = (
   onDeleteSuccess?: (documentId: string) => void
 ) => {
+
   const preview = async (policyId: string, documentId: string) => {
     try {
       const res = await api.get(
-        `/Policy/${policyId}/documents/${documentId}/preview`,
-        { responseType: "blob" }
+        `/policy/${policyId}/documents/${documentId}/preview`
       );
 
-      const url = URL.createObjectURL(res.data);
-      window.open(url, "_blank");
+      const fileUrl = res.data?.data?.url;
+
+      if (!fileUrl) throw new Error("File URL not found");
+
+      window.open(fileUrl, "_blank");
+
     } catch (error) {
-      toast.error("Failed to preview document");
       console.error("Preview error:", error);
+      toast.error("Failed to preview document");
     }
   };
 
-  const download = async (policyId: string, documentId: string) => {
+  const download = async (
+    policyId: string,
+    documentId: string,
+    fileName?: string
+  ) => {
     try {
       const res = await api.get(
-        `/Policy/${policyId}/documents/${documentId}/download`,
-        { responseType: "blob" }
+        `/policy/${policyId}/documents/${documentId}/preview`
       );
 
-      const blob = new Blob([res.data]);
-      const url = URL.createObjectURL(blob);
+      const fileUrl = res.data?.data?.url;
+      const name = fileName ?? res.data?.data?.fileName ?? "document";
+
+      if (!fileUrl) throw new Error("File URL not found");
+
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+
+      const blobUrl = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `policy-document-${documentId}`;
+      a.href = blobUrl;
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
 
-      toast.success("Document downloaded");
+      URL.revokeObjectURL(blobUrl);
+
+      toast.success("Download Successfully");
+
     } catch (error) {
-      toast.error("Failed to download document");
       console.error("Download error:", error);
+      toast.error("Failed to download document");
     }
   };
 
@@ -52,7 +68,6 @@ export const usePolicyDocumentActions = (
       onDeleteSuccess?.(documentId);
     } catch (error) {
       toast.error("Failed to delete document");
-      console.error("Delete error:", error);
       throw error;
     }
   };

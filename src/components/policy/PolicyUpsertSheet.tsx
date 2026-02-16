@@ -45,7 +45,7 @@ const PolicyUpsertSheet = ({
 const { preview, download, remove } = usePolicyDocumentActions(
   (deletedId) => {
     setExistingDocuments((prev) =>
-      prev.filter((f) => !f.savedFileName.startsWith(deletedId + "_"))
+      prev.filter((f) => f.savedFileName !== deletedId)
     );
   }
 );
@@ -577,8 +577,12 @@ const { preview, download, remove } = usePolicyDocumentActions(
 
                         <button
                           onClick={() =>
-                            download(policy.policyId, file.savedFileName)
-                          }
+                            download(
+                              policy.policyId,
+                              file.savedFileName,
+                              file.fileName
+                            )
+                          }                          
                           className="p-1 hover:bg-gray-100 rounded"
                         >
                           <Download size={16} />
