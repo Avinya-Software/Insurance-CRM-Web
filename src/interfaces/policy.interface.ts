@@ -9,7 +9,6 @@ export interface UpsertPolicyPayload {
   policyTypeId: number;
   policyStatusId: number;
 
-  policyNumber: string;
   registrationNo?: string;
 
   startDate: string | null;
@@ -25,13 +24,12 @@ export interface UpsertPolicyPayload {
   brokerCode?: string;
   policyCode?: string;
   paymentDone: boolean;
-// ✅ base64 files
-policyDocuments: string[];
+
+  policyDocuments?: File[]; 
 }
 
 export interface Policy {
   policyId: string;
-
   policyNumber: string;
 
   customerId: string;
@@ -49,12 +47,28 @@ export interface Policy {
   policyStatusId: number;
   policyStatusName: string;
 
+  registrationNo?: string;
+
   startDate: string | null;
   endDate: string | null;
 
   premiumNet: number;
   premiumGross: number;
+
+  paymentMode?: string;
+  paymentDueDate?: string | null;
+  renewalDate?: string | null;
+
+  brokerCode?: string;
+  policyCode?: string;
+  paymentDone: boolean;
+
+  policyDocuments?: {
+    fileName: string;
+    url: string;
+  }[];
 }
+
 export interface PoliciesResponse {
   statusCode: number;
   statusMessage: string;

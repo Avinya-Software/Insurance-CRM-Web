@@ -1,10 +1,14 @@
-import type { UpsertPolicyPayload } from "../interfaces/policy.interface";
+import type { PoliciesResponse, UpsertPolicyPayload } from "../interfaces/policy.interface";
 import api from "./axios";
 
 /*   UPSERT POLICY   */
 
-export const upsertPolicyApi = async (payload: UpsertPolicyPayload) => {
-  const res = await api.post("/policy/upsert", payload); // ✅ JSON body
+export const upsertPolicyApi = async (formData: FormData) => {
+  const res = await api.post("/policy/upsert", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
   return res.data;
 };
 
@@ -20,8 +24,8 @@ export const getPoliciesApi = async (params: {
   customerId?: string;
   insurerId?: string;
   productId?: string;
-}) => {
-  const res = await api.get("/policy", { params });
+}): Promise<PoliciesResponse> => {
+  const res = await api.get<PoliciesResponse>("/policy", { params });
   return res.data;
 };
 
@@ -36,10 +40,8 @@ export const getPolicyTypesDropdownApi = async () => {
 };
 
 export const getPolicyStatusesDropdownApi = async () => {
-  const res = await api.get<{ id: number; name: string }[]>(
-    "/policy/policy-statuses-dropdown"
-  );
-  return res.data;
+  const res = await api.get("/policy/policy-statuses-dropdown");
+  return res.data.data;
 };
 
 /*   POLICY DOCUMENT PREVIEW   */
@@ -106,10 +108,11 @@ export const updatePolicyStatusApi = async (
   policyId: string,
   statusId: number
 ) => {
-  const res = await api.patch(
-    `/policy/${policyId}/status/${statusId}`
-  );
-  return res.data;
+  const formData = new FormData();
+  formData.append("PolicyId", policyId);
+  formData.append("PolicyStatusId", statusId.toString());
+
+  const res = await upsertPolicyApi(formData);
+  return res;
 };
-export { UpsertPolicyPayload };
 

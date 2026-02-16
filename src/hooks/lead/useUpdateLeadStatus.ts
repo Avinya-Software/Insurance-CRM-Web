@@ -19,10 +19,11 @@ export const useUpdateLeadStatus = () => {
       updateLeadStatusApi(leadId, statusId, notes),
 
     onSuccess: () => {
-      // 🔥 RE-FETCH LEADS AFTER STATUS CHANGE
       queryClient.invalidateQueries({
         queryKey: ["leads"],
       });
     },
   });
 };
+
+

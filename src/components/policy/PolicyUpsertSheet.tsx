@@ -38,15 +38,17 @@ const PolicyUpsertSheet = ({
   }, [open]);
 
   /*   POLICY DOCUMENT ACTIONS   */
-  const [existingDocuments, setExistingDocuments] = useState<string[]>([]);
-  const { preview, download, remove } = usePolicyDocumentActions(
-    (deletedId) => {
-      setExistingDocuments((prev) =>
-        prev.filter((f) => !f.startsWith(deletedId + "_"))
-      );
-    }
-  );
+  const [existingDocuments, setExistingDocuments] = useState<
+  { fileName: string; savedFileName: string }[]
+>([]);
 
+const { preview, download, remove } = usePolicyDocumentActions(
+  (deletedId) => {
+    setExistingDocuments((prev) =>
+      prev.filter((f) => f.savedFileName !== deletedId)
+    );
+  }
+);
   /*   FORM STATE   */
 
   const initialForm = {
@@ -73,7 +75,6 @@ const PolicyUpsertSheet = ({
   const [form, setForm] = useState(initialForm);
   const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [base64Files, setBase64Files] = useState<string[]>([]);
 
   /*   API HOOKS   */
 
@@ -91,63 +92,90 @@ const PolicyUpsertSheet = ({
   const loadingDropdowns = cLoading || iLoading || pLoading || tLoading || sLoading;
   const isLoading = isPending;
   const today = new Date().toISOString().split("T")[0];
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
-
 
   /*   PREFILL   */
-
   useEffect(() => {
-    if (!open) return;
-
+    if (!open) {
+      // reset everything when sheet closes
+      setForm(initialForm);
+      setExistingDocuments([]);
+      setFiles([]);
+      setErrors({});
+      return;
+    }
+  
     if (policy) {
+      // EDIT MODE
       setForm({
         policyId: policy.policyId ?? null,
         customerId: policy.customerId ?? "",
         insurerId: policy.insurerId ?? "",
         productId: policy.productId ?? "",
-        policyTypeId: policy.policyTypeId ?? 0,
-        policyStatusId: policy.policyStatusId ?? 0,
+        policyTypeId: policy.policyTypeId
+          ? Number(policy.policyTypeId)
+          : undefined,
+        policyStatusId: policy.policyStatusId
+          ? Number(policy.policyStatusId)
+          : undefined,
         registrationNo: policy.registrationNo ?? "",
-        startDate: policy.startDate ? policy.startDate.split("T")[0] : "",
-        endDate: policy.endDate ? policy.endDate.split("T")[0] : "",
+  
+        startDate: policy.startDate
+          ? policy.startDate.split("T")[0]
+          : "",
+  
+        endDate: policy.endDate
+          ? policy.endDate.split("T")[0]
+          : "",
+  
         premiumNet: policy.premiumNet ?? 0,
         premiumGross: policy.premiumGross ?? 0,
+  
         paymentMode: policy.paymentMode ?? "",
+  
         paymentDueDate: policy.paymentDueDate
           ? policy.paymentDueDate.split("T")[0]
           : "",
+  
         renewalDate: policy.renewalDate
           ? policy.renewalDate.split("T")[0]
           : "",
+  
         brokerCode: policy.brokerCode ?? "",
         policyCode: policy.policyCode ?? "",
-        paymentDone: policy.paymentDone ?? false,
+  
+        paymentDone: Boolean(policy.paymentDone),
       });
+  
+      // Existing documents
+      const docs = policy.policyDocuments || [];
 
-      setExistingDocuments(
-        policy.policyDocumentRef
-          ? policy.policyDocumentRef.split(",").filter(Boolean)
-          : []
-      );
+        const mappedDocs = docs.map((d: any) => {
+          const savedFileName = d.url.split("/").pop() || "";
+
+          return {
+            fileName: d.fileName,
+            savedFileName,
+          };
+        });
+
+        setExistingDocuments(mappedDocs);
+  
+      // Clear newly selected files in edit mode
+      setFiles([]);
     } else {
+      // ADD MODE
       setForm({
         ...initialForm,
         customerId: customerId || "",
       });
+  
       setExistingDocuments([]);
       setFiles([]);
     }
-
+  
     setErrors({});
   }, [open, policy, customerId]);
+  
 
   /*   RESET PRODUCT ON INSURER CHANGE   */
 
@@ -217,50 +245,62 @@ const PolicyUpsertSheet = ({
     if (!validate()) return;
   
     try {
-      const payload: UpsertPolicyPayload = {
-        policyId: form.policyId || null,
-        customerId: form.customerId,
-        insurerId: form.insurerId,
-        productId: form.productId,
+      const formData = new FormData();
   
-        policyStatusId: Number(form.policyStatusId),
-        policyTypeId: Number(form.policyTypeId),
+      if (form.policyId)
+        formData.append("PolicyId", form.policyId);
   
-        policyNumber: form.policyCode || form.registrationNo,  
+      formData.append("CustomerId", form.customerId);
+      formData.append("InsurerId", form.insurerId);
+      formData.append("ProductId", form.productId);
+      formData.append("PolicyTypeId", String(form.policyTypeId));
+      formData.append("PolicyStatusId", String(form.policyStatusId));
+      formData.append("RegistrationNo", form.registrationNo);
   
-        registrationNo: form.registrationNo?.trim(),
+      if (form.startDate)
+        formData.append(
+          "StartDate",
+          new Date(form.startDate + "T00:00:00").toISOString()
+        );
   
-        startDate: form.startDate
-          ? new Date(form.startDate + "T00:00:00").toISOString()
-          : null,
+      if (form.endDate)
+        formData.append(
+          "EndDate",
+          new Date(form.endDate + "T00:00:00").toISOString()
+        );
   
-        endDate: form.endDate
-          ? new Date(form.endDate + "T00:00:00").toISOString()
-          : null,
+      formData.append("PremiumNet", String(form.premiumNet));
+      formData.append("PremiumGross", String(form.premiumGross));
+      formData.append("PaymentDone", String(form.paymentDone));
   
-        premiumNet: Number(form.premiumNet) || 0,
-        premiumGross: Number(form.premiumGross) || 0,
+      if (form.paymentMode)
+        formData.append("PaymentMode", form.paymentMode);
   
-        paymentMode: form.paymentMode?.trim() || undefined,
+      if (form.paymentDueDate && !form.paymentDone)
+        formData.append(
+          "PaymentDueDate",
+          new Date(form.paymentDueDate + "T00:00:00").toISOString()
+        );
   
-        paymentDueDate:
-          !form.paymentDone && form.paymentDueDate
-            ? new Date(form.paymentDueDate + "T00:00:00").toISOString()
-            : null,
+      if (form.renewalDate)
+        formData.append(
+          "RenewalDate",
+          new Date(form.renewalDate + "T00:00:00").toISOString()
+        );
   
-        renewalDate: form.renewalDate
-          ? new Date(form.renewalDate + "T00:00:00").toISOString()
-          : null,
+      if (form.brokerCode)
+        formData.append("BrokerCode", form.brokerCode);
   
-        brokerCode: form.brokerCode?.trim() || undefined,
-        policyCode: form.policyCode?.trim() || undefined,
+      if (form.policyCode)
+        formData.append("PolicyCode", form.policyCode);
   
-        paymentDone: Boolean(form.paymentDone),
+      // ✅ append files properly
+      files.forEach((file) => {
+        formData.append("PolicyDocuments", file);
+      });
   
-        policyDocuments: Array.isArray(base64Files) ? base64Files : [],
-      };
+      await mutateAsync(formData);
   
-      await mutateAsync(payload);
       toast.success("Policy saved successfully");
       onClose();
       onSuccess();
@@ -268,6 +308,7 @@ const PolicyUpsertSheet = ({
       toast.error(error?.response?.data?.message || "Something went wrong");
     }
   };
+  
   
   
 
@@ -367,7 +408,7 @@ const PolicyUpsertSheet = ({
                 required
                 value={form.policyStatusId}
                 error={errors.policyStatusId}
-                options={policyStatuses}   // ✅ now always an array
+                options={policyStatuses}   
                 valueKey="policyStatusId"
                 labelKey="statusName"
                 onChange={(v) =>
@@ -517,80 +558,109 @@ const PolicyUpsertSheet = ({
                   </label>
 
                   <div className="space-y-2 mt-2">
-                    {existingDocuments.map((file) => {
-                      const documentId = file.split("_")[0];
+                  {existingDocuments.map((file) => (
+                    <div
+                      key={file.savedFileName}
+                      className="flex justify-between items-center border rounded px-3 py-2 text-sm"
+                    >
+                      <span className="truncate">{file.fileName}</span>
 
-                      return (
-                        <div
-                          key={file}
-                          className="flex justify-between items-center border rounded px-3 py-2 text-sm"
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() =>
+                            preview(policy.policyId, file.savedFileName)
+                          }
+                          className="p-1 hover:bg-gray-100 rounded"
                         >
-                          <span className="truncate flex-1">{file}</span>
+                          <Eye size={16} />
+                        </button>
 
-                          <div className="flex gap-2 ml-2">
-                            <button
-                              onClick={() => preview(policy.policyId, documentId)}
-                              className="p-1 hover:bg-gray-100 rounded"
-                              title="Preview"
-                            >
-                              <Eye size={16} />
-                            </button>
+                        <button
+                          onClick={() =>
+                            download(
+                              policy.policyId,
+                              file.savedFileName,
+                              file.fileName
+                            )
+                          }                          
+                          className="p-1 hover:bg-gray-100 rounded"
+                        >
+                          <Download size={16} />
+                        </button>
 
-                            <button
-                              onClick={() => download(policy.policyId, documentId)}
-                              className="p-1 hover:bg-gray-100 rounded"
-                              title="Download"
-                            >
-                              <Download size={16} />
-                            </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm("Delete this document?")) return;
 
-                            <button
-                              onClick={async () => {
-                                if (!confirm("Delete this document?")) return;
-                                try {
-                                  await remove(policy.policyId, documentId);
-                                } catch {
-                                  toast.error("Failed to delete document");
-                                }
-                              }}
-                              className="p-1 hover:bg-red-100 text-red-600 rounded"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                            try {
+                              await remove(policy.policyId, file.savedFileName);
+
+                              setExistingDocuments((prev) =>
+                                prev.filter(
+                                  (f) => f.savedFileName !== file.savedFileName
+                                )
+                              );
+                            } catch {
+                              toast.error("Failed to delete document");
+                            }
+                          }}
+                          className="p-1 hover:bg-red-100 text-red-600 rounded"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                   </div>
                 </div>
               )}
 
-              {/* POLICY DOCUMENT UPLOAD  */}
-              <input
+              {/* POLICY DOCUMENT UPLOAD */}
+              <div className="mt-4">
+                <label className="text-sm font-medium mb-1 block">
+                  Add Policy Documents
+                </label>
+
+                <div className="flex items-center gap-3">
+                  <label
+                    htmlFor="policy-upload"
+                    className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm"
+                  >
+                    Choose Files
+                  </label>
+
+                  <span className="text-sm text-gray-500">
+                    {files.length > 0
+                      ? files.map((f) => f.name).join(", ")
+                      : "No file chosen"}
+                  </span>
+                </div>
+
+                <input
+                  id="policy-upload"
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
                   disabled={isLoading}
-                  onChange={async (e) => {
-                    const selectedFiles = e.target.files
-                      ? Array.from(e.target.files)
-                      : [];
-
-                    setFiles(selectedFiles); // only for UI
-
-                    const base64List = await Promise.all(
-                      selectedFiles.map((file) => fileToBase64(file))
-                    );
-
-                    console.log("Base64 Files 👉", base64List);
-
-                    setBase64Files(base64List);   // ✅ store base64
-                  }}
-                  className="block mt-1 text-sm"
+                  onChange={(e) => {
+                    if (!e.target.files) return;
+                  
+                    const newFiles = Array.from(e.target.files);
+                  
+                    setFiles((prev) => {
+                      const combined = [...prev, ...newFiles];
+                  
+                      return combined.filter(
+                        (file, index, self) =>
+                          index === self.findIndex((f) => f.name === file.name)
+                      );
+                    });
+                  
+                    e.target.value = ""; 
+                  }}                  
                 />
-
-
+              </div>
             </div>
           )}
         </div>

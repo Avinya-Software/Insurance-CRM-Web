@@ -68,3 +68,34 @@ export interface FollowUp {
   nextFollowUpDate: string;
   createdAt: string;
 }
+
+export interface LeadDetails {
+  leadId: string;
+  leadNo: string;
+  fullName: string;
+  email: string | null;
+  mobile: string | null;
+  address: string | null;
+
+  leadStatusId: number;
+  leadStatusName: string;
+
+  leadSourceId: number;
+  leadSourceName: string;
+  leadSourceDescription: string | null;
+
+  isConverted: boolean;
+  notes: string | null;
+
+  createdAt: string;
+  updatedAt: string | null;
+
+  followUps: {
+    followUpId: string;
+    nextFollowUpDate: string;
+    createdAt: string;
+    remark: string | null;
+    status: number;
+    statusName: string;
+  }[];
+}
