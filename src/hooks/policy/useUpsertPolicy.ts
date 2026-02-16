@@ -5,9 +5,12 @@ export const useUpsertPolicy = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: UpsertPolicyPayload) => upsertPolicyApi(payload),
+    mutationFn: (formData: FormData) =>
+      upsertPolicyApi(formData),
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["policies"] });
     },
   });
 };
+

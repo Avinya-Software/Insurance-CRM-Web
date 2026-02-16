@@ -3,8 +3,12 @@ import api from "./axios";
 
 /*   UPSERT POLICY   */
 
-export const upsertPolicyApi = async (payload: UpsertPolicyPayload) => {
-  const res = await api.post("/policy/upsert", payload); // ✅ JSON body
+export const upsertPolicyApi = async (formData: FormData) => {
+  const res = await api.post("/policy/upsert", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
   return res.data;
 };
 
