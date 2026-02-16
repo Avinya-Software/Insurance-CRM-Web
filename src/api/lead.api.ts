@@ -67,14 +67,14 @@ export const updateLeadStatusApi = async (
   statusId: number,
   notes?: string
 ) => {
-  const res = await api.patch(
-    `/Lead/${leadId}/status/${statusId}`,
-    null,
-    {
-      params: notes ? { notes } : undefined,
-    }
-  );
+  const payload: any = {
+    LeadId: leadId,
+    LeadStatusId: statusId,
+  };
 
+  if (notes) payload.Notes = notes;
+
+  const res = await api.post("/Lead", payload); 
   return res.data;
 };
 
