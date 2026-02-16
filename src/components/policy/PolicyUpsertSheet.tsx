@@ -408,7 +408,7 @@ const { preview, download, remove } = usePolicyDocumentActions(
                 required
                 value={form.policyStatusId}
                 error={errors.policyStatusId}
-                options={policyStatuses}   // ✅ now always an array
+                options={policyStatuses}   
                 valueKey="policyStatusId"
                 labelKey="statusName"
                 onChange={(v) =>
