@@ -63,7 +63,8 @@ const PolicyTable = ({
   const { data: statuses = [] } = useQuery({
     queryKey: ["policy-statuses"],
     queryFn: getPolicyStatusesDropdownApi,
-  });
+  });  
+  
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -225,7 +226,10 @@ const PolicyTable = ({
 
           <MenuItem
             label="Change Status"
-            onClick={() => setShowStatusMenu((p) => !p)}
+            onClick={() => {
+              console.log("clicked");
+              setShowStatusMenu((p) => !p);
+            }}
           />
 
           <MenuItem

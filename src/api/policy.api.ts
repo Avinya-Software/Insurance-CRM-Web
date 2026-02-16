@@ -40,10 +40,8 @@ export const getPolicyTypesDropdownApi = async () => {
 };
 
 export const getPolicyStatusesDropdownApi = async () => {
-  const res = await api.get<{ id: number; name: string }[]>(
-    "/policy/policy-statuses-dropdown"
-  );
-  return res.data;
+  const res = await api.get("/policy/policy-statuses-dropdown");
+  return res.data.data;
 };
 
 /*   POLICY DOCUMENT PREVIEW   */
@@ -110,10 +108,11 @@ export const updatePolicyStatusApi = async (
   policyId: string,
   statusId: number
 ) => {
-  const res = await api.patch(
-    `/policy/${policyId}/status/${statusId}`
-  );
-  return res.data;
+  const formData = new FormData();
+  formData.append("PolicyId", policyId);
+  formData.append("PolicyStatusId", statusId.toString());
+
+  const res = await upsertPolicyApi(formData);
+  return res;
 };
-export { UpsertPolicyPayload };
 
