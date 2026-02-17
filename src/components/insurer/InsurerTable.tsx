@@ -77,6 +77,7 @@ const InsurerTable = ({
             <Th>Short Code</Th>
             <Th>Portal</Th>
             <Th>Username</Th>
+            <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
@@ -105,7 +106,7 @@ const InsurerTable = ({
                   <Td>{i.shortCode}</Td>
                   <Td>{i.portalUrl}</Td>
                   <Td>{i.portalUsername}</Td>
-
+                  <Td>{new Date(i.createdAt).toLocaleDateString()}</Td>
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, i)}

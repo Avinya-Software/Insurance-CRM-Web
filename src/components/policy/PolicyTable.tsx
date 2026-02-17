@@ -137,12 +137,13 @@ const PolicyTable = ({
             <Th>End</Th>
             <Th>Net Premium</Th>
             <Th>Gross Premium</Th>
+            <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
         {loading ? (
-          <TableSkeleton rows={6} columns={10} />
+          <TableSkeleton rows={6} columns={12} />
         ) : (
           <tbody>
             {data.length === 0 ? (
@@ -189,7 +190,7 @@ const PolicyTable = ({
                   <Td>{p.endDate?.split("T")[0]}</Td>
                   <Td>{p.premiumNet}</Td>
                   <Td>{p.premiumGross}</Td>
-
+                  <Td>{new Date(p.createdAt).toLocaleDateString()}</Td>
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, p)}

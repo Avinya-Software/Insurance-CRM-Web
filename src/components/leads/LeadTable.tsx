@@ -156,7 +156,7 @@ const LeadTable = ({
             <Th>Mobile</Th>
             <Th>Status</Th>
             <Th>Source</Th>
-            <Th>Created</Th>
+            <Th>Created Date</Th>
             <Th className="text-left">Actions</Th>
           </tr>
         </thead>

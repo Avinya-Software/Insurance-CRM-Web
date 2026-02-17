@@ -62,7 +62,7 @@ export interface Policy {
   brokerCode?: string;
   policyCode?: string;
   paymentDone: boolean;
-
+  createdAt: string;
   policyDocuments?: {
     fileName: string;
     url: string;
