@@ -30,17 +30,21 @@ const getUserFromToken = () => {
 
     return {
       fullName: decoded.FullName,
-      email: decoded.email,
-      role:
-        decoded[
-          "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-        ],
+      email: decoded.email || "",
+      role: decoded.Role,
     };
   } catch {
     return null;
   }
 };
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Sidebar component, displays a collapsible sidebar with navigation links and user information.
+ * @returns {JSX.Element} A JSX element representing the Sidebar component.
+ */
+
+/*******  71c90cbc-b468-4491-9b2f-c8552fd1dac0  *******/
 const Sidebar = () => {
   const user = getUserFromToken();
   const navigate = useNavigate();

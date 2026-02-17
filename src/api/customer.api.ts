@@ -1,40 +1,36 @@
 import api from "./axios";
 import type {
   CreateCustomerRequest,
+  CustomerDetails,
+  CustomerDetailsResponse,
   CustomerResponse,
 } from "../interfaces/customer.interface";
 
 /*   CREATE / UPDATE CUSTOMER   */
 
-export const createCustomerApi = async (
-  data: CreateCustomerRequest
-) => {
+export const createCustomerApi = async (data: CreateCustomerRequest) => {
   const formData = new FormData();
 
   Object.entries(data).forEach(([key, value]) => {
     if (value === undefined || value === null) return;
 
     if (key === "kycFiles" && Array.isArray(value)) {
-      value.forEach((file) => {
-        formData.append("kycFiles", file);
-      });
+      value.forEach((file) => formData.append("kycFiles", file));
     } else {
-      formData.append(key, value as string);
+      // Ensure non-string types are converted properly
+      formData.append(key, typeof value === "string" ? value : JSON.stringify(value));
     }
   });
 
-  const res = await api.post<CustomerResponse>(
-    "/Customer",
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
+  const res = await api.post<CustomerResponse>("/Customer", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
   return res.data;
 };
+
 
 /*   GET CUSTOMERS (PAGINATED)   */
 
@@ -57,21 +53,18 @@ export const getCustomerDropdownApi = async () => {
 
 /*   KYC PREVIEW   */
 
-export const previewKycFileApi = (
-  customerId: string,
-  documentId: string
-) => {
-  return `${api.defaults.baseURL}/Customer/${customerId}/kyc/${documentId}/preview`;
+/* KYC PREVIEW */
+export const previewKycFileApi = (fileUrl: string) => {
+  console.log("Preview KYC file URL:", fileUrl);
+  return fileUrl;
 };
 
-/*   KYC DOWNLOAD   */
-
-export const downloadKycFileApi = (
-  customerId: string,
-  documentId: string
-) => {
-  return `${api.defaults.baseURL}/Customer/${customerId}/kyc/${documentId}/download`;
+/* KYC DOWNLOAD */
+export const downloadKycFileApi = (fileUrl: string) => {
+  console.log("Download KYC file URL:", fileUrl);
+  return fileUrl;
 };
+
 
 /*   KYC DELETE   */
 
@@ -94,4 +87,10 @@ export const deleteCustomerApi = async (
     `/Customer/${customerId}`
   );
   return res.data;
+};
+
+
+export const getCustomerDetailsApi = async (customerId: string): Promise<CustomerDetails> => {
+  const res = await api.get<CustomerDetailsResponse>(`/Customer/${customerId}`);
+  return res.data.data;
 };

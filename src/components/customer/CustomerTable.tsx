@@ -4,6 +4,7 @@ import type { Customer } from "../../interfaces/customer.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteCustomer } from "../../hooks/customer/useDeleteCustomer";
 import TableSkeleton from "../common/TableSkeleton";
+import { CustomerDetails } from "./CustomerDetails";
 
 const DROPDOWN_HEIGHT = 120;
 const DROPDOWN_WIDTH = 180;
@@ -18,6 +19,14 @@ interface CustomerTableProps {
   onRowDoubleClick?: (customer: Customer) => void;
 }
 
+const kycStatusStyles: Record<string, string> = {
+  Pending: "bg-slate-100 text-slate-700 border-slate-200",
+  "Under Review": "bg-amber-100 text-amber-700 border-amber-200",
+  Verified: "bg-green-100 text-green-700 border-green-200",
+  Rejected: "bg-red-100 text-red-700 border-red-200",
+};
+
+
 let clickTimer: any = null;
 
 const CustomerTable = ({
@@ -30,7 +39,8 @@ const CustomerTable = ({
 }: CustomerTableProps) => {
   const [openCustomer, setOpenCustomer] =
     useState<Customer | null>(null);
-
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] =
     useState<Customer | null>(null);
 
@@ -105,6 +115,13 @@ const CustomerTable = ({
     });
   };
 
+  const handleViewDetails = () => {
+    if (!openCustomer) return;
+    setSelectedCustomerId(openCustomer.customerId);
+    setShowDetails(true);
+    setOpenCustomer(null);
+  };
+
   /*   UI   */
 
   return (
@@ -116,12 +133,14 @@ const CustomerTable = ({
             <Th>Email</Th>
             <Th>Mobile</Th>
             <Th>Address</Th>
+            <Th>Kyc Status</Th>
+            <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
         {loading ? (
-          <TableSkeleton rows={6} columns={5} />
+          <TableSkeleton rows={6} columns={7} />
         ) : (
           <tbody>
             {data.length === 0 ? (
@@ -144,7 +163,20 @@ const CustomerTable = ({
                   <Td>{c.email || "-"}</Td>
                   <Td>{c.primaryMobile}</Td>
                   <Td>{c.address || "-"}</Td>
-
+                  <Td>
+                    {c.kycStatus ? (
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                          kycStatusStyles[c.kycStatus]
+                        }`}
+                      >
+                        {c.kycStatus}
+                      </span>
+                    ) : (
+                      "-"
+                    )}
+                  </Td>
+                  <Td>{new Date(c.createdAt).toLocaleDateString()}</Td>
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, c)}
@@ -170,7 +202,7 @@ const CustomerTable = ({
         >
           <MenuItem label="Edit Customer" onClick={handleEdit} />
           <MenuItem label="Add Policy" onClick={handleAddPolicy} />
-
+          <MenuItem label="View Details" onClick={handleViewDetails} />
           <MenuItem
             label="Delete Customer"
             danger
@@ -221,6 +253,14 @@ const CustomerTable = ({
           </div>
         </div>
       )}
+
+      {showDetails && selectedCustomerId && (
+        <CustomerDetails
+          customerId={selectedCustomerId}
+          onClose={() => setShowDetails(false)}
+        />
+      )}
+
     </div>
   );
 };
