@@ -22,15 +22,16 @@ const RenewalUpsertSheet = ({
   renewal,
   onSuccess,
 }: Props) => {
-  /*   LOCK BODY SCROLL   */
+
+  const isEditMode = !!renewal?.renewalId;
+  const isFromPolicyMode = !!renewal?.policyId && !renewal?.renewalId;
+
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
     return () => {
       document.body.style.overflow = "unset";
     };
   }, [open]);
-
-  /*   FORM STATE   */
 
   const initialForm = {
     renewalId: null as string | null,
@@ -39,115 +40,97 @@ const RenewalUpsertSheet = ({
     renewalStatusId: 0,
     renewalDate: "",
     renewalPremium: 0,
-    reminderDaysInput: "90,60,30,15,7,1", // 👈 USER INPUT
+    reminderDaysInput: "90,60,30,15,7,1",
   };
 
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const isFromPolicy = !!renewal?.policyId;
- 
-  /*   API HOOKS   */
-
   const { mutateAsync, isPending } = useUpsertRenewal();
   const { data: customers, isLoading: cLoading } = useCustomerDropdown();
-const shouldLoadPolicies = !!form.customerId;
 
-const { data: policies } = usePolicyDropdown(
-  shouldLoadPolicies ? form.customerId : undefined
-);
+  const customerIdForPolicies =
+  isFromPolicyMode
+    ? renewal?.customerId
+    : form.customerId;
+
+  const { data: policies = [] } = usePolicyDropdown(
+      customerIdForPolicies || undefined
+  );
+    
   const { data: statuses, isLoading: sLoading } = useRenewalStatuses();
 
-  const loadingDropdowns = cLoading  || sLoading;
-  // const selectedCustomer =
-  // customers?.find(c => c.customerId === form.customerId);
-
-  /*   PREFILL   */
+  const loadingDropdowns = cLoading || sLoading;
 
   useEffect(() => {
-  if (!open) {
+    if (!open) {
+      setForm(initialForm);
+      setErrors({});
+      return;
+    }
+    if (isEditMode) {
+      setForm({
+        renewalId: renewal.renewalId,
+        customerId: renewal.customerId ?? "",
+        policyId: renewal.policyId ?? "",
+        renewalStatusId: renewal.renewalStatusId ?? 0,
+        renewalDate: renewal.renewalDate
+          ? renewal.renewalDate.split("T")[0]
+          : "",
+        renewalPremium: renewal.renewalPremium ?? 0,
+        reminderDaysInput: renewal.reminderDatesJson
+          ? JSON.parse(renewal.reminderDatesJson).join(",")
+          : "90,60,30,15,7,1",
+      });
+      return;
+    }
+
+    if (isFromPolicyMode) {
+      setForm({
+        ...initialForm,
+        customerId: renewal.customerId ?? "",
+        policyId: renewal.policyId ?? "",
+        renewalDate: renewal.renewalDate
+          ? renewal.renewalDate.split("T")[0]
+          : "",
+        renewalPremium: renewal.premiumGross ?? 0,
+      });
+      return;
+    }
+
     setForm(initialForm);
-    setErrors({});
-    return;
-  }
 
-  // Prefill ONLY when editing / coming from policy
-  if (renewal && statuses?.length) {
-    const mappedStatusId =
-      statuses.find(
-        (s: any) =>
-          s.name?.toLowerCase() ===
-          renewal.status?.toLowerCase()
-      )?.id ?? 0;
+  }, [open, renewal]);
 
-    setForm((prev) => ({
-      ...prev,
-      renewalId: renewal.renewalId ?? null,
-      customerId: renewal.customerId ?? "",
-      policyId: renewal.policyId ?? "",
-      renewalStatusId: mappedStatusId,
-      renewalDate: renewal.renewalDate
-        ? renewal.renewalDate.split("T")[0]
-        : "",
-      renewalPremium: renewal.renewalPremium ?? 0,
-      reminderDaysInput: renewal.reminderDatesJson
-        ? JSON.parse(renewal.reminderDatesJson).join(",")
-        : "90,60,30,15,7,1",
-    }));
-  }
-}, [open, renewal, statuses]);
-
-  /*   VALIDATION   */
+  useEffect(() => {
+    if (
+      isFromPolicyMode &&
+      policies.length &&
+      renewal?.policyId
+    ) {
+      const selectedPolicy = policies.find(
+        (p) => p.policyId === renewal.policyId
+      );
+  
+      setForm((prev) => ({
+        ...prev,
+        policyId: renewal.policyId,
+        renewalDate: selectedPolicy?.renewalDate
+          ? selectedPolicy.renewalDate.split("T")[0]
+          : "",
+        renewalPremium: selectedPolicy?.premiumGross ?? 0,
+      }));
+    }
+  }, [policies, isFromPolicyMode, renewal]);  
 
   const parseReminderDays = (): number[] | null => {
     const raw = form.reminderDaysInput;
+    if (!raw.trim()) return null;
 
-    if (!raw.trim()) {
-      setErrors((e) => ({
-        ...e,
-        reminderDaysInput: "Reminder days are required",
-      }));
-      return null;
-    }
+    const numbers = raw.split(",").map((x) => Number(x.trim()));
+    if (numbers.some((n) => isNaN(n) || n <= 0)) return null;
 
-    const parts = raw.split(",").map((x) => x.trim());
-
-    if (parts.some((x) => x === "")) {
-      setErrors((e) => ({
-        ...e,
-        reminderDaysInput: "Empty values are not allowed",
-      }));
-      return null;
-    }
-
-    const numbers = parts.map(Number);
-
-    if (numbers.some((n) => isNaN(n))) {
-      setErrors((e) => ({
-        ...e,
-        reminderDaysInput: "Only numbers are allowed",
-      }));
-      return null;
-    }
-
-    if (numbers.some((n) => n <= 0)) {
-      setErrors((e) => ({
-        ...e,
-        reminderDaysInput: "Days must be greater than 0",
-      }));
-      return null;
-    }
-
-    const unique = new Set(numbers);
-    if (unique.size !== numbers.length) {
-      setErrors((e) => ({
-        ...e,
-        reminderDaysInput: "Duplicate values are not allowed",
-      }));
-      return null;
-    }
-
-    return numbers.sort((a, b) => b - a);
+    return [...new Set(numbers)].sort((a, b) => b - a);
   };
 
   const validate = () => {
@@ -155,31 +138,22 @@ const { data: policies } = usePolicyDropdown(
 
     if (!form.customerId) e.customerId = "Customer is required";
     if (!form.policyId) e.policyId = "Policy is required";
-    if (!form.renewalStatusId)
-      e.renewalStatusId = "Status is required";
-    if (!form.renewalDate)
-      e.renewalDate = "Renewal date is required";
+    if (!form.renewalStatusId) e.renewalStatusId = "Status is required";
+    if (!form.renewalDate) e.renewalDate = "Renewal date is required";
 
     setErrors(e);
 
-    if (Object.keys(e).length) {
-      toast.error("Please fix validation errors");
-      return false;
-    }
-
-    const reminderDays = parseReminderDays();
-    if (!reminderDays) {
-      toast.error("Invalid reminder days");
-      return false;
-    }
+    if (Object.keys(e).length) return false;
+    if (!parseReminderDays()) return false;
 
     return true;
   };
 
-  /*   SAVE   */
-
   const handleSave = async () => {
-    if (!validate()) return;
+    if (!validate()) {
+      toast.error("Please fix validation errors");
+      return;
+    }
 
     const reminderDays = parseReminderDays();
     if (!reminderDays) return;
@@ -192,12 +166,12 @@ const { data: policies } = usePolicyDropdown(
         renewalStatusId: form.renewalStatusId,
         renewalDate: form.renewalDate,
         renewalPremium: form.renewalPremium,
-        reminderDatesJson: JSON.stringify(reminderDays), // ✅ FINAL JSON
+        reminderDatesJson: JSON.stringify(reminderDays),
       });
 
-      // toast.success("Renewal saved successfully");
       onClose();
       onSuccess();
+
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "Something went wrong"
@@ -207,8 +181,6 @@ const { data: policies } = usePolicyDropdown(
 
   if (!open) return null;
 
-  /*  UI  */
-
   return (
     <>
       <div
@@ -217,9 +189,10 @@ const { data: policies } = usePolicyDropdown(
       />
 
       <div className="fixed top-0 right-0 w-[420px] h-screen bg-white z-[70] shadow-2xl flex flex-col">
+
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-lg">
-            {renewal?.renewalId ? "Edit Renewal" : "Add Renewal"}
+            {isEditMode ? "Edit Renewal" : "Add Renewal"}
           </h2>
           <button onClick={onClose} disabled={isPending}>
             <X />
@@ -231,7 +204,9 @@ const { data: policies } = usePolicyDropdown(
             <Spinner />
           ) : (
             <div className="space-y-4">
-              <div className={isFromPolicy ? "opacity-50 pointer-events-none" : ""}>
+
+              {/* CUSTOMER */}
+              <div className={isFromPolicyMode ? "opacity-50 pointer-events-none" : ""}>
                 <SearchableComboBox
                   label="Customer"
                   required
@@ -242,27 +217,25 @@ const { data: policies } = usePolicyDropdown(
                   value={form.customerId}
                   error={errors.customerId}
                   placeholder="Select customer"
-                  onSelect={(item) => {
-                    setForm({
-                      ...form,
-                      customerId: item?.value || "",
-                    });
-                  }}
+                  onSelect={(item) =>
+                    setForm({ ...form, customerId: item?.value || "" })
+                  }
                 />
               </div>
 
+              {/* POLICY */}
               <Select
                 label="Policy"
                 required
                 value={form.policyId}
                 error={errors.policyId}
-                options={policies || []}
-                valueKey="id"
+                options={policies}
+                valueKey="policyId"
                 labelKey="policyNumber"
-                disabled={isFromPolicy}
+                disabled={isFromPolicyMode}
                 onChange={(v) => {
-                  const selectedPolicy = policies?.find(
-                    (p: any) => p.id === v
+                  const selectedPolicy = policies.find(
+                    (p) => p.policyId === v
                   );
 
                   setForm({
@@ -276,6 +249,7 @@ const { data: policies } = usePolicyDropdown(
                 }}
               />
 
+              {/* STATUS */}
               <Select
                 label="Renewal Status"
                 required
@@ -285,10 +259,7 @@ const { data: policies } = usePolicyDropdown(
                 valueKey="id"
                 labelKey="name"
                 onChange={(v) =>
-                  setForm({
-                    ...form,
-                    renewalStatusId: Number(v),
-                  })
+                  setForm({ ...form, renewalStatusId: Number(v) })
                 }
               />
 
@@ -322,6 +293,7 @@ const { data: policies } = usePolicyDropdown(
                   setForm({ ...form, reminderDaysInput: v })
                 }
               />
+
             </div>
           )}
         </div>
@@ -337,8 +309,7 @@ const { data: policies } = usePolicyDropdown(
 
           <button
             disabled={isPending || loadingDropdowns}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2
-                      flex items-center justify-center gap-2"
+            className="flex-1 bg-blue-600 text-white rounded-lg py-2 flex items-center justify-center gap-2"
             onClick={handleSave}
           >
             {isPending && <Spinner />}
@@ -351,8 +322,6 @@ const { data: policies } = usePolicyDropdown(
 };
 
 export default RenewalUpsertSheet;
-
-/*  HELPERS  */
 
 const Input = ({
   label,
@@ -381,35 +350,42 @@ const Input = ({
 const Select = ({
   label,
   required,
-  options,
+  options = [],
   value,
   onChange,
   disabled = false,
   valueKey = "id",
   labelKey = "name",
   error,
-}: any) => (
-  <div>
-    <label className="text-sm font-medium">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <select
-      disabled={disabled}
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      } disabled:bg-gray-100`}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">Select {label}</option>
-      {options?.map((o: any) => (
-        <option key={o[valueKey]} value={o[valueKey]}>
-          {o[labelKey]}
-        </option>
-      ))}
-    </select>
-    {error && (
-      <p className="text-xs text-red-600 mt-1">{error}</p>
-    )}
-  </div>
-);
+}: any) => {
+  const safeOptions = Array.isArray(options) ? options : [];
+
+  return (
+    <div>
+      <label className="text-sm font-medium">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+
+      <select
+        disabled={disabled}
+        className={`input w-full ${
+          error ? "border-red-500" : ""
+        } disabled:bg-gray-100`}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">Select {label}</option>
+
+        {safeOptions.map((o: any) => (
+          <option key={o[valueKey]} value={o[valueKey]}>
+            {o[labelKey]}
+          </option>
+        ))}
+      </select>
+
+      {error && (
+        <p className="text-xs text-red-600 mt-1">{error}</p>
+      )}
+    </div>
+  );
+};

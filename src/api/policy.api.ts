@@ -95,15 +95,16 @@ export interface PolicyDropdownItem {
 export const getPolicyDropdownApi = async (
   customerId?: string
 ) => {
-  const res = await api.get<PolicyDropdownItem[]>(
+  const res = await api.get(
     "/policy/policy-dropdown",
     {
       params: customerId ? { customerId } : {},
     }
   );
 
-  return res.data;
+  return res.data?.data || []; 
 };
+
 export const updatePolicyStatusApi = async (
   policyId: string,
   statusId: number
