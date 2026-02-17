@@ -28,8 +28,7 @@ const Renewals = () => {
       renewalStatusId,
     });
 
-    const { data: statusResponse } = useRenewalStatuses();
-    const statuses = statusResponse?.data || [];    
+    const { data: statuses = [] } = useRenewalStatuses();   
 
     const renewals = data?.data?.data || [];
     const totalRecords = data?.data?.totalCount || 0;    
@@ -97,15 +96,18 @@ const Renewals = () => {
                 className="h-10 border rounded px-3 text-sm"
                 value={renewalStatusId ?? ""}
                 onChange={(e) => {
+                  const value = e.target.value;
+
                   setRenewalStatusId(
-                    e.target.value ? Number(e.target.value) : undefined
+                    value ? Number(value) : undefined
                   );
+
                   setPageNumber(1);
                 }}
               >
                 <option value="">All Status</option>
 
-                {statuses.map((s: any) => (
+                {statuses.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
