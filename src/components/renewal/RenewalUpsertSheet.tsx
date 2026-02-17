@@ -59,6 +59,8 @@ const { data: policies } = usePolicyDropdown(
   const { data: statuses, isLoading: sLoading } = useRenewalStatuses();
 
   const loadingDropdowns = cLoading  || sLoading;
+
+  
   // const selectedCustomer =
   // customers?.find(c => c.customerId === form.customerId);
 
@@ -72,7 +74,7 @@ const { data: policies } = usePolicyDropdown(
   }
 
   // Prefill ONLY when editing / coming from policy
-  if (renewal && statuses?.length) {
+  if (renewal && Array.isArray(statuses) && statuses.length){
     const mappedStatusId =
       statuses.find(
         (s: any) =>
@@ -261,9 +263,9 @@ const { data: policies } = usePolicyDropdown(
                 labelKey="policyNumber"
                 disabled={isFromPolicy}
                 onChange={(v) => {
-                  const selectedPolicy = policies?.find(
-                    (p: any) => p.id === v
-                  );
+                  const selectedPolicy = Array.isArray(policies)
+                    ? policies.find((p: any) => p.id === v)
+                    : undefined;
 
                   setForm({
                     ...form,
@@ -381,35 +383,42 @@ const Input = ({
 const Select = ({
   label,
   required,
-  options,
+  options = [],
   value,
   onChange,
   disabled = false,
   valueKey = "id",
   labelKey = "name",
   error,
-}: any) => (
-  <div>
-    <label className="text-sm font-medium">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <select
-      disabled={disabled}
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      } disabled:bg-gray-100`}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">Select {label}</option>
-      {options?.map((o: any) => (
-        <option key={o[valueKey]} value={o[valueKey]}>
-          {o[labelKey]}
-        </option>
-      ))}
-    </select>
-    {error && (
-      <p className="text-xs text-red-600 mt-1">{error}</p>
-    )}
-  </div>
-);
+}: any) => {
+  const safeOptions = Array.isArray(options) ? options : [];
+
+  return (
+    <div>
+      <label className="text-sm font-medium">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+
+      <select
+        disabled={disabled}
+        className={`input w-full ${
+          error ? "border-red-500" : ""
+        } disabled:bg-gray-100`}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">Select {label}</option>
+
+        {safeOptions.map((o: any) => (
+          <option key={o[valueKey]} value={o[valueKey]}>
+            {o[labelKey]}
+          </option>
+        ))}
+      </select>
+
+      {error && (
+        <p className="text-xs text-red-600 mt-1">{error}</p>
+      )}
+    </div>
+  );
+};
