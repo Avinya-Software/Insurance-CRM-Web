@@ -15,8 +15,8 @@ export interface Insurer {
 }
 
 export interface InsurerListResponse {
-  totalRecords: number;
-  pageNumber: number;
+  totalCount: number;
+  page: number;
   pageSize: number;
   totalPages: number;
   data: Insurer[];

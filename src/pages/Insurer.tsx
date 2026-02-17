@@ -1,46 +1,27 @@
 import { useEffect, useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
-
 import InsurerTable from "../components/insurer/InsurerTable";
 import InsurerUpsertSheet from "../components/insurer/InsurerUpsertSheet";
 import ProductUpsertSheet from "../components/product/ProductUpsertSheet";
 import Pagination from "../components/leads/Pagination";
-
-import { getInsurersApi } from "../api/insurer.api";
+import { useInsurers } from "../hooks/insurer/useInsurers";
 
 const Insurers = () => {
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize] = useState(10);
   const [search, setSearch] = useState("");
 
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-
   const [openInsurerSheet, setOpenInsurerSheet] = useState(false);
   const [openProductSheet, setOpenProductSheet] = useState(false);
   const [selectedInsurer, setSelectedInsurer] = useState<any | null>(null);
 
-  /*   FETCH DATA   */
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const res = await getInsurersApi(pageNumber, pageSize, search);
-      setData(res);
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message ||
-          "Failed to load insurers"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [pageNumber, search]);
-
+  const { data, isLoading, refetch } = useInsurers({
+    pageNumber,
+    pageSize,
+    search,
+  });
+    
+  
   /*   HANDLERS   */
 
   const handleAddInsurer = () => {
@@ -60,7 +41,7 @@ const Insurers = () => {
 
   const handleInsurerSuccess = () => {
     setOpenInsurerSheet(false);
-    loadData();
+    refetch();
   };
 
   const handleProductSuccess = () => {
@@ -84,7 +65,7 @@ const Insurers = () => {
                 Insurers
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-                {data?.totalRecords ?? 0} total insurers
+                {data?.totalCount ?? 0} total insurers
               </p>
             </div>
 
@@ -118,7 +99,7 @@ const Insurers = () => {
         {/*   TABLE   */}
         <InsurerTable
           data={data?.data || []}
-          loading={loading}
+          loading={isLoading}
           onEdit={handleEditInsurer}
           onAddProduct={handleAddProduct}
         />

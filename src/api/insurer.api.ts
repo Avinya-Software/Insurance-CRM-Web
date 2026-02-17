@@ -1,5 +1,5 @@
 // src/api/insurer.api.ts
-import { InsurerDropdown, InsurerDropdownResponse } from "../interfaces/insurer.interface";
+import { InsurerDropdown, InsurerDropdownResponse, InsurerListResponse } from "../interfaces/insurer.interface";
 import api from "./axios";
 
 /*   GET INSURERS (PAGINATED)   */
@@ -7,13 +7,15 @@ import api from "./axios";
 export const getInsurersApi = async (
   pageNumber: number,
   pageSize: number,
-  search: string
-) => {
+  search?: string
+): Promise<InsurerListResponse> => {
   const res = await api.get("/Insurer", {
     params: { pageNumber, pageSize, search },
   });
-  return res.data;
+
+  return res.data.data;
 };
+
 
 /*   CREATE / UPDATE INSURER   */
 
