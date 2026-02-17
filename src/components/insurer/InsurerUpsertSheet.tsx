@@ -108,12 +108,15 @@ const InsurerUpsertSheet = ({
     )
       e.portalUsername = "Invalid username";
 
-    if (!form.portalPassword)
-      e.portalPassword = "Password is required";
-    else if (
-      !regex.portalPassword.test(form.portalPassword)
-    )
-      e.portalPassword = "Minimum 6 characters";
+    if (!isEdit) {
+      if (!form.portalPassword)
+        e.portalPassword = "Password is required";
+      else if (!regex.portalPassword.test(form.portalPassword))
+        e.portalPassword = "Minimum 6 characters";
+    } else {
+      if (form.portalPassword && !regex.portalPassword.test(form.portalPassword))
+        e.portalPassword = "Minimum 6 characters";
+    }
 
     setErrors(e);
 
@@ -123,12 +126,10 @@ const InsurerUpsertSheet = ({
       });
       return false;
     }
-
     return true;
   };
 
   /*   PASSWORD   */
-
   const handleTogglePassword = async () => {
     if (!isEdit) return;
 
@@ -214,7 +215,7 @@ const InsurerUpsertSheet = ({
             }
           />
 
-          <TextArea
+          <Input
             label="Contact Details"
             value={form.contactDetails}
             error={errors.contactDetails}
