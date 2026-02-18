@@ -6,6 +6,8 @@ import { useUpdateClaimStage } from "../../hooks/claim/useUpdateClaimStage";
 import { useQuery } from "@tanstack/react-query";
 import { getClaimStagesApi } from "../../api/claim-master.api";
 import TableSkeleton from "../common/TableSkeleton";
+import type { Claim } from "../../interfaces/claim.interface";
+
 
 /*   BADGE STYLES   */
 
@@ -30,35 +32,6 @@ const claimStageStyles: Record<string, string> = {
 };
 
 /*   TYPES   */
-
-interface Claim {
-  claimId: string;
-  status: string;
-  claimAmount: number;
-  createdAt: string;
-
-  customer: {
-    fullName: string;
-    email: string;
-  };
-
-  policy: {
-    policyNumber: string;
-    policyStatus: string;
-  };
-
-  insurer: {
-    insurerName: string;
-  };
-
-  product: {
-    productName: string;
-  };
-
-  claimType: string;
-  claimStage: string;
-  claimHandler: string;
-}
 
 interface Props {
   data: Claim[];
@@ -196,20 +169,27 @@ const ClaimTable = ({
                   key={claim.claimId}
                   className="border-t hover:bg-slate-50"
                 >
+                  {/* CUSTOMER */}
                   <Td>
                     <div className="font-medium">
-                      {claim.customer.fullName}
+                      {claim.customer ?? "-"}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {claim.customer.email}
+                      {claim.customerEmail ?? "-"}
                     </div>
                   </Td>
 
-                  <Td>{claim.policy.policyNumber}</Td>
-                  <Td>{claim.policy.policyStatus}</Td>
-                  <Td>{claim.insurer.insurerName}</Td>
-                  <Td>{claim.product.productName}</Td>
+                  {/* POLICY */}
+                  <Td>{claim.policy ?? "-"}</Td>
 
+                  {/* POLICY STATUS (not available in API) */}
+                  <Td>-</Td>
+
+                  {/* INSURER (not available in API) */}
+                  <Td>-</Td>
+
+                  {/* PRODUCT (not available in API) */}
+                  <Td>-</Td>
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -217,10 +197,9 @@ const ClaimTable = ({
                         "bg-gray-100 text-gray-600 border-gray-200"
                       }`}
                     >
-                      {claim.claimType}
+                      {claim.claimType ?? "-"}
                     </span>
                   </Td>
-
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -228,25 +207,20 @@ const ClaimTable = ({
                         "bg-gray-100 text-gray-600 border-gray-200"
                       }`}
                     >
-                      {claim.claimStage}
+                      {claim.claimStage ?? "-"}
                     </span>
                   </Td>
-
-                  <Td>{claim.claimHandler}</Td>
+                  <Td>{claim.claimHandler ?? "-"}</Td>
                   <Td>₹ {claim.claimAmount}</Td>
-                  <Td>{claim.status}</Td>
+                  <Td>{claim.status ?? "-"}</Td>
 
                   <Td>
-                    {new Date(
-                      claim.createdAt
-                    ).toLocaleDateString()}
+                    {new Date(claim.createdAt).toLocaleDateString()}
                   </Td>
 
                   <Td className="text-left">
                     <button
-                      onClick={(e) =>
-                        openDropdown(e, claim)
-                      }
+                      onClick={(e) => openDropdown(e, claim)}
                       className="p-2 hover:bg-slate-200 rounded"
                     >
                       <MoreVertical size={16} />
@@ -256,6 +230,7 @@ const ClaimTable = ({
               ))
             )}
           </tbody>
+
         )}
       </table>
 
