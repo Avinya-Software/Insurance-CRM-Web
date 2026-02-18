@@ -60,15 +60,11 @@ const ProductUpsertSheet = ({
   useEffect(() => {
     if (!open) return;
 
-    if (product && categories) {
-      const matchedCategory = categories.find(
-        (c) => c.name === product.productCategory
-      );
-
+    if (product) {
       setForm({
         productId: product.productId ?? null,
         insurerId: product.insurerId ?? "",
-        productCategoryId: matchedCategory?.id ?? 0,
+        productCategoryId: product.productCategoryId ?? 0, 
         productName: product.productName ?? "",
         productCode: product.productCode ?? "",
         defaultReminderDays: product.defaultReminderDays ?? 0,
@@ -83,9 +79,7 @@ const ProductUpsertSheet = ({
     }
 
     setErrors({});
-  }, [open, product, categories, insurerId]);
-
-  /*   VALIDATION   */
+  }, [open, product, insurerId]);
 
   const validate = () => {
     const e: any = {};
