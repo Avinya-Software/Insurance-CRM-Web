@@ -85,7 +85,6 @@ const handleSubmit = async () => {
     const res = await mutateAsync({
       leadId,
       status: Number(leadFollowupStatusId),
-      followUpDate,
       nextFollowUpDate,
       remark,
     });
@@ -104,34 +103,6 @@ const handleSubmit = async () => {
 
   return (
     <div className="space-y-4">
-      {/* FOLLOW UP DATE */}
-      <div>
-        <label className="text-sm font-medium">
-          Follow Up Date <span className="text-red-500">*</span>
-        </label>
-
-        <div
-          onClick={() => followUpRef.current?.showPicker()}
-          className="cursor-pointer"
-        >
-          <input
-            ref={followUpRef}
-            type="datetime-local"
-            className={`input w-full ${
-              errors.followUpDate ? "border-red-500" : ""
-            }`}
-            value={followUpDate}
-            onChange={(e) => setFollowUpDate(e.target.value)}
-          />
-        </div>
-
-        {errors.followUpDate && (
-          <p className="text-xs text-red-600 mt-1">
-            {errors.followUpDate}
-          </p>
-        )}
-      </div>
-
       {/* NEXT FOLLOW UP DATE */}
       <div>
         <label className="text-sm font-medium">
