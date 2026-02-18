@@ -9,6 +9,7 @@ interface Props {
   onClose: () => void;
   leadId: string | null;
   leadName?: string;
+  onEditFollowUp: (followUp: LeadFollowUp) => void;
 }
 
 const LeadFollowUpBottomSheet = ({
@@ -16,6 +17,7 @@ const LeadFollowUpBottomSheet = ({
   onClose,
   leadId,
   leadName,
+  onEditFollowUp
 }: Props) => {
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -98,7 +100,7 @@ const LeadFollowUpBottomSheet = ({
                   >
                     {/* EDIT ICON - TOP RIGHT */}
                     <button
-                      onClick={() => console.log("Edit follow up:", followUp.followUpID)}
+                      onClick={() => onEditFollowUp(followUp)}
                       className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100"
                       title="Edit"
                     >
@@ -107,9 +109,9 @@ const LeadFollowUpBottomSheet = ({
 
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <p className="text-gray-600 font-medium">Follow Up Date</p>
+                        <p className="text-gray-600 font-medium">Follow Up Created Date</p>
                         <p className="mt-1">
-                          {new Date(followUp.createdDate).toLocaleString()}
+                          {new Date(followUp.updatedDate).toLocaleString()}
                         </p>
                       </div>
 
@@ -141,8 +143,7 @@ const LeadFollowUpBottomSheet = ({
                       </div>
                     </div>
                   </div>
-))}
-
+              ))}
             </div>
           )}
         </div>

@@ -5,9 +5,9 @@ import api from "./axios";
 export interface CreateFollowUpRequest {
   leadId: string;
   status: number;
-  followUpDate: string;
   nextFollowUpDate: string | null;
   remark: string;
+  followUpId?: string;
 }
 
 export const createFollowUpApi = async (
