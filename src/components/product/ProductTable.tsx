@@ -100,19 +100,20 @@ const ProductTable = ({
             <Th>Category</Th>
             <Th>Insurer</Th>
             <Th>Status</Th>
+            <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
         {/*  BODY  */}
         {loading ? (
-          <TableSkeleton rows={6} columns={6} />
+          <TableSkeleton rows={6} columns={7} />
         ) : (
           <tbody>
             {data.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="text-center py-12 text-slate-500"
                 >
                   No products found
@@ -131,7 +132,7 @@ const ProductTable = ({
                   >
                     <Td>{p.productName}</Td>
                     <Td>{p.productCode}</Td>
-                    <Td>{p.productCategory}</Td>
+                    <Td>{p.productCategoryName}</Td>
                     <Td>{insurerMap[p.insurerId] ?? "-"}</Td>
 
                     {/* 🔥 STATUS BADGE */}
@@ -144,6 +145,7 @@ const ProductTable = ({
                         {p.isActive ? "Active" : "Inactive"}
                       </span>
                     </Td>
+                    <Td>{new Date(p.createdAt).toLocaleDateString()}</Td>
 
                     <Td className="text-center">
                       <button

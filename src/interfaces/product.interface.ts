@@ -3,12 +3,13 @@ export interface Product {
   insurerId: string;
   insurerName?: string;
   productCategoryId: number;
-  productCategory?: string;
+  productCategoryName?: string;
   productName: string;
   productCode: string;
   defaultReminderDays: number;
   commissionRules: string;
   isActive: boolean;
+  createdAt?: string; 
 }
 
 export interface ProductDropdown {

@@ -36,9 +36,9 @@ const Products = () => {
   const { data: categories } =
     useProductCategoryDropdown();
 
-  const products = data?.data?.products || [];
-  const totalRecords = data?.data?.totalRecords || 0;
-  const totalPages = data?.data?.totalPages || 1;
+  const products = data?.data?.data || [];
+  const totalRecords = data?.data?.totalCount || 0;
+  const totalPages = data?.data?.totalPages || 1;    
 
   /*   HANDLERS   */
 
