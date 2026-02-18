@@ -7,6 +7,7 @@ export interface CreateFollowUpRequest {
   status: number;
   nextFollowUpDate: string | null;
   remark: string;
+  followUpId?: string;
 }
 
 export const createFollowUpApi = async (

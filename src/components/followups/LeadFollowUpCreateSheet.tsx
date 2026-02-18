@@ -7,6 +7,8 @@ interface Props {
   open: boolean;
   leadId: string | null;
   leadName?: string;
+  mode?: "create" | "edit";
+  editData?: any;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -15,6 +17,8 @@ const LeadFollowUpCreateSheet = ({
   open,
   leadId,
   leadName,
+  mode = "create",
+  editData,
   onClose,
   onSuccess,
 }: Props) => {
@@ -67,10 +71,12 @@ const LeadFollowUpCreateSheet = ({
         {/* Form */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
         <FollowUpForm
-          leadId={leadId}
-          onSuccess={onSuccess}
-          statuses={statuses}
-          />
+            leadId={leadId}
+            mode={mode}
+            editData={editData}
+            onSuccess={onSuccess}
+            statuses={statuses}
+        />
         </div>
       </div>
     </>
