@@ -13,6 +13,7 @@ import { usePolicies } from "../../hooks/policy/usePolicies";
 import { useClaimFileActions } from "../../hooks/claim/useClaimFileActions";
 import Spinner from "../common/Spinner";
 import SearchableComboBox from "../common/SearchableComboBox";
+import { usePoliciesByCustomer } from "../../hooks/policy/usePoliciesByCustomer";
 
 interface Props {
   open: boolean;
@@ -69,14 +70,8 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   /*   POLICIES (DEPENDENT)   */
-  const { data: policies, isLoading: policiesLoading } = usePolicies(
+  const { data: policies, isLoading: policiesLoading } = usePoliciesByCustomer(
     form.customerId
-      ? {
-          pageNumber: 1,
-          pageSize: 100,
-          search: form.customerId,
-        }
-      : { pageNumber: 1, pageSize: 100 }
   );
 
   const loadingDropdowns =
@@ -101,13 +96,15 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
         policyId: claim.policy?.policyId || "",
         claimTypeId:
           claimTypes?.find((x: any) => x.typeName === claim.claimType)
-            ?.claimTypeId || "",
+            ?.claimTypeId?.toString() || "",
+
         claimStageId:
           claimStages?.find((x: any) => x.stageName === claim.claimStage)
-            ?.claimStageId || "",
+            ?.claimStageId?.toString() || "",
+
         claimHandlerId:
           claimHandlers?.find((x: any) => x.handlerName === claim.claimHandler)
-            ?.claimHandlerId || "",
+            ?.claimHandlerId?.toString() || "",
         incidentDate: claim.incidentDate ? claim.incidentDate.split("T")[0] : "",
         claimAmount: claim.claimAmount || "",
         approvedAmount: claim.approvedAmount ?? "",
@@ -283,7 +280,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
               >
                 <SearchableComboBox
                   label="Policy"
-                  items={(policies?.data || []).map((p) => ({
+                  items={(policies || []).map((p) => ({
                     value: p.policyId,
                     label: p.policyNumber,
                   }))}
@@ -592,6 +589,7 @@ const Select = ({
     <label className="text-sm font-medium">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
+
     <select
       disabled={disabled || loading}
       className={`input w-full ${
@@ -607,12 +605,19 @@ const Select = ({
           ? "Select customer first"
           : `Select ${label}`}
       </option>
-      {options?.map((o: any) => (
-        <option key={o[idKey]} value={o[idKey]}>
-          {o[labelKey] || "—"}
-        </option>
-      ))}
+
+      {Array.isArray(options) &&
+        options.map((o: any) => (
+          <option
+            key={o[idKey]}
+            value={String(o[idKey])} 
+          >
+            {o[labelKey] || "—"}
+          </option>
+        ))}
     </select>
+
     {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
   </div>
 );
+

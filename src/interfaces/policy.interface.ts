@@ -88,3 +88,8 @@ export interface PolicyStatus {
   isActive: boolean;
   createdAt: string;
 }
+
+export interface PolicyByCustomerDropdownDto {
+  policyId: string;
+  policyNumber: string;
+}

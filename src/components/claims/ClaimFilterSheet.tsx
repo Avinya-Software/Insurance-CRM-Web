@@ -239,7 +239,7 @@ const Select = ({
         {disabled ? "Select customer first" : "All"}
       </option>
       {options?.map((o: any) => (
-        <option key={o[idKey]} value={o[idKey]}>
+        <option key={o[idKey]} value={String(o[idKey])}>
           {o[labelKey] || "—"}
         </option>
       ))}
