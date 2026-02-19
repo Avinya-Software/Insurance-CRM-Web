@@ -32,13 +32,18 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   }, [open]);
 
   /*   CLAIM DOCUMENT ACTIONS   */
-  const [existingDocuments, setExistingDocuments] = useState<string[]>([]);
+  const [existingDocuments, setExistingDocuments] = useState<
+  { fileName: string; url: string }[]
+>([]);
 
-  const { preview, download, remove } = useClaimFileActions((deletedId) => {
-    setExistingDocuments((prev) =>
-      prev.filter((f) => !f.startsWith(deletedId + "_"))
-    );
-  });
+const { preview, download, remove } = useClaimFileActions((deletedId) => {
+  setExistingDocuments((prev) =>
+    prev.filter(
+      (f) => f.url.split("/").pop() !== deletedId
+    )
+  );
+});
+
 
   /*   API HOOKS   */
   const { mutateAsync, isPending } = useCreateClaim();
@@ -81,54 +86,37 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   useEffect(() => {
     if (!open) {
       setForm(initialForm);
-      setErrors({});
-      setDocuments([]);
       setExistingDocuments([]);
+      setDocuments([]);
+      setErrors({});
       return;
     }
-
-    if (loadingDropdowns) return;
-
-    if (claim) {
-      setForm({
-        claimId: claim.claimId ?? null,
-        customerId: claim.customer?.customerId || "",
-        policyId: claim.policy?.policyId || "",
-        claimTypeId:
-          claimTypes?.find((x: any) => x.typeName === claim.claimType)
-            ?.claimTypeId?.toString() || "",
-
-        claimStageId:
-          claimStages?.find((x: any) => x.stageName === claim.claimStage)
-            ?.claimStageId?.toString() || "",
-
-        claimHandlerId:
-          claimHandlers?.find((x: any) => x.handlerName === claim.claimHandler)
-            ?.claimHandlerId?.toString() || "",
-        incidentDate: claim.incidentDate ? claim.incidentDate.split("T")[0] : "",
-        claimAmount: claim.claimAmount || "",
-        approvedAmount: claim.approvedAmount ?? "",
-        tatDays:
-          claim.tatDays !== undefined && claim.tatDays !== null
-            ? Number(claim.tatDays)
-            : 0,
-        status: claim.status || "Open",
-        notes: claim.notes ?? "",
-      });
-
-      setExistingDocuments(
-        claim.documents
-          ? claim.documents.split(",").filter(Boolean)
-          : []
-      );
-    } else {
-      setForm(initialForm);
-      setExistingDocuments([]);
-      setDocuments([]);
-    }
-
+  
+    if (!claim) return;
+  
+    setForm({
+      claimId: claim.claimId ?? null,
+      customerId: claim.customerId || "",
+      policyId: claim.policyId || "",
+      claimTypeId: claim.claimTypeId?.toString() || "",
+      claimStageId: claim.claimStageId?.toString() || "",
+      claimHandlerId: claim.claimHandlerId?.toString() || "",
+      incidentDate: claim.incidentDate
+        ? claim.incidentDate.split("T")[0]
+        : "",
+      claimAmount: claim.claimAmount?.toString() || "",
+      approvedAmount: claim.approvedAmount?.toString() || "",
+      tatDays: claim.tatDays ?? 0,
+      status: claim.status || "Open",
+      notes: claim.notes ?? "",
+    });
+  
+    // ✅ Correct existing file mapping
+    setExistingDocuments(claim.claimFiles || []);
+  
     setErrors({});
-  }, [open, claim, claimTypes, claimStages, claimHandlers, loadingDropdowns]);
+  }, [open, claim]);
+  
 
   /*   VALIDATION   */
   const validate = () => {
@@ -437,45 +425,58 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
                   <div className="space-y-2 mt-2">
                     {existingDocuments.map((file) => {
-                      const documentId = file.split("_")[0];
+                      const documentId = file.url.split("/").pop();
 
                       return (
                         <div
-                          key={file}
+                          key={file.url}
                           className="flex justify-between items-center border rounded px-3 py-2 text-sm"
                         >
-                          <span className="truncate flex-1">{file}</span>
+                          <span className="truncate flex-1">
+                            {file.fileName}
+                          </span>
 
                           <div className="flex gap-2 ml-2">
+                            {/* PREVIEW */}
                             <button
-                              onClick={() => preview(claim.claimId, documentId)}
+                              onClick={() =>
+                                preview(claim.claimId, documentId!)
+                              }
                               className="p-1 hover:bg-gray-100 rounded"
-                              title="Preview"
                             >
                               <Eye size={16} />
                             </button>
 
+                            {/* DOWNLOAD */}
                             <button
                               onClick={() =>
-                                download(claim.claimId, documentId)
+                                download(claim.claimId, documentId!)
                               }
                               className="p-1 hover:bg-gray-100 rounded"
-                              title="Download"
                             >
                               <Download size={16} />
                             </button>
-
+                            
+                            {/* DELETE */}
                             <button
                               onClick={async () => {
                                 if (!confirm("Delete this document?")) return;
+                                if (!documentId) return;
+
                                 try {
                                   await remove(claim.claimId, documentId);
+
+                                  setExistingDocuments((prev) =>
+                                    prev.filter(
+                                      (f) =>
+                                        f.url.split("/").pop() !== documentId
+                                    )
+                                  );
                                 } catch {
                                   toast.error("Failed to delete document");
                                 }
                               }}
                               className="p-1 hover:bg-red-100 text-red-600 rounded"
-                              title="Delete"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -488,25 +489,48 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
               )}
 
               {/* ===== CLAIM DOCUMENT UPLOAD ===== */}
-              <div>
-                <label className="text-sm font-medium">Add Claim Documents</label>
+              <div className="mt-4">
+                <label className="text-sm font-medium mb-1 block">
+                  Add Claim Documents
+                </label>
+
+                <div className="flex items-center gap-3">
+                  <label
+                    htmlFor="claim-upload"
+                    className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm"
+                  >
+                    Choose Files
+                  </label>
+
+                  <span className="text-sm text-gray-500">
+                    {documents.length > 0
+                      ? documents.map((f) => f.name).join(", ")
+                      : "No file chosen"}
+                  </span>
+                </div>
+
                 <input
+                  id="claim-upload"
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
                   disabled={isPending}
-                  onChange={(e) =>
-                    setDocuments(
-                      e.target.files ? Array.from(e.target.files) : []
-                    )
-                  }
-                  className="block mt-1 text-sm"
+                  onChange={(e) => {
+                    if (!e.target.files) return;
+
+                    const newFiles = Array.from(e.target.files);
+
+                    setDocuments((prev) => {
+                      const combined = [...prev, ...newFiles];
+
+                      return combined.filter(
+                        (file, index, self) =>
+                          index === self.findIndex((f) => f.name === file.name)
+                      );
+                    });
+                  }}
                 />
-                {documents.length > 0 && (
-                  <p className="text-xs text-gray-600 mt-1">
-                    {documents.length} file(s) selected
-                  </p>
-                )}
               </div>
             </div>
           )}
