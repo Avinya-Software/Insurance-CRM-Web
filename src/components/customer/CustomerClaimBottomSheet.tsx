@@ -19,7 +19,7 @@ const CustomerClaimBottomSheet = ({
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch } = useClaims({
-    pageNumber: 1,
+    page: 1,
     pageSize: 10,
     customerId: customerId || undefined,
   });

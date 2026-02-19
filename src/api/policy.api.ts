@@ -1,4 +1,4 @@
-import type { PoliciesResponse, UpsertPolicyPayload } from "../interfaces/policy.interface";
+import type { PoliciesResponse, PolicyByCustomerDropdownDto, UpsertPolicyPayload } from "../interfaces/policy.interface";
 import api from "./axios";
 
 /*   UPSERT POLICY   */
@@ -115,5 +115,13 @@ export const updatePolicyStatusApi = async (
 
   const res = await upsertPolicyApi(formData);
   return res;
+};
+
+export const getPoliciesByCustomerApi = async (
+  customerId: string
+): Promise<PolicyByCustomerDropdownDto[]> => {
+  const res = await api.get("/policy/by-customer/" + customerId);
+
+  return res.data?.data || [];   
 };
 

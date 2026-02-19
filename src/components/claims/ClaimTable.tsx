@@ -31,6 +31,13 @@ const claimStageStyles: Record<string, string> = {
   Settled: "bg-emerald-100 text-emerald-700 border-emerald-200",
 };
 
+const policyStatusStyles: Record<string, string> = {
+  Active: "bg-green-100 text-green-700 border-green-200",
+  Pending: "bg-amber-100 text-amber-700 border-amber-200",
+  Lapsed: "bg-slate-100 text-slate-600 border-slate-200",
+  Cancelled: "bg-red-100 text-red-700 border-red-200",
+};
+
 /*   TYPES   */
 
 interface Props {
@@ -179,17 +186,22 @@ const ClaimTable = ({
                     </div>
                   </Td>
 
-                  {/* POLICY */}
                   <Td>{claim.policy ?? "-"}</Td>
 
-                  {/* POLICY STATUS (not available in API) */}
-                  <Td>-</Td>
+                  <Td>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                        policyStatusStyles[claim.policyStatus] ??
+                        "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      {claim.policyStatus ?? "-"}
+                    </span>
+                  </Td>
 
-                  {/* INSURER (not available in API) */}
-                  <Td>-</Td>
+                  <Td>{claim.insurers ?? "-"}</Td>
 
-                  {/* PRODUCT (not available in API) */}
-                  <Td>-</Td>
+                  <Td>{claim.product ?? "-"}</Td>
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
