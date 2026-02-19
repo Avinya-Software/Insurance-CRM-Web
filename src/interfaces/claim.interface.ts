@@ -41,6 +41,9 @@ export interface Claim {
   advisorId: string;
   policyId: string;
   policy: string; 
+  policyStatus : string;
+  insurers : string;
+  product : string;
   customerId: string;
   customer: string; 
   customerEmail: string;
