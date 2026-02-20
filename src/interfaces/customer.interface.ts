@@ -95,7 +95,9 @@ export interface CustomerDetails {
 
 
 export interface KycFile {
+  id: string;
   fileName: string;
   url: string;
+  uploadedAt?: string;
 }
 
