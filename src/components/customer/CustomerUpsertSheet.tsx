@@ -32,7 +32,7 @@ const CustomerUpsertSheet = ({
 
   /* KYC Actions for existing files */
   const [existingKycFiles, setExistingKycFiles] = useState<
-  { fileName: string; url: string }[]
+  { fileName: string; url: string; id: string }[]
 >([]);
 
 const { preview, download, remove } = useKycFileActions((deletedId) => {
@@ -277,14 +277,10 @@ const { preview, download, remove } = useKycFileActions((deletedId) => {
                           onClick={async () => {
                             if (!confirm("Delete this document?")) return;
 
-                            // Get full filename including extension
-                            const documentId = file.url.split("/").pop(); 
-                            if (!documentId) return;
-
                             try {
-                              await remove(customer.customerId, documentId);
+                              await remove(customer.customerId, file.id);
                               setExistingKycFiles((prev) =>
-                                prev.filter((f) => f.url.split("/").pop() !== documentId)
+                                prev.filter((f) => f.id !== file.id)
                               );
                             } catch {
                               toast.error("Failed to delete document");
