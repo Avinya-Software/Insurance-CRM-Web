@@ -104,6 +104,11 @@ const PolicyUpsertSheet = ({
     baBrokerageOn: "",
     baBrokeragePer: 0,
     baBrokerageAmt: 0,
+    
+    // Checkboxes
+    calcIrda: false,
+    calcReward: false,
+    calcBa: false,
 
     // Payment Details
     paymentMode: "",
@@ -153,14 +158,6 @@ const PolicyUpsertSheet = ({
   };
 
   const [form, setForm] = useState(initialForm);
-  const [newItem, setNewItem] = useState({
-    details: "",
-    description: "",
-    sa: 0,
-    rate: 0,
-    riskType: "",
-    occupancy: ""
-  });
   const [files, setFiles] = useState<{ file: File; type: string; label: string }[]>([]);
   const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -220,13 +217,12 @@ const PolicyUpsertSheet = ({
   
   /*   API HOOKS   */
   const { mutateAsync, isPending } = useUpsertPolicy();
-  const { data: customers, isLoading: cLoading } = useCustomerDropdown();
   const { data: insurers, isLoading: iLoading } = useInsurerDropdown();
   const { data: products, isLoading: pLoading } = useProductDropdown(form.insurerId || undefined);
   const { data: policyTypes, isLoading: tLoading } = usePolicyTypesDropdown();
   const { data: policyStatuses, isLoading: sLoading } = usePolicyStatusesDropdown();
 
-  const loadingDropdowns = cLoading || iLoading || pLoading || tLoading || sLoading;
+  const loadingDropdowns = iLoading || pLoading || tLoading || sLoading;
   const isLoading = isPending;
 
   /*   PREFILL   */
@@ -270,7 +266,6 @@ const PolicyUpsertSheet = ({
   /*   VALIDATION   */
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.customerId?.trim()) e.customerId = "Customer is required";
     if (!form.policyNumber?.trim()) e.policyNumber = "Policy number is required";
     if (!form.policyStatusId) e.policyStatusId = "Policy status is required";
     if (!form.policyTypeId) e.policyTypeId = "Policy type is required";
@@ -325,11 +320,11 @@ const PolicyUpsertSheet = ({
 
   return (
     <>
-      <Toaster position="top-right"/>
+      <Toaster />
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
 
       <div 
-        className="fixed top-0 right-0 w-full max-w-[75vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right"
+        className="fixed top-0 right-0 w-full max-w-[85vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right"
       >
         {/* HEADER */}
         <div className="px-8 py-6 bg-white border-b flex justify-between items-center">
@@ -384,15 +379,15 @@ const PolicyUpsertSheet = ({
               {activeTab === "general" && (
                 <>
                   {/* BASIC INFO */}
-                  <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-50">
-                      <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                        <ShieldCheck size={20} />
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <ShieldCheck size={16} />
                       </div>
-                      <h3 className="font-semibold text-slate-900 uppercase tracking-wider text-xs">General Insurance Policy Purchase</h3>
+                      <h3 className="font-bold uppercase tracking-wider text-[10px]">General Insurance Policy Purchase</h3>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       <Select
                         label="Policy Status"
                         required
@@ -419,18 +414,14 @@ const PolicyUpsertSheet = ({
                         options={[{ id: "Yes", name: "Yes" }, { id: "No", name: "No" }]}
                         onChange={(v: any) => setForm(p => ({ ...p, renewable: v }))}
                       />
-                      <div className="relative">
-                        <Input
-                          label="Insured Name"
-                          required
-                          value={form.insuredName}
-                          placeholder="Insured Name"
-                          onChange={(v: any) => setForm(p => ({ ...p, insuredName: v }))}
-                        />
-                        <button className="absolute right-0 top-7 p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                          <UserPlus size={18} />
-                        </button>
-                      </div>
+                      <Input
+                        label="Insured Name"
+                        required
+                        value={form.insuredName}
+                        placeholder="Insured Name"
+                        onChange={(v: any) => setForm(p => ({ ...p, insuredName: v }))}
+                        suffix={<UserPlus size={14} className="text-slate-400" />}
+                      />
                       <Input
                         label="Group Head Name"
                         value={form.groupHeadName}
@@ -470,7 +461,7 @@ const PolicyUpsertSheet = ({
                         label="Insurance Type"
                         required
                         value={form.insuranceType}
-                        options={[{ id: "Jewellery Insurance", name: "Jewellery Insurance" }]}
+                        options={[{ id: "Jewellery Insurance", name: "Jewellery Insurance" }, { id: "Motor Insurance", name: "Motor Insurance" }]}
                         onChange={(v: any) => setForm(p => ({ ...p, insuranceType: v }))}
                       />
                       <SearchableComboBox
@@ -528,53 +519,115 @@ const PolicyUpsertSheet = ({
                   </section>
 
                   {/* PREMIUM DETAILS */}
-                  <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-50 bg-slate-800 -mx-6 -mt-6 px-6 py-4 text-white">
-                      <div className="p-2 bg-white/10 text-white rounded-lg">
-                        <CreditCard size={20} />
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <CreditCard size={16} />
                       </div>
-                      <h3 className="font-semibold uppercase tracking-wider text-xs">Premium Details</h3>
+                      <h3 className="font-bold uppercase tracking-wider text-[10px]">Premium Details</h3>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <Input label="Basic/OD Premium" type="number" value={form.basicODPremium} onChange={(v: any) => setForm(p => ({ ...p, basicODPremium: Number(v) }))} />
-                      <Input label="TP Premium" type="number" value={form.tpPremium} onChange={(v: any) => setForm(p => ({ ...p, tpPremium: Number(v) }))} />
-                      <Input label="Other TP Premium" type="number" value={form.otherTPPremium} onChange={(v: any) => setForm(p => ({ ...p, otherTPPremium: Number(v) }))} />
-                      <Input label="Add On Cover" type="number" value={form.addOnCover} onChange={(v: any) => setForm(p => ({ ...p, addOnCover: Number(v) }))} />
-                      <Input label="NCB %" type="number" value={form.ncb} onChange={(v: any) => setForm(p => ({ ...p, ncb: Number(v) }))} />
-                      <Input label="Discount %" type="number" value={form.discount} onChange={(v: any) => setForm(p => ({ ...p, discount: Number(v) }))} />
-                      <Input label="Net Premium" type="number" value={form.premiumNet} onChange={(v: any) => setForm(p => ({ ...p, premiumNet: Number(v) }))} />
-                      <Input label="Terrorism Premium" type="number" value={form.terrorismPremium} onChange={(v: any) => setForm(p => ({ ...p, terrorismPremium: Number(v) }))} />
-                      <Input label="GST Perc." type="number" value={form.gstPerc} onChange={(v: any) => setForm(p => ({ ...p, gstPerc: Number(v) }))} />
-                      <Input label="GST Amount" type="number" value={form.gstAmount} onChange={(v: any) => setForm(p => ({ ...p, gstAmount: Number(v) }))} />
-                      <Input label="Final Premium" required type="number" value={form.finalPremium} error={errors.finalPremium} onChange={(v: any) => setForm(p => ({ ...p, finalPremium: Number(v) }))} />
-                      <Select label="Claim Process" value={form.claimProcess} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, claimProcess: v }))} />
-                      
-                      {/* Brokerage Fields */}
-                      <Select label="Brokerage On IRDA" value={form.brokerageOnIRDA} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnIRDA: v }))} />
-                      <Input label="Brokerage Per IRDA" type="number" value={form.brokeragePerIRDA} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerIRDA: Number(v) }))} />
-                      <Input label="Brokerage Amt IRDA" type="number" value={form.brokerageAmtIRDA} onChange={(v: any) => setForm(p => ({ ...p, brokerageAmtIRDA: Number(v) }))} />
-                      
-                      <Select label="Brokerage On Reward" value={form.brokerageOnReward} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnReward: v }))} />
-                      <Input label="Brokerage Per Reward" type="number" value={form.brokeragePerReward} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerReward: Number(v) }))} />
-                      <Input label="Brokerage Amt Reward" type="number" value={form.brokerageAmtReward} onChange={(v: any) => setForm(p => ({ ...p, brokerageAmtReward: Number(v) }))} />
-                      
-                      <Select label="BA Brokerage On" value={form.baBrokerageOn} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, baBrokerageOn: v }))} />
-                      <Input label="BA Brokerage Per" type="number" value={form.baBrokeragePer} onChange={(v: any) => setForm(p => ({ ...p, baBrokeragePer: Number(v) }))} />
-                      <Input label="BA Brokerage Amt" type="number" value={form.baBrokerageAmt} onChange={(v: any) => setForm(p => ({ ...p, baBrokerageAmt: Number(v) }))} />
+                    <div className="p-6 space-y-6">
+                      {/* First 3 rows of premium details */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <Input label="Basic/OD Premium" type="number" value={form.basicODPremium} onChange={(v: any) => setForm(p => ({ ...p, basicODPremium: Number(v) }))} />
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1">
+                            <Input 
+                              label="TP Premium" 
+                              type="number" 
+                              value={form.tpPremium} 
+                              onChange={(v: any) =>
+                                setForm(p => ({ ...p, tpPremium: Number(v) }))
+                              }
+                            />
+                          </div>
+
+                          <label className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                            <input type="checkbox" className="accent-blue-600" />
+                            12%
+                          </label>
+                        </div>
+                        <Input label="Other TP Premium" type="number" value={form.otherTPPremium} onChange={(v: any) => setForm(p => ({ ...p, otherTPPremium: Number(v) }))} />
+                        <Input label="Add On Cover" type="number" value={form.addOnCover} onChange={(v: any) => setForm(p => ({ ...p, addOnCover: Number(v) }))} />
+                        
+                        <Input label="NCB %" type="number" value={form.ncb} onChange={(v: any) => setForm(p => ({ ...p, ncb: Number(v) }))} />
+                        <Input label="Discount %" type="number" value={form.discount} onChange={(v: any) => setForm(p => ({ ...p, discount: Number(v) }))} />
+                        <Input label="Net Premium" type="number" value={form.premiumNet} onChange={(v: any) => setForm(p => ({ ...p, premiumNet: Number(v) }))} />
+                        <Input label="Terrorism Premium" type="number" value={form.terrorismPremium} onChange={(v: any) => setForm(p => ({ ...p, terrorismPremium: Number(v) }))} />
+                        
+                        <Input label="GST Perc." type="number" value={form.gstPerc} onChange={(v: any) => setForm(p => ({ ...p, gstPerc: Number(v) }))} />
+                        <Input label="GST Amount" type="number" value={form.gstAmount} onChange={(v: any) => setForm(p => ({ ...p, gstAmount: Number(v) }))} />
+                        <Input label="Final Premium" required type="number" value={form.finalPremium} error={errors.finalPremium} onChange={(v: any) => setForm(p => ({ ...p, finalPremium: Number(v) }))} />
+                        <Select label="Claim Process" value={form.claimProcess} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, claimProcess: v }))} />
+                      </div>
+
+                      {/* Brokerage Rows with Checkboxes */}
+                      <div className="space-y-6 pt-4 border-t border-slate-50">
+                        {/* IRDA Brokerage */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                          <Select label="Brokerage On IRDA" value={form.brokerageOnIRDA} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnIRDA: v }))} />
+                          <Input label="Brokerage Per IRDA" type="number" value={form.brokeragePerIRDA} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerIRDA: Number(v) }))} />
+                          <Input label="Brokerage Amt IRDA" type="number" value={form.brokerageAmtIRDA} onChange={(v: any) => setForm(p => ({ ...p, brokerageAmtIRDA: Number(v) }))} />
+                          <div className="flex items-center gap-2 pb-3">
+                            <input 
+                              type="checkbox" 
+                              id="calcIrda"
+                              checked={form.calcIrda}
+                              onChange={(e) => setForm(p => ({ ...p, calcIrda: e.target.checked }))}
+                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                            />
+                            <label htmlFor="calcIrda" className="text-[10px] font-bold text-slate-600 uppercase tracking-wider cursor-pointer">Calculate Percentage</label>
+                          </div>
+                        </div>
+
+                        {/* Reward Brokerage */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                          <Select label="Brokerage On Reward" value={form.brokerageOnReward} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnReward: v }))} />
+                          <Input label="Brokerage Per Reward" type="number" value={form.brokeragePerReward} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerReward: Number(v) }))} />
+                          <Input label="Brokerage Amt Reward" type="number" value={form.brokerageAmtReward} onChange={(v: any) => setForm(p => ({ ...p, brokerageAmtReward: Number(v) }))} />
+                          <div className="flex items-center gap-2 pb-3">
+                            <input 
+                              type="checkbox" 
+                              id="calcReward"
+                              checked={form.calcReward}
+                              onChange={(e) => setForm(p => ({ ...p, calcReward: e.target.checked }))}
+                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                            />
+                            <label htmlFor="calcReward" className="text-[10px] font-bold text-slate-600 uppercase tracking-wider cursor-pointer">Calculate Percentage</label>
+                          </div>
+                        </div>
+
+                        {/* BA Brokerage */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                          <Select label="BA Brokerage On" value={form.baBrokerageOn} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, baBrokerageOn: v }))} />
+                          <Input label="BA Brokerage Per" type="number" value={form.baBrokeragePer} onChange={(v: any) => setForm(p => ({ ...p, baBrokeragePer: Number(v) }))} />
+                          <Input label="BA Brokerage Amt" type="number" value={form.baBrokerageAmt} onChange={(v: any) => setForm(p => ({ ...p, baBrokerageAmt: Number(v) }))} />
+                          <div className="flex items-center gap-2 pb-3">
+                            <input 
+                              type="checkbox" 
+                              id="calcBa"
+                              checked={form.calcBa}
+                              onChange={(e) => setForm(p => ({ ...p, calcBa: e.target.checked }))}
+                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                            />
+                            <label htmlFor="calcBa" className="text-[10px] font-bold text-slate-600 uppercase tracking-wider cursor-pointer">Calculate Percentage</label>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </section>
 
                   {/* PAYMENT DETAILS */}
-                  <section className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-50 bg-slate-800 -mx-6 -mt-6 px-6 py-4 text-white">
-                      <div className="p-2 bg-white/10 text-white rounded-lg">
-                        <CreditCard size={20} />
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <CreditCard size={16} />
                       </div>
-                      <h3 className="font-semibold uppercase tracking-wider text-xs">Payment Details</h3>
+                      <h3 className="font-bold uppercase tracking-wider text-[10px]">Payment Details</h3>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                       <Select
                         label="Payment Type"
                         value={form.paymentType}
@@ -774,7 +827,7 @@ const PolicyUpsertSheet = ({
                       </div>
                     )}
 
-                    {/* EXISTING FILES */}
+                    {/* EXISTING DOCUMENTS */}
                     {existingDocuments.length > 0 && (
                       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                         <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
@@ -885,27 +938,36 @@ const Input = ({
   min,
   max,
   disabled,
-  className = ""
+  className = "",
+  suffix
 }: any) => (
   <div className="space-y-1.5">
     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
-    <input
-      type={type}
-      disabled={disabled}
-      min={min}
-      max={max}
-      placeholder={placeholder}
-      className={`
-        w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none
-        ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
-        ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
-        ${className}
-      `}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
-    />
+    <div className="relative">
+      <input
+        type={type}
+        disabled={disabled}
+        min={min}
+        max={max}
+        placeholder={placeholder}
+        className={`
+          w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none
+          ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
+          ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
+          ${suffix ? "pr-14" : ""}
+          ${className}
+        `}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {suffix && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+          {suffix}
+        </div>
+      )}
+    </div>
     {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
   </div>
 );
