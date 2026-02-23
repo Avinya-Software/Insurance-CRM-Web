@@ -320,7 +320,7 @@ const PolicyUpsertSheet = ({
 
   return (
     <>
-      <Toaster />
+      <Toaster position="top-right"/>
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
 
       <div 
