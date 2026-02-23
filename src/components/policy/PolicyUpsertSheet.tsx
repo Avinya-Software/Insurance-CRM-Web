@@ -324,7 +324,7 @@ const PolicyUpsertSheet = ({
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
 
       <div 
-        className="fixed top-0 right-0 w-full max-w-[85vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right"
+        className="fixed top-0 right-0 w-full max-w-[70vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right"
       >
         {/* HEADER */}
         <div className="px-8 py-6 bg-white border-b flex justify-between items-center">
