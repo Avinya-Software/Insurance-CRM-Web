@@ -132,7 +132,8 @@ const CustomerTable = ({
             <Th>Name</Th>
             <Th>Email</Th>
             <Th>Mobile</Th>
-            <Th>Address</Th>
+            <Th>GroupHeadName</Th>
+            <Th>GroupCode</Th>
             <Th>Kyc Status</Th>
             <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
@@ -159,10 +160,11 @@ const CustomerTable = ({
                   onClick={() => handleRowClick(c)}
                   className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
                 >
-                  <Td>{c.fullName}</Td>
+                  <Td>{c.clientName}</Td>
                   <Td>{c.email || "-"}</Td>
                   <Td>{c.primaryMobile}</Td>
-                  <Td>{c.address || "-"}</Td>
+                  <Td>{c.groupHeadName || "-"}</Td>
+                  <Td>{c.groupCode || "-"}</Td>
                   <Td>
                     {c.kycStatus ? (
                       <span
