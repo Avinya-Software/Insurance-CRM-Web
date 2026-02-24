@@ -30,18 +30,47 @@ export interface CustomerDropdown {
 }
 export interface Customer {
   customerId: string;
-  fullName: string;
+  title?: string;
+  clientName: string;
+  groupHeadName?: string;
+  groupCode?: string;
+  clientCategory?: string;
+  fatherSpouseCompanyName?: string;
+
   primaryMobile: string;
-  secondaryMobile?: string;
   email: string;
-  address: string;
-  companyId?: string;
-  companyName?: string;
+
   dob?: string | null;
   anniversary?: string | null;
+
+  age?: number;
+  gender?: string;
+  maritalStatus?: string;
+  nationality?: string;
+  birthPlace?: string;
+
+  isPassedAway?: boolean;
+  education?: string;
+  referenceName?: string;
+
+  notes?: string;
+  remarks?: string;
+
+  address?: string;
+
   kycStatus?: string;
+  kycFiles?: KycFile[] | null;
+
+  occupation?: {
+    occupationType?: string;
+    designation?: string;
+    grossIncome?: number;
+    employerName?: string;
+  } | null;
+
+  identityDetails?: any;
+
   createdAt: string;
-  campaigns?: CustomerCampaign[];
 }
 
 export interface CustomerCampaign {
