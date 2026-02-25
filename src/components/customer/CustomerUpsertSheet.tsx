@@ -4,6 +4,7 @@ import toast, { Toaster } from "react-hot-toast";
 import Spinner from "../common/Spinner";
 import { useUploadCustomerDocument } from "../../hooks/customer/useUploadCustomerDocument";
 import { useUpsertCustomer } from "../../hooks/customer/useCreateCustomer";
+import { Address } from "../../interfaces/customer.interface";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
 const useKycFileActions = (cb: any) => ({ 
@@ -139,79 +140,60 @@ const CustomerUpsertSheet = ({
     { id: "Others", name: "Others" },
   ];
 
+  const resolveSecondaryEmail = () => {
+    if (form.resEmail2?.trim()) return form.resEmail2;
+    if (form.osEmail?.trim()) return form.osEmail;
+    return null;
+  };
+
   const buildAddressPayload = (type: "RESIDENCE" | "OFFICE" | "OVERSEAS") => {
+
+    const mapCommon = (prefix: string) => ({
+      houseFlatNumber: form[`${prefix}HouseNo`] || null,
+      buildingName: form[`${prefix}BuildingNo`] || null,
+      street: form[`${prefix}Street`] || null,
+      area: form[`${prefix}Area`] || null,
+      landmark: form[`${prefix}Landmark`] || null,
+      city: form[`${prefix}City`] || null,
+      pincode: form[`${prefix}Pincode`] || null,
+      state: form[`${prefix}State`] || null,
+      country: form[`${prefix}Country`] || "India",
+      telephoneResidence: form[`${prefix}TelR`] || null,
+      telephoneOffice: form[`${prefix}TelO`] || null,
+      otherNumber: form[`${prefix}OtherNo`] || null,
+      mobileNumber: form[`${prefix}Mobile`] || null,
+      email2: resolveSecondaryEmail(),
+      website: form[`${prefix}Website`] || null
+    });
+  
     if (type === "RESIDENCE") {
-      if (
-        !form.resHouseNo &&
-        !form.resStreet &&
-        !form.resCity &&
-        !form.resPincode &&
-        !form.resState
-      ) return null;
+      if (!form.resHouseNo && !form.resStreet && !form.resCity) return null;
   
       return {
         addressType: "RESIDENCE",
-        isSameAsGroupHead: false,
-        houseFlatNumber: form.resHouseNo || null,
-        street: form.resStreet || null,
-        area: form.resArea || null,
-        city: form.resCity || null,
-        pincode: form.resPincode || null,
-        state: form.resState || null,
-        country: form.resCountry || null,
-        telephoneResidence: form.resTelR || null,
-        telephoneOffice: form.resTelO || null,
-        otherNumber: form.resOtherNo || null,
-        email2: form.resEmail2 || null,
-        website: form.resWebsite || null
+        ...mapCommon("res")
       };
     }
   
     if (type === "OFFICE") {
-      if (
-        !form.offBuildingNo &&
-        !form.offStreet &&
-        !form.offCity &&
-        !form.offPincode
-      ) return null;
+      if (!form.offCity && !form.offStreet) return null;
   
       return {
         addressType: "OFFICE",
-        isSameAsGroupHead: false,
         occupationType: form.occDetails || null,
         designation: form.designation || null,
         grossIncome: Number(form.grossIncome) || 0,
         employerName: form.employerName || null,
-        buildingName: form.offBuildingNo || null,
-        street: form.offStreet || null,
-        landmark: form.offLandmark || null,
-        city: form.offCity || null,
-        pincode: form.offPincode || null,
-        state: form.offState || null
+        ...mapCommon("off")
       };
     }
   
     if (type === "OVERSEAS") {
-      if (
-        !form.osHouseNo &&
-        !form.osStreet &&
-        !form.osCity &&
-        !form.osPincode
-      ) return null;
+      if (!form.osCity && !form.osStreet) return null;
   
       return {
         addressType: "OVERSEAS",
-        isSameAsGroupHead: false,
-        houseFlatNumber: form.osHouseNo || null,
-        street: form.osStreet || null,
-        area: form.osArea || null,
-        city: form.osCity || null,
-        pincode: form.osPincode || null,
-        state: form.osState || null,
-        country: form.osCountry || null,
-        telephoneOffice: form.osTelO || null,
-        mobileNumber: form.osMobile || null,
-        email: form.osEmail || null
+        ...mapCommon("os")
       };
     }
   
@@ -236,21 +218,76 @@ const CustomerUpsertSheet = ({
       setActiveTab("basic");
       return;
     }
-
+  
     if (customer) {
       setForm({
         ...initialForm,
-        ...customer,
+  
+        customerId: customer.customerId || null,
+  
+        title: customer.title || "Mr.",
+  
+        fullName: customer.clientName || "",
+        groupHeadName: customer.groupHeadName || "",
+        groupCode: customer.groupCode || "",
+        clientCategory: customer.clientCategory || "",
+  
+        fatherSpouseName: customer.fatherSpouseCompanyName || "",
+  
+        mobileNumber: customer.primaryMobile || "",
+        email: customer.email || "",
+  
         dob: customer.dob ? customer.dob.split("T")[0] : "",
-        anniversaryDate: customer.anniversaryDate ? customer.anniversaryDate.split("T")[0] : "",
-        drivingLicenceExpDate: customer.drivingLicenceExpDate ? customer.drivingLicenceExpDate.split("T")[0] : "",
-        passportExpDate: customer.passportExpDate ? customer.passportExpDate.split("T")[0] : "",
+        anniversaryDate: customer.anniversaryDate
+          ? customer.anniversaryDate.split("T")[0]
+          : "",
+  
+        age: customer.age || "",
+        gender: customer.gender || "",
+        maritalStatus: customer.maritalStatus || "",
+        nationality: customer.nationality || "Indian",
+        birthPlace: customer.birthPlace || "",
+  
+        passedAway: customer.isPassedAway || false,
+        education: customer.education || "",
+        reference: customer.referenceName || "",
+        remarks: customer.remarks || "",
+  
+        occDetails: customer.occupation?.occupationType || "",
+        designation: customer.occupation?.designation || "",
+        grossIncome: customer.occupation?.grossIncome || "",
+        employerName: customer.occupation?.employerName || "",
+  
+        aadharNumber: customer.identityDetails?.aadharNumber || "",
+        panNumber: customer.identityDetails?.panNumber || "",
+        gstNumber: customer.identityDetails?.gstNumber || "",
+        drivingLicenceNo:
+          customer.identityDetails?.drivingLicenceNumber || "",
+  
+        drivingLicenceExpDate: customer.identityDetails
+          ?.drivingLicenceExpDate
+          ? customer.identityDetails.drivingLicenceExpDate.split("T")[0]
+          : "",
+  
+        ckycNumber: customer.identityDetails?.ckycNumber || "",
+        eInsuranceNumber: customer.identityDetails?.eInsuranceNumber || "",
+  
+        passportNumber: customer.identityDetails?.passportNumber || "",
+  
+        passportExpDate: customer.identityDetails?.passportExpDate
+          ? customer.identityDetails.passportExpDate.split("T")[0]
+          : "",
+  
+        ...(mapAddressToForm?.(customer.addresses || []) || {}),
+  
+        leadId: leadId || ""
       });
-
+  
       setExistingDocuments(customer.kycFiles || []);
     } else {
       setForm({ ...initialForm, leadId: leadId || "" });
     }
+  
     setErrors({});
   }, [open, customer, leadId]);
 
@@ -430,6 +467,53 @@ const CustomerUpsertSheet = ({
       return true;
     }
     return false;
+  };
+
+
+  const mapAddressToForm = (addresses: any[] = []) => {
+    const get = (type: string) =>
+      addresses?.find(a => a.addressType === type) || {};
+  
+    const residence = get("RESIDENCE");
+    const office = get("OFFICE");
+    const overseas = get("OVERSEAS");
+  
+    return {
+      resHouseNo: residence.houseFlatNumber || "",
+      resStreet: residence.street || "",
+      resArea: residence.area || "",
+      resCity: residence.city || "",
+      resPincode: residence.pincode || "",
+      resState: residence.state || "",
+      resCountry: residence.country || "India",
+      resTelR: residence.telephoneResidence || "",
+      resTelO: residence.telephoneOffice || "",
+      resOtherNo: residence.otherNumber || "",
+      resEmail2: residence.email2 || "",
+      resWebsite: residence.website || "",
+  
+      offBuildingNo:
+        office.houseFlatNumber ||
+        office.buildingName ||
+        "",
+  
+      offStreet: office.street || "",
+      offLandmark: office.landmark || "",
+      offCity: office.city || "",
+      offPincode: office.pincode || "",
+      offState: office.state || "",
+  
+      osHouseNo: overseas.houseFlatNumber || "",
+      osStreet: overseas.street || "",
+      osArea: overseas.area || "",
+      osCity: overseas.city || "",
+      osPincode: overseas.pincode || "",
+      osState: overseas.state || "",
+      osCountry: overseas.country || "India",
+      osTelO: overseas.telephoneOffice || "",
+      osMobile: overseas.mobileNumber || "",
+      osEmail: overseas.email2 || ""
+    };
   };
 
   if (!open) return null; 

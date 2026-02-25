@@ -118,8 +118,31 @@ export interface Customer {
   } | null;
 
   identityDetails?: any;
-
+  addresses?: Address[] | null;
   createdAt: string;
+}
+
+export interface Address {
+  addressType: "RESIDENCE" | "OFFICE" | "OVERSEAS";
+  houseFlatNumber?: string | null;
+  buildingName?: string | null;
+  street?: string | null;
+  area?: string | null;
+  landmark?: string | null;
+  city?: string | null;
+  pincode?: string | null;
+  state?: string | null;
+  country?: string | null;
+
+  telephoneResidence?: string | null;
+  telephoneOffice?: string | null;
+  otherNumber?: string | null;
+  mobileNumber?: string | null;
+
+  email2?: string | null;
+  website?: string | null;
+
+  isSameAsGroupHead?: boolean;
 }
 
 export interface CustomerCampaign {

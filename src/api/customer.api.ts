@@ -13,11 +13,6 @@ export const createCustomerApi = async (data: CreateCustomerRequest) => {
   return res.data;
 };
 
-export const updateCustomerApi = async (data: CreateCustomerRequest) => {
-  const res = await api.put(`/Customer/${data.customerId}`, data);
-  return res.data;
-};
-
 export const uploadCustomerDocumentApi = async (data: FormData) => {
   const res = await api.post("/Customer/documents", data);
   return res.data;

@@ -1,28 +1,41 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  createCustomerApi,
-  updateCustomerApi,
-} from "../../api/customer.api";
-import type { CreateCustomerRequest } from "../../interfaces/customer.interface";
+import toast from "react-hot-toast";
+import { CreateCustomerRequest } from "../../interfaces/customer.interface";
+import { createCustomerApi } from "../../api/customer.api";
 
 export const useUpsertCustomer = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: CreateCustomerRequest) => {
-      if (data.customerId) {
-        return await updateCustomerApi(data);
+      const payload = { ...data };
+
+      if (payload.customerId) {
+        return await createCustomerApi(payload);
       }
 
-      return await createCustomerApi(data);
+      delete payload.customerId;
+      return await createCustomerApi(payload); 
     },
 
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
+
+      if (variables.customerId) {
+        toast.success("Customer updated successfully");
+      } else {
+        toast.success("Customer created successfully");
+      }
     },
 
-    onError: (error: any) => {
+    onError: (error: any, variables) => {
       console.error("Save customer failed:", error);
+
+      if (variables.customerId) {
+        toast.error("Customer update failed");
+      } else {
+        toast.error("Customer creation failed");
+      }
     },
   });
 };
