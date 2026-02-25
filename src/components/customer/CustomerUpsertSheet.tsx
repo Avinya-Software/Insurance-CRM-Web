@@ -419,12 +419,12 @@ const CustomerUpsertSheet = ({
       toast.error("Please save customer before uploading documents");
       return;
     }
-
+  
     if (files.length === 0) {
       toast.error("Please select at least one document");
       return;
     }
-
+  
     try {
       for (const item of files) {
         const formData = new FormData();
@@ -432,23 +432,26 @@ const CustomerUpsertSheet = ({
         formData.append("Type", "1");
         formData.append("DocumentType", item.label);
         formData.append("Files", item.file);
-        
+  
         const response = await uploadDocument(formData);
-
-      setExistingDocuments(prev => [
-        ...prev,
-        {
-          id: response?.data?.id || crypto.randomUUID(), 
-          fileName: item.file.name,
-          url: response?.data?.url || "",
-          type: item.label,
-        }
-      ]);
+  
+        setExistingDocuments(prev => [
+          ...prev,
+          {
+            id: response?.data?.id || crypto.randomUUID(),
+            fileName: item.file.name,
+            url: response?.data?.url || "",
+            type: item.label,
+          }
+        ]);
       }
-
-      toast.success("All documents uploaded successfully");
+    
       setFiles([]);
-
+  
+      onSuccess();
+  
+      onClose();
+  
     } catch (error) {
       console.error(error);
       toast.error("Document upload failed");
