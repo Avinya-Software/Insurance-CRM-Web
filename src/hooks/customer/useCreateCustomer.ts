@@ -1,17 +1,28 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createCustomerApi } from "../../api/customer.api";
+import {
+  createCustomerApi,
+  updateCustomerApi,
+} from "../../api/customer.api";
 import type { CreateCustomerRequest } from "../../interfaces/customer.interface";
 
-export const useCreateCustomer = () => {
+export const useUpsertCustomer = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateCustomerRequest) => createCustomerApi(data),
+    mutationFn: async (data: CreateCustomerRequest) => {
+      if (data.customerId) {
+        return await updateCustomerApi(data);
+      }
+
+      return await createCustomerApi(data);
+    },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
     },
+
     onError: (error: any) => {
-      console.error("Create customer failed:", error);
+      console.error("Save customer failed:", error);
     },
   });
 };

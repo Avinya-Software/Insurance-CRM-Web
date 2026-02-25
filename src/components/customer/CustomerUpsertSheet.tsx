@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { X, Eye, Download, Trash2, Plus, FileText, ShieldCheck, CreditCard, UploadCloud, ChevronRight, ChevronDown, UserPlus, AlertCircle, Home, Briefcase, Globe } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import Spinner from "../common/Spinner";
+import { useUploadCustomerDocument } from "../../hooks/customer/useUploadCustomerDocument";
+import { useUpsertCustomer } from "../../hooks/customer/useCreateCustomer";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
-const useUpsertCustomer = () => ({ mutateAsync: async (d: any) => { console.log("Saving Customer...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
 const useKycFileActions = (cb: any) => ({ 
   preview: (u: string) => toast.success("Previewing " + u), 
   download: (u: string, n: string) => toast.success("Downloading " + n), 
@@ -138,9 +139,92 @@ const CustomerUpsertSheet = ({
     { id: "Others", name: "Others" },
   ];
 
+  const buildAddressPayload = (type: "RESIDENCE" | "OFFICE" | "OVERSEAS") => {
+    if (type === "RESIDENCE") {
+      if (
+        !form.resHouseNo &&
+        !form.resStreet &&
+        !form.resCity &&
+        !form.resPincode &&
+        !form.resState
+      ) return null;
+  
+      return {
+        addressType: "RESIDENCE",
+        isSameAsGroupHead: false,
+        houseFlatNumber: form.resHouseNo || null,
+        street: form.resStreet || null,
+        area: form.resArea || null,
+        city: form.resCity || null,
+        pincode: form.resPincode || null,
+        state: form.resState || null,
+        country: form.resCountry || null,
+        telephoneResidence: form.resTelR || null,
+        telephoneOffice: form.resTelO || null,
+        otherNumber: form.resOtherNo || null,
+        email2: form.resEmail2 || null,
+        website: form.resWebsite || null
+      };
+    }
+  
+    if (type === "OFFICE") {
+      if (
+        !form.offBuildingNo &&
+        !form.offStreet &&
+        !form.offCity &&
+        !form.offPincode
+      ) return null;
+  
+      return {
+        addressType: "OFFICE",
+        isSameAsGroupHead: false,
+        occupationType: form.occDetails || null,
+        designation: form.designation || null,
+        grossIncome: Number(form.grossIncome) || 0,
+        employerName: form.employerName || null,
+        buildingName: form.offBuildingNo || null,
+        street: form.offStreet || null,
+        landmark: form.offLandmark || null,
+        city: form.offCity || null,
+        pincode: form.offPincode || null,
+        state: form.offState || null
+      };
+    }
+  
+    if (type === "OVERSEAS") {
+      if (
+        !form.osHouseNo &&
+        !form.osStreet &&
+        !form.osCity &&
+        !form.osPincode
+      ) return null;
+  
+      return {
+        addressType: "OVERSEAS",
+        isSameAsGroupHead: false,
+        houseFlatNumber: form.osHouseNo || null,
+        street: form.osStreet || null,
+        area: form.osArea || null,
+        city: form.osCity || null,
+        pincode: form.osPincode || null,
+        state: form.osState || null,
+        country: form.osCountry || null,
+        telephoneOffice: form.osTelO || null,
+        mobileNumber: form.osMobile || null,
+        email: form.osEmail || null
+      };
+    }
+  
+    return null;
+  };
+
   /*   API HOOKS   */
   const { mutateAsync, isPending } = useUpsertCustomer();
   const isLoading = isPending;
+  const isEditMode = !!customer;
+  const { mutateAsync: uploadDocument, isPending: isUploading } =
+  useUploadCustomerDocument();
+
 
   /*   PREFILL   */
   useEffect(() => {
@@ -187,35 +271,171 @@ const CustomerUpsertSheet = ({
   /*   SAVE  */
   const handleSave = async () => {
     if (!validate()) return;
-
+  
     try {
-      const formData = new FormData();
-      Object.entries(form).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          formData.append(key, String(value));
-        }
-      });
+      const payload: any = {
+        customerId: form.customerId || undefined,
+        title: form.title,
+        clientName: form.fullName,
+        groupHeadName: form.groupHeadName || null,
+        groupCode: form.groupCode || null,
+        clientCategory: form.clientCategory || null,
+        fatherSpouseCompanyName: form.fatherSpouseName || null,
+        primaryMobile: form.mobileNumber,
+        email: form.email || null,
+        dob: form.dob ? new Date(form.dob).toISOString() : null,
+        anniversaryDate: form.anniversaryDate
+          ? new Date(form.anniversaryDate).toISOString()
+          : null,
+        age: Number(form.age) || 0,
+        gender: form.gender || null,
+        maritalStatus: form.maritalStatus || null,
+        nationality: form.nationality || null,
+        birthPlace: form.birthPlace || null,
+        isPassedAway: form.passedAway || false,
+        education: form.education || null,
+        referenceName: form.reference || null,
+        notes: "",
+        remarks: form.remarks || null,
+        leadId: form.leadId || null,
+  
+        occupation: {
+          occupationType: form.occDetails || null,
+          designation: form.designation || null,
+          grossIncome: Number(form.grossIncome) || 0,
+          employerName: form.employerName || null
+        },
+  
+        addresses: [
+          buildAddressPayload("RESIDENCE"),
+          buildAddressPayload("OFFICE"),
+          buildAddressPayload("OVERSEAS")
+        ].filter(Boolean),
+  
+        identityDetails: {
+          aadharNumber: form.aadharNumber || null,
+          panNumber: form.panNumber || null,
+          gstNumber: form.gstNumber || null,
+          drivingLicenceNumber: form.drivingLicenceNo || null,
+          drivingLicenceExpDate: form.drivingLicenceExpDate
+            ? new Date(form.drivingLicenceExpDate).toISOString()
+            : null,
+          ckycNumber: form.ckycNumber || null,
+          eInsuranceNumber: form.eInsuranceNumber || null,
+          passportNumber: form.passportNumber || null,
+          passportExpDate: form.passportExpDate
+            ? new Date(form.passportExpDate).toISOString()
+            : null
+        },
+  
+      };
+  
+      const response = await mutateAsync(payload);
 
-      files.forEach((f) => {
-        formData.append("KycFiles", f.file);
-        formData.append("DocumentTypes", f.type);
-        formData.append("DocumentLabels", f.label);
-      });
-
-      await mutateAsync(formData);
-      toast.success("Customer saved successfully");
-      onClose();
+    if (response?.customerId) {
+      setForm(prev => ({
+        ...prev,
+        customerId: response.customerId
+      }));
+    }
+  
       onSuccess();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Something went wrong");
+      toast.error(
+        error?.response?.data?.message || "Something went wrong"
+      );
     }
   };
 
-  if (!open) return null;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+  
+    if (!selectedDocName) {
+      toast.error("Please select a document type first");
+      return;
+    }
+  
+    if (!form.customerId) {
+      toast.error("Please save customer first");
+      return;
+    }
+  
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+  
+    const newFiles = Array.from(e.target.files).map(file => {
+      if (file.size > MAX_SIZE) {
+        toast.error(`${file.name} exceeds 10MB limit`);
+        return null;
+      }
+  
+      return {
+        file,
+        type: "KYC",
+        label: selectedDocName
+      };
+    }).filter(Boolean) as { file: File; type: string; label: string }[];
+  
+    if (newFiles.length === 0) return;
+  
+    setFiles(prev => [...prev, ...newFiles]);
+    setSelectedDocName("");
+    e.target.value = "";
+  };
+
+  const handleUploadDocuments = async () => {
+    if (!form.customerId) {
+      toast.error("Please save customer before uploading documents");
+      return;
+    }
+
+    if (files.length === 0) {
+      toast.error("Please select at least one document");
+      return;
+    }
+
+    try {
+      for (const item of files) {
+        const formData = new FormData();
+        formData.append("Id", form.customerId);
+        formData.append("Type", "1");
+        formData.append("DocumentType", item.label);
+        formData.append("Files", item.file);
+        
+        const response = await uploadDocument(formData);
+
+      setExistingDocuments(prev => [
+        ...prev,
+        {
+          id: response?.data?.id || crypto.randomUUID(), 
+          fileName: item.file.name,
+          url: response?.data?.url || "",
+          type: item.label,
+        }
+      ]);
+      }
+
+      toast.success("All documents uploaded successfully");
+      setFiles([]);
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Document upload failed");
+    }
+  };
+
+  const blockDocumentAccess = () => {
+    if (!isEditMode) {
+      toast.error("Please save customer first to access documents");
+      return true;
+    }
+    return false;
+  };
+
+  if (!open) return null; 
 
   return (
     <>
-      <Toaster />
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
 
       <div 
@@ -240,25 +460,37 @@ const CustomerUpsertSheet = ({
 
         {/* TABS */}
         <div className="px-8 bg-white border-b flex gap-8">
-          {[
+        {[
             { id: "basic", label: "Insured Member's Basic Information", icon: UserPlus },
             { id: "residential", label: "Residential Information", icon: Home },
-            { id: "documents", label: "Personal Documents", icon: FileText },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
-              className={`
-                flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-all
-                ${activeTab === tab.id 
-                  ? "border-blue-600 text-blue-600" 
-                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200"}
-              `}
-            >
-              <tab.icon size={18} />
-              {tab.label}
-            </button>
-          ))}
+            ...(isEditMode
+              ? [{ id: "documents", label: "Personal Documents", icon: FileText }]
+              : [{ id: "documents", label: "Personal Documents", icon: FileText, disabled: true }]),
+          ].map((tab: any) => {
+
+            const isDisabled = tab.id === "documents" && !isEditMode;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (tab.id === "documents" && blockDocumentAccess()) return;
+                
+                  setActiveTab(tab.id as TabType);
+                }}
+                className={`
+                  flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-all
+                  ${activeTab === tab.id
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200"}
+                  ${isDisabled ? "opacity-40 cursor-not-allowed pointer-events-auto" : ""}
+                `}
+              >
+                <tab.icon size={18} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* BODY */}
@@ -453,7 +685,7 @@ const CustomerUpsertSheet = ({
               </div>
             )}
 
-            {activeTab === "documents" && (
+              {isEditMode && activeTab === "documents" && (
               <div className="space-y-8">
                 {/* UPLOAD SECTION */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -486,28 +718,17 @@ const CustomerUpsertSheet = ({
                           multiple
                           accept=".pdf,.jpg,.jpeg,.png"
                           className="hidden"
-                          disabled={isLoading}
-                          onChange={(e) => {
-                            if (!e.target.files) return;
-                            if (!selectedDocName) {
-                              toast.error("Please select a document type first");
-                              return;
-                            }
-                            const newFiles = Array.from(e.target.files).map(f => ({ 
-                              file: f, 
-                              type: "KYC", 
-                              label: selectedDocName
-                            }));
-                            setFiles(prev => [...prev, ...newFiles]);
-                            setSelectedDocName(""); 
-                            e.target.value = ""; 
-                          }}                  
+                          disabled={isLoading || !selectedDocName}
+                          onChange={handleFileChange}     
                         />
                         <label 
                           htmlFor="kyc-upload"
                           className={`
-                            flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl transition-all cursor-pointer group
-                            ${!selectedDocName ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-50' : 'bg-white border-blue-200 hover:bg-blue-50/50 hover:border-blue-400 shadow-sm'}
+                            flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl transition-all group
+                            ${!selectedDocName
+                              ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-50'
+                              : 'bg-white border-blue-200 hover:bg-blue-50/50 hover:border-blue-400 shadow-sm cursor-pointer'
+                            }
                           `}
                         >
                           <div className="flex items-center gap-6">
@@ -532,23 +753,38 @@ const CustomerUpsertSheet = ({
                   {/* NEW FILES */}
                   {files.length > 0 && (
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+
+                      {/* Header */}
                       <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
-                        <Plus size={18} className="text-blue-600" /> New Attachments
+                        <Plus size={18} className="text-blue-600" /> 
+                        New Attachments
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                      {/* File List */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         {files.map((f, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group"
+                          >
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="p-2 bg-white rounded-lg text-blue-600 shadow-sm">
                                 <FileText size={16} />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-sm font-bold text-slate-700 truncate">{f.label}</p>
-                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{f.file.name}</p>
+                                <p className="text-sm font-bold text-slate-700 truncate">
+                                  {f.label}
+                                </p>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                                  {f.file.name}
+                                </p>
                               </div>
                             </div>
-                            <button 
-                              onClick={() => setFiles(prev => prev.filter((_, i) => i !== idx))}
+
+                            <button
+                              onClick={() =>
+                                setFiles(prev => prev.filter((_, i) => i !== idx))
+                              }
                               className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                             >
                               <Trash2 size={16} />
@@ -556,6 +792,18 @@ const CustomerUpsertSheet = ({
                           </div>
                         ))}
                       </div>
+
+                      {/* Upload Button */}
+                      <div className="flex justify-end">
+                        <button
+                          onClick={handleUploadDocuments}
+                          disabled={isUploading}
+                          className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                          {isUploading ? "Uploading..." : "Upload Documents"}
+                        </button>
+                      </div>
+
                     </div>
                   )}
 
@@ -589,7 +837,10 @@ const CustomerUpsertSheet = ({
                                   if (!confirm("Delete this document?")) return;
                                   try {
                                     await remove(customer.customerId, file.id);
-                                  } catch {
+                                    setExistingDocuments(prev =>
+                                      prev.filter(f => f.id !== file.id)
+                                    );
+                                    } catch {
                                     toast.error("Failed to delete document");
                                   }
                                 }}
@@ -632,7 +883,13 @@ const CustomerUpsertSheet = ({
           <div className="flex gap-4">
             {activeTab !== "basic" && (
               <button
-                onClick={() => setActiveTab(activeTab === "documents" ? "residential" : "basic")}
+              onClick={() => {
+                if (activeTab === "documents") {
+                  setActiveTab("residential");
+                } else if (activeTab === "residential") {
+                  setActiveTab("basic");
+                }
+              }}
                 className="px-6 py-2.5 text-sm font-bold text-white bg-red-400 hover:bg-red-500 rounded flex items-center gap-2 transition-all"
               >
                 Previous
@@ -640,8 +897,19 @@ const CustomerUpsertSheet = ({
             )}
             {activeTab !== "documents" && (
               <button
-                onClick={() => setActiveTab(activeTab === "basic" ? "residential" : "documents")}
-                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-400 hover:bg-blue-500 rounded flex items-center gap-2 transition-all"
+              onClick={() => {
+                if (activeTab === "basic") {
+                  setActiveTab("residential");
+                  return;
+                }
+              
+                if (activeTab === "residential") {
+                  if (blockDocumentAccess()) return;
+              
+                  setActiveTab("documents");
+                }
+              }}
+              className="px-6 py-2.5 text-sm font-bold text-white bg-blue-400 hover:bg-blue-500 rounded flex items-center gap-2 transition-all"
               >
                 Next <ChevronRight size={18} />
               </button>

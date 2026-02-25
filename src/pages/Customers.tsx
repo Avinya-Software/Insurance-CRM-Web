@@ -80,7 +80,7 @@ const Customers = () => {
   const handleCustomerSuccess = () => {
     setOpenCustomerSheet(false);
     refetch();
-    toast.success("Customer saved successfully!");
+    // toast.success("Customer saved successfully!");
   };
 
   const handlePolicySuccess = () => {
