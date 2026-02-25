@@ -4,14 +4,8 @@ import toast, { Toaster } from "react-hot-toast";
 import Spinner from "../common/Spinner";
 import { useUploadCustomerDocument } from "../../hooks/customer/useUploadCustomerDocument";
 import { useUpsertCustomer } from "../../hooks/customer/useCreateCustomer";
-import { Address } from "../../interfaces/customer.interface";
+import { useKycFileActions } from "../../hooks/customer/useKycFileActions";
 
-// --- MOCK HOOKS (Replace with real ones in production) ---
-const useKycFileActions = (cb: any) => ({ 
-  preview: (u: string) => toast.success("Previewing " + u), 
-  download: (u: string, n: string) => toast.success("Downloading " + n), 
-  remove: async (cid: string, fid: string) => { toast.success("Removed document " + fid); cb(fid); } 
-});
 
 interface Props {
   open: boolean;
@@ -615,7 +609,7 @@ const CustomerUpsertSheet = ({
                   </div>
                   <Input label="Group Head Name" value={form.groupHeadName} placeholder="Group Head Name" onChange={(v: any) => setForm(p => ({ ...p, groupHeadName: v }))} />
                   <Input label="Group Code" value={form.groupCode} placeholder="Group Code" onChange={(v: any) => setForm(p => ({ ...p, groupCode: v }))} />
-                  <Select label="Client Category" value={form.clientCategory} options={[{id: "Individual", name: "Individual"}, {id: "Corporate", name: "Corporate"}]} onChange={(v: any) => setForm(p => ({ ...p, clientCategory: v }))} />
+                  <Select label="Client Category" value={form.clientCategory} options={[{id: "Retail", name: "Retail"}, {id: "Corporate", name: "Corporate"}]} onChange={(v: any) => setForm(p => ({ ...p, clientCategory: v }))} />
                   
                   <Input label="Father / Spouse / Company Name" value={form.fatherSpouseName} placeholder="Father / Spouse / Company Name" onChange={(v: any) => setForm(p => ({ ...p, fatherSpouseName: v }))} />
                   <Input label="E-Mail Id" type="email" value={form.email} placeholder="E-mail ID" onChange={(v: any) => setForm(p => ({ ...p, email: v }))} />
@@ -639,18 +633,14 @@ const CustomerUpsertSheet = ({
                   <Input label="Age" value={form.age} placeholder="Age" onChange={(v: any) => setForm(p => ({ ...p, age: v }))} />
                   <Input label="Anniversary Date" type="date" value={form.anniversaryDate} onChange={(v: any) => setForm(p => ({ ...p, anniversaryDate: v }))} />
                   <Select label="Gender" value={form.gender} options={[{id: "Male", name: "Male"}, {id: "Female", name: "Female"}, {id: "Other", name: "Other"}]} onChange={(v: any) => setForm(p => ({ ...p, gender: v }))} />
-                  <Select label="Marital Status" value={form.maritalStatus} options={[{id: "Single", name: "Single"}, {id: "Married", name: "Married"}]} onChange={(v: any) => setForm(p => ({ ...p, maritalStatus: v }))} />
-                  
-                  <Select label="Nationality" value={form.nationality} options={[{id: "Indian", name: "Indian"}, {id: "Other", name: "Other"}]} onChange={(v: any) => setForm(p => ({ ...p, nationality: v }))} />
-                  <Input label="Birth Place" value={form.birthPlace} placeholder="Birth Place" onChange={(v: any) => setForm(p => ({ ...p, birthPlace: v }))} />
+                  <Select label="Marital Status" value={form.maritalStatus} options={[{id: "Single", name: "Single"}, {id: "Married", name: "Married"}, {id: "Divorced", name: "Divorced"}, {id: "Widow", name: "Widow"}]} onChange={(v: any) => setForm(p => ({ ...p, maritalStatus: v }))} />
+                  <Input label="Nationality" value={form.nationality || "Indian"} placeholder="Nationality" onChange={(v: any) => setForm(p => ({ ...p, nationality: v })) }/>                  <Input label="Birth Place" value={form.birthPlace} placeholder="Birth Place" onChange={(v: any) => setForm(p => ({ ...p, birthPlace: v }))} />
                   <Input label="Aadhar Number" value={form.aadharNumber} placeholder="Aadhar No" onChange={(v: any) => setForm(p => ({ ...p, aadharNumber: v }))} />
                   <Input label="PAN Number" value={form.panNumber} placeholder="PAN No" onChange={(v: any) => setForm(p => ({ ...p, panNumber: v }))} />
-                  
                   <Input label="GST Number" value={form.gstNumber} placeholder="GST Number" onChange={(v: any) => setForm(p => ({ ...p, gstNumber: v }))} />
                   <Input label="Driving Licence Number" value={form.drivingLicenceNo} placeholder="Driving Licence No" onChange={(v: any) => setForm(p => ({ ...p, drivingLicenceNo: v }))} />
                   <Input label="Driving Licence Exp. Date" type="date" value={form.drivingLicenceExpDate} onChange={(v: any) => setForm(p => ({ ...p, drivingLicenceExpDate: v }))} />
                   <Input label="CKYC Number" value={form.ckycNumber} placeholder="CKYC Number" onChange={(v: any) => setForm(p => ({ ...p, ckycNumber: v }))} />
-                  
                   <Input label="E-Insurance Number" value={form.eInsuranceNumber} placeholder="E-Insurance Number" onChange={(v: any) => setForm(p => ({ ...p, eInsuranceNumber: v }))} />
                   <Input label="Education" value={form.education} placeholder="Education Qualification" onChange={(v: any) => setForm(p => ({ ...p, education: v }))} />
                   <Input label="Passport Number" value={form.passportNumber} placeholder="Passport No" onChange={(v: any) => setForm(p => ({ ...p, passportNumber: v }))} />
