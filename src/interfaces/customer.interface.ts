@@ -1,16 +1,65 @@
 export interface CreateCustomerRequest {
   customerId?: string;
-  fullName: string;
+  title?: string;
+  clientName: string;
+  groupHeadName?: string;
+  groupCode?: string;
+  clientCategory?: string;
+  fatherSpouseCompanyName?: string;
   primaryMobile: string;
-  secondaryMobile?: string;
   email: string;
-  address?: string;
-  leadId?: string;
   dob?: string;
-  anniversary?: string;
+  anniversaryDate?: string;
+  age?: number;
+  gender?: string;
+  maritalStatus?: string;
+  nationality?: string;
+  birthPlace?: string;
+  isPassedAway?: boolean;
+  education?: string;
+  referenceName?: string;
   notes?: string;
-  advisorId?: string;
-  kycFiles?: File[];
+  remarks?: string;
+  leadId?: string;
+
+  occupation?: {
+    occupationType?: string;
+    designation?: string;
+    grossIncome?: number;
+    employerName?: string;
+  };
+
+  addresses?: {
+    addressType?: string;
+    isSameAsGroupHead?: boolean;
+    houseFlatNumber?: string;
+    buildingName?: string;
+    street?: string;
+    area?: string;
+    landmark?: string;
+    city?: string;
+    pincode?: string;
+    state?: string;
+    country?: string;
+    telephoneResidence?: string;
+    telephoneOffice?: string;
+    otherNumber?: string;
+    mobileNumber?: string;
+    email2?: string;
+    website?: string;
+  }[];
+
+  identityDetails?: {
+    aadharNumber?: string;
+    panNumber?: string;
+    gstNumber?: string;
+    drivingLicenceNumber?: string;
+    drivingLicenceExpDate?: string;
+    ckycNumber?: string;
+    eInsuranceNumber?: string;
+    passportNumber?: string;
+    passportExpDate?: string;
+  };
 }
 
 export interface CustomerResponse {
@@ -69,8 +118,31 @@ export interface Customer {
   } | null;
 
   identityDetails?: any;
-
+  addresses?: Address[] | null;
   createdAt: string;
+}
+
+export interface Address {
+  addressType: "RESIDENCE" | "OFFICE" | "OVERSEAS";
+  houseFlatNumber?: string | null;
+  buildingName?: string | null;
+  street?: string | null;
+  area?: string | null;
+  landmark?: string | null;
+  city?: string | null;
+  pincode?: string | null;
+  state?: string | null;
+  country?: string | null;
+
+  telephoneResidence?: string | null;
+  telephoneOffice?: string | null;
+  otherNumber?: string | null;
+  mobileNumber?: string | null;
+
+  email2?: string | null;
+  website?: string | null;
+
+  isSameAsGroupHead?: boolean;
 }
 
 export interface CustomerCampaign {
