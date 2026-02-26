@@ -93,3 +93,14 @@ export interface PolicyByCustomerDropdownDto {
   policyId: string;
   policyNumber: string;
 }
+
+export interface InsuranceTypeDto {
+  id: number;
+  type: string;
+}
+
+export interface InsuranceTypeResponse {
+  statusCode: number;
+  statusMessage: string;
+  data: InsuranceTypeDto[];
+}
