@@ -3,6 +3,9 @@ import { X, Eye, Download, Trash2, Plus, FileText, ShieldCheck, CreditCard, Uplo
 import toast, { Toaster } from "react-hot-toast";
 import Spinner from "../common/Spinner";
 import SearchableComboBox from "../common/SearchableComboBox";
+import { useInsuranceTypes } from "../../hooks/policy/useInsuranceTypes";
+import { useCompanyList } from "../../hooks/policy/useCompany";
+import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
 const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
@@ -16,6 +19,7 @@ const usePolicyDocumentActions = (cb: any) => ({
   download: (p: any, f: any, n: any) => toast.success("Downloading " + n), 
   remove: async (p: any, f: any) => { toast.success("Removed " + f); cb(f); } 
 });
+
 
 interface Props {
   open: boolean;
@@ -43,6 +47,9 @@ const PolicyUpsertSheet = ({
       document.body.style.overflow = "unset";
     };
   }, [open]);
+  const { data: insuranceTypes } = useInsuranceTypes();
+  const { data: companies } = useCompanyList();
+
 
   /*   POLICY DOCUMENT ACTIONS   */
   const [existingDocuments, setExistingDocuments] = useState<
@@ -161,6 +168,10 @@ const PolicyUpsertSheet = ({
   const [files, setFiles] = useState<{ file: File; type: string; label: string }[]>([]);
   const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { data: products } = useCompanyWiseProduct(
+    form.insurerId,
+    Number(form.insuranceType) 
+  );
 
   const documentOptions = [
     { id: "Policy Copy", name: "Policy Copy" },
@@ -217,13 +228,11 @@ const PolicyUpsertSheet = ({
   
   /*   API HOOKS   */
   const { mutateAsync, isPending } = useUpsertPolicy();
-  const { data: insurers, isLoading: iLoading } = useInsurerDropdown();
-  const { data: products, isLoading: pLoading } = useProductDropdown(form.insurerId || undefined);
   const { data: policyTypes, isLoading: tLoading } = usePolicyTypesDropdown();
   const { data: policyStatuses, isLoading: sLoading } = usePolicyStatusesDropdown();
 
-  const loadingDropdowns = iLoading || pLoading || tLoading || sLoading;
-  const isLoading = isPending;
+  const loadingDropdowns = tLoading || sLoading;
+    const isLoading = isPending;
 
   /*   PREFILL   */
   useEffect(() => {
@@ -450,29 +459,57 @@ const PolicyUpsertSheet = ({
                         onChange={(v: any) => setForm(p => ({ ...p, baName: v }))}
                       />
                       <SearchableComboBox
-                        label="Company Name"
-                        required
-                        items={(insurers || []).map((i: any) => ({ value: i.insurerId, label: i.insurerName }))}
-                        value={form.insurerId}
-                        error={errors.insurerId}
-                        onSelect={(item) => setForm({ ...form, insurerId: item?.value as string || "", productId: "" })}
-                      />
-                      <Select
-                        label="Insurance Type"
-                        required
-                        value={form.insuranceType}
-                        options={[{ id: "Jewellery Insurance", name: "Jewellery Insurance" }, { id: "Motor Insurance", name: "Motor Insurance" }]}
-                        onChange={(v: any) => setForm(p => ({ ...p, insuranceType: v }))}
-                      />
+  label="Company Name"
+  required
+  items={(companies || []).map((c: any) => ({
+    value: c.companyId,
+    label: c.companyName,
+  }))}
+  value={form.insurerId}
+  error={errors.insurerId}
+  onSelect={(item) =>
+    setForm({
+      ...form,
+      insurerId: item?.value || "",
+      productId: "",
+    })
+  }
+/>
                       <SearchableComboBox
-                        label="Product Name"
-                        required
-                        items={(products || []).map((p: any) => ({ value: p.productId, label: p.productName }))}
-                        value={form.productId}
-                        error={errors.productId}
-                        disabled={!form.insurerId}
-                        onSelect={(item) => setForm({ ...form, productId: item?.value as string || "" })}
-                      />
+                          label="Insurance Type"
+                          required
+                          value={form.insuranceType}
+                          items={
+                            insuranceTypes?.map((item) => ({
+                              label: item.type,
+                              value: String(item.id),
+                            })) || []
+                          }
+                          placeholder="Select Insurance Type"
+                          onSelect={(item) =>
+                            setForm((p) => ({
+                              ...p,
+                              insuranceType: item?.value || "",
+                            }))
+                          }
+                        />
+                      <SearchableComboBox
+  label="Product Name"
+  required
+  items={(products || []).map((p: any) => ({
+    value: p.id,
+    label: p.productName,
+  }))}
+  value={form.productId}
+  error={errors.productId}
+  disabled={!form.insurerId || !form.insuranceType}
+  onSelect={(item) =>
+    setForm({
+      ...form,
+      productId: item?.value || "",
+    })
+  }
+/>
                       <Input
                         type="date"
                         label="Login Date"

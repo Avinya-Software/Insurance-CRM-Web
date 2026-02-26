@@ -15,9 +15,9 @@ import {
   ListTodo,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
-
 /* ================= JWT HELPER ================= */
 
 const getUserFromToken = () => {
@@ -38,6 +38,8 @@ const getUserFromToken = () => {
   }
 };
 
+
+
 /*************  ✨ Windsurf Command ⭐  *************/
 /**
  * Sidebar component, displays a collapsible sidebar with navigation links and user information.
@@ -49,6 +51,7 @@ const Sidebar = () => {
   const user = getUserFromToken();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [openPolicies, setOpenPolicies] = useState(false); // ✅ MOVE HERE
 
   const isAdmin = user?.role === "SuperAdmin";
 
@@ -135,12 +138,46 @@ const Sidebar = () => {
               isCollapsed={isCollapsed}
             />
 
-            <NavItem
-              to="/policies"
-              icon={<FileText size={18} />}
-              label="Policies"
-              isCollapsed={isCollapsed}
-            />
+            {/* ================= POLICIES MENU ================= */}
+            <div>
+              <div
+                onClick={() => setOpenPolicies(!openPolicies)}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
+                  ${isCollapsed ? "justify-center" : ""}
+                  text-slate-300 hover:bg-slate-800`}
+              >
+                <FileText size={18} />
+
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1">Policies</span>
+                    {openPolicies ? (
+                      <ChevronDown size={16} />
+                    ) : (
+                      <ChevronRight size={16} />
+                    )}
+                  </>
+                )}
+              </div>
+
+              {openPolicies && !isCollapsed && (
+                <div className="ml-6 mt-1 space-y-1">
+                  <NavItem
+                    to="/policies"
+                    label="General Policy"
+                    icon={<FileText size={16} />}
+                    isCollapsed={false}
+                  />
+
+                  <NavItem
+                    to="/lifepolicies"
+                    label="Life Policy"
+                    icon={<FileText size={16} />}
+                    isCollapsed={false}
+                  />
+                </div>
+              )}
+            </div>
 
             <NavItem
               to="/claims"

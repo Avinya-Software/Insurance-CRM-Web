@@ -1,4 +1,4 @@
-import type { PoliciesResponse, PolicyByCustomerDropdownDto, UpsertPolicyPayload } from "../interfaces/policy.interface";
+import type { InsuranceTypeResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertPolicyPayload } from "../interfaces/policy.interface";
 import api from "./axios";
 
 /*   UPSERT POLICY   */
@@ -125,3 +125,26 @@ export const getPoliciesByCustomerApi = async (
   return res.data?.data || [];   
 };
 
+export const getInsuranceTypesApi = async () => {
+  const res = await api.get<InsuranceTypeResponse>(
+    "/Insurer/InsuranceType"
+  );
+
+  return res.data.data; 
+};
+
+export const getCompanyListApi = async () => {
+  const res = await api.get("/Admin/CompanyList");
+  return res.data?.data || [];
+};
+
+export const getCompanyWiseProductApi = async (
+  companyId: string,
+  insurance: number
+) => {
+  const res = await api.get("/products/CompanyWiseProduct", {
+    params: { companyId, insurance },
+  });
+
+  return res.data?.data || [];
+};

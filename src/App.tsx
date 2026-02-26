@@ -52,6 +52,7 @@ function App() {
           <Route path="/leads" element={<Lead />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/policies" element={<Policies />} />
+          <Route path="lifepolicies" element={<Policies />} />
           <Route path="/insurer" element={<Insurer />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
