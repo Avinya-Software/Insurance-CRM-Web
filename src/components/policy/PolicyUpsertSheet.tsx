@@ -6,6 +6,7 @@ import SearchableComboBox from "../common/SearchableComboBox";
 import { useInsuranceTypes } from "../../hooks/policy/useInsuranceTypes";
 import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
+import PolicyRelatedInfo from "./PolicyRelatedInfo";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
 const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
@@ -87,6 +88,9 @@ const PolicyUpsertSheet = ({
     addOnName: "",
     hpaName: "",
     hpaBranch: "",
+    insuranceSubType: "",
+    eligibleForHealthCheckup: "No",
+    longTermPolicy: "No",
 
     // Premium Details
     premiumNet: 0,
@@ -234,6 +238,16 @@ const PolicyUpsertSheet = ({
   const loadingDropdowns = tLoading || sLoading;
     const isLoading = isPending;
 
+const insuranceTypeId = Number(form.insuranceType || 0);
+
+const showInsuranceSubType =
+  [3, 4, 5, 6, 9, 10, 19, 22].includes(insuranceTypeId);
+
+const showHealthCheckup = insuranceTypeId === 6;
+
+const showLongTermPolicy =
+  [12, 13, 14, 15, 16, 17, 18].includes(insuranceTypeId); 
+
   /*   PREFILL   */
   useEffect(() => {
     if (!open) {
@@ -326,6 +340,8 @@ const PolicyUpsertSheet = ({
   };
 
   if (!open) return null;
+
+
 
   return (
     <>
@@ -459,22 +475,22 @@ const PolicyUpsertSheet = ({
                         onChange={(v: any) => setForm(p => ({ ...p, baName: v }))}
                       />
                       <SearchableComboBox
-  label="Company Name"
-  required
-  items={(companies || []).map((c: any) => ({
-    value: c.companyId,
-    label: c.companyName,
-  }))}
-  value={form.insurerId}
-  error={errors.insurerId}
-  onSelect={(item) =>
-    setForm({
-      ...form,
-      insurerId: item?.value || "",
-      productId: "",
-    })
-  }
-/>
+                          label="Company Name"
+                          required
+                          items={(companies || []).map((c: any) => ({
+                            value: c.companyId,
+                            label: c.companyName,
+                          }))}
+                          value={form.insurerId}
+                          error={errors.insurerId}
+                          onSelect={(item) =>
+                            setForm({
+                              ...form,
+                              insurerId: item?.value || "",
+                              productId: "",
+                            })
+                          }
+                        />
                       <SearchableComboBox
                           label="Insurance Type"
                           required
@@ -482,34 +498,105 @@ const PolicyUpsertSheet = ({
                           items={
                             insuranceTypes?.map((item) => ({
                               label: item.type,
-                              value: String(item.id),
+                              value: String(item.id),  
                             })) || []
                           }
-                          placeholder="Select Insurance Type"
-                          onSelect={(item) =>
-                            setForm((p) => ({
-                              ...p,
-                              insuranceType: item?.value || "",
-                            }))
-                          }
+                          onSelect={(item) => {
+                            const selectedId = item?.value || "";
+                            const numericId = Number(selectedId);
+
+                            setForm((prev) => ({
+                              ...prev,
+                              insuranceType: selectedId,
+                              insuranceSubType: "",
+                              eligibleForHealthCheckup: numericId === 6 ? "No" : "",
+                              longTermPolicy: [12,13,14,15,16,17,18].includes(numericId) ? "No" : "",
+                            }));
+                          }}
                         />
                       <SearchableComboBox
-  label="Product Name"
-  required
-  items={(products || []).map((p: any) => ({
-    value: p.id,
-    label: p.productName,
-  }))}
-  value={form.productId}
-  error={errors.productId}
-  disabled={!form.insurerId || !form.insuranceType}
-  onSelect={(item) =>
-    setForm({
-      ...form,
-      productId: item?.value || "",
-    })
-  }
-/>
+                          label="Product Name"
+                          required
+                          items={(products || []).map((p: any) => ({
+                            value: p.id,
+                            label: p.productName,
+                          }))}
+                          value={form.productId}
+                          error={errors.productId}
+                          disabled={!form.insurerId || !form.insuranceType}
+                          onSelect={(item) => {
+                            const selectedId = item?.value || "";
+                          
+                            const numericId = Number(selectedId);
+                          
+                            setForm((prev) => ({
+                              ...prev,
+                              productId: selectedId, 
+                              insuranceSubType: "",
+                              eligibleForHealthCheckup: numericId === 6 ? "No" : "",
+                              longTermPolicy: [12,13,14,15,16,17,18].includes(numericId) ? "No" : "",
+                            }));
+                          }}
+                        />
+
+                        {/* Insurance Sub Type */}
+                          {showInsuranceSubType && (
+                            <Select
+                              label="Insurance Sub Type"
+                              required
+                              value={form.insuranceSubType}
+                              options={[
+                                { id: "Referred", name: "Referred" },
+                                { id: "Preferred", name: "Preferred" },
+                                { id: "Declined", name: "Declined" },
+                              ]}
+                              onChange={(v: any) =>
+                                setForm((p) => ({ ...p, insuranceSubType: v }))
+                              }
+                            />
+                          )}
+
+                          {showHealthCheckup && (
+                            <div className="flex flex-col gap-2">
+                              <label className="text-sm font-medium text-slate-700">
+                                Eligible For Health Checkup
+                              </label>
+
+                              <div className="flex items-center gap-6">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="eligibleForHealthCheckup"
+                                    value="Yes"
+                                    checked={form.eligibleForHealthCheckup === "Yes"}
+                                    onChange={(e) =>
+                                      setForm((p) => ({
+                                        ...p,
+                                        eligibleForHealthCheckup: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  Yes
+                                </label>
+
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="eligibleForHealthCheckup"
+                                    value="No"
+                                    checked={form.eligibleForHealthCheckup === "No"}
+                                    onChange={(e) =>
+                                      setForm((p) => ({
+                                        ...p,
+                                        eligibleForHealthCheckup: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  No
+                                </label>
+                              </div>
+                            </div>
+                          )}
                       <Input
                         type="date"
                         label="Login Date"
@@ -565,7 +652,6 @@ const PolicyUpsertSheet = ({
                     </div>
                     
                     <div className="p-6 space-y-6">
-                      {/* First 3 rows of premium details */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <Input label="Basic/OD Premium" type="number" value={form.basicODPremium} onChange={(v: any) => setForm(p => ({ ...p, basicODPremium: Number(v) }))} />
                         <div className="flex items-end gap-2">
@@ -599,9 +685,7 @@ const PolicyUpsertSheet = ({
                         <Select label="Claim Process" value={form.claimProcess} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, claimProcess: v }))} />
                       </div>
 
-                      {/* Brokerage Rows with Checkboxes */}
                       <div className="space-y-6 pt-4 border-t border-slate-50">
-                        {/* IRDA Brokerage */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
                           <Select label="Brokerage On IRDA" value={form.brokerageOnIRDA} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnIRDA: v }))} />
                           <Input label="Brokerage Per IRDA" type="number" value={form.brokeragePerIRDA} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerIRDA: Number(v) }))} />
@@ -618,7 +702,6 @@ const PolicyUpsertSheet = ({
                           </div>
                         </div>
 
-                        {/* Reward Brokerage */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
                           <Select label="Brokerage On Reward" value={form.brokerageOnReward} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnReward: v }))} />
                           <Input label="Brokerage Per Reward" type="number" value={form.brokeragePerReward} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerReward: Number(v) }))} />
@@ -635,7 +718,6 @@ const PolicyUpsertSheet = ({
                           </div>
                         </div>
 
-                        {/* BA Brokerage */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
                           <Select label="BA Brokerage On" value={form.baBrokerageOn} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, baBrokerageOn: v }))} />
                           <Input label="BA Brokerage Per" type="number" value={form.baBrokeragePer} onChange={(v: any) => setForm(p => ({ ...p, baBrokeragePer: Number(v) }))} />
@@ -691,9 +773,15 @@ const PolicyUpsertSheet = ({
                 </>
               )}
 
-              {activeTab === "related" && (
+{activeTab === "related" && (
+  <PolicyRelatedInfo
+    form={form}
+    setForm={setForm}
+    insuranceTypeId={Number(form.insuranceType || 0)}
+  />
+)}
+              {/* {activeTab === "related" && (
                 <div className="space-y-8">
-                  {/* IDV DETAILS */}
                   <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                     <div className="px-6 py-3 bg-slate-700 text-white">
                       <h3 className="font-bold text-xs uppercase tracking-widest">IDV DETAILS</h3>
@@ -707,7 +795,6 @@ const PolicyUpsertSheet = ({
                     </div>
                   </div>
 
-                  {/* TOTAL IDV / SA */}
                   <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                     <div className="px-6 py-3 bg-slate-700 text-white">
                       <h3 className="font-bold text-xs uppercase tracking-widest">TOTAL IDV / SA</h3>
@@ -726,7 +813,6 @@ const PolicyUpsertSheet = ({
                     </div>
                   </div>
 
-                  {/* Motor/Vehicle Details */}
                   <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                     <div className="px-6 py-3 bg-slate-700 text-white">
                       <h3 className="font-bold text-xs uppercase tracking-widest">Motor/Vehicle Details</h3>
@@ -756,7 +842,7 @@ const PolicyUpsertSheet = ({
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
 
               {activeTab === "documents" && (
                 <div className="space-y-8">
