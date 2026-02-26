@@ -20,18 +20,24 @@ export const useKycFileActions = (
     try {
       if (!fileUrl) throw new Error("Invalid file URL");
   
-      const name =
-        fileName ?? fileUrl.split("/").pop() ?? "document";
+      const name = fileName ?? fileUrl.split("/").pop() ?? "document";
   
-      const a = document.createElement("a");
-      a.href = fileUrl;
-      a.download = name;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      fetch(fileUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
   
-      toast.success("Download Successfully");
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = name;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+  
+          setTimeout(() => URL.revokeObjectURL(url), 3000);
+  
+          toast.success("Download Successfully");
+        });
   
     } catch (err) {
       console.error("Download failed:", err);
