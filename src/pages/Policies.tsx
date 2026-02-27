@@ -96,7 +96,7 @@ const Policies = () => {
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
               <h1 className="text-4xl font-serif font-semibold">
-                Policies
+              General Policies
               </h1>
               <p className="mt-1 text-sm text-slate-600">
                 {data?.totalRecords ?? 0} total policies
@@ -108,7 +108,7 @@ const Policies = () => {
                 className="bg-blue-900 text-white px-4 py-2 rounded text-sm"
                 onClick={handleAddPolicy}
               >
-                + Add Policy
+                + Add GI Policy
               </button>
             </div>
 

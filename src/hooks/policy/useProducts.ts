@@ -3,12 +3,17 @@ import { getCompanyWiseProductApi } from "../../api/policy.api";
 
 export const useCompanyWiseProduct = (
   companyId?: string,
-  insurance?: number
+  insurance?: number,
+  policyType?: number
 ) => {
   return useQuery({
-    queryKey: ["company-products", companyId, insurance],
+    queryKey: ["company-products", companyId, insurance, policyType],
     queryFn: () =>
-      getCompanyWiseProductApi(companyId as string, insurance as number),
-    enabled: !!companyId && !!insurance, // only call when both exist
+      getCompanyWiseProductApi(
+        companyId as string,
+        insurance,
+        policyType
+      ),
+    enabled: !!companyId, // only companyId required
   });
 };

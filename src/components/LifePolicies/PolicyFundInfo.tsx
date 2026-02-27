@@ -158,7 +158,7 @@ const insuranceTypeTitles: Record<number, string> = {
 
 /* ================= COMPONENT ================= */
 
-const PolicyRelatedInfo = ({ form, setForm, insuranceTypeId }: Props) => {
+const PolicyFundInfo = ({ form, setForm, insuranceTypeId }: Props) => {
   const [newItem, setNewItem] = useState<any>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -854,4 +854,4 @@ const PolicyRelatedInfo = ({ form, setForm, insuranceTypeId }: Props) => {
   );
 };
 
-export default PolicyRelatedInfo;
+export default PolicyFundInfo;

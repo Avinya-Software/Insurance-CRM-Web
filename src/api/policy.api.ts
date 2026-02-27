@@ -32,18 +32,17 @@ export const getPoliciesApi = async (params: {
 /*   DROPDOWNS   */
 
 export const getPolicyTypesDropdownApi = async () => {
-  const res = await api.get<{ id: number; name: string }[]>(
-    "/policy/policy-types-dropdown"
-  );
-  console.log(res.data);
-  return res.data;
+  const res = await api.get("/policy/policy-types-dropdown");
+  return res.data.data;   
 };
 
-export const getPolicyStatusesDropdownApi = async () => {
-  const res = await api.get("/policy/policy-statuses-dropdown");
+export const getPolicyStatusesDropdownApi = async (type?: number) => {
+  const res = await api.get("/policy/policy-statuses-dropdown", {
+    params: type ? { type } : {},
+  });
+
   return res.data.data;
 };
-
 /*   POLICY DOCUMENT PREVIEW   */
 
 export const previewPolicyDocumentApi = (
@@ -140,10 +139,15 @@ export const getCompanyListApi = async () => {
 
 export const getCompanyWiseProductApi = async (
   companyId: string,
-  insurance: number
+  insurance?: number,
+  policyType?: number
 ) => {
   const res = await api.get("/products/CompanyWiseProduct", {
-    params: { companyId, insurance },
+    params: {
+      companyId,
+      ...(insurance !== undefined ? { insurance } : {}),
+      ...(policyType !== undefined ? { policyType } : {}),
+    },
   });
 
   return res.data?.data || [];

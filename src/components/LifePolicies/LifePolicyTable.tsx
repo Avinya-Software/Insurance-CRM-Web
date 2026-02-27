@@ -63,9 +63,8 @@ const PolicyTable = ({
   /* 🔥 Fetch policy statuses */
 const { data: statuses = [] } = useQuery({
   queryKey: ["policy-statuses"],
-  queryFn: () => getPolicyStatusesDropdownApi(), 
+  queryFn: () => getPolicyStatusesDropdownApi(),
 });
-  
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
