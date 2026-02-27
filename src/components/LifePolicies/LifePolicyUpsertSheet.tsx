@@ -6,12 +6,12 @@ import SearchableComboBox from "../common/SearchableComboBox";
 import { useInsuranceTypes } from "../../hooks/policy/useInsuranceTypes";
 import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
-import PolicyRelatedInfo from "./PolicyRelatedInfo";
-import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
-import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdown";
+import PolicyRelatedInfo from "../policy/PolicyRelatedInfo";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
 const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
+const usePolicyTypesDropdown = () => ({ data: [{ policyTypeId: 1, typeName: "Fresh" }, { policyTypeId: 2, typeName: "Renewal" }, { policyTypeId: 3, typeName: "Portability" }, { policyTypeId: 4, typeName: "Rollover" }], isLoading: false });
+const usePolicyStatusesDropdown = () => ({ data: [{ policyStatusId: 1, statusName: "Policy" }, { policyStatusId: 2, statusName: "Proposal" }], isLoading: false });
 const useCustomerDropdown = () => ({ data: [{ customerId: "1", fullName: "John Doe" }], isLoading: false });
 const useInsurerDropdown = () => ({ data: [{ insurerId: "1", insurerName: "LIC" }, { insurerId: "2", insurerName: "HDFC ERGO" }], isLoading: false });
 const useProductDropdown = (id?: string) => ({ data: [{ productId: "1", productName: "Term Life" }, { productId: "2", productName: "Health Insurance" }], isLoading: false });
@@ -355,7 +355,7 @@ const showLongTermPolicy =
         <div className="px-8 py-6 bg-white border-b flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">
-              {policy ? "Edit GI Policy" : "Add New GI Policy"}
+              {policy ? "Edit LI Policy" : "Add New LI Policy"}
             </h2>
             <p className="text-slate-500 text-sm mt-1">Fill in the details to {policy ? 'update' : 'create'} the insurance policy.</p>
           </div>
@@ -413,31 +413,26 @@ const showLongTermPolicy =
                     </div>
                     
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <Select
-  label="Policy Status"
-  required
-  value={form.policyStatusId}
-  error={errors.policyStatusId}
-  options={policyStatuses}
-  valueKey="policyStatusId"
-  labelKey="statusName"
-  onChange={(v: any) =>
-    setForm(p => ({ ...p, policyStatusId: v ? Number(v) : undefined }))
-  }
-/>
-
-<Select
-  label="Policy Type"
-  required
-  value={form.policyTypeId}
-  error={errors.policyTypeId}
-  options={policyTypes}
-  valueKey="policyTypeId"
-  labelKey="typeName"
-  onChange={(v: any) =>
-    setForm(p => ({ ...p, policyTypeId: v ? Number(v) : undefined }))
-  }
-/>
+                      <Select
+                        label="Policy Status"
+                        required
+                        value={form.policyStatusId}
+                        error={errors.policyStatusId}
+                        options={policyStatuses}
+                        valueKey="policyStatusId"
+                        labelKey="statusName"
+                        onChange={(v: any) => setForm(p => ({ ...p, policyStatusId: v ? Number(v) : undefined }))}
+                      />
+                      <Select
+                        label="Policy Type"
+                        required
+                        value={form.policyTypeId}
+                        error={errors.policyTypeId}
+                        options={policyTypes}
+                        valueKey="policyTypeId"
+                        labelKey="typeName"
+                        onChange={(v: any) => setForm(p => ({ ...p, policyTypeId: v ? Number(v) : undefined }))}
+                      />
                       <Select
                         label="Renewable"
                         value={form.renewable}

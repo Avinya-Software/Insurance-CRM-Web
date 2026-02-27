@@ -3,11 +3,11 @@ import toast, { Toaster } from "react-hot-toast";
 import { Filter, X } from "lucide-react";
 
 import { usePolicies } from "../hooks/policy/usePolicies";
-import PolicyTable from "../components/policy/PolicyTable";
-import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
 import RenewalUpsertSheet from "../components/renewal/RenewalUpsertSheet";
 import PolicyFilterSheet from "../components/policy/PolicyFilterSheet";
 import Pagination from "../components/leads/Pagination";
+import LifePolicyUpsertSheet from "../components/LifePolicies/LifePolicyUpsertSheet";
+import LifePolicyTable from "../components/LifePolicies/LifePolicyTable";
 
 const DEFAULT_FILTERS = {
   pageNumber: 1,
@@ -20,7 +20,7 @@ const DEFAULT_FILTERS = {
   productId: null as string | null,
 };
 
-const Policies = () => {
+const LifePolicies = () => {
   /*   STATE   */
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
@@ -96,7 +96,7 @@ const Policies = () => {
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
               <h1 className="text-4xl font-serif font-semibold">
-                Policies
+              Life Policies
               </h1>
               <p className="mt-1 text-sm text-slate-600">
                 {data?.totalRecords ?? 0} total policies
@@ -108,7 +108,7 @@ const Policies = () => {
                 className="bg-blue-900 text-white px-4 py-2 rounded text-sm"
                 onClick={handleAddPolicy}
               >
-                + Add Policy
+                + Add LI Policy
               </button>
             </div>
 
@@ -157,7 +157,7 @@ const Policies = () => {
         </div>
 
         {/*   TABLE   */}
-        <PolicyTable
+        <LifePolicyTable
           data={data?.data ?? []}
           loading={isLoading || isFetching}
           onEdit={handleEditPolicy}
@@ -189,7 +189,7 @@ const Policies = () => {
       />
 
       {/*   POLICY UPSERT   */}
-      <PolicyUpsertSheet
+      <LifePolicyUpsertSheet
         open={openPolicySheet}
         policy={selectedPolicy}
         onClose={() => {
@@ -213,4 +213,4 @@ const Policies = () => {
   );
 };
 
-export default Policies;
+export default LifePolicies;

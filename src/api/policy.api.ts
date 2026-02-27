@@ -32,16 +32,13 @@ export const getPoliciesApi = async (params: {
 /*   DROPDOWNS   */
 
 export const getPolicyTypesDropdownApi = async () => {
-  const res = await api.get<{ id: number; name: string }[]>(
-    "/policy/policy-types-dropdown"
-  );
-  console.log(res.data);
-  return res.data;
+  const res = await api.get("/policy/policy-types-dropdown");
+  return res.data.data;   
 };
 
 export const getPolicyStatusesDropdownApi = async () => {
   const res = await api.get("/policy/policy-statuses-dropdown");
-  return res.data.data;
+  return res.data.data;  
 };
 
 /*   POLICY DOCUMENT PREVIEW   */
