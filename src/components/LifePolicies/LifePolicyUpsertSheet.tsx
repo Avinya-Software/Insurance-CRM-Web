@@ -3,18 +3,15 @@ import { X, Eye, Download, Trash2, Plus, FileText, ShieldCheck, CreditCard, Uplo
 import toast, { Toaster } from "react-hot-toast";
 import Spinner from "../common/Spinner";
 import SearchableComboBox from "../common/SearchableComboBox";
+import PolicyFundInfo from "./PolicyFundInfo";
 import { useInsuranceTypes } from "../../hooks/policy/useInsuranceTypes";
 import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
-import PolicyRelatedInfo from "../policy/PolicyRelatedInfo";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
 const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
 const usePolicyTypesDropdown = () => ({ data: [{ policyTypeId: 1, typeName: "Fresh" }, { policyTypeId: 2, typeName: "Renewal" }, { policyTypeId: 3, typeName: "Portability" }, { policyTypeId: 4, typeName: "Rollover" }], isLoading: false });
 const usePolicyStatusesDropdown = () => ({ data: [{ policyStatusId: 1, statusName: "Policy" }, { policyStatusId: 2, statusName: "Proposal" }], isLoading: false });
-const useCustomerDropdown = () => ({ data: [{ customerId: "1", fullName: "John Doe" }], isLoading: false });
-const useInsurerDropdown = () => ({ data: [{ insurerId: "1", insurerName: "LIC" }, { insurerId: "2", insurerName: "HDFC ERGO" }], isLoading: false });
-const useProductDropdown = (id?: string) => ({ data: [{ productId: "1", productName: "Term Life" }, { productId: "2", productName: "Health Insurance" }], isLoading: false });
 const usePolicyDocumentActions = (cb: any) => ({ 
   preview: (p: any, f: any) => toast.success("Previewing " + f), 
   download: (p: any, f: any, n: any) => toast.success("Downloading " + n), 
@@ -48,6 +45,7 @@ const PolicyUpsertSheet = ({
       document.body.style.overflow = "unset";
     };
   }, [open]);
+  
   const { data: insuranceTypes } = useInsuranceTypes();
   const { data: companies } = useCompanyList();
 
@@ -69,103 +67,53 @@ const PolicyUpsertSheet = ({
   const initialForm = {
     policyId: null as string | null,
     customerId: "",
+    
+    // Policy Personal Information
+    policyStatusId: undefined as number | undefined,
+    policyTypeId: undefined as number | undefined, // Mapping to "Status" field in screenshot
+    insuredName: "",
+    dobOfLa: "",
+    age: "",
+    proposerName: "",
+    nomineeName: "",
+    nomineeType: "Nominee",
+    relationWithLa: "Spouse",
+    policyNumber: "",
+    baName: "ALPESH SHELADIYA",
+    agencyName: "",
     insurerId: "",
     productId: "",
-    policyTypeId: undefined as number | undefined,
-    policyStatusId: undefined as number | undefined,
-    renewable: "Yes",
-    insuredName: "",
-    groupHeadName: "",
-    policyNumber: "",
-    agencyName: "",
-    baName: "",
-    companyName: "",
-    insuranceType: "",
-    productName: "",
-    loginDate: "",
+    premiumMode: "Y",
+    policyTerm: "",
+    ppt: "",
     startDate: "",
-    endDate: "",
-    addOnName: "",
-    hpaName: "",
-    hpaBranch: "",
-    insuranceSubType: "",
-    eligibleForHealthCheckup: "No",
-    longTermPolicy: "No",
+    completionDate: "2026-02-25",
+    nextPremiumDueDate: "",
+    graceDate: "",
+    maturityDate: "",
+    objective: "Select",
+    insuranceType: "1", // Default to LI
 
     // Premium Details
-    premiumNet: 0,
-    premiumGross: 0,
-    basicODPremium: 0,
-    tpPremium: 0,
-    otherTPPremium: 0,
-    addOnCover: 0,
-    ncb: 0,
-    discount: 0,
-    terrorismPremium: 0,
+    installmentPremium: 0,
+    premiumIncludingGst: true,
+    basicPremium: 0,
     gstPerc: 0,
     gstAmount: 0,
-    finalPremium: 0,
-    claimProcess: "Select",
-    brokerageOnIRDA: "",
-    brokeragePerIRDA: 0,
-    brokerageAmtIRDA: 0,
-    brokerageOnReward: "",
-    brokeragePerReward: 0,
-    brokerageAmtReward: 0,
-    baBrokerageOn: "",
-    baBrokeragePer: 0,
-    baBrokerageAmt: 0,
-    
-    // Checkboxes
-    calcIrda: false,
-    calcReward: false,
-    calcBa: false,
+    finalInstallmentPremium: 0,
+    annualPremium: 0,
+    sumAssured: "",
 
     // Payment Details
-    paymentMode: "",
-    paymentType: "",
+    ecs: "No",
+    paymentBy: "Select",
     payReferenceNo: "",
     paymentDate: "",
-    paymentNo: "",
-    bankBranchName: "",
-    paymentAmount: 0,
-    cashAmount: 0,
-    totalAmount: 0,
-    diffAmount: 0,
-    remarks: "",
-    claimExist: "No",
-    noOfEndorsement: "",
-    paymentDueDate: "",
-    renewalDate: "",
-    brokerCode: "",
-    policyCode: "",
-    paymentDone: false,
-
-    // Related Info
-    itemDetails: [] as any[],
-    totalIdvSa: 0,
-    vehicleValue: 0,
-    nonElecAccessories: 0,
-    elecAccessories: 0,
-    cngLpgKit: 0,
-    trailerTotalValue: 0,
-    make: "",
-    model: "",
-    fuelType: "",
-    color: "",
-    registrationNo: "",
-    placeOfRegistration: "",
-    mfgYear: "",
-    registrationDate: "",
-    seatingCapacity: "",
-    cubicCapacity: "",
-    engineNumber: "",
-    chasisNumber: "",
-    vehicleWeight: "",
-    permit: "",
-    trailerNo: "",
-    fitnessExpiryDate: "",
-    roadTax: "",
+    mandateExpDate: "",
+    accountNo: "",
+    bankName: "",
+    branchName: "",
+    remarks: ""
   };
 
   const [form, setForm] = useState(initialForm);
@@ -188,47 +136,6 @@ const PolicyUpsertSheet = ({
     { id: "Others", name: "Others" },
   ];
 
-  useEffect(() => {
-    const premiumNet =
-      (form.basicODPremium || 0) +
-      (form.tpPremium || 0) +
-      (form.otherTPPremium || 0) +
-      (form.addOnCover || 0);
-  
-    const gstAmount = (premiumNet * (form.gstPerc || 0)) / 100;
-  
-    const finalPremium =
-      premiumNet +
-      gstAmount +
-      (form.terrorismPremium || 0);
-  
-    setForm(prev => {
-      const roundedGST = parseFloat(gstAmount.toFixed(2));
-      const roundedFinal = parseFloat(finalPremium.toFixed(2));
-  
-      if (
-        prev.premiumNet === premiumNet &&
-        prev.gstAmount === roundedGST &&
-        prev.finalPremium === roundedFinal
-      ) {
-        return prev;
-      }
-  
-      return {
-        ...prev,
-        premiumNet,
-        gstAmount: roundedGST,
-        finalPremium: roundedFinal
-      };
-    });
-  }, [
-    form.basicODPremium,
-    form.tpPremium,
-    form.otherTPPremium,
-    form.addOnCover,
-    form.gstPerc,
-    form.terrorismPremium
-  ]);
   
   /*   API HOOKS   */
   const { mutateAsync, isPending } = useUpsertPolicy();
@@ -237,16 +144,6 @@ const PolicyUpsertSheet = ({
 
   const loadingDropdowns = tLoading || sLoading;
     const isLoading = isPending;
-
-const insuranceTypeId = Number(form.insuranceType || 0);
-
-const showInsuranceSubType =
-  [3, 4, 5, 6, 9, 10, 19, 22].includes(insuranceTypeId);
-
-const showHealthCheckup = insuranceTypeId === 6;
-
-const showLongTermPolicy =
-  [12, 13, 14, 15, 16, 17, 18].includes(insuranceTypeId); 
 
   /*   PREFILL   */
   useEffect(() => {
@@ -289,12 +186,13 @@ const showLongTermPolicy =
   /*   VALIDATION   */
   const validate = () => {
     const e: Record<string, string> = {};
+    if (!form.insuredName?.trim()) e.insuredName = "Life Assured is required";
     if (!form.policyNumber?.trim()) e.policyNumber = "Policy number is required";
-    if (!form.policyStatusId) e.policyStatusId = "Policy status is required";
-    if (!form.policyTypeId) e.policyTypeId = "Policy type is required";
-    if (!form.startDate) e.startDate = "Start date is required";
-    if (!form.endDate) e.endDate = "End date is required";
-    if (!form.finalPremium && form.finalPremium !== 0) e.finalPremium = "Final premium is required";
+    if (!form.agencyName?.trim()) e.agencyName = "Agency name is required";
+    if (!form.insurerId) e.insurerId = "Company name is required";
+    if (!form.productId) e.productId = "Product name is required";
+    if (!form.startDate) e.startDate = "Policy start date is required";
+    if (!form.sumAssured) e.sumAssured = "Sum Assured is required";
 
     setErrors(e);
     if (Object.keys(e).length > 0) {
@@ -341,7 +239,9 @@ const showLongTermPolicy =
 
   if (!open) return null;
 
-
+  const nomineeTypes = [{ id: "Nominee", name: "Nominee" }];
+  const relations = [{ id: "Spouse", name: "Spouse" }];
+  const premiumModes = [{ id: "Y", name: "Y" }, { id: "H", name: "H" }, { id: "Q", name: "Q" }, { id: "M", name: "M" }];
 
   return (
     <>
@@ -403,447 +303,377 @@ const showLongTermPolicy =
               
               {activeTab === "general" && (
                 <>
-                  {/* BASIC INFO */}
-                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
-                      <div className="p-1.5 bg-white/10 text-white rounded">
-                        <ShieldCheck size={16} />
+                  {/* POLICY PERSONAL INFORMATION */}
+                  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="p-6 space-y-6">
+                      {/* ROW 1 */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-2">
+                          <Select
+                            label="Policy Status"
+                            value={form.policyStatusId}
+                            options={policyStatuses}
+                            valueKey="policyStatusId"
+                            labelKey="statusName"
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, policyStatusId: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Select
+                            label="Status"
+                            value={form.policyTypeId}
+                            options={policyTypes}
+                            valueKey="policyTypeId"
+                            labelKey="typeName"
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, policyTypeId: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-4">
+                          <Input
+                            label="Life Assured"
+                            required
+                            value={form.insuredName}
+                            error={errors.insuredName}
+                            placeholder="Insured Name"
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, insuredName: v }))}
+                            suffix={
+                              <button className="p-1 hover:bg-slate-100 rounded transition-colors">
+                                <UserPlus size={16} className="text-slate-900" />
+                              </button>
+                            }
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input
+                            type="date"
+                            label="DOB Of LA"
+                            value={form.dobOfLa}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, dobOfLa: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input
+                            type="number"
+                            label="Age"
+                            value={form.age}
+                            placeholder="Age"
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, age: v }))}
+                          />
+                        </div>
                       </div>
-                      <h3 className="font-bold uppercase tracking-wider text-[10px]">General Insurance Policy Purchase</h3>
-                    </div>
-                    
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <Select
-                        label="Policy Status"
-                        required
-                        value={form.policyStatusId}
-                        error={errors.policyStatusId}
-                        options={policyStatuses}
-                        valueKey="policyStatusId"
-                        labelKey="statusName"
-                        onChange={(v: any) => setForm(p => ({ ...p, policyStatusId: v ? Number(v) : undefined }))}
-                      />
-                      <Select
-                        label="Policy Type"
-                        required
-                        value={form.policyTypeId}
-                        error={errors.policyTypeId}
-                        options={policyTypes}
-                        valueKey="policyTypeId"
-                        labelKey="typeName"
-                        onChange={(v: any) => setForm(p => ({ ...p, policyTypeId: v ? Number(v) : undefined }))}
-                      />
-                      <Select
-                        label="Renewable"
-                        value={form.renewable}
-                        options={[{ id: "Yes", name: "Yes" }, { id: "No", name: "No" }]}
-                        onChange={(v: any) => setForm(p => ({ ...p, renewable: v }))}
-                      />
-                      <Input
-                        label="Insured Name"
-                        required
-                        value={form.insuredName}
-                        placeholder="Insured Name"
-                        onChange={(v: any) => setForm(p => ({ ...p, insuredName: v }))}
-                        suffix={<UserPlus size={14} className="text-slate-400" />}
-                      />
-                      <Input
-                        label="Group Head Name"
-                        value={form.groupHeadName}
-                        placeholder="Group Head Name"
-                        onChange={(v: any) => setForm(p => ({ ...p, groupHeadName: v }))}
-                      />
-                      <Input
-                        label="Policy Number"
-                        required
-                        value={form.policyNumber}
-                        error={errors.policyNumber}
-                        placeholder="Policy Number"
-                        onChange={(v: any) => setForm(p => ({ ...p, policyNumber: v }))}
-                      />
-                      <Select
-                        label="Agency Name"
-                        required
-                        value={form.agencyName}
-                        options={[{ id: "Agency 1", name: "Agency 1" }]}
-                        onChange={(v: any) => setForm(p => ({ ...p, agencyName: v }))}
-                      />
-                      <Select
-                        label="BA Name"
-                        value={form.baName}
-                        options={[{ id: "BA 1", name: "BA 1" }]}
-                        onChange={(v: any) => setForm(p => ({ ...p, baName: v }))}
-                      />
-                      <SearchableComboBox
-                          label="Company Name"
-                          required
-                          items={(companies || []).map((c: any) => ({
-                            value: c.companyId,
-                            label: c.companyName,
-                          }))}
-                          value={form.insurerId}
-                          error={errors.insurerId}
-                          onSelect={(item) =>
-                            setForm({
-                              ...form,
-                              insurerId: item?.value || "",
-                              productId: "",
-                            })
-                          }
-                        />
-                      <SearchableComboBox
-                          label="Insurance Type"
-                          required
-                          value={form.insuranceType}
-                          items={
-                            insuranceTypes?.map((item) => ({
-                              label: item.type,
-                              value: String(item.id),  
-                            })) || []
-                          }
-                          onSelect={(item) => {
-                            const selectedId = item?.value || "";
-                            const numericId = Number(selectedId);
 
-                            setForm((prev) => ({
-                              ...prev,
-                              insuranceType: selectedId,
-                              insuranceSubType: "",
-                              eligibleForHealthCheckup: numericId === 6 ? "No" : "",
-                              longTermPolicy: [12,13,14,15,16,17,18].includes(numericId) ? "No" : "",
-                            }));
-                          }}
-                        />
-                      <SearchableComboBox
-                          label="Product Name"
-                          required
-                          items={(products || []).map((p: any) => ({
-                            value: p.id,
-                            label: p.productName,
-                          }))}
-                          value={form.productId}
-                          error={errors.productId}
-                          disabled={!form.insurerId || !form.insuranceType}
-                          onSelect={(item) => {
-                            const selectedId = item?.value || "";
-                          
-                            const numericId = Number(selectedId);
-                          
-                            setForm((prev) => ({
-                              ...prev,
-                              productId: selectedId, 
-                              insuranceSubType: "",
-                              eligibleForHealthCheckup: numericId === 6 ? "No" : "",
-                              longTermPolicy: [12,13,14,15,16,17,18].includes(numericId) ? "No" : "",
-                            }));
-                          }}
-                        />
+                      {/* ROW 2 */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-4">
+                          <Input
+                            label="Proposer Name"
+                            value={form.proposerName}
+                            placeholder="Proposer Name"
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, proposerName: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-4">
+                          <Input
+                            label="Nominee Name"
+                            value={form.nomineeName}
+                            placeholder="Nominee Name"
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, nomineeName: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Select
+                            label="Nominee Type"
+                            value={form.nomineeType}
+                            options={[{ id: "Nominee", name: "Nominee" }]}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, nomineeType: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Select
+                            label="Relation with LA"
+                            value={form.relationWithLa}
+                            options={[{ id: "Spouse", name: "Spouse" }, { id: "Father", name: "Father" }, { id: "Mother", name: "Mother" }]}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, relationWithLa: v }))}
+                          />
+                        </div>
+                      </div>
 
-                        {/* Insurance Sub Type */}
-                          {showInsuranceSubType && (
-                            <Select
-                              label="Insurance Sub Type"
-                              required
-                              value={form.insuranceSubType}
-                              options={[
-                                { id: "Referred", name: "Referred" },
-                                { id: "Preferred", name: "Preferred" },
-                                { id: "Declined", name: "Declined" },
-                              ]}
-                              onChange={(v: any) =>
-                                setForm((p) => ({ ...p, insuranceSubType: v }))
-                              }
-                            />
-                          )}
+                      {/* ROW 3 */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-4">
+                          <Input
+                            label="Policy Number"
+                            required
+                            value={form.policyNumber}
+                            error={errors.policyNumber}
+                            placeholder="Policy Number"
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, policyNumber: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-8">
+                          <SearchableComboBox
+                            label="BA Name"
+                            items={[{ value: "ALPESH SHELADIYA", label: "ALPESH SHELADIYA" }]}
+                            value={form.baName}
+                            onSelect={(item) => setForm((p: any) => ({ ...p, baName: item?.value }))}
+                          />
+                        </div>
+                      </div>
 
-                          {showHealthCheckup && (
-                            <div className="flex flex-col gap-2">
-                              <label className="text-sm font-medium text-slate-700">
-                                Eligible For Health Checkup
-                              </label>
+                      {/* ROW 4 */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-4">
+                          <Select
+                            label="Agency Name"
+                            required
+                            value={form.agencyName}
+                            error={errors.agencyName}
+                            options={[{ id: "Agency 1", name: "Agency 1" }]}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, agencyName: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-4">
+                          <SearchableComboBox
+                            label="Company Name"
+                            required
+                            error={errors.insurerId}
+                            items={(companies || []).map((c: any) => ({
+                              value: c.companyId,
+                              label: c.companyName,
+                            }))}
+                            value={form.insurerId}
+                            onSelect={(item) =>
+                              setForm({
+                                ...form,
+                                insurerId: item?.value || "",
+                                productId: "",
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="md:col-span-4">
+                          <SearchableComboBox
+                            label="Product Name"
+                            required
+                            error={errors.productId}
+                            items={(products || []).map((p: any) => ({
+                              value: p.id,
+                              label: p.productName,
+                            }))}
+                            value={form.productId}
+                            disabled={!form.insurerId}
+                            onSelect={(item) =>
+                              setForm((p: any) => ({ ...p, productId: item?.value }))
+                            }
+                          />
+                        </div>
+                      </div>
 
-                              <div className="flex items-center gap-6">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name="eligibleForHealthCheckup"
-                                    value="Yes"
-                                    checked={form.eligibleForHealthCheckup === "Yes"}
-                                    onChange={(e) =>
-                                      setForm((p) => ({
-                                        ...p,
-                                        eligibleForHealthCheckup: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                  Yes
-                                </label>
+                      {/* ROW 5 */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-4">
+                          <Select
+                            label="Premium Mode"
+                            value={form.premiumMode}
+                            options={[{ id: "Y", name: "Y" }, { id: "H", name: "H" }, { id: "Q", name: "Q" }, { id: "M", name: "M" }]}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, premiumMode: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input
+                            label="Policy Term"
+                            value={form.policyTerm}
+                            placeholder="Policy Term"
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, policyTerm: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input
+                            label="PPT"
+                            value={form.ppt}
+                            placeholder="PPT"
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, ppt: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-4">
+                          <Input
+                            type="date"
+                            label="Policy Start Date"
+                            required
+                            error={errors.startDate}
+                            value={form.startDate}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, startDate: v }))}
+                          />
+                        </div>
+                      </div>
 
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name="eligibleForHealthCheckup"
-                                    value="No"
-                                    checked={form.eligibleForHealthCheckup === "No"}
-                                    onChange={(e) =>
-                                      setForm((p) => ({
-                                        ...p,
-                                        eligibleForHealthCheckup: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                  No
-                                </label>
-                              </div>
-                            </div>
-                          )}
-                      <Input
-                        type="date"
-                        label="Login Date"
-                        required
-                        value={form.loginDate}
-                        onChange={(v: any) => setForm({ ...form, loginDate: v })}
-                      />
-                      <Input
-                        type="date"
-                        label="Period From"
-                        required
-                        value={form.startDate}
-                        error={errors.startDate}
-                        onChange={(v: any) => setForm({ ...form, startDate: v })}
-                      />
-                      <Input
-                        type="date"
-                        label="Period To"
-                        required
-                        value={form.endDate}
-                        error={errors.endDate}
-                        min={form.startDate}
-                        onChange={(v: any) => setForm({ ...form, endDate: v })}
-                      />
-                      <Input
-                        label="AddOn Name"
-                        value={form.addOnName}
-                        placeholder="AddOn Name"
-                        onChange={(v: any) => setForm(p => ({ ...p, addOnName: v }))}
-                      />
-                      <Select
-                        label="HPA Name"
-                        value={form.hpaName}
-                        options={[{ id: "HPA 1", name: "HPA 1" }]}
-                        onChange={(v: any) => setForm(p => ({ ...p, hpaName: v }))}
-                      />
-                      <Input
-                        label="HPA Branch"
-                        value={form.hpaBranch}
-                        placeholder="HPA Branch"
-                        onChange={(v: any) => setForm(p => ({ ...p, hpaBranch: v }))}
-                      />
+                      {/* ROW 6 */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-4">
+                          <Input
+                            type="date"
+                            label="Completion Date"
+                            value={form.completionDate}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, completionDate: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-4">
+                          <Input
+                            type="date"
+                            label="Next Premium Due Date"
+                            value={form.nextPremiumDueDate}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, nextPremiumDueDate: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-4">
+                          <Input
+                            type="date"
+                            label="Grace Date"
+                            value={form.graceDate}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, graceDate: v }))}
+                          />
+                        </div>
+                      </div>
+
+                      {/* ROW 7 */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-4">
+                          <Input
+                            type="date"
+                            label="Maturity Date"
+                            value={form.maturityDate}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, maturityDate: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-8">
+                          <Select
+                            label="Objective of Insurance"
+                            value={form.objective}
+                            options={[{ id: "Select", name: "Select" }]}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, objective: v }))}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </section>
 
                   {/* PREMIUM DETAILS */}
-                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
-                      <div className="p-1.5 bg-white/10 text-white rounded">
-                        <CreditCard size={16} />
-                      </div>
+                  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="bg-[#4a5568] px-4 py-2 text-white">
                       <h3 className="font-bold uppercase tracking-wider text-[10px]">Premium Details</h3>
                     </div>
                     
                     <div className="p-6 space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <Input label="Basic/OD Premium" type="number" value={form.basicODPremium} onChange={(v: any) => setForm(p => ({ ...p, basicODPremium: Number(v) }))} />
-                        <div className="flex items-end gap-2">
-                          <div className="flex-1">
-                            <Input 
-                              label="TP Premium" 
-                              type="number" 
-                              value={form.tpPremium} 
-                              onChange={(v: any) =>
-                                setForm(p => ({ ...p, tpPremium: Number(v) }))
-                              }
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                        <div className="md:col-span-3">
+                          <Input label="Installment Premium" type="number" value={form.installmentPremium} onChange={(v: any) => setForm(p => ({ ...p, installmentPremium: Number(v) }))} />
+                        </div>
+                        <div className="md:col-span-3 pb-3">
+                          <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={form.premiumIncludingGst}
+                              onChange={(e) => setForm(p => ({ ...p, premiumIncludingGst: e.target.checked }))}
+                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
                             />
-                          </div>
-
-                          <label className="flex items-center gap-1 text-sm text-gray-600 mb-2">
-                            <input type="checkbox" className="accent-blue-600" />
-                            12%
+                            Premium Including GST
                           </label>
                         </div>
-                        <Input label="Other TP Premium" type="number" value={form.otherTPPremium} onChange={(v: any) => setForm(p => ({ ...p, otherTPPremium: Number(v) }))} />
-                        <Input label="Add On Cover" type="number" value={form.addOnCover} onChange={(v: any) => setForm(p => ({ ...p, addOnCover: Number(v) }))} />
-                        
-                        <Input label="NCB %" type="number" value={form.ncb} onChange={(v: any) => setForm(p => ({ ...p, ncb: Number(v) }))} />
-                        <Input label="Discount %" type="number" value={form.discount} onChange={(v: any) => setForm(p => ({ ...p, discount: Number(v) }))} />
-                        <Input label="Net Premium" type="number" value={form.premiumNet} onChange={(v: any) => setForm(p => ({ ...p, premiumNet: Number(v) }))} />
-                        <Input label="Terrorism Premium" type="number" value={form.terrorismPremium} onChange={(v: any) => setForm(p => ({ ...p, terrorismPremium: Number(v) }))} />
-                        
-                        <Input label="GST Perc." type="number" value={form.gstPerc} onChange={(v: any) => setForm(p => ({ ...p, gstPerc: Number(v) }))} />
-                        <Input label="GST Amount" type="number" value={form.gstAmount} onChange={(v: any) => setForm(p => ({ ...p, gstAmount: Number(v) }))} />
-                        <Input label="Final Premium" required type="number" value={form.finalPremium} error={errors.finalPremium} onChange={(v: any) => setForm(p => ({ ...p, finalPremium: Number(v) }))} />
-                        <Select label="Claim Process" value={form.claimProcess} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, claimProcess: v }))} />
+                        <div className="md:col-span-3">
+                          <Input label="Basic Premium" type="number" value={form.basicPremium} onChange={(v: any) => setForm(p => ({ ...p, basicPremium: Number(v) }))} />
+                        </div>
+                        <div className="md:col-span-1">
+                          <Input label="GST Perc." type="number" value={form.gstPerc} onChange={(v: any) => setForm(p => ({ ...p, gstPerc: Number(v) }))} suffix={<span className="text-xs font-bold text-slate-400">%</span>} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input label="GST Amount" type="number" value={form.gstAmount} onChange={(v: any) => setForm(p => ({ ...p, gstAmount: Number(v) }))} />
+                        </div>
                       </div>
 
-                      <div className="space-y-6 pt-4 border-t border-slate-50">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-                          <Select label="Brokerage On IRDA" value={form.brokerageOnIRDA} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnIRDA: v }))} />
-                          <Input label="Brokerage Per IRDA" type="number" value={form.brokeragePerIRDA} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerIRDA: Number(v) }))} />
-                          <Input label="Brokerage Amt IRDA" type="number" value={form.brokerageAmtIRDA} onChange={(v: any) => setForm(p => ({ ...p, brokerageAmtIRDA: Number(v) }))} />
-                          <div className="flex items-center gap-2 pb-3">
-                            <input 
-                              type="checkbox" 
-                              id="calcIrda"
-                              checked={form.calcIrda}
-                              onChange={(e) => setForm(p => ({ ...p, calcIrda: e.target.checked }))}
-                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
-                            />
-                            <label htmlFor="calcIrda" className="text-[10px] font-bold text-slate-600 uppercase tracking-wider cursor-pointer">Calculate Percentage</label>
-                          </div>
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-3">
+                          <Input label="Final Installment Premium" type="number" value={form.finalInstallmentPremium} onChange={(v: any) => setForm(p => ({ ...p, finalInstallmentPremium: Number(v) }))} />
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-                          <Select label="Brokerage On Reward" value={form.brokerageOnReward} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnReward: v }))} />
-                          <Input label="Brokerage Per Reward" type="number" value={form.brokeragePerReward} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerReward: Number(v) }))} />
-                          <Input label="Brokerage Amt Reward" type="number" value={form.brokerageAmtReward} onChange={(v: any) => setForm(p => ({ ...p, brokerageAmtReward: Number(v) }))} />
-                          <div className="flex items-center gap-2 pb-3">
-                            <input 
-                              type="checkbox" 
-                              id="calcReward"
-                              checked={form.calcReward}
-                              onChange={(e) => setForm(p => ({ ...p, calcReward: e.target.checked }))}
-                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
-                            />
-                            <label htmlFor="calcReward" className="text-[10px] font-bold text-slate-600 uppercase tracking-wider cursor-pointer">Calculate Percentage</label>
-                          </div>
+                        <div className="md:col-span-3">
+                          <Input label="Annual Premium" type="number" value={form.annualPremium} onChange={(v: any) => setForm(p => ({ ...p, annualPremium: Number(v) }))} />
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-                          <Select label="BA Brokerage On" value={form.baBrokerageOn} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, baBrokerageOn: v }))} />
-                          <Input label="BA Brokerage Per" type="number" value={form.baBrokeragePer} onChange={(v: any) => setForm(p => ({ ...p, baBrokeragePer: Number(v) }))} />
-                          <Input label="BA Brokerage Amt" type="number" value={form.baBrokerageAmt} onChange={(v: any) => setForm(p => ({ ...p, baBrokerageAmt: Number(v) }))} />
-                          <div className="flex items-center gap-2 pb-3">
-                            <input 
-                              type="checkbox" 
-                              id="calcBa"
-                              checked={form.calcBa}
-                              onChange={(e) => setForm(p => ({ ...p, calcBa: e.target.checked }))}
-                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
-                            />
-                            <label htmlFor="calcBa" className="text-[10px] font-bold text-slate-600 uppercase tracking-wider cursor-pointer">Calculate Percentage</label>
-                          </div>
+                        <div className="md:col-span-6">
+                          <Input label="Sum Assured" required error={errors.sumAssured} value={form.sumAssured} placeholder="Sum Assured" onChange={(v: any) => setForm(p => ({ ...p, sumAssured: v }))} />
                         </div>
                       </div>
                     </div>
                   </section>
 
                   {/* PAYMENT DETAILS */}
-                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
-                      <div className="p-1.5 bg-white/10 text-white rounded">
-                        <CreditCard size={16} />
-                      </div>
+                  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="bg-[#4a5568] px-4 py-2 text-white">
                       <h3 className="font-bold uppercase tracking-wider text-[10px]">Payment Details</h3>
                     </div>
                     
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                      <Select
-                        label="Payment Type"
-                        value={form.paymentType}
-                        options={[{ id: "Online", name: "Online" }, { id: "Cheque", name: "Cheque" }, { id: "Cash", name: "Cash" }]}
-                        onChange={(v: any) => setForm(p => ({ ...p, paymentType: v }))}
-                      />
-                      <Input label="Pay. Reference No." value={form.payReferenceNo} onChange={(v: any) => setForm(p => ({ ...p, payReferenceNo: v }))} />
-                      <Input label="Payment Date" type="date" value={form.paymentDate} onChange={(v: any) => setForm(p => ({ ...p, paymentDate: v }))} />
-                      <Input label="Payment No." value={form.paymentNo} onChange={(v: any) => setForm(p => ({ ...p, paymentNo: v }))} />
-                      <Input label="Bank & Branch Name" value={form.bankBranchName} onChange={(v: any) => setForm(p => ({ ...p, bankBranchName: v }))} />
-                      
-                      <Input label="Payment Amount" type="number" value={form.paymentAmount} onChange={(v: any) => setForm(p => ({ ...p, paymentAmount: Number(v) }))} />
-                      <Input label="Cash Amount" type="number" value={form.cashAmount} onChange={(v: any) => setForm(p => ({ ...p, cashAmount: Number(v) }))} />
-                      <Input label="Total Amount" type="number" value={form.totalAmount} onChange={(v: any) => setForm(p => ({ ...p, totalAmount: Number(v) }))} />
-                      <Input label="Diff. Amount" type="number" value={form.diffAmount} onChange={(v: any) => setForm(p => ({ ...p, diffAmount: Number(v) }))} />
-                      
-                      <div className="lg:col-span-2">
-                        <Input label="Remarks" value={form.remarks} onChange={(v: any) => setForm(p => ({ ...p, remarks: v }))} />
+                    <div className="p-6 space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-3">
+                          <Select
+                            label="ECS"
+                            value={form.ecs}
+                            options={[{ id: "No", name: "No" }, { id: "Yes", name: "Yes" }]}
+                            onChange={(v: any) => setForm(p => ({ ...p, ecs: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-3">
+                          <Select
+                            label="Payment By"
+                            value={form.paymentBy}
+                            options={[{ id: "Select", name: "Select" }, { id: "Self", name: "Self" }]}
+                            onChange={(v: any) => setForm(p => ({ ...p, paymentBy: v }))}
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input label="Payment Ref. No" value={form.payReferenceNo} placeholder="Payment Ref. No" onChange={(v: any) => setForm(p => ({ ...p, payReferenceNo: v }))} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input label="Payment Date" type="date" value={form.paymentDate} onChange={(v: any) => setForm(p => ({ ...p, paymentDate: v }))} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input label="Mandate Exp Date" type="date" value={form.mandateExpDate} onChange={(v: any) => setForm(p => ({ ...p, mandateExpDate: v }))} />
+                        </div>
                       </div>
-                      <Select label="Claim Exist" value={form.claimExist} options={[{ id: "No", name: "No" }, { id: "Yes", name: "Yes" }]} onChange={(v: any) => setForm(p => ({ ...p, claimExist: v }))} />
-                      <Input label="No Of Endorsement" value={form.noOfEndorsement} onChange={(v: any) => setForm(p => ({ ...p, noOfEndorsement: v }))} />
+
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-3">
+                          <Input label="Account No" value={form.accountNo} placeholder="Account No" onChange={(v: any) => setForm(p => ({ ...p, accountNo: v }))} />
+                        </div>
+                        <div className="md:col-span-3">
+                          <Input label="Bank Name" value={form.bankName} placeholder="Bank Name" onChange={(v: any) => setForm(p => ({ ...p, bankName: v }))} />
+                        </div>
+                        <div className="md:col-span-3">
+                          <Input label="Branch Name" value={form.branchName} placeholder="Branch Name" onChange={(v: any) => setForm(p => ({ ...p, branchName: v }))} />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="w-full space-y-1.5">
+                          <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Remarks</label>
+                          <textarea
+                            className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded text-sm transition-all outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 min-h-[80px]"
+                            placeholder="Remarks"
+                            value={form.remarks}
+                            onChange={(e) => setForm(p => ({ ...p, remarks: e.target.value }))}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </section>
                 </>
               )}
 
-{activeTab === "related" && (
-  <PolicyRelatedInfo
-    form={form}
-    setForm={setForm}
-    insuranceTypeId={Number(form.insuranceType || 0)}
-  />
-)}
-              {/* {activeTab === "related" && (
-                <div className="space-y-8">
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="px-6 py-3 bg-slate-700 text-white">
-                      <h3 className="font-bold text-xs uppercase tracking-widest">IDV DETAILS</h3>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                      <Input label="Vehicle Value" type="number" value={form.vehicleValue} onChange={(v: any) => setForm(p => ({ ...p, vehicleValue: Number(v) }))} />
-                      <Input label="Non Elec. Accesories" type="number" value={form.nonElecAccessories} onChange={(v: any) => setForm(p => ({ ...p, nonElecAccessories: Number(v) }))} />
-                      <Input label="Electrical Accesories" type="number" value={form.elecAccessories} onChange={(v: any) => setForm(p => ({ ...p, elecAccessories: Number(v) }))} />
-                      <Input label="CNG/LPG Kit" type="number" value={form.cngLpgKit} onChange={(v: any) => setForm(p => ({ ...p, cngLpgKit: Number(v) }))} />
-                      <Input label="Trailer Total Value" type="number" value={form.trailerTotalValue} onChange={(v: any) => setForm(p => ({ ...p, trailerTotalValue: Number(v) }))} />
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="px-6 py-3 bg-slate-700 text-white">
-                      <h3 className="font-bold text-xs uppercase tracking-widest">TOTAL IDV / SA</h3>
-                    </div>
-                    <div className="p-6 flex justify-end">
-                      <div className="w-full max-w-xs">
-                        <Input 
-                          label="TOTAL IDV / SA" 
-                          required 
-                          type="number" 
-                          value={form.totalIdvSa} 
-                          placeholder="Total SA / IDV"
-                          onChange={(v: any) => setForm(p => ({ ...p, totalIdvSa: Number(v) }))} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="px-6 py-3 bg-slate-700 text-white">
-                      <h3 className="font-bold text-xs uppercase tracking-widest">Motor/Vehicle Details</h3>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <Select label="Make" value={form.make} options={[{id: "Make 1", name: "Make 1"}]} onChange={(v: any) => setForm(p => ({ ...p, make: v }))} />
-                      <Select label="Model" value={form.model} options={[{id: "Model 1", name: "Model 1"}]} onChange={(v: any) => setForm(p => ({ ...p, model: v }))} />
-                      <Select label="Fuel Type" value={form.fuelType} options={[{id: "Petrol", name: "Petrol"}, {id: "Diesel", name: "Diesel"}]} onChange={(v: any) => setForm(p => ({ ...p, fuelType: v }))} />
-                      <Input label="Color" value={form.color} onChange={(v: any) => setForm(p => ({ ...p, color: v }))} />
-                      
-                      <Input label="Registration No" value={form.registrationNo} onChange={(v: any) => setForm(p => ({ ...p, registrationNo: v }))} />
-                      <Input label="Place of Registration" value={form.placeOfRegistration} onChange={(v: any) => setForm(p => ({ ...p, placeOfRegistration: v }))} />
-                      <Input label="MFG Year" value={form.mfgYear} onChange={(v: any) => setForm(p => ({ ...p, mfgYear: v }))} />
-                      <Input label="Registration Date" type="date" value={form.registrationDate} onChange={(v: any) => setForm(p => ({ ...p, registrationDate: v }))} />
-                      
-                      <Input label="Seating Capacity" value={form.seatingCapacity} onChange={(v: any) => setForm(p => ({ ...p, seatingCapacity: v }))} />
-                      <Input label="Cubic Capacity" value={form.cubicCapacity} onChange={(v: any) => setForm(p => ({ ...p, cubicCapacity: v }))} />
-                      <Input label="Engine Number" value={form.engineNumber} onChange={(v: any) => setForm(p => ({ ...p, engineNumber: v }))} />
-                      <Input label="Chasis Number" value={form.chasisNumber} onChange={(v: any) => setForm(p => ({ ...p, chasisNumber: v }))} />
-                      
-                      <Input label="Vehicle Weight" value={form.vehicleWeight} onChange={(v: any) => setForm(p => ({ ...p, vehicleWeight: v }))} />
-                      <Select label="Permit" value={form.permit} options={[{id: "Permit 1", name: "Permit 1"}]} onChange={(v: any) => setForm(p => ({ ...p, permit: v }))} />
-                      <Input label="Trailer no" value={form.trailerNo} onChange={(v: any) => setForm(p => ({ ...p, trailerNo: v }))} />
-                      <Input label="Fitness Expiry Date" type="date" value={form.fitnessExpiryDate} onChange={(v: any) => setForm(p => ({ ...p, fitnessExpiryDate: v }))} />
-                      
-                      <Input label="Road Tax" value={form.roadTax} onChange={(v: any) => setForm(p => ({ ...p, roadTax: v }))} />
-                    </div>
-                  </div>
-                </div>
-              )} */}
-
+              {activeTab === "related" && (
+                <PolicyFundInfo
+                  form={form}
+                  setForm={setForm}
+                  insuranceTypeId={Number(form.insuranceType || 0)}
+                />
+              )}
               {activeTab === "documents" && (
                 <div className="space-y-8">
                   {/* UPLOAD SECTION */}
@@ -1064,7 +894,7 @@ const Input = ({
   className = "",
   suffix
 }: any) => (
-  <div className="space-y-1.5">
+  <div className="space-y-1.5 w-full">
     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
@@ -1106,7 +936,7 @@ const Select = ({
   labelKey = "name",
   error,
 }: any) => (
-  <div className="space-y-1.5">
+  <div className="space-y-1.5 w-full">
     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
