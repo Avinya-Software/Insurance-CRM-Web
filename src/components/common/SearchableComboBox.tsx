@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export interface ComboBoxItem {
   label: string;
@@ -6,32 +7,16 @@ export interface ComboBoxItem {
 }
 
 interface Props<T extends ComboBoxItem> {
-  /** Label shown above input */
   label?: string;
-
-  /** Marks field required (UI only) */
   required?: boolean;
-
-  /** Validation error message */
   error?: string;
-
-  /** Disable interaction */
   disabled?: boolean;
-
   items: T[];
   value?: string;
   placeholder?: string;
-
-  /** Called when an item is selected (or cleared) */
   onSelect: (item: T | null) => void;
-
-  /** Optional create handler */
   onCreate?: (searchText: string) => void;
-
-  /** Text shown when no results are found */
   emptyText?: string;
-
-  /** Text for create button */
   createText?: string;
 }
 
@@ -40,7 +25,6 @@ const SearchableComboBox = <T extends ComboBoxItem>({
   required,
   error,
   disabled,
-
   items,
   value,
   placeholder = "Select",
@@ -71,9 +55,8 @@ const SearchableComboBox = <T extends ComboBoxItem>({
 
   return (
     <div className="w-full">
-      {/* LABEL */}
       {label && (
-        <label className="block text-sm font-medium mb-1">
+        <label className="block text-[13px] font-bold text-[#2D3748] tracking-tight mb-2">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -85,45 +68,78 @@ const SearchableComboBox = <T extends ComboBoxItem>({
           disabled ? "pointer-events-none opacity-60" : ""
         }`}
       >
-        <input
-          className={`input w-full placeholder:text-black
-            ${selected ? "text-black-900" : "text-black-900"}
-            ${error ? "border-red-500 focus:ring-red-500" : ""}
-          `}
-          placeholder={placeholder}
-          value={open ? search : selected?.label || ""}
-          disabled={disabled}
-          onFocus={() => {
-            if (disabled) return;
-            setOpen(true);
-            setSearch("");
-          }}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        {/* INPUT */}
+        <div className="relative">
+          <input
+            className={`w-full bg-white border rounded-none px-4 py-2 text-sm transition-all outline-none
+              ${
+                open
+                  ? "border-blue-400 ring-1 ring-blue-50"
+                  : "border-slate-200 hover:border-slate-300"
+              }
+              ${error ? "border-red-500 focus:ring-red-500" : ""}
+              text-slate-700 placeholder:text-slate-400 cursor-pointer
+            `}
+            placeholder={placeholder}
+            value={open ? search : selected?.label || ""}
+            disabled={disabled}
+            onFocus={() => {
+              if (disabled) return;
+              setOpen(true);
+              setSearch("");
+            }}
+            onChange={(e) => setSearch(e.target.value)}
+            readOnly={!open && !!selected}
+          />
 
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+            <ChevronDown
+              size={16}
+              className={`transition-transform duration-200 ${
+                open ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+        </div>
+
+        {/* DROPDOWN */}
         {open && (
-          <div className="absolute z-50 mt-1 w-full bg-white border rounded-lg shadow max-h-56 overflow-y-auto">
+          <div
+            className="
+              absolute z-50 mt-1 w-full bg-white 
+              border border-slate-200 rounded-none shadow-lg
+              max-h-56 overflow-y-auto
+              scrollbar-thin
+            "
+          >
             {filtered.length > 0 ? (
               filtered.map((item) => (
                 <div
                   key={item.value}
-                  className="px-3 py-2 text-sm cursor-pointer hover:bg-black-100 text-black-900"
+                  className={`px-4 py-2 text-sm cursor-pointer transition-colors
+                    ${
+                      item.value === value
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }
+                  `}
                   onClick={() => {
                     onSelect(item);
                     setOpen(false);
+                    setSearch("");
                   }}
                 >
                   {item.label}
                 </div>
               ))
             ) : (
-              <div className="p-3 text-sm text-black-500">
-                {emptyText}
+              <div className="p-4 text-sm text-slate-500 text-center">
+                <p>{emptyText}</p>
 
                 {onCreate && search && (
                   <button
                     type="button"
-                    className="mt-2 w-full border rounded-md py-1 text-blue-600 hover:bg-blue-50"
+                    className="mt-3 w-full border border-blue-200 rounded-none py-2 text-blue-600 hover:bg-blue-50 font-medium transition-colors"
                     onClick={() => onCreate(search)}
                   >
                     + {createText}
@@ -135,8 +151,9 @@ const SearchableComboBox = <T extends ComboBoxItem>({
         )}
       </div>
 
-      {/* ERROR */}
-      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
+      {error && (
+        <p className="text-xs text-red-500 mt-1.5 font-medium">{error}</p>
+      )}
     </div>
   );
 };

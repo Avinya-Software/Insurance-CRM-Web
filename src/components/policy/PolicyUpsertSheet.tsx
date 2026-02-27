@@ -174,7 +174,8 @@ const PolicyUpsertSheet = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { data: products } = useCompanyWiseProduct(
     form.insurerId,
-    Number(form.insuranceType) 
+    Number(form.insuranceType), 
+    undefined                   
   );
 
   const documentOptions = [
@@ -480,7 +481,7 @@ const showLongTermPolicy =
                         onChange={(v: any) => setForm(p => ({ ...p, baName: v }))}
                       />
                       <SearchableComboBox
-                          label="Company Name"
+                          label="COMPANY NAME"
                           required
                           items={(companies || []).map((c: any) => ({
                             value: c.companyId,
@@ -497,7 +498,7 @@ const showLongTermPolicy =
                           }
                         />
                       <SearchableComboBox
-                          label="Insurance Type"
+                          label="INSURANCE TYPE"
                           required
                           value={form.insuranceType}
                           items={
@@ -520,7 +521,7 @@ const showLongTermPolicy =
                           }}
                         />
                       <SearchableComboBox
-                          label="Product Name"
+                          label="PRODUCT NAME"
                           required
                           items={(products || []).map((p: any) => ({
                             value: p.id,

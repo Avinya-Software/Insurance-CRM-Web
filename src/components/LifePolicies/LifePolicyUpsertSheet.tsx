@@ -64,6 +64,8 @@ const PolicyUpsertSheet = ({
     }
   );
 
+
+
   /*   FORM STATE   */
   const initialForm = {
     policyId: null as string | null,
@@ -71,33 +73,33 @@ const PolicyUpsertSheet = ({
     
     // Policy Personal Information
     policyStatusId: undefined as number | undefined,
-    policyTypeId: undefined as number | undefined, // Mapping to "Status" field in screenshot
+    policyTypeId: undefined as number | undefined,
     insuredName: "",
     dobOfLa: "",
     age: "",
     proposerName: "",
     nomineeName: "",
-    nomineeType: "Nominee",
-    relationWithLa: "Spouse",
+    nomineeType: "",
+    relationWithLa: "",
     policyNumber: "",
-    baName: "ALPESH SHELADIYA",
+    baName: "",
     agencyName: "",
     insurerId: "",
     productId: "",
-    premiumMode: "Y",
+    premiumMode: "",
     policyTerm: "",
     ppt: "",
     startDate: "",
-    completionDate: "2026-02-25",
+    completionDate: "",
     nextPremiumDueDate: "",
     graceDate: "",
     maturityDate: "",
-    objective: "Select",
-    insuranceType: "1", // Default to LI
+    objective: "",
+    insuranceType: "", 
 
     // Premium Details
     installmentPremium: 0,
-    premiumIncludingGst: true,
+    premiumIncludingGst: false,
     basicPremium: 0,
     gstPerc: 0,
     gstAmount: 0,
@@ -106,8 +108,8 @@ const PolicyUpsertSheet = ({
     sumAssured: "",
 
     // Payment Details
-    ecs: "No",
-    paymentBy: "Select",
+    ecs: "",
+    paymentBy: "",
     payReferenceNo: "",
     paymentDate: "",
     mandateExpDate: "",
@@ -123,8 +125,20 @@ const PolicyUpsertSheet = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { data: products } = useCompanyWiseProduct(
     form.insurerId,
-    Number(form.insuranceType) 
+    undefined,  
+    1          
   );
+
+  const getMultiplier = (mode: string) => {
+    switch (mode) {
+      case "Y": return 1;
+      case "H": return 2;
+      case "Q": return 4;
+      case "M": return 12;
+      case "S": return 1;
+      default: return 1;
+    }
+  };
 
   const documentOptions = [
     { id: "Policy Copy", name: "Policy Copy" },
@@ -146,6 +160,7 @@ const { data: statusTypes, isLoading: stLoading } =
   usePolicyStatusesDropdown(1);
 const loadingDropdowns = sLoading || stLoading; 
 const isLoading = isPending;
+
 
   /*   PREFILL   */
   useEffect(() => {
@@ -204,6 +219,44 @@ const isLoading = isPending;
     return true;
   };
 
+  useEffect(() => {
+    const installment = Number(form.installmentPremium) || 0;
+    const gstPerc = Number(form.gstPerc) || 0;
+    const multiplier = getMultiplier(form.premiumMode);
+  
+    if (!installment) return;
+  
+    let basic = 0;
+    let gstAmount = 0;
+    let finalInstallment = 0;
+  
+    if (form.premiumIncludingGst) {
+      basic = installment / (1 + gstPerc / 100);
+      gstAmount = installment - basic;
+      finalInstallment = installment;
+    } else {
+      basic = installment;
+      gstAmount = basic * (gstPerc / 100);
+      finalInstallment = basic + gstAmount;
+    }
+  
+    const annual = finalInstallment * multiplier;
+  
+    setForm((prev: any) => ({
+      ...prev,
+      basicPremium: Math.round(basic),
+      gstAmount: Math.round(gstAmount),
+      finalInstallmentPremium: Math.round(finalInstallment),
+      annualPremium: Math.round(annual),
+    }));
+  }, [
+    form.installmentPremium,
+    form.gstPerc,
+    form.premiumIncludingGst,
+    form.premiumMode,
+  ]);
+  
+
   /*   SAVE  */
   const handleSave = async () => {
     if (!validate()) return;
@@ -244,6 +297,8 @@ const isLoading = isPending;
   const nomineeTypes = [{ id: "Nominee", name: "Nominee" }];
   const relations = [{ id: "Spouse", name: "Spouse" }];
   const premiumModes = [{ id: "Y", name: "Y" }, { id: "H", name: "H" }, { id: "Q", name: "Q" }, { id: "M", name: "M" }];
+
+  
 
   return (
     <>
@@ -306,7 +361,7 @@ const isLoading = isPending;
               {activeTab === "general" && (
                 <>
                   {/* POLICY PERSONAL INFORMATION */}
-                  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                  <section className="bg-white rounded-lg shadow-sm border border-slate-200">
                     <div className="p-6 space-y-6">
                       {/* ROW 1 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -391,16 +446,42 @@ const isLoading = isPending;
                           <Select
                             label="Nominee Type"
                             value={form.nomineeType}
-                            options={[{ id: "Nominee", name: "Nominee" }]}
+                            options={[
+                              { id: "Nominee", name: "Nominee" },
+                              { id: "Assignee", name: "Assignee" },
+                              { id: "Beneficiary", name: "Beneficiary" },
+                              { id: "Proposer", name: "Proposer" },
+                            ]}
                             onChange={(v: any) => setForm((p: any) => ({ ...p, nomineeType: v }))}
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <Select
-                            label="Relation with LA"
+                          <SearchableComboBox
+                            label="RELATION WITH LA"
                             value={form.relationWithLa}
-                            options={[{ id: "Spouse", name: "Spouse" }, { id: "Father", name: "Father" }, { id: "Mother", name: "Mother" }]}
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, relationWithLa: v }))}
+                            items={[
+                              { label: "Self", value: "Self" },
+                              { label: "Spouse", value: "Spouse" },
+                              { label: "Husband", value: "Husband" },
+                              { label: "Son", value: "Son" },
+                              { label: "Daughter", value: "Daughter" },
+                              { label: "Father", value: "Father" },
+                              { label: "Mother", value: "Mother" },
+                              { label: "Brother", value: "Brother" },
+                              { label: "Sister", value: "Sister" },
+                              { label: "Father-In-Law", value: "Father-In-Law" },
+                              { label: "Mother-In-Law", value: "Mother-In-Law" },
+                              { label: "Grand Father", value: "Grand Father" },
+                              { label: "Grand Mother", value: "Grand Mother" },
+                              { label: "Grand Son", value: "Grand Son" },
+                              { label: "Grand Daughter", value: "Grand Daughter" },
+                            ]}
+                            onSelect={(item) => {
+                              setForm((prev) => ({
+                                ...prev,
+                                relationWithLa: item?.value || "",
+                              }));
+                            }}
                           />
                         </div>
                       </div>
@@ -419,7 +500,7 @@ const isLoading = isPending;
                         </div>
                         <div className="md:col-span-8">
                           <SearchableComboBox
-                            label="BA Name"
+                            label="BA NAME"
                             items={[{ value: "ALPESH SHELADIYA", label: "ALPESH SHELADIYA" }]}
                             value={form.baName}
                             onSelect={(item) => setForm((p: any) => ({ ...p, baName: item?.value }))}
@@ -441,7 +522,7 @@ const isLoading = isPending;
                         </div>
                         <div className="md:col-span-4">
                           <SearchableComboBox
-                            label="Company Name"
+                            label="COMPANY NAME"
                             required
                             error={errors.insurerId}
                             items={(companies || []).map((c: any) => ({
@@ -459,8 +540,8 @@ const isLoading = isPending;
                           />
                         </div>
                         <div className="md:col-span-4">
-                          <SearchableComboBox
-                            label="Product Name"
+                        <SearchableComboBox
+                            label="PRODUCT NAME"
                             required
                             error={errors.productId}
                             items={(products || []).map((p: any) => ({
@@ -479,12 +560,24 @@ const isLoading = isPending;
                       {/* ROW 5 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                          <Select
-                            label="Premium Mode"
-                            value={form.premiumMode}
-                            options={[{ id: "Y", name: "Y" }, { id: "H", name: "H" }, { id: "Q", name: "Q" }, { id: "M", name: "M" }]}
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, premiumMode: v }))}
-                          />
+                        <Select
+                          label="Premium Mode"
+                          value={form.premiumMode}
+                          options={[
+                            { id: "Y", name: "Y" },
+                            { id: "H", name: "H" },
+                            { id: "Q", name: "Q" },
+                            { id: "M", name: "M" },
+                            { id: "S", name: "S" },
+                          ]}
+                          onChange={(v: any) =>
+                            setForm((prev: any) => ({
+                              ...prev,
+                              premiumMode: v,
+                              ppt: v === "S" ? "1" : "", 
+                            }))
+                          }
+                        />
                         </div>
                         <div className="md:col-span-2">
                           <Input
@@ -495,12 +588,16 @@ const isLoading = isPending;
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <Input
-                            label="PPT"
-                            value={form.ppt}
-                            placeholder="PPT"
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, ppt: v }))}
-                          />
+                        <Input
+                          label="PPT"
+                          value={form.ppt}
+                          placeholder="PPT"
+                          readOnly={form.premiumMode === "S"}
+                          onChange={(v: any) => {
+                            if (form.premiumMode === "S") return;  
+                            setForm((p: any) => ({ ...p, ppt: v }));
+                          }}
+                        />
                         </div>
                         <div className="md:col-span-4">
                           <Input
@@ -553,17 +650,30 @@ const isLoading = isPending;
                           />
                         </div>
                         <div className="md:col-span-8">
-                          <Select
-                            label="Objective of Insurance"
+                          <SearchableComboBox
+                            label="OBJECTIVE OF INSURANCE"
                             value={form.objective}
-                            options={[{ id: "Select", name: "Select" }]}
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, objective: v }))}
+                            items={[
+                              { label: "Saving", value: "Saving" },
+                              { label: "Investment", value: "Investment" },
+                              { label: "Taxation", value: "Taxation" },
+                              { label: "Education", value: "Education" },
+                              { label: "Protection", value: "Protection" },
+                              { label: "Pension", value: "Pension" },
+                              { label: "Retirement", value: "Retirement" },
+                            ]}
+                            onSelect={(item) => {
+                              setForm((prev: any) => ({
+                                ...prev,
+                                objective: item?.value || "",
+                              }));
+                            }}
                           />
                         </div>
                       </div>
                     </div>
                   </section>
-
+                  
                   {/* PREMIUM DETAILS */}
                   <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                     <div className="bg-[#4a5568] px-4 py-2 text-white">
@@ -587,16 +697,29 @@ const isLoading = isPending;
                           </label>
                         </div>
                         <div className="md:col-span-3">
-                          <Input label="Basic Premium" type="number" value={form.basicPremium} onChange={(v: any) => setForm(p => ({ ...p, basicPremium: Number(v) }))} />
-                        </div>
+                        <Input
+                          label="Basic Premium"
+                          type="number"
+                          value={form.basicPremium}
+                          onChange={(v: any) =>
+                            setForm(p => ({ ...p, basicPremium: v }))
+                          }
+                        />             
+                       </div>
                         <div className="md:col-span-1">
                           <Input label="GST Perc." type="number" value={form.gstPerc} onChange={(v: any) => setForm(p => ({ ...p, gstPerc: Number(v) }))} suffix={<span className="text-xs font-bold text-slate-400">%</span>} />
                         </div>
                         <div className="md:col-span-2">
-                          <Input label="GST Amount" type="number" value={form.gstAmount} onChange={(v: any) => setForm(p => ({ ...p, gstAmount: Number(v) }))} />
+                        <Input
+                          label="GST Amount"
+                          type="number"
+                          value={form.gstAmount}
+                          onChange={(v: any) =>
+                            setForm(p => ({ ...p, gstAmount: v }))
+                          }
+                        />                        
                         </div>
                       </div>
-
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-3">
                           <Input label="Final Installment Premium" type="number" value={form.finalInstallmentPremium} onChange={(v: any) => setForm(p => ({ ...p, finalInstallmentPremium: Number(v) }))} />
@@ -628,11 +751,23 @@ const isLoading = isPending;
                           />
                         </div>
                         <div className="md:col-span-3">
-                          <Select
-                            label="Payment By"
+                          <SearchableComboBox
+                            label="PAYMENT BY"
                             value={form.paymentBy}
-                            options={[{ id: "Select", name: "Select" }, { id: "Self", name: "Self" }]}
-                            onChange={(v: any) => setForm(p => ({ ...p, paymentBy: v }))}
+                            items={[
+                              { label: "Cash", value: "Cash" },
+                              { label: "Cheque", value: "Cheque" },
+                              { label: "Credit Card", value: "Credit Card" },
+                              { label: "Demand Draft", value: "Demand Draft" },
+                              { label: "ECS", value: "ECS" },
+                              { label: "Online", value: "Online" },
+                            ]}
+                            onSelect={(item) =>
+                              setForm((prev: any) => ({
+                                ...prev,
+                                paymentBy: item?.value || "",
+                              }))
+                            }
                           />
                         </div>
                         <div className="md:col-span-2">

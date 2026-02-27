@@ -139,10 +139,15 @@ export const getCompanyListApi = async () => {
 
 export const getCompanyWiseProductApi = async (
   companyId: string,
-  insurance: number
+  insurance?: number,
+  policyType?: number
 ) => {
   const res = await api.get("/products/CompanyWiseProduct", {
-    params: { companyId, insurance },
+    params: {
+      companyId,
+      ...(insurance !== undefined ? { insurance } : {}),
+      ...(policyType !== undefined ? { policyType } : {}),
+    },
   });
 
   return res.data?.data || [];
