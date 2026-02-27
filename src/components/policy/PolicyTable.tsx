@@ -60,10 +60,11 @@ const PolicyTable = ({
     useUpdatePolicyStatus();
 
   /* 🔥 Fetch policy statuses */
-  const { data: statuses = [] } = useQuery({
-    queryKey: ["policy-statuses"],
-    queryFn: getPolicyStatusesDropdownApi,
-  });  
+  /* 🔥 Fetch policy statuses */
+const { data: statuses = [] } = useQuery({
+  queryKey: ["policy-statuses"],
+  queryFn: () => getPolicyStatusesDropdownApi(), 
+});
   
 
   const openDropdown = (

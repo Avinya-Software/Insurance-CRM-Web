@@ -36,11 +36,13 @@ export const getPolicyTypesDropdownApi = async () => {
   return res.data.data;   
 };
 
-export const getPolicyStatusesDropdownApi = async () => {
-  const res = await api.get("/policy/policy-statuses-dropdown");
-  return res.data.data;  
-};
+export const getPolicyStatusesDropdownApi = async (type?: number) => {
+  const res = await api.get("/policy/policy-statuses-dropdown", {
+    params: type ? { type } : {},
+  });
 
+  return res.data.data;
+};
 /*   POLICY DOCUMENT PREVIEW   */
 
 export const previewPolicyDocumentApi = (

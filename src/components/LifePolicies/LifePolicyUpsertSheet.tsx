@@ -7,11 +7,12 @@ import PolicyFundInfo from "./PolicyFundInfo";
 import { useInsuranceTypes } from "../../hooks/policy/useInsuranceTypes";
 import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
+import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdown";
+import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
 const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
-const usePolicyTypesDropdown = () => ({ data: [{ policyTypeId: 1, typeName: "Fresh" }, { policyTypeId: 2, typeName: "Renewal" }, { policyTypeId: 3, typeName: "Portability" }, { policyTypeId: 4, typeName: "Rollover" }], isLoading: false });
-const usePolicyStatusesDropdown = () => ({ data: [{ policyStatusId: 1, statusName: "Policy" }, { policyStatusId: 2, statusName: "Proposal" }], isLoading: false });
+
 const usePolicyDocumentActions = (cb: any) => ({ 
   preview: (p: any, f: any) => toast.success("Previewing " + f), 
   download: (p: any, f: any, n: any) => toast.success("Downloading " + n), 
@@ -138,12 +139,13 @@ const PolicyUpsertSheet = ({
 
   
   /*   API HOOKS   */
-  const { mutateAsync, isPending } = useUpsertPolicy();
-  const { data: policyTypes, isLoading: tLoading } = usePolicyTypesDropdown();
-  const { data: policyStatuses, isLoading: sLoading } = usePolicyStatusesDropdown();
-
-  const loadingDropdowns = tLoading || sLoading;
-    const isLoading = isPending;
+const { mutateAsync, isPending } = useUpsertPolicy();
+const { data: policyStatuses, isLoading: sLoading } =
+  usePolicyStatusesDropdown();
+const { data: statusTypes, isLoading: stLoading } =
+  usePolicyStatusesDropdown(1);
+const loadingDropdowns = sLoading || stLoading; 
+const isLoading = isPending;
 
   /*   PREFILL   */
   useEffect(() => {
@@ -308,24 +310,29 @@ const PolicyUpsertSheet = ({
                     <div className="p-6 space-y-6">
                       {/* ROW 1 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                        <div className="md:col-span-2">
+                      <div className="md:col-span-2">
                           <Select
                             label="Policy Status"
                             value={form.policyStatusId}
                             options={policyStatuses}
                             valueKey="policyStatusId"
                             labelKey="statusName"
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, policyStatusId: v }))}
+                            onChange={(v: any) =>
+                              setForm((p: any) => ({ ...p, policyStatusId: v }))
+                            }
                           />
                         </div>
+
                         <div className="md:col-span-2">
                           <Select
                             label="Status"
                             value={form.policyTypeId}
-                            options={policyTypes}
-                            valueKey="policyTypeId"
-                            labelKey="typeName"
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, policyTypeId: v }))}
+                            options={statusTypes}   // 👈 filtered by type=1
+                            valueKey="policyStatusId"
+                            labelKey="statusName"
+                            onChange={(v: any) =>
+                              setForm((p: any) => ({ ...p, policyTypeId: v }))
+                            }
                           />
                         </div>
                         <div className="md:col-span-4">
