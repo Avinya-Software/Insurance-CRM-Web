@@ -351,21 +351,23 @@ const isLoading = isPending;
         {/* BODY */}
         <div className="flex-1 overflow-y-auto p-8">
           {loadingDropdowns ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4">
-              <Spinner />
-              <p className="text-slate-500 animate-pulse">Loading configuration...</p>
-            </div>
+            <div className="flex flex-col items-center justify-center h-full"><Spinner /></div>
           ) : (
-            <div className="max-w-full mx-auto space-y-10">
-              
+            <div className="space-y-10">
               {activeTab === "general" && (
-                <>
+                <div className="space-y-6">
                   {/* POLICY PERSONAL INFORMATION */}
-                  <section className="bg-white rounded-lg shadow-sm border border-slate-200">
+                  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <ShieldCheck size={16} />
+                      </div>
+                      <h3 className="font-bold uppercase tracking-wider text-[10px]">Policy Personal Information</h3>
+                    </div>
                     <div className="p-6 space-y-6">
                       {/* ROW 1 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                      <div className="md:col-span-2">
+                        <div className="md:col-span-2">
                           <Select
                             label="Policy Status"
                             value={form.policyStatusId}
@@ -382,7 +384,7 @@ const isLoading = isPending;
                           <Select
                             label="Status"
                             value={form.policyTypeId}
-                            options={statusTypes}   // 👈 filtered by type=1
+                            options={statusTypes}
                             valueKey="policyStatusId"
                             labelKey="statusName"
                             onChange={(v: any) =>
@@ -476,7 +478,7 @@ const isLoading = isPending;
                               { label: "Grand Son", value: "Grand Son" },
                               { label: "Grand Daughter", value: "Grand Daughter" },
                             ]}
-                            onSelect={(item) => {
+                            onSelect={(item: any) => {
                               setForm((prev) => ({
                                 ...prev,
                                 relationWithLa: item?.value || "",
@@ -503,7 +505,7 @@ const isLoading = isPending;
                             label="BA NAME"
                             items={[{ value: "ALPESH SHELADIYA", label: "ALPESH SHELADIYA" }]}
                             value={form.baName}
-                            onSelect={(item) => setForm((p: any) => ({ ...p, baName: item?.value }))}
+                            onSelect={(item: any) => setForm((p: any) => ({ ...p, baName: item?.value }))}
                           />
                         </div>
                       </div>
@@ -530,7 +532,7 @@ const isLoading = isPending;
                               label: c.companyName,
                             }))}
                             value={form.insurerId}
-                            onSelect={(item) =>
+                            onSelect={(item: any) =>
                               setForm({
                                 ...form,
                                 insurerId: item?.value || "",
@@ -540,7 +542,7 @@ const isLoading = isPending;
                           />
                         </div>
                         <div className="md:col-span-4">
-                        <SearchableComboBox
+                          <SearchableComboBox
                             label="PRODUCT NAME"
                             required
                             error={errors.productId}
@@ -550,7 +552,7 @@ const isLoading = isPending;
                             }))}
                             value={form.productId}
                             disabled={!form.insurerId}
-                            onSelect={(item) =>
+                            onSelect={(item: any) =>
                               setForm((p: any) => ({ ...p, productId: item?.value }))
                             }
                           />
@@ -560,24 +562,24 @@ const isLoading = isPending;
                       {/* ROW 5 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                        <Select
-                          label="Premium Mode"
-                          value={form.premiumMode}
-                          options={[
-                            { id: "Y", name: "Y" },
-                            { id: "H", name: "H" },
-                            { id: "Q", name: "Q" },
-                            { id: "M", name: "M" },
-                            { id: "S", name: "S" },
-                          ]}
-                          onChange={(v: any) =>
-                            setForm((prev: any) => ({
-                              ...prev,
-                              premiumMode: v,
-                              ppt: v === "S" ? "1" : "", 
-                            }))
-                          }
-                        />
+                          <Select
+                            label="Premium Mode"
+                            value={form.premiumMode}
+                            options={[
+                              { id: "Y", name: "Y" },
+                              { id: "H", name: "H" },
+                              { id: "Q", name: "Q" },
+                              { id: "M", name: "M" },
+                              { id: "S", name: "S" },
+                            ]}
+                            onChange={(v: any) =>
+                              setForm((prev: any) => ({
+                                ...prev,
+                                premiumMode: v,
+                                ppt: v === "S" ? "1" : "",
+                              }))
+                            }
+                          />
                         </div>
                         <div className="md:col-span-2">
                           <Input
@@ -588,16 +590,16 @@ const isLoading = isPending;
                           />
                         </div>
                         <div className="md:col-span-2">
-                        <Input
-                          label="PPT"
-                          value={form.ppt}
-                          placeholder="PPT"
-                          readOnly={form.premiumMode === "S"}
-                          onChange={(v: any) => {
-                            if (form.premiumMode === "S") return;  
-                            setForm((p: any) => ({ ...p, ppt: v }));
-                          }}
-                        />
+                          <Input
+                            label="PPT"
+                            value={form.ppt}
+                            placeholder="PPT"
+                            readOnly={form.premiumMode === "S"}
+                            onChange={(v: any) => {
+                              if (form.premiumMode === "S") return;
+                              setForm((p: any) => ({ ...p, ppt: v }));
+                            }}
+                          />
                         </div>
                         <div className="md:col-span-4">
                           <Input
@@ -662,7 +664,7 @@ const isLoading = isPending;
                               { label: "Pension", value: "Pension" },
                               { label: "Retirement", value: "Retirement" },
                             ]}
-                            onSelect={(item) => {
+                            onSelect={(item: any) => {
                               setForm((prev: any) => ({
                                 ...prev,
                                 objective: item?.value || "",
@@ -673,13 +675,16 @@ const isLoading = isPending;
                       </div>
                     </div>
                   </section>
-                  
+
                   {/* PREMIUM DETAILS */}
                   <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="bg-[#4a5568] px-4 py-2 text-white">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <CreditCard size={16} />
+                      </div>
                       <h3 className="font-bold uppercase tracking-wider text-[10px]">Premium Details</h3>
                     </div>
-                    
+
                     <div className="p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                         <div className="md:col-span-3">
@@ -687,37 +692,37 @@ const isLoading = isPending;
                         </div>
                         <div className="md:col-span-3 pb-3">
                           <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer">
-                            <input 
-                              type="checkbox" 
+                            <input
+                              type="checkbox"
                               checked={form.premiumIncludingGst}
                               onChange={(e) => setForm(p => ({ ...p, premiumIncludingGst: e.target.checked }))}
-                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" 
+                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                             />
                             Premium Including GST
                           </label>
                         </div>
                         <div className="md:col-span-3">
-                        <Input
-                          label="Basic Premium"
-                          type="number"
-                          value={form.basicPremium}
-                          onChange={(v: any) =>
-                            setForm(p => ({ ...p, basicPremium: v }))
-                          }
-                        />             
-                       </div>
+                          <Input
+                            label="Basic Premium"
+                            type="number"
+                            value={form.basicPremium}
+                            onChange={(v: any) =>
+                              setForm(p => ({ ...p, basicPremium: v }))
+                            }
+                          />
+                        </div>
                         <div className="md:col-span-1">
                           <Input label="GST Perc." type="number" value={form.gstPerc} onChange={(v: any) => setForm(p => ({ ...p, gstPerc: Number(v) }))} suffix={<span className="text-xs font-bold text-slate-400">%</span>} />
                         </div>
                         <div className="md:col-span-2">
-                        <Input
-                          label="GST Amount"
-                          type="number"
-                          value={form.gstAmount}
-                          onChange={(v: any) =>
-                            setForm(p => ({ ...p, gstAmount: v }))
-                          }
-                        />                        
+                          <Input
+                            label="GST Amount"
+                            type="number"
+                            value={form.gstAmount}
+                            onChange={(v: any) =>
+                              setForm(p => ({ ...p, gstAmount: v }))
+                            }
+                          />
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -736,10 +741,13 @@ const isLoading = isPending;
 
                   {/* PAYMENT DETAILS */}
                   <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="bg-[#4a5568] px-4 py-2 text-white">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <CreditCard size={16} />
+                      </div>
                       <h3 className="font-bold uppercase tracking-wider text-[10px]">Payment Details</h3>
                     </div>
-                    
+
                     <div className="p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-3">
@@ -762,7 +770,7 @@ const isLoading = isPending;
                               { label: "ECS", value: "ECS" },
                               { label: "Online", value: "Online" },
                             ]}
-                            onSelect={(item) =>
+                            onSelect={(item: any) =>
                               setForm((prev: any) => ({
                                 ...prev,
                                 paymentBy: item?.value || "",
@@ -806,16 +814,13 @@ const isLoading = isPending;
                       </div>
                     </div>
                   </section>
-                </>
+                </div>
               )}
 
               {activeTab === "related" && (
-                <PolicyFundInfo
-                  form={form}
-                  setForm={setForm}
-                  insuranceTypeId={Number(form.insuranceType || 0)}
-                />
+                  <PolicyFundInfo form={form} setForm={setForm} />
               )}
+
               {activeTab === "documents" && (
                 <div className="space-y-8">
                   {/* UPLOAD SECTION */}

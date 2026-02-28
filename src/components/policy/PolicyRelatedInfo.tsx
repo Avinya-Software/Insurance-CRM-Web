@@ -7,9 +7,7 @@ interface Props {
   insuranceTypeId: number;
 }
 
-/* ================= CONFIG ================= */
-
-const allowedMotorTypes = [12, 13, 14, 15, 16, 17, 18];
+const allowedMotorTypes = [0, 12, 13, 14, 15, 16, 17, 18];
 
 const relationOptions = [
   "Self", "Spouse", "Husband", "Son", "Daughter", "Father", "Mother",

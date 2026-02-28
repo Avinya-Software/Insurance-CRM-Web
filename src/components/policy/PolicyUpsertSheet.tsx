@@ -415,30 +415,30 @@ const showLongTermPolicy =
                     
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Select
-  label="Policy Status"
-  required
-  value={form.policyStatusId}
-  error={errors.policyStatusId}
-  options={policyStatuses}
-  valueKey="policyStatusId"
-  labelKey="statusName"
-  onChange={(v: any) =>
-    setForm(p => ({ ...p, policyStatusId: v ? Number(v) : undefined }))
-  }
-/>
+                        label="Policy Status"
+                        required
+                        value={form.policyStatusId}
+                        error={errors.policyStatusId}
+                        options={policyStatuses}
+                        valueKey="policyStatusId"
+                        labelKey="statusName"
+                        onChange={(v: any) =>
+                          setForm(p => ({ ...p, policyStatusId: v ? Number(v) : undefined }))
+                        }
+                      />
 
-<Select
-  label="Policy Type"
-  required
-  value={form.policyTypeId}
-  error={errors.policyTypeId}
-  options={policyTypes}
-  valueKey="policyTypeId"
-  labelKey="typeName"
-  onChange={(v: any) =>
-    setForm(p => ({ ...p, policyTypeId: v ? Number(v) : undefined }))
-  }
-/>
+                      <Select
+                        label="Policy Type"
+                        required
+                        value={form.policyTypeId}
+                        error={errors.policyTypeId}
+                        options={policyTypes}
+                        valueKey="policyTypeId"
+                        labelKey="typeName"
+                        onChange={(v: any) =>
+                          setForm(p => ({ ...p, policyTypeId: v ? Number(v) : undefined }))
+                        }
+                      />
                       <Select
                         label="Renewable"
                         value={form.renewable}
