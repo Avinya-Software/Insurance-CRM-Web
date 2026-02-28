@@ -23,6 +23,8 @@ import { Toaster } from "react-hot-toast";
 import AdminAdvisorsByStatusPage from "./pages/AdminAdvisorsByStatusPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import LifePolicies from "./pages/LifePolicies";
+import Agency from "./pages/Agency";
+import LifeAgency from "./pages/LifeAgency";
 
 function App() {
   return (
@@ -55,6 +57,8 @@ function App() {
           <Route path="/policies" element={<Policies />} />
           <Route path="lifepolicies" element={<LifePolicies />} />
           <Route path="/insurer" element={<Insurer />} />
+          <Route path="/Agency" element={<Agency />} />
+          <Route path="/LifeAgency" element={<LifeAgency />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />

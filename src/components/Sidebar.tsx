@@ -97,7 +97,6 @@ const Sidebar = () => {
           </button>
         </div>
       </div>
-
       {/* ---------- NAV ---------- */}
       <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {/* ================= ADVISOR MENU ================= */}
@@ -130,6 +129,46 @@ const Sidebar = () => {
               label="Insurers"
               isCollapsed={isCollapsed}
             />
+
+            <div>
+              <div
+                onClick={() => setOpenPolicies(!openPolicies)}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
+                  ${isCollapsed ? "justify-center" : ""}
+                  text-slate-300 hover:bg-slate-800`}
+              >
+                <FileText size={18} />
+
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1">Agency</span>
+                    {openPolicies ? (
+                      <ChevronDown size={16} />
+                    ) : (
+                      <ChevronRight size={16} />
+                    )}
+                  </>
+                )}
+              </div>
+
+              {openPolicies && !isCollapsed && (
+                <div className="ml-6 mt-1 space-y-1">
+                  <NavItem
+                    to="/agency"
+                    label="General Agency"
+                    icon={<FileText size={16} />}
+                    isCollapsed={false}
+                  />
+
+                  <NavItem
+                    to="/lifeagency"
+                    label="Life Agency"
+                    icon={<FileText size={16} />}
+                    isCollapsed={false}
+                  />
+                </div>
+              )}
+            </div>
 
             <NavItem
               to="/products"
