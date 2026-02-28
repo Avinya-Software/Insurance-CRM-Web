@@ -6,6 +6,7 @@ import ProductUpsertSheet from "../components/product/ProductUpsertSheet";
 import Pagination from "../components/leads/Pagination";
 import { useInsurers } from "../hooks/insurer/useInsurers";
 import LifeAgencyTable from "../components/LifeAgency/LifeAgencyTable";
+import LifeAgencyUpsertSheet from "../components/LifeAgency/LifeAgencyUpsertSheet";
 
 const Agency = () => {
   const [pageNumber, setPageNumber] = useState(1);
@@ -114,9 +115,8 @@ const Agency = () => {
       </div>
 
       {/*   INSURER UPSERT   */}
-      <InsurerUpsertSheet
+      <LifeAgencyUpsertSheet
         open={openInsurerSheet}
-        insurer={selectedInsurer}
         onClose={() => setOpenInsurerSheet(false)}
         onSuccess={handleInsurerSuccess}
       />
