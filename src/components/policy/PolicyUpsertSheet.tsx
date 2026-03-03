@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { X, Eye, Download, Trash2, Plus, FileText, ShieldCheck, CreditCard, UploadCloud, ChevronRight, ChevronDown, UserPlus, AlertCircle } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import Spinner from "../common/Spinner";
@@ -9,6 +9,7 @@ import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
 import PolicyRelatedInfo from "./PolicyRelatedInfo";
 import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
 import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdown";
+import { useAddOnDetails } from "../../hooks/policy/useAddOnDetails";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
 const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
@@ -249,6 +250,9 @@ const showHealthCheckup = insuranceTypeId === 6;
 const showLongTermPolicy =
   [12, 13, 14, 15, 16, 17, 18].includes(insuranceTypeId); 
 
+  const { data: addOnDetails } = useAddOnDetails(
+    Number(form.insuranceType || 0)
+  );
   /*   PREFILL   */
   useEffect(() => {
     if (!open) {
@@ -627,12 +631,21 @@ const showLongTermPolicy =
                         min={form.startDate}
                         onChange={(v: any) => setForm({ ...form, endDate: v })}
                       />
-                      <Input
-                        label="AddOn Name"
-                        value={form.addOnName}
-                        placeholder="AddOn Name"
-                        onChange={(v: any) => setForm(p => ({ ...p, addOnName: v }))}
-                      />
+                      <SearchableComboBox
+                          label="ADD ON NAME"
+                          value={form.addOnName}
+                          items={(addOnDetails || []).map((item: any) => ({
+                            value: item.id,
+                            label: item.name,
+                          }))}
+                          disabled={!form.insuranceType}
+                          onSelect={(item) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              addOnName: item?.value || "",
+                            }))
+                          }
+                        />
                       <Select
                         label="HPA Name"
                         value={form.hpaName}

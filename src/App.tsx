@@ -25,6 +25,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import LifePolicies from "./pages/LifePolicies";
 import Agency from "./pages/Agency";
 import LifeAgency from "./pages/LifeAgency";
+import AddOnDetails from "./pages/AddOnDetails";
 
 function App() {
   return (
@@ -64,6 +65,7 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/campaign" element={<Campaign />} />
           <Route path="/products" element={<Product />} />
+          <Route path="/addondetails" element={<AddOnDetails />} />
           <Route path="/tasks" element={<TasksPage />} />
           {/* -------- ADMIN ROUTES -------- */}
           <Route path="/admin" element={<AdminDashboard />} />

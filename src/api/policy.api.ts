@@ -152,3 +152,11 @@ export const getCompanyWiseProductApi = async (
 
   return res.data?.data || [];
 };
+
+export const getAddOnDetailsApi = async (insuranceTypeId: number) => {
+  const res = await api.get("/AddOnDetail", {
+    params: { insuranceTypeId },
+  });
+
+  return res.data?.data || [];
+};

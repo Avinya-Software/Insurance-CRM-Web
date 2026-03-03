@@ -177,6 +177,13 @@ const Sidebar = () => {
               isCollapsed={isCollapsed}
             />
 
+            <NavItem
+              to="/addondetails"
+              icon={<ListTodo size={18} />}
+              label="Add On Details"
+              isCollapsed={isCollapsed}
+            />
+
             {/* ================= POLICIES MENU ================= */}
             <div>
               <div
