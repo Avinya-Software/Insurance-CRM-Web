@@ -132,7 +132,7 @@ const AddOnDetailsUpsertSheet = ({
 
         {/* BODY */}
         <div className="flex-1 overflow-y-auto p-8">
-          <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <section className="bg-white rounded-2xl shadow-sm border border-slate-100">
             
             <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
               <div className="p-1.5 bg-white/10 rounded">
