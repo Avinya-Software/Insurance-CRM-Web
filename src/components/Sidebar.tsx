@@ -51,8 +51,9 @@ const Sidebar = () => {
   const user = getUserFromToken();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [openPolicies, setOpenPolicies] = useState(false); // ✅ MOVE HERE
-  const [openMaster, setOpenMaster] = useState(false);
+  const [openAgency, setOpenAgency] = useState(false);
+  const [openPolicies, setOpenPolicies] = useState(false);
+    const [openMaster, setOpenMaster] = useState(false);
   const isAdmin = user?.role === "SuperAdmin";
 
   /* ================= LOGOUT ================= */
@@ -132,7 +133,7 @@ const Sidebar = () => {
 
             <div>
               <div
-                onClick={() => setOpenPolicies(!openPolicies)}
+                onClick={() => setOpenAgency(!openAgency)}
                 className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
                   ${isCollapsed ? "justify-center" : ""}
                   text-slate-300 hover:bg-slate-800`}
@@ -142,7 +143,7 @@ const Sidebar = () => {
                 {!isCollapsed && (
                   <>
                     <span className="flex-1">Agency</span>
-                    {openPolicies ? (
+                    {openAgency ? (
                       <ChevronDown size={16} />
                     ) : (
                       <ChevronRight size={16} />
@@ -151,7 +152,7 @@ const Sidebar = () => {
                 )}
               </div>
 
-              {openPolicies && !isCollapsed && (
+              {openAgency && !isCollapsed && (
                 <div className="ml-6 mt-1 space-y-1">
                   <NavItem
                     to="/agency"
@@ -179,44 +180,44 @@ const Sidebar = () => {
 
             {/* ================= POLICIES MENU ================= */}
             <div>
-              <div
-                onClick={() => setOpenPolicies(!openPolicies)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
-                  ${isCollapsed ? "justify-center" : ""}
-                  text-slate-300 hover:bg-slate-800`}
-              >
-                <FileText size={18} />
+                <div
+                  onClick={() => setOpenPolicies(!openPolicies)}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
+                    ${isCollapsed ? "justify-center" : ""}
+                    text-slate-300 hover:bg-slate-800`}
+                >
+                  <FileText size={18} />
 
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1">Policies</span>
-                    {openPolicies ? (
-                      <ChevronDown size={16} />
-                    ) : (
-                      <ChevronRight size={16} />
-                    )}
-                  </>
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">Policies</span>
+                      {openPolicies ? (
+                        <ChevronDown size={16} />
+                      ) : (
+                        <ChevronRight size={16} />
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {openPolicies && !isCollapsed && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    <NavItem
+                      to="/policies"
+                      label="General Policy"
+                      icon={<FileText size={16} />}
+                      isCollapsed={false}
+                    />
+
+                    <NavItem
+                      to="/lifepolicies"
+                      label="Life Policy"
+                      icon={<FileText size={16} />}
+                      isCollapsed={false}
+                    />
+                  </div>
                 )}
               </div>
-
-              {openPolicies && !isCollapsed && (
-                <div className="ml-6 mt-1 space-y-1">
-                  <NavItem
-                    to="/policies"
-                    label="General Policy"
-                    icon={<FileText size={16} />}
-                    isCollapsed={false}
-                  />
-
-                  <NavItem
-                    to="/lifepolicies"
-                    label="Life Policy"
-                    icon={<FileText size={16} />}
-                    isCollapsed={false}
-                  />
-                </div>
-              )}
-            </div>
 
             <NavItem
               to="/claims"
