@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { X, Eye, Download, Trash2, Plus, FileText, ShieldCheck, CreditCard, UploadCloud, ChevronRight, ChevronDown, UserPlus, AlertCircle } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import Spinner from "../common/Spinner";
@@ -9,6 +9,8 @@ import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
 import PolicyRelatedInfo from "./PolicyRelatedInfo";
 import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
 import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdown";
+import { useAddOnDetails } from "../../hooks/policy/useAddOnDetails";
+import { useHPADetails } from "../../hooks/HPADetails/useHPADetails";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
 const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
@@ -86,7 +88,7 @@ const PolicyUpsertSheet = ({
     startDate: "",
     endDate: "",
     addOnName: "",
-    hpaName: "",
+    hpaId: "",
     hpaBranch: "",
     insuranceSubType: "",
     eligibleForHealthCheckup: "No",
@@ -249,6 +251,18 @@ const showHealthCheckup = insuranceTypeId === 6;
 const showLongTermPolicy =
   [12, 13, 14, 15, 16, 17, 18].includes(insuranceTypeId); 
 
+  const hideHPAFields = [0, 4, 5, 6, 19, 22].includes(insuranceTypeId);
+  const { data: addOnDetails } = useAddOnDetails(
+    Number(form.insuranceType || 0)
+  );
+
+  const { data: hpaList = [], isLoading: hpaLoading } = useHPADetails();
+
+  const hpaItems =
+  (hpaList || []).map((h: any) => ({
+    value: h.id,
+    label: h.hpaName,
+  }));
   /*   PREFILL   */
   useEffect(() => {
     if (!open) {
@@ -405,7 +419,7 @@ const showLongTermPolicy =
               {activeTab === "general" && (
                 <>
                   {/* BASIC INFO */}
-                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100">
                     <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
                       <div className="p-1.5 bg-white/10 text-white rounded">
                         <ShieldCheck size={16} />
@@ -415,30 +429,30 @@ const showLongTermPolicy =
                     
                     <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Select
-  label="Policy Status"
-  required
-  value={form.policyStatusId}
-  error={errors.policyStatusId}
-  options={policyStatuses}
-  valueKey="policyStatusId"
-  labelKey="statusName"
-  onChange={(v: any) =>
-    setForm(p => ({ ...p, policyStatusId: v ? Number(v) : undefined }))
-  }
-/>
+                        label="Policy Status"
+                        required
+                        value={form.policyStatusId}
+                        error={errors.policyStatusId}
+                        options={policyStatuses}
+                        valueKey="policyStatusId"
+                        labelKey="statusName"
+                        onChange={(v: any) =>
+                          setForm(p => ({ ...p, policyStatusId: v ? Number(v) : undefined }))
+                        }
+                      />
 
-<Select
-  label="Policy Type"
-  required
-  value={form.policyTypeId}
-  error={errors.policyTypeId}
-  options={policyTypes}
-  valueKey="policyTypeId"
-  labelKey="typeName"
-  onChange={(v: any) =>
-    setForm(p => ({ ...p, policyTypeId: v ? Number(v) : undefined }))
-  }
-/>
+                      <Select
+                        label="Policy Type"
+                        required
+                        value={form.policyTypeId}
+                        error={errors.policyTypeId}
+                        options={policyTypes}
+                        valueKey="policyTypeId"
+                        labelKey="typeName"
+                        onChange={(v: any) =>
+                          setForm(p => ({ ...p, policyTypeId: v ? Number(v) : undefined }))
+                        }
+                      />
                       <Select
                         label="Renewable"
                         value={form.renewable}
@@ -627,24 +641,45 @@ const showLongTermPolicy =
                         min={form.startDate}
                         onChange={(v: any) => setForm({ ...form, endDate: v })}
                       />
-                      <Input
-                        label="AddOn Name"
-                        value={form.addOnName}
-                        placeholder="AddOn Name"
-                        onChange={(v: any) => setForm(p => ({ ...p, addOnName: v }))}
-                      />
-                      <Select
-                        label="HPA Name"
-                        value={form.hpaName}
-                        options={[{ id: "HPA 1", name: "HPA 1" }]}
-                        onChange={(v: any) => setForm(p => ({ ...p, hpaName: v }))}
-                      />
-                      <Input
-                        label="HPA Branch"
-                        value={form.hpaBranch}
-                        placeholder="HPA Branch"
-                        onChange={(v: any) => setForm(p => ({ ...p, hpaBranch: v }))}
-                      />
+                      <SearchableComboBox
+                          label="ADD ON NAME"
+                          value={form.addOnName}
+                          items={(addOnDetails || []).map((item: any) => ({
+                            value: item.id,
+                            label: item.name,
+                          }))}
+                          disabled={!form.insuranceType}
+                          onSelect={(item) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              addOnName: item?.value || "",
+                            }))
+                          }
+                        />
+                      {!hideHPAFields && (
+  <>
+    <SearchableComboBox
+      label="HPA NAME"
+      required
+      items={hpaItems}
+      value={form.hpaId}
+      error={errors.hpaId}
+      onSelect={(item) =>
+        setForm((prev) => ({
+          ...prev,
+          hpaId: item?.value || "",
+        }))
+      }
+    />
+
+    <Input
+      label="HPA Branch"
+      value={form.hpaBranch}
+      placeholder="HPA Branch"
+      onChange={(v: any) => setForm(p => ({ ...p, hpaBranch: v }))}
+    />
+  </>
+)}
                     </div>
                   </section>
 
@@ -779,77 +814,14 @@ const showLongTermPolicy =
                 </>
               )}
 
-{activeTab === "related" && (
-  <PolicyRelatedInfo
-    form={form}
-    setForm={setForm}
-    insuranceTypeId={Number(form.insuranceType || 0)}
-  />
-)}
-              {/* {activeTab === "related" && (
-                <div className="space-y-8">
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="px-6 py-3 bg-slate-700 text-white">
-                      <h3 className="font-bold text-xs uppercase tracking-widest">IDV DETAILS</h3>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                      <Input label="Vehicle Value" type="number" value={form.vehicleValue} onChange={(v: any) => setForm(p => ({ ...p, vehicleValue: Number(v) }))} />
-                      <Input label="Non Elec. Accesories" type="number" value={form.nonElecAccessories} onChange={(v: any) => setForm(p => ({ ...p, nonElecAccessories: Number(v) }))} />
-                      <Input label="Electrical Accesories" type="number" value={form.elecAccessories} onChange={(v: any) => setForm(p => ({ ...p, elecAccessories: Number(v) }))} />
-                      <Input label="CNG/LPG Kit" type="number" value={form.cngLpgKit} onChange={(v: any) => setForm(p => ({ ...p, cngLpgKit: Number(v) }))} />
-                      <Input label="Trailer Total Value" type="number" value={form.trailerTotalValue} onChange={(v: any) => setForm(p => ({ ...p, trailerTotalValue: Number(v) }))} />
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="px-6 py-3 bg-slate-700 text-white">
-                      <h3 className="font-bold text-xs uppercase tracking-widest">TOTAL IDV / SA</h3>
-                    </div>
-                    <div className="p-6 flex justify-end">
-                      <div className="w-full max-w-xs">
-                        <Input 
-                          label="TOTAL IDV / SA" 
-                          required 
-                          type="number" 
-                          value={form.totalIdvSa} 
-                          placeholder="Total SA / IDV"
-                          onChange={(v: any) => setForm(p => ({ ...p, totalIdvSa: Number(v) }))} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div className="px-6 py-3 bg-slate-700 text-white">
-                      <h3 className="font-bold text-xs uppercase tracking-widest">Motor/Vehicle Details</h3>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <Select label="Make" value={form.make} options={[{id: "Make 1", name: "Make 1"}]} onChange={(v: any) => setForm(p => ({ ...p, make: v }))} />
-                      <Select label="Model" value={form.model} options={[{id: "Model 1", name: "Model 1"}]} onChange={(v: any) => setForm(p => ({ ...p, model: v }))} />
-                      <Select label="Fuel Type" value={form.fuelType} options={[{id: "Petrol", name: "Petrol"}, {id: "Diesel", name: "Diesel"}]} onChange={(v: any) => setForm(p => ({ ...p, fuelType: v }))} />
-                      <Input label="Color" value={form.color} onChange={(v: any) => setForm(p => ({ ...p, color: v }))} />
-                      
-                      <Input label="Registration No" value={form.registrationNo} onChange={(v: any) => setForm(p => ({ ...p, registrationNo: v }))} />
-                      <Input label="Place of Registration" value={form.placeOfRegistration} onChange={(v: any) => setForm(p => ({ ...p, placeOfRegistration: v }))} />
-                      <Input label="MFG Year" value={form.mfgYear} onChange={(v: any) => setForm(p => ({ ...p, mfgYear: v }))} />
-                      <Input label="Registration Date" type="date" value={form.registrationDate} onChange={(v: any) => setForm(p => ({ ...p, registrationDate: v }))} />
-                      
-                      <Input label="Seating Capacity" value={form.seatingCapacity} onChange={(v: any) => setForm(p => ({ ...p, seatingCapacity: v }))} />
-                      <Input label="Cubic Capacity" value={form.cubicCapacity} onChange={(v: any) => setForm(p => ({ ...p, cubicCapacity: v }))} />
-                      <Input label="Engine Number" value={form.engineNumber} onChange={(v: any) => setForm(p => ({ ...p, engineNumber: v }))} />
-                      <Input label="Chasis Number" value={form.chasisNumber} onChange={(v: any) => setForm(p => ({ ...p, chasisNumber: v }))} />
-                      
-                      <Input label="Vehicle Weight" value={form.vehicleWeight} onChange={(v: any) => setForm(p => ({ ...p, vehicleWeight: v }))} />
-                      <Select label="Permit" value={form.permit} options={[{id: "Permit 1", name: "Permit 1"}]} onChange={(v: any) => setForm(p => ({ ...p, permit: v }))} />
-                      <Input label="Trailer no" value={form.trailerNo} onChange={(v: any) => setForm(p => ({ ...p, trailerNo: v }))} />
-                      <Input label="Fitness Expiry Date" type="date" value={form.fitnessExpiryDate} onChange={(v: any) => setForm(p => ({ ...p, fitnessExpiryDate: v }))} />
-                      
-                      <Input label="Road Tax" value={form.roadTax} onChange={(v: any) => setForm(p => ({ ...p, roadTax: v }))} />
-                    </div>
-                  </div>
-                </div>
-              )} */}
-
+              {activeTab === "related" && (
+                <PolicyRelatedInfo
+                  form={form}
+                  setForm={setForm}
+                  insuranceTypeId={Number(form.insuranceType || 0)}
+                />
+              )}
+              
               {activeTab === "documents" && (
                 <div className="space-y-8">
                   {/* UPLOAD SECTION */}

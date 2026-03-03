@@ -23,6 +23,10 @@ import { Toaster } from "react-hot-toast";
 import AdminAdvisorsByStatusPage from "./pages/AdminAdvisorsByStatusPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import LifePolicies from "./pages/LifePolicies";
+import Agency from "./pages/Agency";
+import LifeAgency from "./pages/LifeAgency";
+import AddOnDetails from "./pages/AddOnDetails";
+import HPADetails from "./pages/HPADetails";
 
 function App() {
   return (
@@ -55,11 +59,15 @@ function App() {
           <Route path="/policies" element={<Policies />} />
           <Route path="lifepolicies" element={<LifePolicies />} />
           <Route path="/insurer" element={<Insurer />} />
+          <Route path="/Agency" element={<Agency />} />
+          <Route path="/hpadetails" element={<HPADetails />} />
+          <Route path="/LifeAgency" element={<LifeAgency />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/campaign" element={<Campaign />} />
           <Route path="/products" element={<Product />} />
+          <Route path="/addondetails" element={<AddOnDetails />} />
           <Route path="/tasks" element={<TasksPage />} />
           {/* -------- ADMIN ROUTES -------- */}
           <Route path="/admin" element={<AdminDashboard />} />

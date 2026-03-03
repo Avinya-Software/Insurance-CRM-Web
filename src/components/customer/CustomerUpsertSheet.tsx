@@ -580,89 +580,98 @@ const CustomerUpsertSheet = ({
             
             {activeTab === "basic" && (
               <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
-                  <div className="p-1.5 bg-white/10 text-white rounded">
-                    <UserPlus size={16} />
-                  </div>
-                  <h3 className="font-bold uppercase tracking-wider text-[10px]">Basic Information</h3>
+              <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                <div className="p-1.5 bg-white/10 text-white rounded">
+                  <UserPlus size={16} />
                 </div>
-                
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  <div className="flex gap-2">
-                    <div className="w-24">
-                      <Select
-                        label="Title"
-                        value={form.title}
-                        options={[{id: "Mr.", name: "Mr."}, {id: "Mrs.", name: "Mrs."}, {id: "Master", name: "Master"},{id: "M/S", name: "M/S"},{id: "Miss.", name: "Miss."},
-                        {id: "Ms.", name: "Ms."},{id: "Dr.", name: "Dr."},{id: "Ar.", name: "Ar."},
-                        ]}
-                        onChange={(v: any) => setForm(p => ({ ...p, title: v }))}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        label="Client Full Name"
-                        required
-                        value={form.fullName}
-                        error={errors.fullName}
-                        placeholder="Client Name"
-                        onChange={(v: any) => setForm(p => ({ ...p, fullName: v }))}
-                      />
-                    </div>
+                <h3 className="font-bold uppercase tracking-wider text-[10px]">Basic Information</h3>
+              </div>
+              
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="flex gap-2">
+                  <div className="w-24">
+                    <Select
+                      label="Title"
+                      value={form.title}
+                      options={[
+                        {id: "Mr.", name: "Mr."}, {id: "Mrs.", name: "Mrs."}, {id: "Master", name: "Master"},
+                        {id: "M/S", name: "M/S"}, {id: "Miss.", name: "Miss."}, {id: "Ms.", name: "Ms."},
+                        {id: "Dr.", name: "Dr."}, {id: "Ar.", name: "Ar."},
+                      ]}
+                      onChange={(v: any) => setForm(p => ({ ...p, title: v }))}
+                    />
                   </div>
-                  <Input label="Group Head Name" value={form.groupHeadName} placeholder="Group Head Name" onChange={(v: any) => setForm(p => ({ ...p, groupHeadName: v }))} />
-                  <Input label="Group Code" value={form.groupCode} placeholder="Group Code" onChange={(v: any) => setForm(p => ({ ...p, groupCode: v }))} />
-                  <Select label="Client Category" value={form.clientCategory} options={[{id: "Retail", name: "Retail"}, {id: "Corporate", name: "Corporate"}]} onChange={(v: any) => setForm(p => ({ ...p, clientCategory: v }))} />
-                  
-                  <Input label="Father / Spouse / Company Name" value={form.fatherSpouseName} placeholder="Father / Spouse / Company Name" onChange={(v: any) => setForm(p => ({ ...p, fatherSpouseName: v }))} />
-                  <Input label="E-Mail Id" type="email" value={form.email} placeholder="E-mail ID" onChange={(v: any) => setForm(p => ({ ...p, email: v }))} />
-                  <Input label="Mobile Number" required value={form.mobileNumber} error={errors.mobileNumber} placeholder="Mobile No" onChange={(v: any) => setForm(p => ({ ...p, mobileNumber: v }))} />
-                  
-                  <div className="flex items-end gap-4">
-                    <div className="flex-1">
-                      <Input label="Date of Birth" type="date" value={form.dob} onChange={(v: any) => setForm(p => ({ ...p, dob: v }))} />
-                    </div>
-                    <div className="flex flex-col items-center pb-2">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase mb-1">Passed away</label>
-                      <input 
-                        type="checkbox" 
-                        checked={form.passedAway} 
-                        onChange={(e) => setForm(p => ({ ...p, passedAway: e.target.checked }))}
-                        className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      />
-                    </div>
-                  </div>
-
-                  <Input label="Age" value={form.age} placeholder="Age" onChange={(v: any) => setForm(p => ({ ...p, age: v }))} />
-                  <Input label="Anniversary Date" type="date" value={form.anniversaryDate} onChange={(v: any) => setForm(p => ({ ...p, anniversaryDate: v }))} />
-                  <Select label="Gender" value={form.gender} options={[{id: "Male", name: "Male"}, {id: "Female", name: "Female"}, {id: "Other", name: "Other"}]} onChange={(v: any) => setForm(p => ({ ...p, gender: v }))} />
-                  <Select label="Marital Status" value={form.maritalStatus} options={[{id: "Single", name: "Single"}, {id: "Married", name: "Married"}, {id: "Divorced", name: "Divorced"}, {id: "Widow", name: "Widow"}]} onChange={(v: any) => setForm(p => ({ ...p, maritalStatus: v }))} />
-                  <Input label="Nationality" value={form.nationality || "Indian"} placeholder="Nationality" onChange={(v: any) => setForm(p => ({ ...p, nationality: v })) }/>                  <Input label="Birth Place" value={form.birthPlace} placeholder="Birth Place" onChange={(v: any) => setForm(p => ({ ...p, birthPlace: v }))} />
-                  <Input label="Aadhar Number" value={form.aadharNumber} placeholder="Aadhar No" onChange={(v: any) => setForm(p => ({ ...p, aadharNumber: v }))} />
-                  <Input label="PAN Number" value={form.panNumber} placeholder="PAN No" onChange={(v: any) => setForm(p => ({ ...p, panNumber: v }))} />
-                  <Input label="GST Number" value={form.gstNumber} placeholder="GST Number" onChange={(v: any) => setForm(p => ({ ...p, gstNumber: v }))} />
-                  <Input label="Driving Licence Number" value={form.drivingLicenceNo} placeholder="Driving Licence No" onChange={(v: any) => setForm(p => ({ ...p, drivingLicenceNo: v }))} />
-                  <Input label="Driving Licence Exp. Date" type="date" value={form.drivingLicenceExpDate} onChange={(v: any) => setForm(p => ({ ...p, drivingLicenceExpDate: v }))} />
-                  <Input label="CKYC Number" value={form.ckycNumber} placeholder="CKYC Number" onChange={(v: any) => setForm(p => ({ ...p, ckycNumber: v }))} />
-                  <Input label="E-Insurance Number" value={form.eInsuranceNumber} placeholder="E-Insurance Number" onChange={(v: any) => setForm(p => ({ ...p, eInsuranceNumber: v }))} />
-                  <Input label="Education" value={form.education} placeholder="Education Qualification" onChange={(v: any) => setForm(p => ({ ...p, education: v }))} />
-                  <Input label="Passport Number" value={form.passportNumber} placeholder="Passport No" onChange={(v: any) => setForm(p => ({ ...p, passportNumber: v }))} />
-                  <Input label="Passport Exp. Date" type="date" value={form.passportExpDate} onChange={(v: any) => setForm(p => ({ ...p, passportExpDate: v }))} />
-                  
-                  <div className="lg:col-span-2">
-                    <Input label="Reference" value={form.reference} placeholder="Reference Name" onChange={(v: any) => setForm(p => ({ ...p, reference: v }))} />
-                  </div>
-                  <div className="lg:col-span-4">
-                    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Remarks</label>
-                    <textarea 
-                      value={form.remarks} 
-                      onChange={(e) => setForm(p => ({ ...p, remarks: e.target.value }))}
-                      placeholder="Remarks"
-                      className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all h-24"
+                  <div className="flex-1">
+                    <Input
+                      label="Client Full Name"
+                      required
+                      value={form.fullName}
+                      error={errors.fullName}
+                      placeholder="Client Name"
+                      onChange={(v: any) => setForm(p => ({ ...p, fullName: v }))}
                     />
                   </div>
                 </div>
-              </section>
+                <Input label="Group Head Name" value={form.groupHeadName} placeholder="Group Head Name" onChange={(v: any) => setForm(p => ({ ...p, groupHeadName: v }))} />
+                <Input label="Group Code" value={form.groupCode} placeholder="Group Code" onChange={(v: any) => setForm(p => ({ ...p, groupCode: v }))} />
+                <Select label="Client Category" value={form.clientCategory} options={[{id: "Retail", name: "Retail"}, {id: "Corporate", name: "Corporate"}]} onChange={(v: any) => setForm(p => ({ ...p, clientCategory: v }))} />
+                
+                <div className="xl:col-span-2">
+                <Input label="Father / Spouse / Company Name" value={form.fatherSpouseName} placeholder="Father / Spouse / Company Name" onChange={(v: any) => setForm(p => ({ ...p, fatherSpouseName: v }))} />
+                </div>
+                <Input label="E-Mail Id" type="email" value={form.email} placeholder="E-mail ID" onChange={(v: any) => setForm(p => ({ ...p, email: v }))} />
+                  <Input label="Mobile Number" required value={form.mobileNumber} error={errors.mobileNumber} placeholder="Mobile No" onChange={(v: any) => setForm(p => ({ ...p, mobileNumber: v }))} />
+                
+                
+                <div className="flex items-end gap-4">
+                  <div className="flex-1">
+                    <Input label="Date of Birth" type="date" value={form.dob} onChange={(v: any) => setForm(p => ({ ...p, dob: v }))} />
+                  </div>
+                  <div className="flex flex-col items-center pb-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase mb-1">Passed away</label>
+                    <input 
+                      type="checkbox" 
+                      checked={form.passedAway} 
+                      onChange={(e) => setForm(p => ({ ...p, passedAway: e.target.checked }))}
+                      className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+                <Input label="Age" value={form.age} placeholder="Age" onChange={(v: any) => setForm(p => ({ ...p, age: v }))} />
+                <Input label="Anniversary Date" type="date" value={form.anniversaryDate} onChange={(v: any) => setForm(p => ({ ...p, anniversaryDate: v }))} />
+                <Select label="Gender" value={form.gender} options={[{id: "Male", name: "Male"}, {id: "Female", name: "Female"}, {id: "Other", name: "Other"}]} onChange={(v: any) => setForm(p => ({ ...p, gender: v }))} />
+                
+                <Select label="Marital Status" value={form.maritalStatus} options={[{id: "Single", name: "Single"}, {id: "Married", name: "Married"}, {id: "Divorced", name: "Divorced"}, {id: "Widow", name: "Widow"}]} onChange={(v: any) => setForm(p => ({ ...p, maritalStatus: v }))} />
+                <Input label="Nationality" value={form.nationality || "Indian"} placeholder="Nationality" onChange={(v: any) => setForm(p => ({ ...p, nationality: v })) }/>
+                <Input label="Birth Place" value={form.birthPlace} placeholder="Birth Place" onChange={(v: any) => setForm(p => ({ ...p, birthPlace: v }))} />
+                <Input label="Aadhar Number" value={form.aadharNumber} placeholder="Aadhar No" onChange={(v: any) => setForm(p => ({ ...p, aadharNumber: v }))} />
+                
+                <Input label="PAN Number" value={form.panNumber} placeholder="PAN No" onChange={(v: any) => setForm(p => ({ ...p, panNumber: v }))} />
+                <Input label="GST Number" value={form.gstNumber} placeholder="GST Number" onChange={(v: any) => setForm(p => ({ ...p, gstNumber: v }))} />
+                <Input label="Driving Licence Number" value={form.drivingLicenceNo} placeholder="Driving Licence No" onChange={(v: any) => setForm(p => ({ ...p, drivingLicenceNo: v }))} />
+                <Input label="Driving Licence Exp. Date" type="date" value={form.drivingLicenceExpDate} onChange={(v: any) => setForm(p => ({ ...p, drivingLicenceExpDate: v }))} />
+                
+                <Input label="CKYC Number" value={form.ckycNumber} placeholder="CKYC Number" onChange={(v: any) => setForm(p => ({ ...p, ckycNumber: v }))} />
+                <Input label="E-Insurance Number" value={form.eInsuranceNumber} placeholder="E-Insurance Number" onChange={(v: any) => setForm(p => ({ ...p, eInsuranceNumber: v }))} />
+                <Input label="Education" value={form.education} placeholder="Education Qualification" onChange={(v: any) => setForm(p => ({ ...p, education: v }))} />
+                <Input label="Passport Number" value={form.passportNumber} placeholder="Passport No" onChange={(v: any) => setForm(p => ({ ...p, passportNumber: v }))} />
+                
+                <Input label="Passport Exp. Date" type="date" value={form.passportExpDate} onChange={(v: any) => setForm(p => ({ ...p, passportExpDate: v }))} />
+                <div className="lg:col-span-2">
+                  <Input label="Reference" value={form.reference} placeholder="Reference Name" onChange={(v: any) => setForm(p => ({ ...p, reference: v }))} />
+                </div>
+                <div className="lg:col-span-4">
+                  <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Remarks</label>
+                  <textarea 
+                    value={form.remarks} 
+                    onChange={(e) => setForm(p => ({ ...p, remarks: e.target.value }))}
+                    placeholder="Remarks"
+                    className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all h-24"
+                  />
+                </div>
+              </div>
+            </section>
+
             )}
 
             {activeTab === "residential" && (
