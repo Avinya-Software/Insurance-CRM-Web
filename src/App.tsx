@@ -26,6 +26,9 @@ import LifePolicies from "./pages/LifePolicies";
 import Agency from "./pages/Agency";
 import AddOnDetails from "./pages/AddOnDetails";
 import HPADetails from "./pages/HPADetails";
+import Make from "./pages/Make";
+import Model from "./pages/Model";
+import MakeModelPage from "./pages/MakeModelPage";
 
 function App() {
   return (
@@ -61,6 +64,8 @@ function App() {
           <Route path="/agency" element={<Agency type={0} title="General Agency" />} />
           <Route path="/hpadetails" element={<HPADetails />} />
           <Route path="/lifeagency" element={<Agency type={1} title="Life Agency" />} />
+          <Route path="/makedetails" element={<MakeModelPage type={1} title="Make Details" />} />
+<Route path="/modeldetails" element={<MakeModelPage type={2} title="Model Details" />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />

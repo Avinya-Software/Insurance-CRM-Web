@@ -276,6 +276,20 @@ const Sidebar = () => {
                     icon={<ListTodo size={16} />}
                     isCollapsed={false}
                   />
+
+<NavItem
+  to="/makedetails"
+  label="Make Details"
+  icon={<ListTodo size={16} />}
+  isCollapsed={false}
+/>
+
+<NavItem
+  to="/modeldetails"
+  label="Model Details"
+  icon={<ListTodo size={16} />}
+  isCollapsed={false}
+/>
                 </div>
               )}
             </div>
