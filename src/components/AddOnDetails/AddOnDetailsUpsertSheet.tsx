@@ -74,22 +74,26 @@ const AddOnDetailsUpsertSheet = ({
 
   const handleSave = () => {
     if (!validate()) return;
-
+  
     const payload = {
       ...(isEdit && { id: form.id }),
       name: form.name,
       insuranceTypeId: Number(form.insuranceTypeId),
     };
-
+  
     upsert(payload, {
       onSuccess: () => {
         toast.success(
           `Add-On Detail ${isEdit ? "updated" : "created"} successfully`
         );
+  
         onClose();
         onSuccess();
       },
-      onError: () => toast.error("Something went wrong"),
+      onError: () => {
+        const id = toast.error("Something went wrong");
+
+      },
     });
   };
 
@@ -97,7 +101,6 @@ const AddOnDetailsUpsertSheet = ({
 
   return (
     <>
-      <Toaster position="top-right" />
 
       {/* OVERLAY */}
       <div

@@ -24,27 +24,27 @@ import AdminAdvisorsByStatusPage from "./pages/AdminAdvisorsByStatusPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import LifePolicies from "./pages/LifePolicies";
 import Agency from "./pages/Agency";
-import LifeAgency from "./pages/LifeAgency";
 import AddOnDetails from "./pages/AddOnDetails";
 import HPADetails from "./pages/HPADetails";
 
 function App() {
   return (
-    <>
-    <Toaster
-      position="top-right"
-      toastOptions={{
-        duration: 4000,
-      }}
-    />
     <BrowserRouter>
-      <Routes> 
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+        }}
+      />
+
+      <Routes>
         {/* ================= PUBLIC ================= */}
         <Route path="/login" element={<Login />} />
-        <Route path="/login/admin" element={<Admin />}></Route>
+        <Route path="/login/admin" element={<Admin />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ================= PROTECTED + LAYOUT ================= */}
+        {/* ================= PROTECTED ================= */}
         <Route
           element={
             <ProtectedRoute>
@@ -52,16 +52,15 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* -------- ADVISOR ROUTES -------- */}
           <Route path="/" element={<Dashboard />} />
           <Route path="/leads" element={<Lead />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/policies" element={<Policies />} />
-          <Route path="lifepolicies" element={<LifePolicies />} />
+          <Route path="/lifepolicies" element={<LifePolicies />} />
           <Route path="/insurer" element={<Insurer />} />
-          <Route path="/Agency" element={<Agency />} />
+          <Route path="/agency" element={<Agency type={0} title="General Agency" />} />
           <Route path="/hpadetails" element={<HPADetails />} />
-          <Route path="/LifeAgency" element={<LifeAgency />} />
+          <Route path="/lifeagency" element={<Agency type={1} title="Life Agency" />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />
@@ -69,7 +68,8 @@ function App() {
           <Route path="/products" element={<Product />} />
           <Route path="/addondetails" element={<AddOnDetails />} />
           <Route path="/tasks" element={<TasksPage />} />
-          {/* -------- ADMIN ROUTES -------- */}
+
+          {/* ADMIN */}
           <Route path="/admin" element={<AdminDashboard />} />
           <Route
             path="/admin/history"
@@ -77,8 +77,8 @@ function App() {
           />
         </Route>
       </Routes>
+
     </BrowserRouter>
-    </>
   );
 }
 

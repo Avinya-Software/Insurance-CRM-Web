@@ -56,7 +56,7 @@ const SearchableComboBox = <T extends ComboBoxItem>({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-[13px] font-bold text-[#2D3748] tracking-tight mb-2">
+        <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -71,14 +71,14 @@ const SearchableComboBox = <T extends ComboBoxItem>({
         {/* INPUT */}
         <div className="relative">
           <input
-            className={`w-full bg-white border rounded-none px-4 py-2 text-sm transition-all outline-none
-              ${
-                open
-                  ? "border-blue-400 ring-1 ring-blue-50"
-                  : "border-slate-200 hover:border-slate-300"
-              }
-              ${error ? "border-red-500 focus:ring-red-500" : ""}
-              text-slate-700 placeholder:text-slate-400 cursor-pointer
+            className={`w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none mt-2
+            ${
+              open
+                ? "border-blue-400 focus:ring-4 focus:ring-blue-50"
+                : "border-slate-200 hover:border-slate-300"
+            }
+            ${error ? "border-red-500 ring-2 ring-red-50" : ""}
+            ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
             `}
             placeholder={placeholder}
             value={open ? search : selected?.label || ""}
@@ -106,7 +106,7 @@ const SearchableComboBox = <T extends ComboBoxItem>({
         {open && (
           <div
             className="
-              absolute z-50 mt-1 w-full bg-white 
+            absolute z-50 top-full left-0 mt-1 w-full bg-white 
               border border-slate-200 rounded-none shadow-lg
               max-h-56 overflow-y-auto
               scrollbar-thin
@@ -116,7 +116,7 @@ const SearchableComboBox = <T extends ComboBoxItem>({
               filtered.map((item) => (
                 <div
                   key={item.value}
-                  className={`px-4 py-2 text-sm cursor-pointer transition-colors
+                  className={`px-4 py-2.5 text-sm cursor-pointer transition-colors
                     ${
                       item.value === value
                         ? "bg-blue-50 text-blue-700 font-medium"
