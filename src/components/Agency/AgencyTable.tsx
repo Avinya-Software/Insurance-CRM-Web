@@ -1,71 +1,84 @@
 import { useState, useRef } from "react";
 import { MoreVertical, X } from "lucide-react";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import { useDeleteInsurer } from "../../hooks/insurer/useDeleteInsurer";
 import TableSkeleton from "../common/TableSkeleton";
+import { useDeleteAgency } from "../../hooks/Agency/useDeleteAgency";
 
-const DROPDOWN_HEIGHT = 120;
 const DROPDOWN_WIDTH = 180;
 
+interface Agency {
+  id: string;
+  agencyName: string;
+  agencyCode: string;
+  mobileNumber?: string;
+  email?: string;
+  city?: string;
+}
+
 interface Props {
-  data: any[];
+  data: Agency[];
   loading?: boolean;
-  onEdit: (insurer: any) => void;
-  onAddProduct: (insurer: any) => void;
+  onEdit: (agency: Agency) => void;
+  onDeleteSuccess?: () => void;
 }
 
 const AgencyTable = ({
   data = [],
   loading = false,
   onEdit,
-  onAddProduct,
+  onDeleteSuccess,
 }: Props) => {
-  const [openInsurer, setOpenInsurer] = useState<any | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<any | null>(null);
-  const [style, setStyle] = useState({ top: 0, left: 0 });
+  const [openAgency, setOpenAgency] = useState<Agency | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Agency | null>(null);
+
+  const [dropdownStyle, setDropdownStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  useOutsideClick(dropdownRef, () => setOpenInsurer(null));
+  useOutsideClick(dropdownRef, () => setOpenAgency(null));
 
-  const { mutate: deleteInsurer, isPending } =
-    useDeleteInsurer();
+  const { deleteAgency, deleting } = useDeleteAgency();
+
+  /* OPEN DROPDOWN */
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
-    insurer: any
+    agency: Agency
   ) => {
     e.stopPropagation();
+
     const rect = e.currentTarget.getBoundingClientRect();
-    setStyle({
+
+    setDropdownStyle({
       top: rect.bottom + 6,
       left: rect.right - DROPDOWN_WIDTH,
     });
-    setOpenInsurer(insurer);
+
+    setOpenAgency(agency);
   };
+
+  /* EDIT */
 
   const handleEdit = () => {
-    if (!openInsurer) return;
-    const i = openInsurer;
-    setOpenInsurer(null);
-    setTimeout(() => onEdit(i), 0);
+    if (!openAgency) return;
+
+    const agency = openAgency;
+    setOpenAgency(null);
+
+    setTimeout(() => onEdit(agency), 0);
   };
 
-  const handleAddProduct = () => {
-    if (!openInsurer) return;
-    const i = openInsurer;
-    setOpenInsurer(null);
-    setTimeout(() => onAddProduct(i), 0);
-  };
+  /* DELETE */
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirmDelete) return;
 
-    deleteInsurer(confirmDelete.insurerId, {
-      onSuccess: () => {
-        setConfirmDelete(null);
-        setOpenInsurer(null);
-      },
-    });
+    const success = await deleteAgency(confirmDelete.id);
+
+    if (success) {
+      setConfirmDelete(null);
+      setOpenAgency(null);
+      onDeleteSuccess?.(); // reload list
+    }
   };
 
   return (
@@ -73,43 +86,40 @@ const AgencyTable = ({
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
-            <Th>AgencyName</Th>
-            <Th>Short Code</Th>
-            <Th>Portal</Th>
-            <Th>Username</Th>
-            <Th>Created Date</Th>
+            <Th>Agency Name</Th>
+            <Th>Agency Code</Th>
+            <Th>Mobile</Th>
+            <Th>Email</Th>
+            <Th>City</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
-        {/*   BODY   */}
         {loading ? (
-          <TableSkeleton rows={6} columns={5} />
+          <TableSkeleton rows={6} columns={6} />
         ) : (
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="text-center py-12 text-slate-500"
-                >
-                  No insurers found
+                <td colSpan={6} className="text-center py-12 text-slate-500">
+                  No agencies found
                 </td>
               </tr>
             ) : (
-              data.map((i) => (
+              data.map((agency) => (
                 <tr
-                  key={i.insurerId}
-                  className="border-t h-[52px] hover:bg-slate-50"
+                  key={agency.id}
+                  className="border-t hover:bg-slate-50 transition"
                 >
-                  <Td>{i.insurerName}</Td>
-                  <Td>{i.shortCode}</Td>
-                  <Td>{i.portalUrl}</Td>
-                  <Td>{i.portalUsername}</Td>
-                  <Td>{new Date(i.createdAt).toLocaleDateString()}</Td>
+                  <Td>{agency.agencyName}</Td>
+                  <Td>{agency.agencyCode}</Td>
+                  <Td>{agency.mobileNumber || "-"}</Td>
+                  <Td>{agency.email || "-"}</Td>
+                  <Td>{agency.city || "-"}</Td>
+
                   <Td className="text-center">
                     <button
-                      onClick={(e) => openDropdown(e, i)}
+                      onClick={(e) => openDropdown(e, agency)}
                       className="p-2 rounded hover:bg-slate-200"
                     >
                       <MoreVertical size={16} />
@@ -122,44 +132,40 @@ const AgencyTable = ({
         )}
       </table>
 
-      {/*   DROPDOWN   */}
-      {openInsurer && (
-        <div
-          ref={dropdownRef}
-          className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg"
-          style={style}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <MenuItem label="Edit Insurer" onClick={handleEdit} />
-          <MenuItem
-            label="Add Product"
-            onClick={handleAddProduct}
-          />
-          <MenuItem
-            label="Delete Insurer"
-            danger
-            onClick={() => setConfirmDelete(openInsurer)}
-          />
-        </div>
-      )}
+      {/* DROPDOWN */}
 
-      {/*   CONFIRM DELETE MODAL   */}
+      {openAgency && (
+  <div
+    ref={dropdownRef}
+    className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg"
+    style={dropdownStyle}
+    onClick={(e) => e.stopPropagation()}
+  >
+    <MenuItem label="Edit Agency" onClick={handleEdit} />
+
+    <MenuItem
+      label="Delete Agency"
+      danger
+      onClick={() => setConfirmDelete(openAgency)}
+    />
+  </div>
+)}
+
+      {/* DELETE CONFIRM MODAL */}
+
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">
-                Delete Insurer
-              </h3>
-              <button
-                onClick={() => setConfirmDelete(null)}
-              >
+              <h3 className="text-lg font-semibold">Delete Agency</h3>
+
+              <button onClick={() => setConfirmDelete(null)}>
                 <X size={18} />
               </button>
             </div>
 
             <p className="text-sm text-gray-600 mb-6">
-              Are you sure you want to delete this insurer?
+              Are you sure you want to delete this agency?
               <br />
               <span className="text-red-600 font-medium">
                 This action cannot be undone.
@@ -176,10 +182,10 @@ const AgencyTable = ({
 
               <button
                 onClick={handleDelete}
-                disabled={isPending}
+                disabled={deleting}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
               >
-                {isPending ? "Deleting..." : "Delete"}
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
@@ -191,7 +197,7 @@ const AgencyTable = ({
 
 export default AgencyTable;
 
-/*   HELPERS   */
+/* TABLE HELPERS */
 
 const Th = ({ children }: any) => (
   <th className="px-4 py-3 text-left font-semibold text-slate-700">

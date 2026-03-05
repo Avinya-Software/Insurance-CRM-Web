@@ -1,138 +1,88 @@
 import { useEffect, useState } from "react";
-import { Toaster, toast } from "react-hot-toast";
-import InsurerTable from "../components/insurer/InsurerTable";
-import InsurerUpsertSheet from "../components/insurer/InsurerUpsertSheet";
-import ProductUpsertSheet from "../components/product/ProductUpsertSheet";
-import Pagination from "../components/leads/Pagination";
-import { useInsurers } from "../hooks/insurer/useInsurers";
-import LifeAgencyTable from "../components/LifeAgency/LifeAgencyTable";
+import { Toaster } from "react-hot-toast";
+import AgencyTable from "../components/Agency/AgencyTable";
 import LifeAgencyUpsertSheet from "../components/LifeAgency/LifeAgencyUpsertSheet";
+import { useAgency } from "../hooks/Agency/useAgency";
 
-const Agency = () => {
-  const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize] = useState(10);
-  const [search, setSearch] = useState("");
+const LifeAgency = () => {
+  const { getAgencies, loading } = useAgency();
 
-  const [openInsurerSheet, setOpenInsurerSheet] = useState(false);
-  const [openProductSheet, setOpenProductSheet] = useState(false);
-  const [selectedInsurer, setSelectedInsurer] = useState<any | null>(null);
+  const [agencies, setAgencies] = useState<any[]>([]);
+  const [openAgencySheet, setOpenAgencySheet] = useState(false);
+  const [selectedAgency, setSelectedAgency] = useState<any | null>(null);
 
-  const { data, isLoading, refetch } = useInsurers({
-    pageNumber,
-    pageSize,
-    search,
-  });
-    
-  
-  /*   HANDLERS   */
+  /* LOAD DATA */
 
-  const handleAddInsurer = () => {
-    setSelectedInsurer(null);
-    setOpenInsurerSheet(true);
+  const loadAgencies = async () => {
+    const res = await getAgencies(1); // 1 = Life
+    setAgencies(res);
   };
 
-  const handleEditInsurer = (insurer: any) => {
-    setSelectedInsurer(insurer);
-    setOpenInsurerSheet(true);
+  useEffect(() => {
+    loadAgencies();
+  }, []);
+
+  /* HANDLERS */
+
+  const handleAddAgency = () => {
+    setSelectedAgency(null);
+    setOpenAgencySheet(true);
   };
 
-  const handleAddProduct = (insurer: any) => {
-    setSelectedInsurer(insurer);
-    setOpenProductSheet(true);
+  const handleEditAgency = (agency: any) => {
+    setSelectedAgency(agency);
+    setOpenAgencySheet(true);
   };
 
-  const handleInsurerSuccess = () => {
-    setOpenInsurerSheet(false);
-    refetch();
+  const handleSuccess = () => {
+    setOpenAgencySheet(false);
+    loadAgencies();
   };
-
-  const handleProductSuccess = () => {
-    setOpenProductSheet(false);
-    setSelectedInsurer(null);
-  };
-
-  /*   UI   */
 
   return (
     <>
-      {/* 🔔 TOASTER */}
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="top-right" />
 
       <div className="bg-white rounded-lg border">
-        {/*   HEADER   */}
-        <div className="px-4 py-5 border-b bg-gray-100">
-          <div className="grid grid-cols-2 gap-y-4 items-start">
-            <div>
-              <h1 className="text-4xl font-serif font-semibold text-slate-900">
-              Life Agency
-              </h1>
-              <p className="mt-1 text-sm text-slate-600">
-                {data?.totalCount ?? 0} total Agency
-              </p>
-            </div>
 
-            <div className="text-right">
-              <button
-                className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm font-medium"
-                onClick={handleAddInsurer}
-              >
-                + Add Life Agency
-              </button>
-            </div>
+        {/* HEADER */}
 
-            {/* SEARCH */}
-            <div>
-              <input
-                type="text"
-                placeholder=" 🔍 Search insurer..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPageNumber(1);
-                }}
-                className="w-[360px] h-10 px-3 border rounded text-sm"
-              />
-            </div>
-
-            <div />
+        <div className="px-4 py-5 border-b bg-gray-100 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-semibold">Life Agency</h1>
+            <p className="text-sm text-gray-500">
+              {agencies.length} total agencies
+            </p>
           </div>
+
+          <button
+            className="bg-blue-900 text-white px-4 py-2 rounded text-sm"
+            onClick={handleAddAgency}
+          >
+            + Add Life Agency
+          </button>
         </div>
 
-        {/*   TABLE   */}
-        <LifeAgencyTable
-          data={data?.data || []}
-          loading={isLoading}
-          onEdit={handleEditInsurer}
-          onAddProduct={handleAddProduct}
+        {/* TABLE */}
+
+        <AgencyTable
+          data={agencies}
+          loading={loading}
+          onEdit={handleEditAgency}
         />
 
-        {/*   PAGINATION   */}
-        <Pagination
-          page={pageNumber}
-          totalPages={data?.totalPages ?? 1}
-          onChange={(page) => setPageNumber(page)}
-        />
       </div>
 
-      {/*   INSURER UPSERT   */}
-      <LifeAgencyUpsertSheet
-        open={openInsurerSheet}
-        onClose={() => setOpenInsurerSheet(false)}
-        onSuccess={handleInsurerSuccess}
-      />
+      {/* UPSERT */}
 
-      {/*   PRODUCT UPSERT   */}
-      <ProductUpsertSheet
-        open={openProductSheet}
-        insurerId={selectedInsurer?.insurerId}
-        onClose={() => {
-          setOpenProductSheet(false);
-          setSelectedInsurer(null);
-        }}
-        onSuccess={handleProductSuccess}
+      <LifeAgencyUpsertSheet
+        open={openAgencySheet}
+        agency={selectedAgency}
+        onClose={() => setOpenAgencySheet(false)}
+        onSuccess={handleSuccess}
       />
     </>
   );
 };
 
-export default Agency;
+export default LifeAgency;
