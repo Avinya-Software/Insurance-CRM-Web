@@ -48,8 +48,16 @@ export interface AgencyPayload {
     type: number;
   }
   
+  export interface PaginationAgencyResponse {
+    totalCount: number;
+    totalPages: number;
+    page: number;
+    pageSize: number;
+    data: Agency[];
+  }
+  
   export interface AgencyApiResponse {
     statusCode: number;
     statusMessage: string;
-    data: Agency[];
+    data: PaginationAgencyResponse;
   }

@@ -1,4 +1,4 @@
-import { AgencyApiResponse, AgencyPayload } from "../interfaces/agency.interface";
+import { AgencyApiResponse, AgencyPayload, PaginationAgencyResponse } from "../interfaces/agency.interface";
 import api from "./axios";
 
 export const upsertAgency = async (data: AgencyPayload) => {
@@ -7,10 +7,17 @@ export const upsertAgency = async (data: AgencyPayload) => {
   };
 
 
-export const getAgencyListApi  = async (type : number) => {
-    const res = await api.get<AgencyApiResponse>(`/Agency/${type}`);
+  export const getAgencyListApi = async (
+    type: number,
+    pageNumber: number,
+    pageSize: number
+  ): Promise<PaginationAgencyResponse> => {
+    const res = await api.get<AgencyApiResponse>(
+      `/Agency/${type}?pageNumber=${pageNumber}&pageSize=${pageSize}`
+    );
+  
     return res.data.data;
-}  
+  };
 
 export const deleteAgencyApi = async (id : string) => {
     const res = await api.delete(`/Agency/${id}`);
