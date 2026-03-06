@@ -27,6 +27,7 @@ import AddOnDetails from "./pages/AddOnDetails";
 import HPADetails from "./pages/HPADetails";
 import MakeModelPage from "./pages/MakeModelPage";
 import Campaign from "./pages/Campaign";
+import LeadFollowUpPage from "./pages/LeadFollowUpPage";
 
 function App() {
   return (  
@@ -55,6 +56,7 @@ function App() {
         >
           <Route path="/" element={<Dashboard />} />
           <Route path="/leads" element={<Lead />} />
+          <Route path="/leads/:leadId/followups" element={<LeadFollowUpPage />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/policies" element={<Policies />} />
           <Route path="/lifepolicies" element={<LifePolicies />} />
