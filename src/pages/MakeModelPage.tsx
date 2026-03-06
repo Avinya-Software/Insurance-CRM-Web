@@ -12,16 +12,19 @@ interface Props {
 
 export default function MakeModelPage({ type, title }: Props) {
 
-  const makeHook = useMake();
-  const modelHook = useModel();
+  const makeHook = type === 1 ? useMake() : undefined;
+const modelHook = type === 2 ? useModel() : undefined;
 
-  const hook = type === 1 ? makeHook : modelHook;
+const pageNumber = makeHook?.pageNumber ?? modelHook?.pageNumber ?? 1;
+const setPageNumber =
+  makeHook?.setPageNumber ?? modelHook?.setPageNumber;
 
-  const { pageNumber, setPageNumber, loading, getList, deleteMake, deleteModel } = {
-    ...hook,
-    ...makeHook,
-    ...modelHook
-  };
+const loading = makeHook?.loading ?? modelHook?.loading ?? false;
+
+const getList = makeHook?.getList ?? modelHook?.getList;
+
+const deleteMake = makeHook?.deleteMake;
+const deleteModel = modelHook?.deleteModel;
 
   const [data, setData] = useState<any[]>([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -31,7 +34,11 @@ export default function MakeModelPage({ type, title }: Props) {
 
   const pageSize = 10;
 
-  const loadData = async (page = pageNumber) => {
+  /* ===== DATA LOADER ===== */
+
+  const loadData = async (page = 1) => {
+
+    if (!getList) return;
 
     const res = await getList(page, pageSize);
 
@@ -41,7 +48,8 @@ export default function MakeModelPage({ type, title }: Props) {
     }
   };
 
-  // ✅ Single API call control
+  /* ===== PAGE CHANGE EFFECT ===== */
+
   useEffect(() => {
     loadData(1);
   }, [type]);
@@ -55,27 +63,31 @@ export default function MakeModelPage({ type, title }: Props) {
     <>
       <div className="bg-white border rounded-lg">
 
-        <div className="px-6 py-5 border-b bg-gray-100 flex justify-between">
+        {/* HEADER */}
+        <div className="px-6 py-5 border-b bg-gray-100">
+          <div className="flex justify-between items-center">
 
-          <div>
-            <h1 className="text-4xl font-serif font-semibold text-slate-900">
-              {title}
-            </h1>
+            <div>
+              <h1 className="text-4xl font-serif font-semibold text-slate-900">
+                {title}
+              </h1>
 
-            <p className="mt-1 text-sm text-slate-600">
-              {data.length} total records
-            </p>
+              <p className="mt-1 text-sm text-slate-600">
+                {data.length} total records
+              </p>
+            </div>
+
+            <button
+              className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm font-medium"
+              onClick={handleAdd}
+            >
+              + Add {title}
+            </button>
+
           </div>
-
-          <button
-            className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm font-medium"
-            onClick={handleAdd}
-          >
-            + Add {title}
-          </button>
-
         </div>
 
+        {/* TABLE */}
         <MakeModelTable
           data={data}
           loading={loading}
@@ -86,12 +98,13 @@ export default function MakeModelPage({ type, title }: Props) {
             setOpenSheet(true);
           }}
 
-          onDeleteMake={makeHook.deleteMake}
-          onDeleteModel={modelHook.deleteModel}
+          onDeleteSuccess={() => loadData(pageNumber)}
 
-          onDeleteSuccess={() => loadData()}
+          onDeleteMake={makeHook?.deleteMake}
+          onDeleteModel={modelHook?.deleteModel}
         />
 
+        {/* PAGINATION */}
         <div className="p-4 flex justify-end">
           <Pagination
             page={pageNumber}
@@ -105,12 +118,13 @@ export default function MakeModelPage({ type, title }: Props) {
 
       </div>
 
+      {/* SHEET */}
       <MakeModelUpsertSheet
         open={openSheet}
         agency={selected}
         type={type}
         onClose={() => setOpenSheet(false)}
-        onSuccess={() => loadData()}
+        onSuccess={() => loadData(pageNumber)}
       />
     </>
   );
