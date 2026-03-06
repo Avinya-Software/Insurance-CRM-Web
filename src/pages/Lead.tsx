@@ -8,7 +8,6 @@ import LeadTable from "../components/leads/LeadTable";
 import Pagination from "../components/leads/Pagination";
 import LeadFilterSheet from "../components/leads/LeadFilterSheet";
 import LeadUpsertSheet from "../components/leads/LeadUpsertSheet";
-import LeadFollowUpBottomSheet from "../components/followups/LeadFollowUpBottomSheet";
 import LeadFollowUpCreateSheet from "../components/followups/LeadFollowUpCreateSheet";
 import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
 
@@ -242,20 +241,6 @@ const Leads = () => {
           setLeadForCustomer(null);
         }}
       />
-
-        <LeadFollowUpBottomSheet
-          open={!!viewFollowUpLead}
-          leadId={viewFollowUpLead?.leadId || null}
-          leadName={viewFollowUpLead?.leadName}
-          onClose={() => setViewFollowUpLead(null)}
-          onEditFollowUp={(followUp) => {
-            setEditFollowUp({
-              leadId: viewFollowUpLead!.leadId,
-              leadName: viewFollowUpLead?.leadName,
-              followUp,
-            });
-          }}
-        />
 
 
         <LeadFollowUpCreateSheet

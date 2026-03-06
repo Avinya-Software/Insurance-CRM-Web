@@ -72,10 +72,9 @@ export interface CustomerResponse {
 }
 export interface CustomerDropdown {
   customerId: string;
-  fullName: string;
-  email: string;
-  dob: string | null;
-  anniversary: string | null;
+  clientName: string;
+  email: string | null;
+  primaryMobile: string | null;
 }
 export interface Customer {
   customerId: string;

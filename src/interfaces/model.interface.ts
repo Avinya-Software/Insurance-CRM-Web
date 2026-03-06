@@ -1,5 +1,6 @@
 export interface ModelEntity {
     id?: string;
+    makeId?: string;
     make: string;
     modelName: string;
   }

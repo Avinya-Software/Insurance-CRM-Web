@@ -14,7 +14,6 @@ import Claims from "./pages/Claims";
 import Settings from "./pages/Settings";
 import Lead from "./pages/Lead";
 import Product from "./pages/Product";
-import Campaign from "./pages/Campaign ";
 import Insurer from "./pages/Insurer";
 import TasksPage from "./pages/TasksPage";
 import { Toaster } from "react-hot-toast";
@@ -26,12 +25,12 @@ import LifePolicies from "./pages/LifePolicies";
 import Agency from "./pages/Agency";
 import AddOnDetails from "./pages/AddOnDetails";
 import HPADetails from "./pages/HPADetails";
-import Make from "./pages/Make";
-import Model from "./pages/Model";
 import MakeModelPage from "./pages/MakeModelPage";
+import Campaign from "./pages/Campaign";
+import LeadFollowUpPage from "./pages/LeadFollowUpPage";
 
 function App() {
-  return (
+  return (  
     <BrowserRouter>
 
       <Toaster
@@ -57,20 +56,21 @@ function App() {
         >
           <Route path="/" element={<Dashboard />} />
           <Route path="/leads" element={<Lead />} />
+          <Route path="/leads/:leadId/followups" element={<LeadFollowUpPage />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/policies" element={<Policies />} />
           <Route path="/lifepolicies" element={<LifePolicies />} />
-          <Route path="/insurer" element={<Insurer />} />
+          {/* <Route path="/insurer" element={<Insurer />} /> */}
           <Route path="/agency" element={<Agency type={0} title="General Agency" />} />
           <Route path="/hpadetails" element={<HPADetails />} />
           <Route path="/lifeagency" element={<Agency type={1} title="Life Agency" />} />
           <Route path="/makedetails" element={<MakeModelPage type={1} title="Make Details" />} />
-<Route path="/modeldetails" element={<MakeModelPage type={2} title="Model Details" />} />
+          <Route path="/modeldetails" element={<MakeModelPage type={2} title="Model Details" />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/campaign" element={<Campaign />} />
-          <Route path="/products" element={<Product />} />
+          {/* <Route path="/products" element={<Product />} /> */}
           <Route path="/addondetails" element={<AddOnDetails />} />
           <Route path="/tasks" element={<TasksPage />} />
 

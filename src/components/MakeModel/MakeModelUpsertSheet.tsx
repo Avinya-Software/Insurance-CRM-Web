@@ -1,201 +1,293 @@
 import { useEffect, useState } from "react";
-import { X, Building2, ChevronDown } from "lucide-react";
-import toast, { Toaster } from "react-hot-toast";
+import { X, ChevronDown } from "lucide-react";
+import toast from "react-hot-toast";
+import Spinner from "../common/Spinner";
 import { useMake } from "../../hooks/Make/useMake";
 import { useModel } from "../../hooks/Model/useModel";
 
 interface Props {
   open: boolean;
   agency?: any;
-  type: number; // 0 = General, 1 = Life
+  type: number;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export default function MakeModelUpsertSheet({
-    open,
-    agency,
-    type,
-    onClose,
-    onSuccess
-  }: Props) {
-  
-    const isEdit = !!agency;
-  
-    const { getList, saveMake } = useMake();
-    const { saveModel } = useModel();
-  
-    const [makeOptions, setMakeOptions] = useState<any[]>([]);
-    const [loadingMake, setLoadingMake] = useState(false);
-  
-    const [form, setForm] = useState<any>({
-      id: "",
-      makeId: "",
-      makeName: "",
-      modelName: ""
-    });
-  
-    useEffect(() => {
-  
-      if (!open) return;
-  
-      if (isEdit) {
-        setForm({
-          ...agency
-        });
-      } else {
-        setForm({
-          id: "",
-          makeId: "",
-          makeName: "",
-          modelName: ""
-        });
-      }
-  
-      loadMakeDropdown();
-  
-    }, [open, agency]);
-  
-    const loadMakeDropdown = async () => {
-  
-      if (type !== 2) return;
-  
-      setLoadingMake(true);
-  
-      const res = await getList(1, 100);
-  
-      setMakeOptions(res?.data || []);
-  
-      setLoadingMake(false);
+  open,
+  agency,
+  type,
+  onClose,
+  onSuccess
+}: Props) {
+
+  const isEdit = !!agency;
+
+  const { getList, saveMake } = useMake();
+  const { saveModel } = useModel();
+
+  const [makeOptions, setMakeOptions] = useState<any[]>([]);
+  const [loadingMake, setLoadingMake] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const initialForm = {
+    id: "",
+    makeId: "",
+    makeName: "",
+    modelName: ""
+  };
+
+  const [form, setForm] = useState<any>(initialForm);
+  const [errors, setErrors] = useState<any>({});
+
+  /* BODY SCROLL LOCK */
+
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "unset";
+    return () => {
+      document.body.style.overflow = "unset";
     };
+  }, [open]);
+
+  /* LOAD DATA */
+
+  useEffect(() => {
+    if (!open) return;
   
-    const validate = () => {
+    if (isEdit && agency) {
   
-      if (type === 1 && !form.makeName) {
-        toast.error("Make name required");
-        return false;
+      setForm({
+        id: agency.id || "",
+        makeId: agency.makeId || agency.make?.id || agency.make || "",
+        makeName: agency.makeName || "",
+        modelName: agency.modelName || ""
+      });
+  
+    } else {
+      setForm(initialForm);
+    }
+  
+    setErrors({});
+    loadMakeDropdown();
+  
+  }, [open, agency]);
+
+  const loadMakeDropdown = async () => {
+
+    if (type !== 2) return;
+  
+    setLoadingMake(true);
+  
+    const res = await getList(1, 100);
+    const list = res?.data || [];
+  
+    setMakeOptions(list);
+  
+    setLoadingMake(false);
+  };
+
+  /* VALIDATION */
+
+  const validate = () => {
+
+    const e: any = {};
+
+    if (type === 1 && !form.makeName) {
+      e.makeName = "Make name is required";
+    }
+
+    if (type === 2) {
+
+      if (!form.makeId) {
+        e.makeId = "Make selection is required";
       }
-  
-      if (type === 2) {
-  
-        if (!form.makeId) {
-          toast.error("Make selection required");
-          return false;
-        }
-  
-        if (!form.modelName) {
-          toast.error("Model name required");
-          return false;
-        }
+
+      if (!form.modelName) {
+        e.modelName = "Model name is required";
       }
-  
-      return true;
-    };
-  
-    const handleSave = async () => {
-  
-      if (!validate()) return;
-  
-      let payload: any = {};
-  
+    }
+
+    setErrors(e);
+
+    if (Object.keys(e).length > 0) {
+      toast.error("Please fix validation errors");
+      return false;
+    }
+
+    return true;
+  };
+
+  /* SAVE */
+
+  const handleSave = async () => {
+
+    if (!validate()) return;
+
+    setSaving(true);
+
+    try {
+
       if (type === 1) {
-        payload = {
-          id: isEdit ? form.id : undefined,
+
+        const payload = {
+          ...(isEdit && { id: form.id }),
           makeName: form.makeName
         };
-  
+
         await saveMake(payload);
       }
-  
+
       if (type === 2) {
-        payload = {
-          id: isEdit ? form.id : undefined,
-          make: form.makeId,
+
+        const payload = {
+          ...(isEdit && { id: form.id }),
+          make: form.makeId,   
           modelName: form.modelName
         };
-  
+      
         await saveModel(payload);
       }
-  
+
+      toast.success(
+        `${type === 1 ? "Make" : "Model"} ${isEdit ? "updated" : "created"} successfully`
+      );
+
       onSuccess();
       onClose();
-    };
-  
-    if (!open) return null;
-  
-    return (
-      <div className="fixed inset-0 bg-black/60 z-50 flex justify-end">
-  
-        <div className="w-[30vw] bg-white h-full flex flex-col">
-  
-          <div className="p-6 border-b flex justify-between">
-  
-            <h2 className="text-xl font-bold">
+
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <>
+      {/* OVERLAY */}
+      <div
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]"
+        onClick={saving ? undefined : onClose}
+      />
+
+      {/* SHEET */}
+      <div className="fixed top-0 right-0 w-full max-w-[20vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right">
+
+        {/* HEADER */}
+        <div className="px-8 py-6 bg-white border-b flex justify-between items-center">
+
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">
               {isEdit ? "Edit" : "Add"} {type === 1 ? "Make" : "Model"}
             </h2>
-  
-            <button onClick={onClose}>
-              <X size={20}/>
-            </button>
-  
+
+            <p className="text-slate-500 text-sm mt-1">
+              Manage {type === 1 ? "make" : "model"} information.
+            </p>
           </div>
-  
-          <div className="p-6 flex flex-col gap-4 flex-1 overflow-auto">
-  
-            {type === 1 && (
-              <Input
-                label="Make Name"
-                value={form.makeName}
-                onChange={(v:any)=>setForm({...form,makeName:v})}
-              />
-            )}
-  
-            {type === 2 && (
-              <>
-                <Select
-                  label="Select Make"
-                  value={form.makeId}
-                  loading={loadingMake}
-                  options={makeOptions.map(m=>({
-                    id:m.id,
-                    name:m.makeName
-                  }))}
-                  onChange={(v:any)=>setForm({...form,makeId:v})}
-                />
-  
-                <Input
-                  label="Model Name"
-                  value={form.modelName}
-                  onChange={(v:any)=>setForm({...form,modelName:v})}
-                />
-              </>
-            )}
-  
-          </div>
-  
-          <div className="p-6 border-t flex gap-3">
-  
-            <button
-              onClick={handleSave}
-              className="bg-slate-800 text-white px-6 py-2 rounded"
-            >
-              Save
-            </button>
-  
-            <button
-              onClick={onClose}
-              className="bg-red-500 text-white px-6 py-2 rounded"
-            >
-              Cancel
-            </button>
-  
-          </div>
-  
+
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+          >
+            <X size={22} className="text-slate-400" />
+          </button>
+
         </div>
-  
+
+        {/* BODY */}
+        <div className="flex-1 overflow-y-auto p-8">
+
+          <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+
+            <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+              <h3 className="font-bold uppercase tracking-wider text-[10px]">
+                {type === 1 ? "MAKE INFORMATION" : "MODEL INFORMATION"}
+              </h3>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 gap-6">
+
+              {type === 1 && (
+                <Input
+                  label="MAKE NAME"
+                  required
+                  value={form.makeName}
+                  error={errors.makeName}
+                  placeholder="Enter make name"
+                  onChange={(v: string) =>
+                    setForm({ ...form, makeName: v })
+                  }
+                />
+              )}
+
+              {type === 2 && (
+                <>
+                  <Select
+                    label="SELECT MAKE"
+                    required
+                    value={form.makeId}
+                    error={errors.makeId}
+                    loading={loadingMake}
+                    options={makeOptions.map(m => ({
+                      id: m.id,
+                      name: m.makeName
+                    }))}
+                    onChange={(v: any) =>
+                      setForm({ ...form, makeId: v })
+                    }
+                  />
+
+                  <Input
+                    label="MODEL NAME"
+                    required
+                    value={form.modelName}
+                    error={errors.modelName}
+                    placeholder="Enter model name"
+                    onChange={(v: string) =>
+                      setForm({ ...form, modelName: v })
+                    }
+                  />
+                </>
+              )}
+
+            </div>
+          </section>
+        </div>
+
+        {/* FOOTER */}
+        <div className="px-8 py-6 bg-white border-t flex justify-between items-center">
+          <div className="flex gap-4">
+            <button
+              className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <Spinner className="text-white" />
+                  Saving...
+                </>
+              ) : (
+                "SAVE"
+              )}
+            </button>
+            <button
+              className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded flex items-center justify-center gap-2 shadow-lg transition-all"
+              onClick={onClose}
+              disabled={saving}
+            >
+              CANCEL
+            </button>
+          </div>
+        </div>
       </div>
-    );
-  }
+    </>
+  );
+}
   
 
 const Select = ({

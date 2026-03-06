@@ -16,12 +16,13 @@ export const createFollowUpApi = async (
   const res = await api.post("/lead-followups", data);
   return res.data;
 };
+
+
 export const getFollowUpsByLeadId = async (
   leadId: string
 ): Promise<LeadFollowUp[]> => {
-  const response = await api.get(`/lead-followups/lead/${leadId}`);
-  console.log(response.data);
-  return response.data.data; 
+  const res = await api.get(`/lead-followups/lead/${leadId}`);
+  return res.data.data; 
 };
 
 export const getLeadFollowupStatusesApi  = async () => {

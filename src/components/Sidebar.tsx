@@ -16,6 +16,10 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Shield,
+  CarFront,
+  Car,
+  Layers,
 } from "lucide-react";
 import { useState } from "react";
 /* ================= JWT HELPER ================= */
@@ -124,12 +128,12 @@ const Sidebar = () => {
               isCollapsed={isCollapsed}
             />
 
-            <NavItem
+            {/* <NavItem
               to="/insurer"
               icon={<Building2 size={18} />}
               label="Insurers"
               isCollapsed={isCollapsed}
-            />
+            /> */}
 
             <div>
               <div
@@ -171,12 +175,12 @@ const Sidebar = () => {
               )}
             </div>
 
-            <NavItem
+            {/* <NavItem
               to="/products"
               icon={<Package size={18} />}
               label="Products"
               isCollapsed={isCollapsed}
-            />
+            /> */}
 
             {/* ================= POLICIES MENU ================= */}
             <div>
@@ -240,58 +244,61 @@ const Sidebar = () => {
               isCollapsed={isCollapsed}
             />
 
-            <div>
-              <div
-                onClick={() => setOpenMaster(!openMaster)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
-                  ${isCollapsed ? "justify-center" : ""}
-                  text-slate-300 hover:bg-slate-800`}
-              >
-                <ListTodo size={18} />
+          <div>
 
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1">Master Details</span>
-                    {openMaster ? (
-                      <ChevronDown size={16} />
-                    ) : (
-                      <ChevronRight size={16} />
-                    )}
-                  </>
-                )}
-              </div>
+            <div
+              onClick={() => setOpenMaster(!openMaster)}
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
+                ${isCollapsed ? "justify-center" : ""}
+                text-slate-300 hover:bg-slate-800`}
+            >
+              <Layers size={18} />
 
-              {openMaster && !isCollapsed && (
-                <div className="ml-6 mt-1 space-y-1">
-                  <NavItem
-                    to="/addondetails"
-                    label="Add On Details"
-                    icon={<ListTodo size={16} />}
-                    isCollapsed={false}
-                  />
-
-                  <NavItem
-                    to="/hpadetails"
-                    label="HPA Details"
-                    icon={<ListTodo size={16} />}
-                    isCollapsed={false}
-                  />
-
-<NavItem
-  to="/makedetails"
-  label="Make Details"
-  icon={<ListTodo size={16} />}
-  isCollapsed={false}
-/>
-
-<NavItem
-  to="/modeldetails"
-  label="Model Details"
-  icon={<ListTodo size={16} />}
-  isCollapsed={false}
-/>
-                </div>
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1">Master Details</span>
+                  {openMaster ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
+                </>
               )}
+            </div>
+
+            {openMaster && !isCollapsed && (
+              <div className="ml-6 mt-1 space-y-1">
+
+                <NavItem
+                  to="/addondetails"
+                  label="Add On Details"
+                  icon={<ListTodo size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/hpadetails"
+                  label="HPA Details"
+                  icon={<Shield size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/makedetails"
+                  label="Make Details"
+                  icon={<Car size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/modeldetails"
+                  label="Model Details"
+                  icon={<CarFront size={16} />}
+                  isCollapsed={false}
+                />
+
+              </div>
+            )}
             </div>
 
             <NavItem
@@ -372,7 +379,6 @@ const NavItem = ({
 }) => (
   <NavLink
     to={to}
-    end
     title={isCollapsed ? label : ""}
     className={({ isActive }) =>
       `flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition
