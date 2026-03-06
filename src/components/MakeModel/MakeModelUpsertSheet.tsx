@@ -53,29 +53,36 @@ export default function MakeModelUpsertSheet({
 
   useEffect(() => {
     if (!open) return;
-
+  
     if (isEdit && agency) {
+  
       setForm({
-        ...agency
+        id: agency.id || "",
+        makeId: agency.makeId || agency.make?.id || agency.make || "",
+        makeName: agency.makeName || "",
+        modelName: agency.modelName || ""
       });
+  
     } else {
       setForm(initialForm);
     }
-
+  
     setErrors({});
     loadMakeDropdown();
-
+  
   }, [open, agency]);
 
   const loadMakeDropdown = async () => {
 
     if (type !== 2) return;
-
+  
     setLoadingMake(true);
-
+  
     const res = await getList(1, 100);
-    setMakeOptions(res?.data || []);
-
+    const list = res?.data || [];
+  
+    setMakeOptions(list);
+  
     setLoadingMake(false);
   };
 
@@ -134,10 +141,10 @@ export default function MakeModelUpsertSheet({
 
         const payload = {
           ...(isEdit && { id: form.id }),
-          make: form.makeId,
+          make: form.makeId,   
           modelName: form.modelName
         };
-
+      
         await saveModel(payload);
       }
 
