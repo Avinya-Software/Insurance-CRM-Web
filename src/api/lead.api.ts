@@ -82,3 +82,4 @@ export const getLeadByIdApi = async (leadId: string) => {
   const res = await api.get(`/Lead/${leadId}`);
   return res.data.data;
 };
+
