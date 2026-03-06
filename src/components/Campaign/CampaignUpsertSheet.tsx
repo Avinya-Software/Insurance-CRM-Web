@@ -375,7 +375,7 @@ const CampaignUpsertSheet = ({
                 <MultiSelectDropdown
                   items={customers.map((c) => ({
                     value: c.customerId,
-                    label: c.fullName,
+                    label: c.clientName,
                   }))}
                   selectedValues={selectedCustomerIds}
                   onChange={(ids) => {

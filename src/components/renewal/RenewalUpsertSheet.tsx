@@ -212,7 +212,7 @@ const RenewalUpsertSheet = ({
                   required
                   items={(customers || []).map((c) => ({
                     value: c.customerId,
-                    label: c.fullName,
+                    label: c.clientName,
                   }))}
                   value={form.customerId}
                   error={errors.customerId}

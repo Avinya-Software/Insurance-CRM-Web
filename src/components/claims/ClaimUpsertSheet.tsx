@@ -239,7 +239,7 @@ const { preview, download, remove } = useClaimFileActions((deletedId) => {
                   label="Customer"
                   items={(customers || []).map((c) => ({
                     value: c.customerId,
-                    label: c.fullName,
+                    label: c.clientName,
                   }))}
                   value={form.customerId}
                   placeholder="Select customer"
