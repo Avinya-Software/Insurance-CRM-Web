@@ -128,12 +128,12 @@ const Sidebar = () => {
               isCollapsed={isCollapsed}
             />
 
-            <NavItem
+            {/* <NavItem
               to="/insurer"
               icon={<Building2 size={18} />}
               label="Insurers"
               isCollapsed={isCollapsed}
-            />
+            /> */}
 
             <div>
               <div
@@ -175,12 +175,12 @@ const Sidebar = () => {
               )}
             </div>
 
-            <NavItem
+            {/* <NavItem
               to="/products"
               icon={<Package size={18} />}
               label="Products"
               isCollapsed={isCollapsed}
-            />
+            /> */}
 
             {/* ================= POLICIES MENU ================= */}
             <div>
@@ -379,7 +379,6 @@ const NavItem = ({
 }) => (
   <NavLink
     to={to}
-    end
     title={isCollapsed ? label : ""}
     className={({ isActive }) =>
       `flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition

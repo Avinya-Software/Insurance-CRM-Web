@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { Toaster } from "react-hot-toast";
-
 import { useCampaigns } from "../hooks/campaigns/useCampaigns";
 import CampaignTable from "../components/Campaign/CampaignTable";
 import CampaignUpsertSheet from "../components/Campaign/CampaignUpsertSheet";
@@ -48,8 +46,6 @@ const Campaigns = () => {
 
   return (
     <>
-      <Toaster position="top-right" />
-
       <div className="bg-white rounded-lg border">
         {/* HEADER */}
         <div className="px-4 py-5 border-b bg-gray-100">
