@@ -28,6 +28,7 @@ import HPADetails from "./pages/HPADetails";
 import MakeModelPage from "./pages/MakeModelPage";
 import Campaign from "./pages/Campaign";
 import LeadFollowUpPage from "./pages/LeadFollowUpPage";
+import UserTeamMaster from "./pages/UserTeamMaster";
 
 function App() {
   return (  
@@ -62,6 +63,7 @@ function App() {
           <Route path="/lifepolicies" element={<LifePolicies />} />
           {/* <Route path="/insurer" element={<Insurer />} /> */}
           <Route path="/agency" element={<Agency type={0} title="General Agency" />} />
+          <Route path="/usertermmaster" element={<UserTeamMaster/>}/>
           <Route path="/hpadetails" element={<HPADetails />} />
           <Route path="/lifeagency" element={<Agency type={1} title="Life Agency" />} />
           <Route path="/makedetails" element={<MakeModelPage type={1} title="Make Details" />} />

@@ -270,6 +270,13 @@ const Sidebar = () => {
               <div className="ml-6 mt-1 space-y-1">
 
                 <NavItem
+                  to="/usertermmaster"
+                  label="User Master"
+                  icon={<ListTodo size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
                   to="/addondetails"
                   label="Add On Details"
                   icon={<ListTodo size={16} />}
