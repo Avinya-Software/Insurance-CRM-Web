@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { MoreVertical, X, Edit, Trash2 } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 import TableSkeleton from "../common/TableSkeleton";
 import { useDeleteUser } from "../../hooks/UserMaster/useDeleteUser";
 import { UserDetail } from "../../interfaces/UserMaster.interface";
@@ -52,18 +52,23 @@ const UserDetailsTable = ({ data = [], loading = false, onEdit }: Props) => {
             <Th>User Type</Th>
             <Th>Email</Th>
             <Th>Mobile</Th>
+            <Th>GST Number</Th>
+            <Th>PAN No</Th>
             <Th>City</Th>
+            <Th>User Name</Th>
+            <Th>Password</Th>
+            <Th>Status</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
         {loading ? (
-          <TableSkeleton rows={10} columns={7} />
+          <TableSkeleton rows={10} columns={12} />
         ) : (
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-slate-500">
+                <td colSpan={12} className="text-center py-12 text-slate-500">
                   No users found
                 </td>
               </tr>
@@ -79,7 +84,18 @@ const UserDetailsTable = ({ data = [], loading = false, onEdit }: Props) => {
                   </Td>
                   <Td>{item.email}</Td>
                   <Td>{item.mobile}</Td>
+                  <Td>{item.gstNumber}</Td>
+                  <Td>{item.panNo}</Td>
                   <Td>{item.city}</Td>
+                  <Td>{item.userName}</Td>
+                  <Td>{item.password}</Td>
+                  <Td>
+                    {item.status ? (
+                      <span className="text-green-600 font-semibold">Active</span>
+                    ) : (
+                      <span className="text-red-600 font-semibold">Inactive</span>
+                    )}
+                  </Td>
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, item)}
@@ -133,9 +149,12 @@ const UserDetailsTable = ({ data = [], loading = false, onEdit }: Props) => {
               </button>
             </div>
             <p className="text-sm text-slate-600 mb-6">
-              Are you sure you want to delete <span className="font-semibold text-slate-900">{confirmDelete.name}</span>?
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-slate-900">{confirmDelete.name}</span>?
               <br />
-              <span className="text-red-600 font-medium mt-2 block">This action cannot be undone.</span>
+              <span className="text-red-600 font-medium mt-2 block">
+                This action cannot be undone.
+              </span>
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -163,7 +182,9 @@ export default UserDetailsTable;
 
 /* Helper Components */
 const Th = ({ children, className = "" }: any) => (
-  <th className={`px-4 py-3 text-left font-semibold text-slate-700 ${className}`}>{children}</th>
+  <th className={`px-4 py-3 text-left font-semibold text-slate-700 ${className}`}>
+    {children}
+  </th>
 );
 const Td = ({ children, className = "" }: any) => (
   <td className={`px-4 py-3 ${className}`}>{children}</td>

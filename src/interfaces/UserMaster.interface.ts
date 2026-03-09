@@ -8,16 +8,31 @@ export interface UserType {
     id: string;
     userTypeId: string;
     userType: string;
+    aspNetUserId?: string | null;
     name: string;
     email: string;
     mobile: string;
     gstNumber: string;
     panNo: string;
+    addressLine1: string;
+    addressLine2: string;
     city: string;
+    pincode: string;
+    state: string;
+    country: string;
+    userCode: string;
     userName: string;
+    officeNumber: string;
+    residenceNumber: string;
+    bankName: string;
+    branchName: string;
+    accountType: string;
+    accountNumber: string;
+    micrCode: string;
+    ifscCode: string;
     password?: string;
     status: boolean;
-    createdDate: string;
+    createdDate: string; // ISO string
   }
   
   export interface UserMasterData {
@@ -45,12 +60,25 @@ export interface UserType {
     userTypeId: string;
     name: string;
     email: string;
-    mobile: string;
-    gstNumber: string;
-    panNo: string;
-    city: string;
-    userName: string;
+    mobileNumber: string;
     password?: string;
-    status: boolean;
+    gstNumber: string;
+    panCard: string;
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    pincode: string;
+    state: string;
+    country: string;
+    userCode: string;
+    userName: string;
+    officeNumber: string;
+    residenceNumber: string;
+    bankName: string;
+    branchName: string;
+    accountType: string;
+    accountNumber: string;
+    micrCode: string;
+    ifscCode: string;
+    status?: boolean;
   }
-  

@@ -24,7 +24,8 @@ import {
   };
   
   export const upsertUserApi = async (data: UserPayload) => {
-    const res = await api.post("/UserMaster", data);
+    const endpoint = data.id ? `/UserMaster` : `/auth/register-UserMaster`;
+    const res = await api.post(endpoint, data);
     return res.data;
   };
   
