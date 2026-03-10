@@ -4,6 +4,7 @@ import { UserDetail, UserPayload } from "../../interfaces/UserMaster.interface";
 import { useUserTypes } from "../../hooks/UserMaster/useUserTypes";
 import { useUpsertUser } from "../../hooks/UserMaster/useUpsertUser";
 import toast from "react-hot-toast";
+import { useUpdateUser } from "../../hooks/UserMaster/useUpdateUser";
 
 interface Props {
   open: boolean;
@@ -48,8 +49,10 @@ const AddUserUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
   const { data: userTypesRes } = useUserTypes();
   const userTypes = userTypesRes?.data || [];
 
-  const { mutate: upsertUser, isPending } = useUpsertUser();
-
+  const { mutate: upsertUser, isPending: isCreating } = useUpsertUser();
+  const { mutate: updateUser, isPending: isUpdating } = useUpdateUser();
+  
+  const isPending = isCreating || isUpdating;
   useEffect(() => {
     if (item) {
       setFormData({
@@ -115,13 +118,31 @@ const AddUserUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
   const displayValue = (value: string | null | undefined) => {
     return value && value.trim() !== "" ? value : "-";
   };
+  
   const handleSubmit = () => {
     if (!validate()) return;
-    upsertUser(formData, {
-      onSuccess: () => {
-        onSuccess();
-      },
-    });
+  
+    if (item?.id) {
+      // EDIT USER
+      updateUser(
+        {
+          ...formData,
+          userMasterId: item.id,
+        },
+        {
+          onSuccess: () => {
+            onSuccess();
+          },
+        }
+      );
+    } else {
+      // ADD USER
+      upsertUser(formData, {
+        onSuccess: () => {
+          onSuccess();
+        },
+      });
+    }
   };
 
   if (!open) return null;

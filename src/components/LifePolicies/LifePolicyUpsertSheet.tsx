@@ -140,6 +140,25 @@ const PolicyUpsertSheet = ({
     }
   };
 
+  const addMonths = (dateStr: string, months: number) => {
+    if (!dateStr) return "";
+  
+    const d = new Date(dateStr);
+    d.setMonth(d.getMonth() + months);
+  
+    return d.toISOString().split("T")[0];
+  };
+  
+  const addYears = (dateStr: string, years: number) => {
+    if (!dateStr) return "";
+  
+    const d = new Date(dateStr);
+    d.setFullYear(d.getFullYear() + years);
+  
+    return d.toISOString().split("T")[0];
+  };
+  
+
   const documentOptions = [
     { id: "Policy Copy", name: "Policy Copy" },
     { id: "Proposal Form", name: "Proposal Form" },
@@ -220,21 +239,93 @@ const isLoading = isPending;
   };
 
   useEffect(() => {
+    if (!form.startDate || !form.premiumMode) return;
+  
+    const nextMonths = getMultiplier(form.premiumMode);
+  
+    let next = "";
+    let grace = "";
+  
+    if (form.premiumMode !== "S") {
+      next = addMonths(form.startDate, nextMonths);
+  
+      if (form.premiumMode === "Q") {
+        grace = next; // quarterly rule
+      } else {
+        grace = addMonths(next, 1);
+      }
+    }
+  
+    const maturity =
+      form.policyTerm && form.startDate
+        ? addYears(form.startDate, Number(form.policyTerm))
+        : "";
+  
+    setForm((prev: any) => ({
+      ...prev,
+      completionDate: prev.completionDate || form.startDate,
+      nextPremiumDueDate: next,
+      graceDate: grace,
+      maturityDate: maturity,
+    }));
+  }, [form.startDate, form.premiumMode, form.policyTerm]);
+
+
+  useEffect(() => {
+  if (!form.nextPremiumDueDate || form.premiumMode === "S") return;
+
+  let grace = "";
+
+  if (form.premiumMode === "Q") {
+    grace = form.nextPremiumDueDate;
+  } else {
+    grace = addMonths(form.nextPremiumDueDate, 1);
+  }
+
+  setForm((prev: any) => ({
+    ...prev,
+    graceDate: grace,
+  }));
+}, [form.nextPremiumDueDate]);
+
+
+  useEffect(() => {
+    if (form.premiumMode === "S" && form.completionDate) {
+      setForm((prev: any) => ({
+        ...prev,
+        maturityDate: prev.completionDate,
+      }));
+    }
+  }, [form.completionDate]);
+
+
+  useEffect(() => {
     const installment = Number(form.installmentPremium) || 0;
     const gstPerc = Number(form.gstPerc) || 0;
     const multiplier = getMultiplier(form.premiumMode);
   
-    if (!installment) return;
+    if (!installment) {
+      setForm((prev: any) => ({
+        ...prev,
+        basicPremium: 0,
+        gstAmount: 0,
+        finalInstallmentPremium: 0,
+        annualPremium: 0
+      }));
+      return;
+    }
   
     let basic = 0;
     let gstAmount = 0;
     let finalInstallment = 0;
   
     if (form.premiumIncludingGst) {
+      // Installment already includes GST
       basic = installment / (1 + gstPerc / 100);
       gstAmount = installment - basic;
       finalInstallment = installment;
     } else {
+      // GST added on top
       basic = installment;
       gstAmount = basic * (gstPerc / 100);
       finalInstallment = basic + gstAmount;
@@ -247,15 +338,37 @@ const isLoading = isPending;
       basicPremium: Math.round(basic),
       gstAmount: Math.round(gstAmount),
       finalInstallmentPremium: Math.round(finalInstallment),
-      annualPremium: Math.round(annual),
+      annualPremium: Math.round(annual)
     }));
+  
   }, [
     form.installmentPremium,
     form.gstPerc,
     form.premiumIncludingGst,
-    form.premiumMode,
+    form.premiumMode
   ]);
   
+  useEffect(() => {
+    if (!form.policyTerm) return;
+  
+    setForm((prev: any) => {
+  
+      // Mode S → always PPT = 1
+      if (form.premiumMode === "S") {
+        if (prev.ppt === "1") return prev;
+        return { ...prev, ppt: "1" };
+      }
+  
+      // First time fill only
+      if (!prev.ppt || prev.ppt === "1") {
+        return { ...prev, ppt: form.policyTerm };
+      }
+  
+      return prev;
+    });
+  
+  }, [form.policyTerm, form.premiumMode]);
+
 
   /*   SAVE  */
   const handleSave = async () => {
@@ -301,7 +414,8 @@ const isLoading = isPending;
   
 
   return (
-    <>
+    <>Policy Start Date *
+
       <Toaster position="top-right"/>
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
 
@@ -357,7 +471,7 @@ const isLoading = isPending;
               {activeTab === "general" && (
                 <div className="space-y-6">
                   {/* POLICY PERSONAL INFORMATION */}
-                  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                  <section className="bg-white rounded-lg shadow-sm border border-slate-200">
                     <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
                       <div className="p-1.5 bg-white/10 text-white rounded">
                         <ShieldCheck size={16} />
@@ -562,42 +676,65 @@ const isLoading = isPending;
                       {/* ROW 5 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                          <Select
-                            label="Premium Mode"
-                            value={form.premiumMode}
-                            options={[
-                              { id: "Y", name: "Y" },
-                              { id: "H", name: "H" },
-                              { id: "Q", name: "Q" },
-                              { id: "M", name: "M" },
-                              { id: "S", name: "S" },
-                            ]}
-                            onChange={(v: any) =>
-                              setForm((prev: any) => ({
-                                ...prev,
-                                premiumMode: v,
-                                ppt: v === "S" ? "1" : "",
-                              }))
-                            }
-                          />
+                        <Select
+                          label="Premium Mode"
+                          value={form.premiumMode}
+                          options={[
+                            { id: "Y", name: "Y" },
+                            { id: "H", name: "H" },
+                            { id: "Q", name: "Q" },
+                            { id: "M", name: "M" },
+                            { id: "S", name: "S" },
+                          ]}
+                          onChange={(v: any) =>
+                            setForm((prev: any) => ({
+                              ...prev,
+                              premiumMode: v,
+                              ppt: v === "S" ? "1" : prev.policyTerm
+                            }))
+                          }
+                        />
                         </div>
                         <div className="md:col-span-2">
-                          <Input
-                            label="Policy Term"
-                            value={form.policyTerm}
-                            placeholder="Policy Term"
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, policyTerm: v }))}
-                          />
+                        <Input
+                          label="Policy Term"
+                          value={form.policyTerm}
+                          placeholder="Policy Term"
+                          max={999}
+                          onChange={(v: any) => {
+
+                            const value = v.slice(0, 3);
+
+                            setForm((p: any) => ({
+                              ...p,
+                              policyTerm: value,
+                              ppt: p.premiumMode === "S" ? "1" : value
+                            }));
+
+                          }}
+                        />
                         </div>
                         <div className="md:col-span-2">
-                          <Input
+                        <Input
                             label="PPT"
                             value={form.ppt}
                             placeholder="PPT"
-                            readOnly={form.premiumMode === "S"}
+                            disabled={form.premiumMode === "S"}
                             onChange={(v: any) => {
+
                               if (form.premiumMode === "S") return;
-                              setForm((p: any) => ({ ...p, ppt: v }));
+
+                              const value = v.slice(0, 3);
+
+                              if (Number(value) > Number(form.policyTerm)) {
+                                toast.error("Term should be greater than or equal to PPT.");
+                                return;
+                              }
+
+                              setForm((p: any) => ({
+                                ...p,
+                                ppt: value
+                              }));
                             }}
                           />
                         </div>
@@ -616,40 +753,46 @@ const isLoading = isPending;
                       {/* ROW 6 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                          <Input
-                            type="date"
-                            label="Completion Date"
-                            value={form.completionDate}
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, completionDate: v }))}
-                          />
+                        <Input
+                          type="date"
+                          label="Completion Date"
+                          value={form.completionDate}
+                          onChange={(v: any) =>
+                            setForm((p: any) => ({ ...p, completionDate: v }))
+                          }
+                        />
                         </div>
                         <div className="md:col-span-4">
-                          <Input
-                            type="date"
-                            label="Next Premium Due Date"
-                            value={form.nextPremiumDueDate}
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, nextPremiumDueDate: v }))}
-                          />
+                        <Input
+                          type="date"
+                          label="Next Premium Due Date"
+                          value={form.nextPremiumDueDate}
+                          disabled={form.premiumMode === "S"}
+                          onChange={(v: any) =>
+                            setForm((p: any) => ({ ...p, nextPremiumDueDate: v }))
+                          }
+                        />
                         </div>
                         <div className="md:col-span-4">
-                          <Input
-                            type="date"
-                            label="Grace Date"
-                            value={form.graceDate}
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, graceDate: v }))}
-                          />
+                        <Input
+                          type="date"
+                          label="Grace Date"
+                          value={form.graceDate}
+                          disabled={form.premiumMode === "S"}
+                          onChange={(v:any)=>setForm(p=>({...p,graceDate:v}))}
+                        />
                         </div>
                       </div>
 
                       {/* ROW 7 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                          <Input
-                            type="date"
-                            label="Maturity Date"
-                            value={form.maturityDate}
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, maturityDate: v }))}
-                          />
+                        <Input
+                          type="date"
+                          label="Maturity Date"
+                          value={form.maturityDate}
+                          disabled
+                        />
                         </div>
                         <div className="md:col-span-8">
                           <SearchableComboBox

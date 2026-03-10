@@ -1,7 +1,9 @@
+import { data } from "react-router-dom";
 import { 
     UserMasterApiResponse, 
     UserTypeApiResponse, 
-    UserPayload 
+    UserPayload, 
+    UpdateUserRequest
   } from "../interfaces/UserMaster.interface";
   import api from "./axios";
   
@@ -28,9 +30,16 @@ import {
     const res = await api.post(endpoint, data);
     return res.data;
   };
+
+  export const updateUserApi = async (data: UpdateUserRequest) => {
+    const res = await api.put("/UserMaster/UserMasterUpdate", data);
+    return res.data;
+  };
   
   export const deleteUserApi = async (id: string) => {
     const res = await api.delete(`/UserMaster/${id}`);
     return res.data;
   };
+
+
   
