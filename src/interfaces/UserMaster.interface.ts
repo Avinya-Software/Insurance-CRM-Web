@@ -82,3 +82,28 @@ export interface UserType {
     ifscCode: string;
     status?: boolean;
   }
+
+  export interface UpdateUserRequest {
+    userMasterId: string;
+    userTypeId: string;
+    name: string;
+    email: string;
+    mobileNumber: string;
+    userName: string;
+    gstNumber: string;
+    panCard: string;
+    addressLine1: string;
+    addressLine2: string;
+    city: string;
+    pincode: string;
+    state: string;
+    country: string;
+    officeNumber: string;
+    residenceNumber: string;
+    bankName: string;
+    branchName: string;
+    accountType: string;
+    accountNumber: string;
+    micrCode: string;
+    ifscCode: string;
+  }
