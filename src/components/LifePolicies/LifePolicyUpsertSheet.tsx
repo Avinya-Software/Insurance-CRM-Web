@@ -304,17 +304,28 @@ const isLoading = isPending;
     const gstPerc = Number(form.gstPerc) || 0;
     const multiplier = getMultiplier(form.premiumMode);
   
-    if (!installment) return;
+    if (!installment) {
+      setForm((prev: any) => ({
+        ...prev,
+        basicPremium: 0,
+        gstAmount: 0,
+        finalInstallmentPremium: 0,
+        annualPremium: 0
+      }));
+      return;
+    }
   
     let basic = 0;
     let gstAmount = 0;
     let finalInstallment = 0;
   
     if (form.premiumIncludingGst) {
+      // Installment already includes GST
       basic = installment / (1 + gstPerc / 100);
       gstAmount = installment - basic;
       finalInstallment = installment;
     } else {
+      // GST added on top
       basic = installment;
       gstAmount = basic * (gstPerc / 100);
       finalInstallment = basic + gstAmount;
@@ -327,13 +338,14 @@ const isLoading = isPending;
       basicPremium: Math.round(basic),
       gstAmount: Math.round(gstAmount),
       finalInstallmentPremium: Math.round(finalInstallment),
-      annualPremium: Math.round(annual),
+      annualPremium: Math.round(annual)
     }));
+  
   }, [
     form.installmentPremium,
     form.gstPerc,
     form.premiumIncludingGst,
-    form.premiumMode,
+    form.premiumMode
   ]);
   
   useEffect(() => {
