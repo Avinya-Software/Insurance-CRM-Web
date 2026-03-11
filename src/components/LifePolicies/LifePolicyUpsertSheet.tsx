@@ -515,7 +515,7 @@ const { data: users } = useUserDropdown();
   
 
   return (
-    <>
+    <>Policy Start Date *
 
       <Toaster position="top-right"/>
       <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
@@ -583,19 +583,16 @@ const { data: users } = useUserDropdown();
                       {/* ROW 1 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-2">
-                        <Select
-                          label="Policy Status"
-                          value={form.policyStatusId}
-                          options={policyStatuses}
-                          valueKey="policyStatusId"
-                          labelKey="statusName"
-                          onChange={(v: any) =>
-                            setForm((p: any) => ({
-                              ...p,
-                              policyStatusId: Number(v)
-                            }))
-                          }
-                        />
+                          <Select
+                            label="Policy Status"
+                            value={form.policyStatusId}
+                            options={policyStatuses}
+                            valueKey="policyStatusId"
+                            labelKey="statusName"
+                            onChange={(v: any) =>
+                              setForm((p: any) => ({ ...p, policyStatusId: v }))
+                            }
+                          />
                         </div>
 
                         <div className="md:col-span-2">
@@ -606,10 +603,7 @@ const { data: users } = useUserDropdown();
                           valueKey="statusId"
                           labelKey="statusName"
                           onChange={(v: any) =>
-                            setForm((p: any) => ({
-                              ...p,
-                              policyTypeId: Number(v)
-                            }))
+                            setForm((p: any) => ({ ...p, policyTypeId: v }))
                           }
                         />
                         </div>
@@ -764,42 +758,39 @@ const { data: users } = useUserDropdown();
                         />
                         </div>
                         <div className="md:col-span-4">
-                        <SearchableComboBox
-                          label="COMPANY NAME"
-                          required
-                          error={errors.insurerId}
-                          items={(companies || []).map((c: any) => ({
-                            value: c.companyId,
-                            label: c.companyName
-                          }))}
-                          value={form.insurerId}
-                          onSelect={(item: any) =>
-                            setForm((prev: any) => ({
-                              ...prev,
-                              insurerId: item?.value || "",
-                              productId: ""
-                            }))
-                          }
-                        />
+                          <SearchableComboBox
+                            label="COMPANY NAME"
+                            required
+                            error={errors.insurerId}
+                            items={(companies || []).map((c: any) => ({
+                              value: c.companyId,
+                              label: c.companyName,
+                            }))}
+                            value={form.insurerId}
+                            onSelect={(item: any) =>
+                              setForm({
+                                ...form,
+                                insurerId: item?.value || "",
+                                productId: "",
+                              })
+                            }
+                          />
                         </div>
                         <div className="md:col-span-4">
-                        <SearchableComboBox
-                          label="PRODUCT NAME"
-                          required
-                          error={errors.productId}
-                          items={(products || []).map((p: any) => ({
-                            value: p.id,
-                            label: p.productName
-                          }))}
-                          value={form.productId}
-                          disabled={!form.insurerId}
-                          onSelect={(item: any) =>
-                            setForm((p: any) => ({
-                              ...p,
-                              productId: item?.value
-                            }))
-                          }
-                        />
+                          <SearchableComboBox
+                            label="PRODUCT NAME"
+                            required
+                            error={errors.productId}
+                            items={(products || []).map((p: any) => ({
+                              value: p.id,
+                              label: p.productName,
+                            }))}
+                            value={form.productId}
+                            disabled={!form.insurerId}
+                            onSelect={(item: any) =>
+                              setForm((p: any) => ({ ...p, productId: item?.value }))
+                            }
+                          />
                         </div>
                       </div>
 
