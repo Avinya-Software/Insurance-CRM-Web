@@ -9,6 +9,9 @@ import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
 import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdown";
 import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
+import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
+import { useAgencyDropdown } from "../../hooks/LifePolicy/useAgencyDropdown";
+import { useUserDropdown } from "../../hooks/LifePolicy/useUserDropdown";
 
 // --- MOCK HOOKS (Replace with real ones in production) ---
 const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
@@ -18,6 +21,7 @@ const usePolicyDocumentActions = (cb: any) => ({
   download: (p: any, f: any, n: any) => toast.success("Downloading " + n), 
   remove: async (p: any, f: any) => { toast.success("Removed " + f); cb(f); } 
 });
+
 
 
 interface Props {
@@ -129,6 +133,8 @@ const PolicyUpsertSheet = ({
     1          
   );
 
+
+
   const getMultiplier = (mode: string) => {
     switch (mode) {
       case "Y": return 1;
@@ -179,7 +185,9 @@ const { data: statusTypes, isLoading: stLoading } =
   usePolicyStatusesDropdown(1);
 const loadingDropdowns = sLoading || stLoading; 
 const isLoading = isPending;
-
+const { data: customers } = useCustomerDropdown();
+const { data: agencies } = useAgencyDropdown();
+const { data: users } = useUserDropdown();
 
   /*   PREFILL   */
   useEffect(() => {
@@ -507,17 +515,21 @@ const isLoading = isPending;
                           />
                         </div>
                         <div className="md:col-span-4">
-                          <Input
+                        <SearchableComboBox
                             label="Life Assured"
                             required
-                            value={form.insuredName}
                             error={errors.insuredName}
-                            placeholder="Insured Name"
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, insuredName: v }))}
-                            suffix={
-                              <button className="p-1 hover:bg-slate-100 rounded transition-colors">
-                                <UserPlus size={16} className="text-slate-900" />
-                              </button>
+                            items={(customers || []).map((c: any) => ({
+                              value: c.customerId,
+                              label: c.clientName
+                            }))}
+                            value={form.customerId}
+                            onSelect={(item: any) =>
+                              setForm((p: any) => ({
+                                ...p,
+                                customerId: item?.value || "",
+                                insuredName: item?.label || ""
+                              }))
                             }
                           />
                         </div>
@@ -615,26 +627,42 @@ const isLoading = isPending;
                           />
                         </div>
                         <div className="md:col-span-8">
-                          <SearchableComboBox
-                            label="BA NAME"
-                            items={[{ value: "ALPESH SHELADIYA", label: "ALPESH SHELADIYA" }]}
-                            value={form.baName}
-                            onSelect={(item: any) => setForm((p: any) => ({ ...p, baName: item?.value }))}
-                          />
+                        <SearchableComboBox
+                          label="BA NAME"
+                          items={(users || []).map((u: any) => ({
+                            value: u.id,
+                            label: u.name
+                          }))}
+                          value={form.baName}
+                          onSelect={(item: any) =>
+                            setForm((p: any) => ({
+                              ...p,
+                              baName: item?.value || ""
+                            }))
+                          }
+                        />
                         </div>
                       </div>
 
                       {/* ROW 4 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                          <Select
-                            label="Agency Name"
-                            required
-                            value={form.agencyName}
-                            error={errors.agencyName}
-                            options={[{ id: "Agency 1", name: "Agency 1" }]}
-                            onChange={(v: any) => setForm((p: any) => ({ ...p, agencyName: v }))}
-                          />
+                        <SearchableComboBox
+                          label="Agency Name"
+                          required
+                          error={errors.agencyName}
+                          items={(agencies || []).map((a: any) => ({
+                            value: a.id,
+                            label: a.agencyName
+                          }))}
+                          value={form.agencyName}
+                          onSelect={(item: any) =>
+                            setForm((p: any) => ({
+                              ...p,
+                              agencyName: item?.value || ""
+                            }))
+                          }
+                        />
                         </div>
                         <div className="md:col-span-4">
                           <SearchableComboBox

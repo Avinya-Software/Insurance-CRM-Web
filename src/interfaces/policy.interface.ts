@@ -104,3 +104,20 @@ export interface InsuranceTypeResponse {
   statusMessage: string;
   data: InsuranceTypeDto[];
 }
+
+
+export interface CustomerDropdown {
+  customerId: string;
+  clientName: string;
+  groupHeadName: string | null;
+}
+
+export interface AgencyDropdown {
+  id: string;
+  agencyName: string;
+}
+
+export interface UserDropdown {
+  id: string;
+  name: string;
+}
