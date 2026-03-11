@@ -583,29 +583,29 @@ const { data: users } = useUserDropdown();
                       {/* ROW 1 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-2">
-                          <Select
+                        <Select
                             label="Policy Status"
                             value={form.policyStatusId}
                             options={policyStatuses}
                             valueKey="policyStatusId"
                             labelKey="statusName"
                             onChange={(v: any) =>
-                              setForm((p: any) => ({ ...p, policyStatusId: v }))
+                              setForm((p: any) => ({ ...p, policyStatusId: Number(v) }))
                             }
                           />
                         </div>
 
                         <div className="md:col-span-2">
                         <Select
-                          label="Status"
-                          value={form.policyTypeId}
-                          options={statusTypes}
-                          valueKey="statusId"
-                          labelKey="statusName"
-                          onChange={(v: any) =>
-                            setForm((p: any) => ({ ...p, policyTypeId: v }))
-                          }
-                        />
+                            label="Status"
+                            value={form.policyTypeId}
+                            options={statusTypes}
+                            valueKey="statusId"
+                            labelKey="statusName"
+                            onChange={(v: any) =>
+                              setForm((p: any) => ({ ...p, policyTypeId: Number(v) }))
+                            }
+                          />
                         </div>
                         <div className="md:col-span-4">
                         <SearchableComboBox
