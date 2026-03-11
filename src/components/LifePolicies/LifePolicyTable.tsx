@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { MoreVertical, X, RefreshCcw, Check } from "lucide-react";
-import type { Policy } from "../../interfaces/policy.interface";
+import type { LifePolicy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
 import { useUpdatePolicyStatus } from "../../hooks/policy/useUpdatePolicyStatus";
@@ -29,22 +29,22 @@ const DROPDOWN_HEIGHT = 260;
 const DROPDOWN_WIDTH = 220;
 
 interface Props {
-  data: Policy[];
+  data: LifePolicy[];
   loading?: boolean;
-  onEdit: (policy: Policy) => void;
-  onRenewal: (policy: Policy) => void;
+  onEdit: (policy: LifePolicy) => void;
+  onRenewal: (policy: LifePolicy) => void;
 }
 
 /*   COMPONENT   */
 
-const PolicyTable = ({
+const LifePolicyTable = ({
   data = [],
   loading = false,
   onEdit,
   onRenewal,
 }: Props) => {
-  const [openPolicy, setOpenPolicy] = useState<Policy | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<Policy | null>(null);
+  const [openPolicy, setOpenPolicy] = useState<LifePolicy | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<LifePolicy | null>(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
@@ -68,8 +68,8 @@ const { data: statuses = [] } = useQuery({
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
-    policy: Policy
-  ) => {
+    policy: LifePolicy
+    ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
@@ -126,55 +126,42 @@ const { data: statuses = [] } = useQuery({
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
-          <tr>
-            <Th>Policy Number</Th>
-            <Th>Customer</Th>
-            <Th>Policy Type</Th>
-            <Th>Insurer</Th>
-            <Th>Product</Th>
-            <Th>Policy Status</Th>
-            <Th>Start</Th>
-            <Th>End</Th>
-            <Th>Net Premium</Th>
-            <Th>Gross Premium</Th>
-            <Th>Created Date</Th>
-            <Th className="text-center">Actions</Th>
-          </tr>
+        <tr>
+        <Th>Policy Number</Th>
+        <Th>Customer Name</Th>
+        <Th>Policy Status</Th>
+        <Th>Status</Th>
+        <Th>Premium Mode</Th>
+        <Th>Policy Term</Th>
+        <Th>Policy Start Date</Th>
+        <Th>Next Premium Due</Th>
+        <Th>Sum Assured</Th>
+        <Th>Net Premium</Th>
+        <Th>Gross Premium</Th>
+        <Th>Created Date</Th>
+        <Th className="text-center">Actions</Th>
+      </tr>
         </thead>
 
         {loading ? (
-          <TableSkeleton rows={6} columns={12} />
+          <TableSkeleton rows={6} columns={13} />
         ) : (
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={11} className="text-center py-12 text-slate-500">
+                <td colSpan={13} className="text-center py-12 text-slate-500">
                   No policies found
                 </td>
               </tr>
             ) : (
-              data.map((p) => (
-                <tr
-                  key={p.policyId}
-                  className="border-t h-[52px] hover:bg-slate-50"
-                >
+              data.map((p: any) => (
+                <tr key={p.policyId} className="border-t h-[52px] hover:bg-slate-50">
                   <Td>{p.policyNumber}</Td>
-                  <Td>{p.customerName}</Td>
 
-                  <Td>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyTypeStyles[p.policyTypeName] ??
-                        "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      {p.policyTypeName}
-                    </span>
-                  </Td>
+                  {/* Customer Name */}
+                  <Td>{p.proposerName}</Td>
 
-                  <Td>{p.insurerName}</Td>
-                  <Td>{p.productName}</Td>
-
+                  {/* Policy Status */}
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -186,11 +173,33 @@ const { data: statuses = [] } = useQuery({
                     </span>
                   </Td>
 
-                  <Td>{p.startDate?.split("T")[0]}</Td>
-                  <Td>{p.endDate?.split("T")[0]}</Td>
-                  <Td>{p.premiumNet}</Td>
-                  <Td>{p.premiumGross}</Td>
+                  {/* Status */}
+                  <Td>{p.statusName}</Td>
+
+                  {/* Premium Mode */}
+                  <Td>{p.premiumMode}</Td>
+
+                  {/* Policy Term */}
+                  <Td>{p.policyTerm}</Td>
+
+                  {/* Policy Start Date */}
+                  <Td>{p.policyStartDate?.split("T")[0]}</Td>
+
+                  {/* Next Premium Due */}
+                  <Td>{p.nextPremiumDueDate?.split("T")[0]}</Td>
+
+                  {/* Sum Assured */}
+                  <Td>{p.sumAssured}</Td>
+
+                  {/* Net Premium */}
+                  <Td>{p.premiumDetails?.basicPremium}</Td>
+
+                  {/* Gross Premium */}
+                  <Td>{p.premiumDetails?.annualPremium}</Td>
+
+                  {/* Created Date */}
                   <Td>{new Date(p.createdAt).toLocaleDateString()}</Td>
+
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, p)}
@@ -307,7 +316,7 @@ const { data: statuses = [] } = useQuery({
   );
 };
 
-export default PolicyTable;
+export default LifePolicyTable;
 
 /*   HELPERS   */
 

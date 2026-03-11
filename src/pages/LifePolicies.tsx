@@ -2,12 +2,12 @@ import { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { Filter, X } from "lucide-react";
 
-import { usePolicies } from "../hooks/policy/usePolicies";
 import RenewalUpsertSheet from "../components/renewal/RenewalUpsertSheet";
 import PolicyFilterSheet from "../components/policy/PolicyFilterSheet";
 import Pagination from "../components/leads/Pagination";
 import LifePolicyUpsertSheet from "../components/LifePolicies/LifePolicyUpsertSheet";
 import LifePolicyTable from "../components/LifePolicies/LifePolicyTable";
+import { useLifePolicies } from "../hooks/LifePolicy/useLifePolicies";
 
 const DEFAULT_FILTERS = {
   pageNumber: 1,
@@ -34,8 +34,11 @@ const LifePolicies = () => {
 
   const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
-  const { data, isLoading, isFetching } = usePolicies(filters);
-
+  const { data, isLoading, isFetching } = useLifePolicies(
+    filters.pageNumber,
+    filters.pageSize,
+    filters.search
+  );
   /*   HELPERS   */
 
   const hasActiveFilters =

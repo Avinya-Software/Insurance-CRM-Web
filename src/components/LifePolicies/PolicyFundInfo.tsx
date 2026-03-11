@@ -30,9 +30,27 @@ interface FundItem {
 interface Props {
   form: any;
   setForm: React.Dispatch<React.SetStateAction<any>>;
+
+  cashflows: any[]
+  setCashflows: React.Dispatch<React.SetStateAction<any[]>>
+
+  funds: any[]
+  setFunds: React.Dispatch<React.SetStateAction<any[]>>
+
+  riders: any[]
+  setRiders: React.Dispatch<React.SetStateAction<any[]>>
 }
 
-export default function PolicyFundInfo({ form, setForm }: Props) {
+export default function PolicyFundInfo({
+  form,
+  setForm,
+  cashflows,
+  setCashflows,
+  funds,
+  setFunds,
+  riders,
+  setRiders,
+}: Props) {
   // UI State
   const [activeSection, setActiveSection] = useState<'cashflow' | 'riders' | 'funds' | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
