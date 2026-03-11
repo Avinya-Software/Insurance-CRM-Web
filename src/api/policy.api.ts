@@ -1,5 +1,5 @@
 import { CustomerDropdown } from "../interfaces/customer.interface";
-import type { AgencyDropdown, InsuranceTypeResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertPolicyPayload, UserDropdown } from "../interfaces/policy.interface";
+import type { AgencyDropdown, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertPolicyPayload, UserDropdown } from "../interfaces/policy.interface";
 import api from "./axios";
 
 /*   UPSERT POLICY   */
@@ -176,3 +176,13 @@ export const getUserDropdownApi = async (): Promise<UserDropdown[]> => {
   const res = await api.get("/UserMaster/User-dropdown");
   return res.data?.data || [];
 }
+
+export const getLifePoliciesApi = async (params: {
+  pageNumber?: number;
+  pageSize?: number;
+  search?: string;
+}) => {
+  const res = await api.get("/policy/life-policy", { params });
+
+  return res.data;
+};

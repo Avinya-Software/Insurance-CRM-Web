@@ -3,17 +3,15 @@ import { X, Eye, Download, Trash2, Plus, FileText, ShieldCheck, CreditCard, Uplo
 import toast, { Toaster } from "react-hot-toast";
 import Spinner from "../common/Spinner";
 import SearchableComboBox from "../common/SearchableComboBox";
-import PolicyFundInfo from "./PolicyFundInfo";
 import { useInsuranceTypes } from "../../hooks/policy/useInsuranceTypes";
 import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
-import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdown";
 import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { useAgencyDropdown } from "../../hooks/LifePolicy/useAgencyDropdown";
 import { useUserDropdown } from "../../hooks/LifePolicy/useUserDropdown";
+import PolicyFundInfo from "./PolicyFundInfo";
 
-// --- MOCK HOOKS (Replace with real ones in production) ---
 const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
 
 const usePolicyDocumentActions = (cb: any) => ({ 
@@ -42,7 +40,9 @@ const PolicyUpsertSheet = ({
   onSuccess,
 }: Props) => {
   const [activeTab, setActiveTab] = useState<TabType>("general");
-
+  const [cashflows, setCashflows] = useState<any[]>([])
+  const [funds, setFunds] = useState<any[]>([])
+  const [riders, setRiders] = useState<any[]>([])
   /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
@@ -191,41 +191,134 @@ const { data: users } = useUserDropdown();
 
   /*   PREFILL   */
   useEffect(() => {
-    if (!open) {
-      setForm(initialForm);
-      setExistingDocuments([]);
-      setFiles([]);
-      setErrors({});
-      setActiveTab("general");
-      return;
-    }
-
-    if (policy) {
-      setForm({
-        ...initialForm,
-        ...policy,
-        policyId: policy.policyId ?? null,
-        startDate: policy.startDate ? policy.startDate.split("T")[0] : "",
-        endDate: policy.endDate ? policy.endDate.split("T")[0] : "",
-        loginDate: policy.loginDate ? policy.loginDate.split("T")[0] : "",
-        paymentDate: policy.paymentDate ? policy.paymentDate.split("T")[0] : "",
-      });
-
-      const docs = policy.policyDocuments || [];
-      const mappedDocs = docs.map((d: any) => ({
-        fileName: d.fileName,
-        savedFileName: d.url.split("/").pop() || "",
-        type: d.type || "Policy"
-      }));
-      setExistingDocuments(mappedDocs);
-      setFiles([]);
-    } else {
-      setForm({ ...initialForm, customerId: customerId || "" });
-      setExistingDocuments([]);
-      setFiles([]);
-    }
+  if (!open) {
+    setForm(initialForm);
+    setExistingDocuments([]);
+    setFiles([]);
     setErrors({});
-  }, [open, policy, customerId]);
+    setActiveTab("general");
+    return;
+  }
+
+  if (policy) {
+    setForm({
+      ...initialForm,
+
+      policyId: policy.policyId,
+      customerId: policy.customerId,
+
+      policyStatusId: policy.policyStatusId?.toString(),
+      policyTypeId: policy.statusId?.toString(),
+      insuredName: policy.proposerName || "",
+      dobOfLa: policy.dob?.split("T")[0] || "",
+      age: policy.age || "",
+
+      proposerName: policy.proposerName || "",
+      nomineeName: policy.nomineeName || "",
+      nomineeType: policy.nomineeType || "",
+      relationWithLa: policy.relationWithLA || "",
+
+      policyNumber: policy.policyNumber || "",
+
+      baName: policy.baName || "",
+      agencyName: policy.agencyName || "",
+      insurerId: policy.companyName || "",
+      productId: policy.productName || "",
+
+      premiumMode: policy.premiumMode || "",
+      policyTerm: policy.policyTerm || "",
+      ppt: policy.ppt || "",
+
+      startDate: policy.policyStartDate?.split("T")[0] || "",
+      completionDate: policy.completionDate?.split("T")[0] || "",
+      nextPremiumDueDate: policy.nextPremiumDueDate?.split("T")[0] || "",
+      graceDate: policy.graceDate?.split("T")[0] || "",
+      maturityDate: policy.maturityDate?.split("T")[0] || "",
+
+      objective: policy.objectiveOfInsurance || "",
+
+      sumAssured: policy.sumAssured || "",
+
+      /* PREMIUM DETAILS */
+
+      installmentPremium: policy.premiumDetails?.installmentPremium || 0,
+      premiumIncludingGst: policy.premiumDetails?.premiumIncludingGST || false,
+      basicPremium: policy.premiumDetails?.basicPremium || 0,
+      gstPerc: policy.premiumDetails?.gstPercentage || 0,
+      gstAmount: policy.premiumDetails?.gstAmount || 0,
+      finalInstallmentPremium:
+        policy.premiumDetails?.finalInstallmentPremium || 0,
+      annualPremium: policy.premiumDetails?.annualPremium || 0,
+
+      /* PAYMENT DETAILS */
+
+      ecs: policy.paymentDetails?.ecs || "",
+      paymentBy: policy.paymentDetails?.paymentBy || "",
+      payReferenceNo: policy.paymentDetails?.paymentRefNo || "",
+      paymentDate: policy.paymentDetails?.paymentDate?.split("T")[0] || "",
+      mandateExpDate:
+        policy.paymentDetails?.mandateExpDate?.split("T")[0] || "",
+      accountNo: policy.paymentDetails?.accountNo || "",
+      bankName: policy.paymentDetails?.bankName || "",
+      branchName: policy.paymentDetails?.branchName || "",
+      remarks: policy.paymentDetails?.remarks || "",
+    });
+
+    setCashflows(
+      (policy.cashflowDetails || []).map((c:any)=>({
+        id: c.id,
+        maturityDate: c.maturityDate?.split("T")[0],
+        noOfYears: c.noOfYears,
+        amountPerYear: c.amountPerYear,
+        description: c.description
+      }))
+    )
+    
+    setFunds(
+      (policy.fundDetails || []).map((f:any)=>({
+        id: f.id,
+        fmcName: f.fmcName,
+        fmcPercentage: f.fmcPercentage,
+        fundDate: f.fundDate?.split("T")[0],
+        unitBalance: f.unitBalance
+      }))
+    )
+    
+    setRiders(
+      (policy.riderDetails || []).map((r:any)=>({
+        id: r.id,
+        riderName: r.riderName,
+        commDate: r.commDate?.split("T")[0],
+        sumAssured: r.sumAssured,
+        term: r.term,
+        ppt: r.ppt,
+        yearlyPremium: r.yearlyPremium
+      }))
+    )
+
+    /* DOCUMENTS PREFILL */
+
+    const docs = policy.documents || [];
+
+    const mappedDocs = docs.map((d: any) => ({
+      fileName: d.fileName,
+      savedFileName: d.url.split("/").pop(),
+      type: "Policy",
+    }));
+
+    setExistingDocuments(mappedDocs);
+  } else {
+    setForm({
+      ...initialForm,
+      customerId: customerId || "",
+    });
+
+    setExistingDocuments([]);
+    setFiles([]);
+  }
+
+  setErrors({});
+}, [open, policy, customerId]);
 
   /*   VALIDATION   */
   const validate = () => {
@@ -503,16 +596,16 @@ const { data: users } = useUserDropdown();
                         </div>
 
                         <div className="md:col-span-2">
-                          <Select
-                            label="Status"
-                            value={form.policyTypeId}
-                            options={statusTypes}
-                            valueKey="policyStatusId"
-                            labelKey="statusName"
-                            onChange={(v: any) =>
-                              setForm((p: any) => ({ ...p, policyTypeId: v }))
-                            }
-                          />
+                        <Select
+                          label="Status"
+                          value={form.policyTypeId}
+                          options={statusTypes}
+                          valueKey="statusId"
+                          labelKey="statusName"
+                          onChange={(v: any) =>
+                            setForm((p: any) => ({ ...p, policyTypeId: v }))
+                          }
+                        />
                         </div>
                         <div className="md:col-span-4">
                         <SearchableComboBox
@@ -989,7 +1082,16 @@ const { data: users } = useUserDropdown();
               )}
 
               {activeTab === "related" && (
-                  <PolicyFundInfo form={form} setForm={setForm} />
+                  <PolicyFundInfo 
+                  form={form}
+                  setForm={setForm}
+                  cashflows={cashflows}
+                  setCashflows={setCashflows}
+                  funds={funds}
+                  setFunds={setFunds}
+                  riders={riders}
+                  setRiders={setRiders}
+                />
               )}
 
               {activeTab === "documents" && (
