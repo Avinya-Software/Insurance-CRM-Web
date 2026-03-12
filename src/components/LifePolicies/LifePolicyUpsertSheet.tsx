@@ -13,14 +13,7 @@ import { useUserDropdown } from "../../hooks/LifePolicy/useUserDropdown";
 import PolicyFundInfo from "./PolicyFundInfo";
 import { useUpsertLifePolicy } from "../../hooks/LifePolicy/useUpsertLifePolicy";
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
-
-
-const usePolicyDocumentActions = (cb: any) => ({ 
-  preview: (p: any, f: any) => toast.success("Previewing " + f), 
-  download: (p: any, f: any, n: any) => toast.success("Downloading " + n), 
-  remove: async (p: any, f: any) => { toast.success("Removed " + f); cb(f); } 
-});
-
+import { usePolicyDocumentActions } from "../../hooks/LifePolicy/usePolicyDocumentActions";
 
 
 interface Props {
@@ -55,13 +48,13 @@ const PolicyUpsertSheet = ({
 
   /*   POLICY DOCUMENT ACTIONS   */
   const [existingDocuments, setExistingDocuments] = useState<
-    { fileName: string; savedFileName: string; type: string;documentType: string }[]
+    {fileName: string; url: string; id: string; type: string}[]
   >([]);
 
   const { preview, download, remove } = usePolicyDocumentActions(
     (deletedId: string) => {
       setExistingDocuments((prev) =>
-        prev.filter((f) => f.savedFileName !== deletedId)
+        prev.filter((f) => f.id !== deletedId)
       );
     }
   );
@@ -207,7 +200,6 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
   
         policyId: policy.policyId,
         customerId: policy.customerId,
-  
         policyStatusId: policy.policyStatusId,
         policyTypeId: policy.statusId,
         insuredName: policy.customerName || "",
@@ -302,9 +294,10 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
       const docs = policy.documents || [];
   
       const mappedDocs = docs.map((d: any) => ({
+        id: d.id,          
         fileName: d.fileName,
-        savedFileName: d.url.split("/").pop(),
-        type: "Policy",
+        url: d.url,        
+        type: d.documentType || "Policy",
       }));
   
       setExistingDocuments(mappedDocs);
@@ -1316,49 +1309,51 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
 
                     {/* EXISTING DOCUMENTS */}
                     {existingDocuments.length > 0 && (
-                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
-                          <ShieldCheck size={18} className="text-emerald-600" /> Existing Documents
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {existingDocuments.map((file) => (
-                            <div key={file.savedFileName} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
-                                  <FileText size={16} />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
-                                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.documentType}</p>
-                                </div>
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                      <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
+                        <ShieldCheck size={18} className="text-emerald-600" /> Existing Documents
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {existingDocuments.map((file) => (
+                          <div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
+                                <FileText size={16} />
                               </div>
-                              <div className="flex gap-1">
-                                <button onClick={() => preview(policy.policyId, file.savedFileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                                  <Eye size={16} />
-                                </button>
-                                <button onClick={() => download(policy.policyId, file.savedFileName, file.fileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                                  <Download size={16} />
-                                </button>
-                                <button 
-                                  onClick={async () => {
-                                    if (!confirm("Delete this document?")) return;
-                                    try {
-                                      await remove(policy.policyId, file.savedFileName);
-                                      setExistingDocuments(prev => prev.filter(f => f.savedFileName !== file.savedFileName));
-                                    } catch {
-                                      toast.error("Failed to delete document");
-                                    }
-                                  }}
-                                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.type}</p>
                               </div>
                             </div>
-                          ))}
-                        </div>
+                            <div className="flex gap-1">
+                              <button onClick={() => preview(file.url)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                <Eye size={16} />
+                              </button>
+                              <button onClick={() => download(file.url, file.fileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                <Download size={16} />
+                              </button>
+                              <button 
+                                onClick={async () => {
+                                  if (!confirm("Delete this document?")) return;
+                                  try {
+                                    await remove(policy.policyId, file.id);
+                                    setExistingDocuments(prev =>
+                                      prev.filter(f => f.id !== file.id)
+                                    );
+                                    } catch {
+                                    toast.error("Failed to delete document");
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  )}
                   </div>
                 </div>
               )}
