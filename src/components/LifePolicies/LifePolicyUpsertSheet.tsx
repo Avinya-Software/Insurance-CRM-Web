@@ -316,6 +316,8 @@ const { data: users } = useUserDropdown();
     setErrors({});
   }, [open, policy, customerId]);
 
+
+
   /*   VALIDATION   */
   const validate = () => {
     const e: Record<string, string> = {};
@@ -466,111 +468,135 @@ const { data: users } = useUserDropdown();
   
   }, [form.policyTerm, form.premiumMode]);
 
+  const mapCashflows = (cashflows: any[]) => {
+    return (cashflows || []).map((c) => {
+      const obj: any = {
+        maturityDate: toIso(c.maturityDate),
+        noOfYears: Number(c.noOfYears) || 0,
+        amountPerYear: Number(c.amount) || 0,
+        description: c.description || "",
+      };
+  
+      if (c.id) obj.id = c.id; // only for existing record
+  
+      return obj;
+    });
+  };
+  
+  const mapRiders = (riders: any[]) => {
+    return (riders || []).map((r) => {
+      const obj: any = {
+        riderName: r.name || "",
+        commDate: toIso(r.commDate),
+        sumAssured: Number(r.sa) || 0,
+        term: Number(r.term) || 0,
+        ppt: Number(r.ppt) || 0,
+        yearlyPremium: Number(r.yearlyPrem) || 0,
+      };
+  
+      if (r.id) obj.id = r.id;
+  
+      return obj;
+    });
+  };
+  
+  const mapFunds = (funds: any[]) => {
+    return (funds || []).map((f) => {
+      const obj: any = {
+        fmcName: f.fmcName || "",
+        fmcPercentage: Number(f.fmcPercentage) || 0,
+        fundDate: toIso(f.fundDate),
+        unitBalance: Number(f.unitBalance) || 0,
+      };
+  
+      if (f.id) obj.id = f.id;
+  
+      return obj;
+    });
+  };
 
   /*   SAVE  */
   const toIso = (date?: string) =>
     date ? new Date(date).toISOString() : undefined;
   
   const handleSave = async () => {
-    if (!validate()) return;
-  
-    try {
-  
-      const payload = {
-        policyId: form.policyId || undefined,   // required for update
-  
-        customerId: form.customerId,
-        policyStatusId: Number(form.policyStatusId) || 0,
-        statusId: Number(form.policyTypeId) || 0,
-  
-        dob: toIso(form.dobOfLa),
-        age: Number(form.age) || 0,
-  
-        proposerName: form.proposerName || "",
-        nomineeName: form.nomineeName || "",
-        nomineeType: form.nomineeType || "",
-        relationWithLA: form.relationWithLa || "",
-  
-        policyNumber: form.policyNumber,
-  
-        baId: form.baName || null,
-        agencyId: form.agencyName || null,
-        companyId: form.insurerId || null,
-        productId: Number(form.productId) || 0,
-  
-        premiumMode: form.premiumMode || "",
-        policyTerm: Number(form.policyTerm) || 0,
-        ppt: Number(form.ppt) || 0,
-  
-        policyStartDate: toIso(form.startDate),
-        completionDate: toIso(form.completionDate),
-        nextPremiumDueDate: toIso(form.nextPremiumDueDate),
-        graceDate: toIso(form.graceDate),
-        maturityDate: toIso(form.maturityDate),
-  
-        objectiveOfInsurance: form.objective || "",
-        sumAssured: Number(form.sumAssured) || 0,
-  
-        premium: {
-          installmentPremium: Number(form.installmentPremium) || 0,
-          premiumIncludingGST: form.premiumIncludingGst,
-          basicPremium: Number(form.basicPremium) || 0,
-          gstPercentage: Number(form.gstPerc) || 0,
-          gstAmount: Number(form.gstAmount) || 0,
-          finalInstallmentPremium: Number(form.finalInstallmentPremium) || 0,
-          annualPremium: Number(form.annualPremium) || 0
-        },
-  
-        payment: {
-          ecs: form.ecs || "",
-          paymentBy: form.paymentBy || "",
-          paymentRefNo: form.payReferenceNo || "",
-          paymentDate: toIso(form.paymentDate),
-          mandateExpDate: toIso(form.mandateExpDate),
-          accountNo: form.accountNo || "",
-          bankName: form.bankName || "",
-          branchName: form.branchName || "",
-          remarks: form.remarks || ""
-        },
-  
-        cashflows: (form.cashflows || []).map((c:any) => ({
-          id: c.id || undefined,        // important for update
-          maturityDate: toIso(c.maturityDate),
-          noOfYears: Number(c.noOfYears) || 0,
-          amountPerYear: Number(c.amount) || 0,
-          description: c.description || ""
-        })),
-  
-        riders: (form.riders || []).map((r:any) => ({
-          id: r.id || undefined,        // important for update
-          riderName: r.name || "",
-          commDate: toIso(r.commDate),
-          sumAssured: Number(r.sa) || 0,
-          term: Number(r.term) || 0,
-          ppt: Number(r.ppt) || 0,
-          yearlyPremium: Number(r.yearlyPrem) || 0
-        })),
-  
-        funds: (form.funds || []).map((f:any) => ({
-          id: f.id || undefined,        // important for update
-          fmcName: f.fmcName || "",
-          fmcPercentage: Number(f.fmcPercentage) || 0,
-          fundDate: toIso(f.fundDate),
-          unitBalance: Number(f.unitBalance) || 0
-        }))
-      };
-  
-      const response = await mutateAsync(payload);
+  if (!validate()) return;
 
-      toast.success(response?.statusMessage || "Policy saved successfully");
+  try {
+    const payload = {
+      policyId: form.policyId || undefined,
 
-      onClose();
-      onSuccess();
-  
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Something went wrong");
-    }
-  };
+      customerId: form.customerId,
+      policyStatusId: Number(form.policyStatusId) || 0,
+      statusId: Number(form.policyTypeId) || 0,
+
+      dob: toIso(form.dobOfLa),
+      age: Number(form.age) || 0,
+
+      proposerName: form.proposerName || "",
+      nomineeName: form.nomineeName || "",
+      nomineeType: form.nomineeType || "",
+      relationWithLA: form.relationWithLa || "",
+
+      policyNumber: form.policyNumber,
+
+      baId: form.baName || null,
+      agencyId: form.agencyName || null,
+      companyId: form.insurerId || null,
+      productId: Number(form.productId) || 0,
+
+      premiumMode: form.premiumMode || "",
+      policyTerm: Number(form.policyTerm) || 0,
+      ppt: Number(form.ppt) || 0,
+
+      policyStartDate: toIso(form.startDate),
+      completionDate: toIso(form.completionDate),
+      nextPremiumDueDate: toIso(form.nextPremiumDueDate),
+      graceDate: toIso(form.graceDate),
+      maturityDate: toIso(form.maturityDate),
+
+      objectiveOfInsurance: form.objective || "",
+      sumAssured: Number(form.sumAssured) || 0,
+
+      premium: {
+        installmentPremium: Number(form.installmentPremium) || 0,
+        premiumIncludingGST: form.premiumIncludingGst,
+        basicPremium: Number(form.basicPremium) || 0,
+        gstPercentage: Number(form.gstPerc) || 0,
+        gstAmount: Number(form.gstAmount) || 0,
+        finalInstallmentPremium: Number(form.finalInstallmentPremium) || 0,
+        annualPremium: Number(form.annualPremium) || 0,
+      },
+
+      payment: {
+        ecs: form.ecs || "",
+        paymentBy: form.paymentBy || "",
+        paymentRefNo: form.payReferenceNo || "",
+        paymentDate: toIso(form.paymentDate),
+        mandateExpDate: toIso(form.mandateExpDate),
+        accountNo: form.accountNo || "",
+        bankName: form.bankName || "",
+        branchName: form.branchName || "",
+        remarks: form.remarks || "",
+      },
+
+      /* CASHFLOWS */
+
+      cashflows: mapCashflows(form.cashflows),
+      riders: mapRiders(form.riders),
+      funds: mapFunds(form.funds),
+    };
+
+    const response = await mutateAsync(payload);
+
+    toast.success(response?.statusMessage || "Policy saved successfully");
+
+    onClose();
+    onSuccess();
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || "Something went wrong");
+  }
+};
 
   if (!open) return null;
 

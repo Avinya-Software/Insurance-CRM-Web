@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight, Save, X, Check, AlertCircle } from 'lucide-react';
 
 interface CashflowItem {
-  id: string;
+  id?: string;
   maturityDate: string;
   amount: string;
   description: string;
@@ -10,7 +10,7 @@ interface CashflowItem {
 }
 
 interface RiderItem {
-  id: string;
+  id?: string;
   name: string;
   commDate: string;
   sa: string;
@@ -20,7 +20,7 @@ interface RiderItem {
 }
 
 interface FundItem {
-  id: string;
+  id?: string;
   fmcName: string;
   fmcPercentage: string;
   fundDate: string;
@@ -47,49 +47,91 @@ export default function PolicyFundInfo({
   // CRUD Handlers
   const handleSaveCashflow = () => {
     if (!cashflowInput.maturityDate || !cashflowInput.amount) return;
+  
     setForm((prev: any) => {
       const list = [...(prev.cashflows || [])];
-            if (editingId) {
-        const index = list.findIndex(item => item.id === editingId);
-        if (index !== -1) list[index] = { ...cashflowInput, id: editingId };
+  
+      if (editingId) {
+        const index = list.findIndex((item) => item.id === editingId);
+  
+        if (index !== -1) {
+          list[index] = {
+            ...cashflowInput,
+            id: editingId
+          };
+        }
       } else {
-        list.push({ ...cashflowInput, id: Math.random().toString(36).substr(2, 9) });
+        list.push({
+          ...cashflowInput
+        });
       }
+  
       return {
         ...prev,
         cashflows: list
       };
     });
+  
     resetForm();
   };
 
   const handleSaveRider = () => {
     if (!riderInput.name || !riderInput.sa) return;
+  
     setForm((prev: any) => {
       const list = [...(prev.riders || [])];
+  
       if (editingId) {
-        const index = list.findIndex(item => item.id === editingId);
-        if (index !== -1) list[index] = { ...riderInput, id: editingId };
+        const index = list.findIndex((item) => item.id === editingId);
+  
+        if (index !== -1) {
+          list[index] = {
+            ...riderInput,
+            id: editingId
+          };
+        }
       } else {
-        list.push({ ...riderInput, id: Math.random().toString(36).substr(2, 9) });
+        list.push({
+          ...riderInput
+        });
       }
-      return { ...prev, riders: list };
+  
+      return {
+        ...prev,
+        riders: list
+      };
     });
+  
     resetForm();
   };
 
   const handleSaveFund = () => {
     if (!fundInput.fmcName || !fundInput.unitBalance) return;
+  
     setForm((prev: any) => {
       const list = [...(prev.funds || [])];
+  
       if (editingId) {
-        const index = list.findIndex(item => item.id === editingId);
-        if (index !== -1) list[index] = { ...fundInput, id: editingId };
+        const index = list.findIndex((item) => item.id === editingId);
+  
+        if (index !== -1) {
+          list[index] = {
+            ...fundInput,
+            id: editingId
+          };
+        }
       } else {
-        list.push({ ...fundInput, id: Math.random().toString(36).substr(2, 9) });
+        list.push({
+          ...fundInput
+        });
       }
-      return { ...prev, funds: list };
+  
+      return {
+        ...prev,
+        funds: list
+      };
     });
+  
     resetForm();
   };
 
