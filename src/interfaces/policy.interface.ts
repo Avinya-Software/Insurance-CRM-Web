@@ -229,3 +229,95 @@ export interface LifePolicyPagedResponse {
   pageSize: number
   totalPages: number
 }
+
+
+export interface PremiumDetails {
+  installmentPremium: number;
+  premiumIncludingGST: boolean;
+  basicPremium: number;
+  gstPercentage: number;
+  gstAmount: number;
+  finalInstallmentPremium: number;
+  annualPremium: number;
+}
+
+export interface PaymentDetails {
+  ecs: string;
+  paymentBy: string;
+  paymentRefNo: string;
+  paymentDate?: string;
+  mandateExpDate?: string;
+  accountNo: string;
+  bankName: string;
+  branchName: string;
+  remarks: string;
+}
+
+export interface Cashflow {
+  id?: string;
+  maturityDate?: string;
+  noOfYears: number;
+  amountPerYear: number;
+  description: string;
+}
+
+export interface Rider {
+  id?: string;
+  riderName: string;
+  commDate?: string;
+  sumAssured: number;
+  term: number;
+  ppt: number;
+  yearlyPremium: number;
+}
+
+export interface Fund {
+  id?: string;
+  fmcName: string;
+  fmcPercentage: number;
+  fundDate?: string;
+  unitBalance: number;
+}
+
+export interface UpsertLifePolicyPayload {
+  policyId?: string;
+
+  customerId: string;
+  policyStatusId?: number;
+  statusId?: number;
+
+  dob?: string;
+  age?: number;
+
+  proposerName?: string;
+  nomineeName?: string;
+  nomineeType?: string;
+  relationWithLA?: string;
+
+  policyNumber: string;
+
+  baId?: string;
+  agencyId?: string;
+  companyId?: string;
+  productId?: number;
+
+  premiumMode?: string;
+  policyTerm?: number;
+  ppt?: number;
+
+  policyStartDate?: string;
+  completionDate?: string;
+  nextPremiumDueDate?: string;
+  graceDate?: string;
+  maturityDate?: string;
+
+  objectiveOfInsurance?: string;
+  sumAssured?: number;
+
+  premium: PremiumDetails;
+  payment: PaymentDetails;
+
+  cashflows: Cashflow[];
+  riders: Rider[];
+  funds: Fund[];
+}

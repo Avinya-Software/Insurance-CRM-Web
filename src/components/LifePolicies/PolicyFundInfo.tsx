@@ -28,32 +28,16 @@ interface FundItem {
 }
 
 interface Props {
-  form: any;
-  setForm: React.Dispatch<React.SetStateAction<any>>;
-
-  cashflows: any[]
-  setCashflows: React.Dispatch<React.SetStateAction<any[]>>
-
-  funds: any[]
-  setFunds: React.Dispatch<React.SetStateAction<any[]>>
-
-  riders: any[]
-  setRiders: React.Dispatch<React.SetStateAction<any[]>>
+  form: any
+  setForm: React.Dispatch<React.SetStateAction<any>>
 }
 
 export default function PolicyFundInfo({
   form,
   setForm,
-  cashflows,
-  setCashflows,
-  funds,
-  setFunds,
-  riders,
-  setRiders,
 }: Props) {
   // UI State
-  const [activeSection, setActiveSection] = useState<'cashflow' | 'riders' | 'funds' | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeSection, setActiveSection] =useState<'cashflows' | 'riders' | 'funds' | null>(null);  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Local state for inputs
   const [cashflowInput, setCashflowInput] = useState({ maturityDate: '', noOfYears: '', amount: '', description: '' });
@@ -64,14 +48,17 @@ export default function PolicyFundInfo({
   const handleSaveCashflow = () => {
     if (!cashflowInput.maturityDate || !cashflowInput.amount) return;
     setForm((prev: any) => {
-      const list = [...(prev.cashflow || [])];
-      if (editingId) {
+      const list = [...(prev.cashflows || [])];
+            if (editingId) {
         const index = list.findIndex(item => item.id === editingId);
         if (index !== -1) list[index] = { ...cashflowInput, id: editingId };
       } else {
         list.push({ ...cashflowInput, id: Math.random().toString(36).substr(2, 9) });
       }
-      return { ...prev, cashflow: list };
+      return {
+        ...prev,
+        cashflows: list
+      };
     });
     resetForm();
   };
@@ -114,17 +101,18 @@ export default function PolicyFundInfo({
     setFundInput({ fmcName: '', fmcPercentage: '', fundDate: '', unitBalance: '' });
   };
 
-  const removeItem = (section: 'cashflow' | 'riders' | 'funds', id: string) => {
+  const removeItem = (section: 'cashflows' | 'riders' | 'funds', id: string) => {
     setForm((prev: any) => ({
       ...prev,
       [section]: prev[section].filter((item: any) => item.id !== id),
     }));
   };
 
-  const startEdit = (section: 'cashflow' | 'riders' | 'funds', item: any) => {
-    setActiveSection(section);
+
+  const startEdit = (section: 'cashflows' | 'riders' | 'funds', item: any) => {
+        setActiveSection(section);
     setEditingId(item.id);
-    if (section === 'cashflow') setCashflowInput(item);
+    if (section === 'cashflows') setCashflowInput(item);
     if (section === 'riders') setRiderInput(item);
     if (section === 'funds') setFundInput(item);
   };
@@ -136,18 +124,18 @@ export default function PolicyFundInfo({
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
         <div className="px-6 py-4 flex justify-between items-center border-b border-slate-100">
           <h3 className="font-bold text-sm text-slate-800 uppercase tracking-widest">Cashflow Details</h3>
-          {activeSection !== 'cashflow' && (
-            <button 
-              onClick={() => setActiveSection('cashflow')}
-              className="flex items-center gap-2 px-4 py-1.5 border border-blue-600 text-blue-600 rounded-md text-xs font-bold hover:bg-blue-50 transition-all"
+          {activeSection !== 'cashflows' && (
+                        <button 
+                        onClick={() => setActiveSection('cashflows')}
+                                      className="flex items-center gap-2 px-4 py-1.5 border border-blue-600 text-blue-600 rounded-md text-xs font-bold hover:bg-blue-50 transition-all"
             >
               <Plus size={14} /> Add Item
             </button>
           )}
         </div>
 
-        {activeSection === 'cashflow' && (
-          <div className="p-6 bg-white border-b border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
+        {activeSection === 'cashflows' && (
+                    <div className="p-6 bg-white border-b border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-1.5">
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Maturity Date</label>
@@ -201,15 +189,15 @@ export default function PolicyFundInfo({
         )}
 
         <div className="divide-y divide-slate-100">
-          {(!form.cashflow || form.cashflow.length === 0) && activeSection !== 'cashflow' ? (
+          {(!form.cashflows || form.cashflows.length === 0) && activeSection !== 'cashflows' ? (
             <div className="py-16 flex flex-col items-center justify-center text-slate-400">
               <AlertCircle size={40} className="opacity-20 mb-3" />
               <p className="text-sm font-medium">No records found</p>
             </div>
           ) : (
-            (form.cashflow || []).map((item: CashflowItem) => (
-              <div key={item.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors group">
-                <div className="grid grid-cols-3 gap-8 flex-1">
+            (form.cashflows || []).map((item: CashflowItem) => (
+                            <div key={item.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors group">
+                <div className="grid grid-cols-4 gap-8 flex-1">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase">Maturity Date</p>
                     <p className="text-sm text-slate-700 font-medium">{item.maturityDate}</p>
@@ -219,15 +207,19 @@ export default function PolicyFundInfo({
                     <p className="text-sm text-slate-700 font-medium">{item.amount}</p>
                   </div>
                   <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">No of year</p>
+                    <p className="text-sm text-slate-700 font-medium">{item.noOfYears}</p>
+                  </div>
+                  <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase">Description</p>
                     <p className="text-sm text-slate-700 font-medium">{item.description}</p>
                   </div>
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => startEdit('cashflow', item)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all">
+                  <button onClick={() => startEdit('cashflows', item)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all">
                     <Edit2 size={14} />
                   </button>
-                  <button onClick={() => removeItem('cashflow', item.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all">
+                  <button onClick={() => removeItem('cashflows', item.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -342,12 +334,25 @@ export default function PolicyFundInfo({
                     <p className="text-sm text-slate-700 font-medium">{item.name}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">SA</p>
-                    <p className="text-sm text-slate-700 font-medium">{item.sa}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">commDate</p>
+                    <p className="text-sm text-slate-700 font-medium">{item.commDate}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase">Comm Date</p>
-                    <p className="text-sm text-slate-700 font-medium">{item.commDate}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">SumAssured</p>
+                    <p className="text-sm text-slate-700 font-medium">{item.sa}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Term</p>
+                    <p className="text-sm text-slate-700 font-medium">{item.term}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">ppt</p>
+                    <p className="text-sm text-slate-700 font-medium">{item.ppt}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Yearly Premium</p>
+                    <p className="text-sm text-slate-700 font-medium">{item.yearlyPrem}</p>
                   </div>
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -445,7 +450,7 @@ export default function PolicyFundInfo({
           ) : (
             (form.funds || []).map((item: FundItem) => (
               <div key={item.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors group">
-                <div className="grid grid-cols-3 gap-8 flex-1">
+                <div className="grid grid-cols-4 gap-8 flex-1">
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase">FMC Name</p>
                     <p className="text-sm text-slate-700 font-medium">{item.fmcName}</p>
@@ -453,6 +458,10 @@ export default function PolicyFundInfo({
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase">Percentage</p>
                     <p className="text-sm text-slate-700 font-medium">{item.fmcPercentage}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Fund Date</p>
+                    <p className="text-sm text-slate-700 font-medium">{item.fundDate}</p>
                   </div>
                   <div>
                     <p className="text-[9px] font-bold text-slate-400 uppercase">Unit Balance</p>

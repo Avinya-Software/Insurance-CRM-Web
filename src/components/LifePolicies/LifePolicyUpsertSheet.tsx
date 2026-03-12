@@ -11,8 +11,8 @@ import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { useAgencyDropdown } from "../../hooks/LifePolicy/useAgencyDropdown";
 import { useUserDropdown } from "../../hooks/LifePolicy/useUserDropdown";
 import PolicyFundInfo from "./PolicyFundInfo";
+import { useUpsertLifePolicy } from "../../hooks/LifePolicy/useUpsertLifePolicy";
 
-const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
 
 const usePolicyDocumentActions = (cb: any) => ({ 
   preview: (p: any, f: any) => toast.success("Previewing " + f), 
@@ -40,9 +40,6 @@ const PolicyUpsertSheet = ({
   onSuccess,
 }: Props) => {
   const [activeTab, setActiveTab] = useState<TabType>("general");
-  const [cashflows, setCashflows] = useState<any[]>([])
-  const [funds, setFunds] = useState<any[]>([])
-  const [riders, setRiders] = useState<any[]>([])
   /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
@@ -74,7 +71,9 @@ const PolicyUpsertSheet = ({
   const initialForm = {
     policyId: null as string | null,
     customerId: "",
-    
+    cashflows: [],
+    riders: [],
+    funds: [],
     // Policy Personal Information
     policyStatusId: undefined as number | undefined,
     policyTypeId: undefined as number | undefined,
@@ -178,8 +177,8 @@ const PolicyUpsertSheet = ({
 
   
   /*   API HOOKS   */
-const { mutateAsync, isPending } = useUpsertPolicy();
-const { data: policyStatuses, isLoading: sLoading } =
+  const { mutateAsync, isPending } = useUpsertLifePolicy();
+  const { data: policyStatuses, isLoading: sLoading } =
   usePolicyStatusesDropdown();
 const { data: statusTypes, isLoading: stLoading } =
   usePolicyStatusesDropdown(1);
@@ -191,134 +190,131 @@ const { data: users } = useUserDropdown();
 
   /*   PREFILL   */
   useEffect(() => {
-  if (!open) {
-    setForm(initialForm);
-    setExistingDocuments([]);
-    setFiles([]);
+    if (!open) {
+      setForm(initialForm);
+      setExistingDocuments([]);
+      setFiles([]);
+      setErrors({});
+      setActiveTab("general");
+      return;
+    }
+  
+    if (policy) {
+      setForm({
+        ...initialForm,
+  
+        policyId: policy.policyId,
+        customerId: policy.customerId,
+  
+        policyStatusId: policy.policyStatusId,
+        policyTypeId: policy.statusId,
+        insuredName: policy.customerName || "",
+        dobOfLa: policy.dob?.split("T")[0] || "",
+        age: policy.age || "",
+  
+        proposerName: policy.proposerName || "",
+        nomineeName: policy.nomineeName || "",
+        nomineeType: policy.nomineeType || "",
+        relationWithLa: policy.relationWithLA || "",
+  
+        policyNumber: policy.policyNumber || "",
+  
+        baName: policy.baId || "",
+        agencyName: policy.agencyId || "",
+        insurerId: policy.companyId || "",
+        productId: policy.productId || "",
+  
+        premiumMode: policy.premiumMode || "",
+        policyTerm: policy.policyTerm || "",
+        ppt: policy.ppt || "",
+  
+        startDate: policy.policyStartDate?.split("T")[0] || "",
+        completionDate: policy.completionDate?.split("T")[0] || "",
+        nextPremiumDueDate: policy.nextPremiumDueDate?.split("T")[0] || "",
+        graceDate: policy.graceDate?.split("T")[0] || "",
+        maturityDate: policy.maturityDate?.split("T")[0] || "",
+  
+        objective: policy.objectiveOfInsurance || "",
+        sumAssured: policy.sumAssured || "",
+  
+        /* PREMIUM DETAILS */
+  
+        installmentPremium: policy.premiumDetails?.installmentPremium || 0,
+        premiumIncludingGst:
+          policy.premiumDetails?.premiumIncludingGST || false,
+        basicPremium: policy.premiumDetails?.basicPremium || 0,
+        gstPerc: policy.premiumDetails?.gstPercentage || 0,
+        gstAmount: policy.premiumDetails?.gstAmount || 0,
+        finalInstallmentPremium:
+          policy.premiumDetails?.finalInstallmentPremium || 0,
+        annualPremium: policy.premiumDetails?.annualPremium || 0,
+  
+        /* PAYMENT DETAILS */
+  
+        ecs: policy.paymentDetails?.ecs || "",
+        paymentBy: policy.paymentDetails?.paymentBy || "",
+        payReferenceNo: policy.paymentDetails?.paymentRefNo || "",
+        paymentDate:
+          policy.paymentDetails?.paymentDate?.split("T")[0] || "",
+        mandateExpDate:
+          policy.paymentDetails?.mandateExpDate?.split("T")[0] || "",
+        accountNo: policy.paymentDetails?.accountNo || "",
+        bankName: policy.paymentDetails?.bankName || "",
+        branchName: policy.paymentDetails?.branchName || "",
+        remarks: policy.paymentDetails?.remarks || "",
+  
+        /* RELATED DETAILS */
+  
+        cashflows: (policy.cashflowDetails || []).map((c: any) => ({
+          id: c.id,
+          maturityDate: c.maturityDate?.split("T")[0],
+          noOfYears: c.noOfYears,
+          amount: c.amountPerYear,
+          description: c.description,
+        })),
+  
+        funds: (policy.fundDetails || []).map((f: any) => ({
+          id: f.id,
+          fmcName: f.fmcName,
+          fmcPercentage: f.fmcPercentage,
+          fundDate: f.fundDate?.split("T")[0],
+          unitBalance: f.unitBalance,
+        })),
+  
+        riders: (policy.riderDetails || []).map((r: any) => ({
+          id: r.id,
+          name: r.riderName,
+          commDate: r.commDate?.split("T")[0],
+          sa: r.sumAssured,
+          term: r.term,
+          ppt: r.ppt,
+          yearlyPrem: r.yearlyPremium,
+        })),
+      });
+  
+      /* DOCUMENTS PREFILL */
+  
+      const docs = policy.documents || [];
+  
+      const mappedDocs = docs.map((d: any) => ({
+        fileName: d.fileName,
+        savedFileName: d.url.split("/").pop(),
+        type: "Policy",
+      }));
+  
+      setExistingDocuments(mappedDocs);
+    } else {
+      setForm({
+        ...initialForm,
+        customerId: customerId || "",
+      });
+  
+      setExistingDocuments([]);
+      setFiles([]);
+    }
+  
     setErrors({});
-    setActiveTab("general");
-    return;
-  }
-
-  if (policy) {
-    setForm({
-      ...initialForm,
-
-      policyId: policy.policyId,
-      customerId: policy.customerId,
-
-      policyStatusId: policy.policyStatusId,
-      policyTypeId: policy.statusId,
-      insuredName: policy.customerName || "",
-      dobOfLa: policy.dob?.split("T")[0] || "",
-      age: policy.age || "",
-
-      proposerName: policy.proposerName || "",
-      nomineeName: policy.nomineeName || "",
-      nomineeType: policy.nomineeType || "",
-      relationWithLa: policy.relationWithLA || "",
-
-      policyNumber: policy.policyNumber || "",
-
-      baName: policy.baId || "",
-      agencyName: policy.agencyId || "",
-      insurerId: policy.companyId || "",
-      productId: policy.productId || "",
-
-      premiumMode: policy.premiumMode || "",
-      policyTerm: policy.policyTerm || "",
-      ppt: policy.ppt || "",
-
-      startDate: policy.policyStartDate?.split("T")[0] || "",
-      completionDate: policy.completionDate?.split("T")[0] || "",
-      nextPremiumDueDate: policy.nextPremiumDueDate?.split("T")[0] || "",
-      graceDate: policy.graceDate?.split("T")[0] || "",
-      maturityDate: policy.maturityDate?.split("T")[0] || "",
-
-      objective: policy.objectiveOfInsurance || "",
-
-      sumAssured: policy.sumAssured || "",
-
-      /* PREMIUM DETAILS */
-
-      installmentPremium: policy.premiumDetails?.installmentPremium || 0,
-      premiumIncludingGst: policy.premiumDetails?.premiumIncludingGST || false,
-      basicPremium: policy.premiumDetails?.basicPremium || 0,
-      gstPerc: policy.premiumDetails?.gstPercentage || 0,
-      gstAmount: policy.premiumDetails?.gstAmount || 0,
-      finalInstallmentPremium:
-        policy.premiumDetails?.finalInstallmentPremium || 0,
-      annualPremium: policy.premiumDetails?.annualPremium || 0,
-
-      /* PAYMENT DETAILS */
-
-      ecs: policy.paymentDetails?.ecs || "",
-      paymentBy: policy.paymentDetails?.paymentBy || "",
-      payReferenceNo: policy.paymentDetails?.paymentRefNo || "",
-      paymentDate: policy.paymentDetails?.paymentDate?.split("T")[0] || "",
-      mandateExpDate:
-        policy.paymentDetails?.mandateExpDate?.split("T")[0] || "",
-      accountNo: policy.paymentDetails?.accountNo || "",
-      bankName: policy.paymentDetails?.bankName || "",
-      branchName: policy.paymentDetails?.branchName || "",
-      remarks: policy.paymentDetails?.remarks || "",
-    });
-
-    setCashflows(
-      (policy.cashflowDetails || []).map((c:any)=>({
-        id: c.id,
-        maturityDate: c.maturityDate?.split("T")[0],
-        noOfYears: c.noOfYears,
-        amountPerYear: c.amountPerYear,
-        description: c.description
-      }))
-    )
-    
-    setFunds(
-      (policy.fundDetails || []).map((f:any)=>({
-        id: f.id,
-        fmcName: f.fmcName,
-        fmcPercentage: f.fmcPercentage,
-        fundDate: f.fundDate?.split("T")[0],
-        unitBalance: f.unitBalance
-      }))
-    )
-    
-    setRiders(
-      (policy.riderDetails || []).map((r:any)=>({
-        id: r.id,
-        riderName: r.riderName,
-        commDate: r.commDate?.split("T")[0],
-        sumAssured: r.sumAssured,
-        term: r.term,
-        ppt: r.ppt,
-        yearlyPremium: r.yearlyPremium
-      }))
-    )
-
-    /* DOCUMENTS PREFILL */
-
-    const docs = policy.documents || [];
-
-    const mappedDocs = docs.map((d: any) => ({
-      fileName: d.fileName,
-      savedFileName: d.url.split("/").pop(),
-      type: "Policy",
-    }));
-
-    setExistingDocuments(mappedDocs);
-  } else {
-    setForm({
-      ...initialForm,
-      customerId: customerId || "",
-    });
-
-    setExistingDocuments([]);
-    setFiles([]);
-  }
-
-  setErrors({});
-}, [open, policy, customerId]);
+  }, [open, policy, customerId]);
 
   /*   VALIDATION   */
   const validate = () => {
@@ -472,35 +468,103 @@ const { data: users } = useUserDropdown();
 
 
   /*   SAVE  */
+  const toIso = (date?: string) =>
+    date ? new Date(date).toISOString() : undefined;
+  
   const handleSave = async () => {
     if (!validate()) return;
-
+  
     try {
-      const formData = new FormData();
-      if (form.policyId) formData.append("PolicyId", form.policyId);
+  
+      const payload = {
+        policyId: form.policyId || undefined,
+  
+        customerId: form.customerId,
+        policyStatusId: Number(form.policyStatusId) || 0,
+        statusId: Number(form.policyTypeId) || 0,
+  
+        dob: toIso(form.dobOfLa),
+        age: Number(form.age) || 0,
+  
+        proposerName: form.proposerName || "",
+        nomineeName: form.nomineeName || "",
+        nomineeType: form.nomineeType || "",
+        relationWithLA: form.relationWithLa || "",
+  
+        policyNumber: form.policyNumber,
+  
+        baId: form.baName || null,
+        agencyId: form.agencyName || null,
+        companyId: form.insurerId || null,
+        productId: Number(form.productId) || 0,
+  
+        premiumMode: form.premiumMode || "",
+        policyTerm: Number(form.policyTerm) || 0,
+        ppt: Number(form.ppt) || 0,
+  
+        policyStartDate: toIso(form.startDate),
+        completionDate: toIso(form.completionDate),
+        nextPremiumDueDate: toIso(form.nextPremiumDueDate),
+        graceDate: toIso(form.graceDate),
+        maturityDate: toIso(form.maturityDate),
+  
+        objectiveOfInsurance: form.objective || "",
+  
+        sumAssured: Number(form.sumAssured) || 0,
+  
+        premium: {
+          installmentPremium: Number(form.installmentPremium) || 0,
+          premiumIncludingGST: form.premiumIncludingGst,
+          basicPremium: Number(form.basicPremium) || 0,
+          gstPercentage: Number(form.gstPerc) || 0,
+          gstAmount: Number(form.gstAmount) || 0,
+          finalInstallmentPremium: Number(form.finalInstallmentPremium) || 0,
+          annualPremium: Number(form.annualPremium) || 0
+        },
+  
+        payment: {
+          ecs: form.ecs || "",
+          paymentBy: form.paymentBy || "",
+          paymentRefNo: form.payReferenceNo || "",
+          paymentDate: toIso(form.paymentDate),
+          mandateExpDate: toIso(form.mandateExpDate),
+          accountNo: form.accountNo || "",
+          bankName: form.bankName || "",
+          branchName: form.branchName || "",
+          remarks: form.remarks || ""
+        },
+  
+        cashflows: (form.cashflows || []).map((c:any)=>({
+          maturityDate: toIso(c.maturityDate),
+          noOfYears: Number(c.noOfYears) || 0,
+          amountPerYear: Number(c.amount) || 0,
+          description: c.description || ""
+        })),
       
-      Object.entries(form).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          if (key.toLowerCase().includes("date") && value) {
-            formData.append(key, new Date(value as string + "T00:00:00").toISOString());
-          } else if (Array.isArray(value)) {
-            formData.append(key, JSON.stringify(value));
-          } else {
-            formData.append(key, String(value));
-          }
-        }
-      });
+        riders: (form.riders || []).map((r:any)=>({
+          riderName: r.name || "",
+          commDate: toIso(r.commDate),
+          sumAssured: Number(r.sa) || 0,
+          term: Number(r.term) || 0,
+          ppt: Number(r.ppt) || 0,
+          yearlyPremium: Number(r.yearlyPrem) || 0
+        })),
+      
+        funds: (form.funds || []).map((f:any)=>({
+          fmcName: f.fmcName || "",
+          fmcPercentage: Number(f.fmcPercentage) || 0,
+          fundDate: toIso(f.fundDate),
+          unitBalance: Number(f.unitBalance) || 0
+        }))
 
-      files.forEach((f) => {
-        formData.append("PolicyDocuments", f.file);
-        formData.append("DocumentTypes", f.type);
-        formData.append("DocumentLabels", f.label);
-      });
-
-      await mutateAsync(formData);
-      toast.success("Policy saved successfully");
+      };
+  
+      
+      await mutateAsync(payload);
+    
       onClose();
       onSuccess();
+  
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Something went wrong");
     }
@@ -515,10 +579,8 @@ const { data: users } = useUserDropdown();
   
 
   return (
-    <>Policy Start Date *
-
-      <Toaster position="top-right"/>
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
+    <>
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
 
       <div 
         className="fixed top-0 right-0 w-full max-w-[70vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right"
@@ -1085,12 +1147,6 @@ const { data: users } = useUserDropdown();
                   <PolicyFundInfo 
                   form={form}
                   setForm={setForm}
-                  cashflows={cashflows}
-                  setCashflows={setCashflows}
-                  funds={funds}
-                  setFunds={setFunds}
-                  riders={riders}
-                  setRiders={setRiders}
                 />
               )}
 
