@@ -2,19 +2,19 @@ import { useQuery } from "@tanstack/react-query";
 import { LifePolicyPagedResponse } from "../../interfaces/policy.interface";
 import { getLifePoliciesApi } from "../../api/policy.api";
 
-export const useLifePolicies = (
-  pageNumber: number,
-  pageSize: number,
-  search?: string
-) => {
+export const useLifePolicies = (filters: any) => {
   return useQuery<LifePolicyPagedResponse>({
-    queryKey: ["life-policies", pageNumber, pageSize, search],
-
+    queryKey: ["life-policies", filters],
     queryFn: async () => {
       const res = await getLifePoliciesApi({
-        pageNumber,
-        pageSize,
-        search,
+        pageNumber: filters.pageNumber,
+        pageSize: filters.pageSize,
+        search: filters.search,
+        policyStatusId: filters.policyStatusId,
+        statusId: filters.statusId,
+        customerId: filters.customerId,
+        insurerId: filters.insurerId,
+        productId: filters.productId,
       });
 
       console.log("Life Policies API Response:", res);

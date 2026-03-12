@@ -346,7 +346,6 @@ const showLongTermPolicy =
       });
 
       await mutateAsync(formData);
-      toast.success("Policy saved successfully");
       onClose();
       onSuccess();
     } catch (error: any) {
