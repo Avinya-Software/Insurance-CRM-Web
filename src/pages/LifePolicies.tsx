@@ -8,6 +8,7 @@ import Pagination from "../components/leads/Pagination";
 import LifePolicyUpsertSheet from "../components/LifePolicies/LifePolicyUpsertSheet";
 import LifePolicyTable from "../components/LifePolicies/LifePolicyTable";
 import { useLifePolicies } from "../hooks/LifePolicy/useLifePolicies";
+import { useQueryClient } from "@tanstack/react-query";
 
 const DEFAULT_FILTERS = {
   pageNumber: 1,
@@ -39,6 +40,7 @@ const LifePolicies = () => {
     filters.pageSize,
     filters.search
   );
+  const queryClient = useQueryClient();
   /*   HELPERS   */
 
   const hasActiveFilters =
@@ -80,7 +82,7 @@ const LifePolicies = () => {
   const handlePolicySuccess = () => {
     setOpenPolicySheet(false);
     setSelectedPolicy(null);
-    toast.success("Policy saved successfully!");
+    queryClient.invalidateQueries({ queryKey: ["life-policies"] });
   };
 
   const handleRenewalSuccess = () => {

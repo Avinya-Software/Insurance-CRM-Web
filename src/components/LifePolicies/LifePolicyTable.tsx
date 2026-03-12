@@ -60,11 +60,11 @@ const LifePolicyTable = ({
     useUpdatePolicyStatus();
 
   /* 🔥 Fetch policy statuses */
-  /* 🔥 Fetch policy statuses */
 const { data: statuses = [] } = useQuery({
   queryKey: ["policy-statuses"],
   queryFn: () => getPolicyStatusesDropdownApi(),
 });
+const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" : v);
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -156,49 +156,38 @@ const { data: statuses = [] } = useQuery({
             ) : (
               data.map((p: any) => (
                 <tr key={p.policyId} className="border-t h-[52px] hover:bg-slate-50">
-                  <Td>{p.policyNumber}</Td>
+                  <Td>{showValue(p.policyNumber)}</Td>
 
                   {/* Customer Name */}
-                  <Td>{p.proposerName}</Td>
+                  <Td>{showValue(p.proposerName)}</Td>
 
                   {/* Policy Status */}
                   <Td>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyStatusStyles[p.policyStatusName] ??
-                        "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      {p.policyStatusName}
-                    </span>
+                    {p.policyStatusName ? (
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                          policyStatusStyles[p.policyStatusName] ??
+                          "bg-gray-100 text-gray-600 border-gray-200"
+                        }`}
+                      >
+                        {p.policyStatusName}
+                      </span>
+                    ) : (
+                      "-"
+                    )}
                   </Td>
 
-                  {/* Status */}
-                  <Td>{p.statusName}</Td>
-
-                  {/* Premium Mode */}
-                  <Td>{p.premiumMode}</Td>
-
-                  {/* Policy Term */}
-                  <Td>{p.policyTerm}</Td>
-
-                  {/* Policy Start Date */}
-                  <Td>{p.policyStartDate?.split("T")[0]}</Td>
-
-                  {/* Next Premium Due */}
-                  <Td>{p.nextPremiumDueDate?.split("T")[0]}</Td>
-
-                  {/* Sum Assured */}
-                  <Td>{p.sumAssured}</Td>
-
-                  {/* Net Premium */}
-                  <Td>{p.premiumDetails?.basicPremium}</Td>
-
-                  {/* Gross Premium */}
-                  <Td>{p.premiumDetails?.annualPremium}</Td>
+                  <Td>{showValue(p.statusName)}</Td>
+                  <Td>{showValue(p.premiumMode)}</Td>
+                  <Td>{showValue(p.policyTerm)}</Td>
+                  <Td>{p.policyStartDate ? p.policyStartDate.split("T")[0] : "-"}</Td>
+                  <Td>{showValue(p.sumAssured)}</Td>
+                  <Td>{p.nextPremiumDueDate ? p.nextPremiumDueDate.split("T")[0] : "-"}</Td>
+                  <Td>{showValue(p.premiumDetails?.basicPremium)}</Td>
+                  <Td>{showValue(p.premiumDetails?.annualPremium)}</Td>
 
                   {/* Created Date */}
-                  <Td>{new Date(p.createdAt).toLocaleDateString()}</Td>
+                  <Td>{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}</Td>
 
                   <Td className="text-center">
                     <button

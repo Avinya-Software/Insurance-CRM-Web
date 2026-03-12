@@ -477,7 +477,7 @@ const { data: users } = useUserDropdown();
     try {
   
       const payload = {
-        policyId: form.policyId || undefined,
+        policyId: form.policyId || undefined,   // required for update
   
         customerId: form.customerId,
         policyStatusId: Number(form.policyStatusId) || 0,
@@ -509,7 +509,6 @@ const { data: users } = useUserDropdown();
         maturityDate: toIso(form.maturityDate),
   
         objectiveOfInsurance: form.objective || "",
-  
         sumAssured: Number(form.sumAssured) || 0,
   
         premium: {
@@ -534,14 +533,16 @@ const { data: users } = useUserDropdown();
           remarks: form.remarks || ""
         },
   
-        cashflows: (form.cashflows || []).map((c:any)=>({
+        cashflows: (form.cashflows || []).map((c:any) => ({
+          id: c.id || undefined,        // important for update
           maturityDate: toIso(c.maturityDate),
           noOfYears: Number(c.noOfYears) || 0,
           amountPerYear: Number(c.amount) || 0,
           description: c.description || ""
         })),
-      
-        riders: (form.riders || []).map((r:any)=>({
+  
+        riders: (form.riders || []).map((r:any) => ({
+          id: r.id || undefined,        // important for update
           riderName: r.name || "",
           commDate: toIso(r.commDate),
           sumAssured: Number(r.sa) || 0,
@@ -549,19 +550,20 @@ const { data: users } = useUserDropdown();
           ppt: Number(r.ppt) || 0,
           yearlyPremium: Number(r.yearlyPrem) || 0
         })),
-      
-        funds: (form.funds || []).map((f:any)=>({
+  
+        funds: (form.funds || []).map((f:any) => ({
+          id: f.id || undefined,        // important for update
           fmcName: f.fmcName || "",
           fmcPercentage: Number(f.fmcPercentage) || 0,
           fundDate: toIso(f.fundDate),
           unitBalance: Number(f.unitBalance) || 0
         }))
-
       };
   
-      
-      await mutateAsync(payload);
-    
+      const response = await mutateAsync(payload);
+
+      toast.success(response?.statusMessage || "Policy saved successfully");
+
       onClose();
       onSuccess();
   

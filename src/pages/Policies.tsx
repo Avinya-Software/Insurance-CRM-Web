@@ -77,7 +77,6 @@ setOpenRenewalSheet(true);
 const handlePolicySuccess = () => {
 setOpenPolicySheet(false);
 setSelectedPolicy(null);
-toast.success("Policy saved successfully!");
 };
 
 const handleRenewalSuccess = () => {
