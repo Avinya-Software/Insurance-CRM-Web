@@ -12,6 +12,7 @@ import { useAgencyDropdown } from "../../hooks/LifePolicy/useAgencyDropdown";
 import { useUserDropdown } from "../../hooks/LifePolicy/useUserDropdown";
 import PolicyFundInfo from "./PolicyFundInfo";
 import { useUpsertLifePolicy } from "../../hooks/LifePolicy/useUpsertLifePolicy";
+import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 
 
 const usePolicyDocumentActions = (cb: any) => ({ 
@@ -54,7 +55,7 @@ const PolicyUpsertSheet = ({
 
   /*   POLICY DOCUMENT ACTIONS   */
   const [existingDocuments, setExistingDocuments] = useState<
-    { fileName: string; savedFileName: string; type: string }[]
+    { fileName: string; savedFileName: string; type: string;documentType: string }[]
   >([]);
 
   const { preview, download, remove } = usePolicyDocumentActions(
@@ -187,6 +188,7 @@ const isLoading = isPending;
 const { data: customers } = useCustomerDropdown();
 const { data: agencies } = useAgencyDropdown();
 const { data: users } = useUserDropdown();
+const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
 
   /*   PREFILL   */
   useEffect(() => {
@@ -528,83 +530,103 @@ const { data: users } = useUserDropdown();
     date ? new Date(date).toISOString() : undefined;
   
   const handleSave = async () => {
-  if (!validate()) return;
-
-  try {
-    const payload = {
-      policyId: form.policyId || undefined,
-
-      customerId: form.customerId,
-      policyStatusId: Number(form.policyStatusId) || 0,
-      statusId: Number(form.policyTypeId) || 0,
-
-      dob: toIso(form.dobOfLa),
-      age: Number(form.age) || 0,
-
-      proposerName: form.proposerName || "",
-      nomineeName: form.nomineeName || "",
-      nomineeType: form.nomineeType || "",
-      relationWithLA: form.relationWithLa || "",
-
-      policyNumber: form.policyNumber,
-
-      baId: form.baName || null,
-      agencyId: form.agencyName || null,
-      companyId: form.insurerId || null,
-      productId: Number(form.productId) || 0,
-
-      premiumMode: form.premiumMode || "",
-      policyTerm: Number(form.policyTerm) || 0,
-      ppt: Number(form.ppt) || 0,
-
-      policyStartDate: toIso(form.startDate),
-      completionDate: toIso(form.completionDate),
-      nextPremiumDueDate: toIso(form.nextPremiumDueDate),
-      graceDate: toIso(form.graceDate),
-      maturityDate: toIso(form.maturityDate),
-
-      objectiveOfInsurance: form.objective || "",
-      sumAssured: Number(form.sumAssured) || 0,
-
-      premium: {
-        installmentPremium: Number(form.installmentPremium) || 0,
-        premiumIncludingGST: form.premiumIncludingGst,
-        basicPremium: Number(form.basicPremium) || 0,
-        gstPercentage: Number(form.gstPerc) || 0,
-        gstAmount: Number(form.gstAmount) || 0,
-        finalInstallmentPremium: Number(form.finalInstallmentPremium) || 0,
-        annualPremium: Number(form.annualPremium) || 0,
-      },
-
-      payment: {
-        ecs: form.ecs || "",
-        paymentBy: form.paymentBy || "",
-        paymentRefNo: form.payReferenceNo || "",
-        paymentDate: toIso(form.paymentDate),
-        mandateExpDate: toIso(form.mandateExpDate),
-        accountNo: form.accountNo || "",
-        bankName: form.bankName || "",
-        branchName: form.branchName || "",
-        remarks: form.remarks || "",
-      },
-
-      /* CASHFLOWS */
-
-      cashflows: mapCashflows(form.cashflows),
-      riders: mapRiders(form.riders),
-      funds: mapFunds(form.funds),
-    };
-
-    const response = await mutateAsync(payload);
-
-    toast.success(response?.statusMessage || "Policy saved successfully");
-
-    onClose();
-    onSuccess();
-  } catch (error: any) {
-    toast.error(error?.response?.data?.message || "Something went wrong");
-  }
-};
+    if (!validate()) return;
+  
+    try {
+      const payload = {
+        policyId: form.policyId || undefined,
+  
+        customerId: form.customerId,
+        policyStatusId: Number(form.policyStatusId) || 0,
+        statusId: Number(form.policyTypeId) || 0,
+  
+        dob: toIso(form.dobOfLa),
+        age: Number(form.age) || 0,
+  
+        proposerName: form.proposerName || "",
+        nomineeName: form.nomineeName || "",
+        nomineeType: form.nomineeType || "",
+        relationWithLA: form.relationWithLa || "",
+  
+        policyNumber: form.policyNumber,
+  
+        baId: form.baName || null,
+        agencyId: form.agencyName || null,
+        companyId: form.insurerId || null,
+        productId: Number(form.productId) || 0,
+  
+        premiumMode: form.premiumMode || "",
+        policyTerm: Number(form.policyTerm) || 0,
+        ppt: Number(form.ppt) || 0,
+  
+        policyStartDate: toIso(form.startDate),
+        completionDate: toIso(form.completionDate),
+        nextPremiumDueDate: toIso(form.nextPremiumDueDate),
+        graceDate: toIso(form.graceDate),
+        maturityDate: toIso(form.maturityDate),
+  
+        objectiveOfInsurance: form.objective || "",
+        sumAssured: Number(form.sumAssured) || 0,
+  
+        premium: {
+          installmentPremium: Number(form.installmentPremium) || 0,
+          premiumIncludingGST: form.premiumIncludingGst,
+          basicPremium: Number(form.basicPremium) || 0,
+          gstPercentage: Number(form.gstPerc) || 0,
+          gstAmount: Number(form.gstAmount) || 0,
+          finalInstallmentPremium: Number(form.finalInstallmentPremium) || 0,
+          annualPremium: Number(form.annualPremium) || 0,
+        },
+  
+        payment: {
+          ecs: form.ecs || "",
+          paymentBy: form.paymentBy || "",
+          paymentRefNo: form.payReferenceNo || "",
+          paymentDate: toIso(form.paymentDate),
+          mandateExpDate: toIso(form.mandateExpDate),
+          accountNo: form.accountNo || "",
+          bankName: form.bankName || "",
+          branchName: form.branchName || "",
+          remarks: form.remarks || "",
+        },
+  
+        cashflows: mapCashflows(form.cashflows),
+        riders: mapRiders(form.riders),
+        funds: mapFunds(form.funds),
+      };
+  
+      const response = await mutateAsync(payload);
+  
+      const policyId =
+        response?.data?.policyId ||
+        response?.policyId ||
+        form.policyId;
+  
+      if (files.length > 0 && policyId) {
+        await Promise.all(
+          files.map((f) => {
+            const formData = new FormData();
+  
+            formData.append("Id", policyId);
+            formData.append("Type", "2");        
+            formData.append("PolicyType", "1");  
+            formData.append("DocumentType", f.label);
+            formData.append("Files", f.file);
+  
+            return uploadPolicyDocument(formData);
+          })
+        );
+      }
+  
+      toast.success(response?.statusMessage || "Policy saved successfully");
+  
+      onClose();
+      onSuccess();
+  
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Something went wrong");
+    }
+  };
 
   if (!open) return null;
 
@@ -1307,7 +1329,7 @@ const { data: users } = useUserDropdown();
                                 </div>
                                 <div className="min-w-0">
                                   <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
-                                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.type}</p>
+                                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.documentType}</p>
                                 </div>
                               </div>
                               <div className="flex gap-1">

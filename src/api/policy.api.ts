@@ -196,3 +196,13 @@ export const upsertLifePolicyApi = async (payload: UpsertLifePolicyPayload) => {
   const response = await axios.post("/policy/upsert-life-policy", payload);
   return response.data;
 };
+
+export const uploadPolicyDocumentApi = async (data: FormData) => {
+  const res = await api.post("/Customer/documents", data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return res.data;
+};
