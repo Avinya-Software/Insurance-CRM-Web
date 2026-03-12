@@ -182,9 +182,13 @@ export const getLifePoliciesApi = async (params: {
   pageNumber?: number;
   pageSize?: number;
   search?: string;
+  policyStatusId?: number | null;
+  statusId?: number | null;
+  customerId?: string | null;
+  insurerId?: string | null;
+  productId?: string | null;
 }) => {
   const res = await api.get("/policy/life-policy", { params });
-
   return res.data;
 };
 

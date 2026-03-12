@@ -35,11 +35,7 @@ const LifePolicies = () => {
 
   const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
-  const { data, isLoading, isFetching } = useLifePolicies(
-    filters.pageNumber,
-    filters.pageSize,
-    filters.search
-  );
+  const { data, isLoading, isFetching } = useLifePolicies(filters);
   const queryClient = useQueryClient();
   /*   HELPERS   */
 
