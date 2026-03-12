@@ -271,6 +271,7 @@ const { data: users } = useUserDropdown();
           noOfYears: c.noOfYears,
           amount: c.amountPerYear,
           description: c.description,
+          isDeleted: c.isDeleted ?? false
         })),
   
         funds: (policy.fundDetails || []).map((f: any) => ({
@@ -279,6 +280,7 @@ const { data: users } = useUserDropdown();
           fmcPercentage: f.fmcPercentage,
           fundDate: f.fundDate?.split("T")[0],
           unitBalance: f.unitBalance,
+          isDeleted: f.isDeleted ?? false
         })),
   
         riders: (policy.riderDetails || []).map((r: any) => ({
@@ -289,6 +291,7 @@ const { data: users } = useUserDropdown();
           term: r.term,
           ppt: r.ppt,
           yearlyPrem: r.yearlyPremium,
+          isDeleted: r.isDeleted ?? false
         })),
       });
   
@@ -314,6 +317,8 @@ const { data: users } = useUserDropdown();
     }
   
     setErrors({});
+    console.log("POLICY DATA",policy)
+
   }, [open, policy, customerId]);
 
 
@@ -475,6 +480,7 @@ const { data: users } = useUserDropdown();
         noOfYears: Number(c.noOfYears) || 0,
         amountPerYear: Number(c.amount) || 0,
         description: c.description || "",
+        isDeleted: c.isDeleted ?? false
       };
   
       if (c.id) obj.id = c.id; // only for existing record
@@ -492,6 +498,7 @@ const { data: users } = useUserDropdown();
         term: Number(r.term) || 0,
         ppt: Number(r.ppt) || 0,
         yearlyPremium: Number(r.yearlyPrem) || 0,
+        isDeleted: r.isDeleted ?? false
       };
   
       if (r.id) obj.id = r.id;
@@ -507,6 +514,7 @@ const { data: users } = useUserDropdown();
         fmcPercentage: Number(f.fmcPercentage) || 0,
         fundDate: toIso(f.fundDate),
         unitBalance: Number(f.unitBalance) || 0,
+        isDeleted: f.isDeleted ?? false
       };
   
       if (f.id) obj.id = f.id;

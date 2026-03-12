@@ -7,6 +7,8 @@ interface CashflowItem {
   amount: string;
   description: string;
   noOfYears?: string;
+  isDeleted?: boolean;
+
 }
 
 interface RiderItem {
@@ -17,6 +19,7 @@ interface RiderItem {
   term: string;
   ppt: string;
   yearlyPrem: string;
+  isDeleted?: boolean;
 }
 
 interface FundItem {
@@ -25,6 +28,7 @@ interface FundItem {
   fmcPercentage: string;
   fundDate: string;
   unitBalance: string;
+  isDeleted?: boolean;
 }
 
 interface Props {
@@ -62,7 +66,8 @@ export default function PolicyFundInfo({
         }
       } else {
         list.push({
-          ...cashflowInput
+          ...cashflowInput,
+          isDeleted:false
         });
       }
   
@@ -92,7 +97,8 @@ export default function PolicyFundInfo({
         }
       } else {
         list.push({
-          ...riderInput
+          ...riderInput,
+          isdeleted:false
         });
       }
   
@@ -122,7 +128,8 @@ export default function PolicyFundInfo({
         }
       } else {
         list.push({
-          ...fundInput
+          ...fundInput,
+          isDeleted:false
         });
       }
   
@@ -144,10 +151,16 @@ export default function PolicyFundInfo({
   };
 
   const removeItem = (section: 'cashflows' | 'riders' | 'funds', id: string) => {
-    setForm((prev: any) => ({
-      ...prev,
-      [section]: prev[section].filter((item: any) => item.id !== id),
-    }));
+    setForm((prev: any) => {
+      const updated = prev[section].map((item: any) =>
+        item.id === id ? { ...item, isDeleted: true } : item
+      );
+  
+      return {
+        ...prev,
+        [section]: updated
+      };
+    });
   };
 
 
@@ -237,7 +250,7 @@ export default function PolicyFundInfo({
               <p className="text-sm font-medium">No records found</p>
             </div>
           ) : (
-            (form.cashflows || []).map((item: CashflowItem) => (
+            (form.cashflows || []).filter((item:any)=>!item.isDeleted).map((item: CashflowItem) => (
                             <div key={item.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors group">
                 <div className="grid grid-cols-4 gap-8 flex-1">
                   <div>
@@ -368,7 +381,7 @@ export default function PolicyFundInfo({
               <p className="text-sm font-medium">No records found</p>
             </div>
           ) : (
-            (form.riders || []).map((item: RiderItem) => (
+            (form.riders || []).filter((item:any)=>!item.isDeleted).map((item: RiderItem) => (
               <div key={item.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors group">
                 <div className="grid grid-cols-3 gap-8 flex-1">
                   <div>
@@ -490,7 +503,7 @@ export default function PolicyFundInfo({
               <p className="text-sm font-medium">No records found</p>
             </div>
           ) : (
-            (form.funds || []).map((item: FundItem) => (
+            (form.funds || []).filter((item:any)=>!item.isDeleted).map((item: FundItem) => (
               <div key={item.id} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors group">
                 <div className="grid grid-cols-4 gap-8 flex-1">
                   <div>

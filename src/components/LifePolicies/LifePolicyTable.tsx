@@ -154,10 +154,11 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
                 </td>
               </tr>
             ) : (
-              data.map((p: any) => (
-                <tr key={p.policyId} className="border-t h-[52px] hover:bg-slate-50">
-                  <Td>{showValue(p.policyNumber)}</Td>
-
+              data.map((p: any, index: number) => (<tr
+                  key={p.policyId ?? `policy-${index}`}
+                  className="border-t h-[52px] hover:bg-slate-50"
+                >                  
+                <Td>{showValue(p.policyNumber)}</Td>
                   {/* Customer Name */}
                   <Td>{showValue(p.proposerName)}</Td>
 
@@ -241,13 +242,13 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
           {showStatusMenu && (
             <div className="border-t">
               {statuses
-                .filter(
-                  (s: any) =>
-                    s.policyStatusId !== openPolicy.policyStatusId
-                )
-                .map((status: any) => (
+  .filter(
+    (s: any) =>
+      s.policyStatusId !== openPolicy.policyStatusId
+  )
+  .map((status: any, index: number) => (
                   <button
-                    key={status.policyStatusId}
+                    key={`status-${status.policyStatusId}`}
                     onClick={() =>
                       handleStatusChange(status.policyStatusId)
                     }
