@@ -19,8 +19,6 @@ import TasksPage from "./pages/TasksPage";
 import { Toaster } from "react-hot-toast";
 
 /* -------- ADMIN PAGES -------- */
-import AdminAdvisorsByStatusPage from "./pages/AdminAdvisorsByStatusPage";
-import AdminDashboard from "./pages/AdminDashboard";
 import LifePolicies from "./pages/LifePolicies";
 import Agency from "./pages/Agency";
 import AddOnDetails from "./pages/AddOnDetails";
@@ -29,6 +27,8 @@ import MakeModelPage from "./pages/MakeModelPage";
 import Campaign from "./pages/Campaign";
 import LeadFollowUpPage from "./pages/LeadFollowUpPage";
 import UserTeamMaster from "./pages/UserTeamMaster";
+import Company from "./pages/Company";
+import RoleRedirect from "./RoleRedirect";
 
 function App() {
   return (  
@@ -55,7 +55,9 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<RoleRedirect />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          
           <Route path="/leads" element={<Lead />} />
           <Route path="/leads/:leadId/followups" element={<LeadFollowUpPage />} />
           <Route path="/customers" element={<Customers />} />
@@ -77,10 +79,10 @@ function App() {
           <Route path="/tasks" element={<TasksPage />} />
 
           {/* ADMIN */}
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/company" element={<Company />} />
           <Route
-            path="/admin/history"
-            element={<AdminAdvisorsByStatusPage />}
+            path="/product"
+            element={<Product />}
           />
         </Route>
       </Routes>

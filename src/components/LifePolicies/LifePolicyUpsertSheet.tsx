@@ -34,6 +34,7 @@ const PolicyUpsertSheet = ({
   onSuccess,
 }: Props) => {
   const [activeTab, setActiveTab] = useState<TabType>("general");
+
   /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
@@ -43,8 +44,7 @@ const PolicyUpsertSheet = ({
   }, [open]);
   
   const { data: insuranceTypes } = useInsuranceTypes();
-  const { data: companies } = useCompanyList();
-
+  const { data: companies } = useCompanyList(true);
 
   /*   POLICY DOCUMENT ACTIONS   */
   const [existingDocuments, setExistingDocuments] = useState<
@@ -59,8 +59,6 @@ const PolicyUpsertSheet = ({
     }
   );
 
-
-
   /*   FORM STATE   */
   const initialForm = {
     policyId: null as string | null,
@@ -68,7 +66,6 @@ const PolicyUpsertSheet = ({
     cashflows: [],
     riders: [],
     funds: [],
-    // Policy Personal Information
     policyStatusId: undefined as number | undefined,
     policyTypeId: undefined as number | undefined,
     insuredName: "",
@@ -92,9 +89,7 @@ const PolicyUpsertSheet = ({
     graceDate: "",
     maturityDate: "",
     objective: "",
-    insuranceType: "", 
-
-    // Premium Details
+    insuranceType: "",
     installmentPremium: 0,
     premiumIncludingGst: false,
     basicPremium: 0,
@@ -103,8 +98,6 @@ const PolicyUpsertSheet = ({
     finalInstallmentPremium: 0,
     annualPremium: 0,
     sumAssured: "",
-
-    // Payment Details
     ecs: "",
     paymentBy: "",
     payReferenceNo: "",
@@ -117,16 +110,16 @@ const PolicyUpsertSheet = ({
   };
 
   const [form, setForm] = useState(initialForm);
+  const [originalForm, setOriginalForm] = useState<any>(null);
   const [files, setFiles] = useState<{ file: File; type: string; label: string }[]>([]);
   const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+
   const { data: products } = useCompanyWiseProduct(
     form.insurerId,
-    undefined,  
-    1          
+    undefined,
+    1
   );
-
-
 
   const getMultiplier = (mode: string) => {
     switch (mode) {
@@ -141,22 +134,17 @@ const PolicyUpsertSheet = ({
 
   const addMonths = (dateStr: string, months: number) => {
     if (!dateStr) return "";
-  
     const d = new Date(dateStr);
     d.setMonth(d.getMonth() + months);
-  
     return d.toISOString().split("T")[0];
   };
   
   const addYears = (dateStr: string, years: number) => {
     if (!dateStr) return "";
-  
     const d = new Date(dateStr);
     d.setFullYear(d.getFullYear() + years);
-  
     return d.toISOString().split("T")[0];
   };
-  
 
   const documentOptions = [
     { id: "Policy Copy", name: "Policy Copy" },
@@ -169,24 +157,28 @@ const PolicyUpsertSheet = ({
     { id: "Others", name: "Others" },
   ];
 
-  
   /*   API HOOKS   */
   const { mutateAsync, isPending } = useUpsertLifePolicy();
-  const { data: policyStatuses, isLoading: sLoading } =
-  usePolicyStatusesDropdown();
-const { data: statusTypes, isLoading: stLoading } =
-  usePolicyStatusesDropdown(1);
-const loadingDropdowns = sLoading || stLoading; 
-const isLoading = isPending;
-const { data: customers } = useCustomerDropdown();
-const { data: agencies } = useAgencyDropdown();
-const { data: users } = useUserDropdown();
-const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
+  const { data: policyStatuses, isLoading: sLoading } = usePolicyStatusesDropdown();
+  const { data: statusTypes, isLoading: stLoading } = usePolicyStatusesDropdown(1);
+  const loadingDropdowns = sLoading || stLoading;
+
+  // ── FIX: use isPending from the upload hook directly (same pattern as CustomerSheet) ──
+  const { mutateAsync: uploadPolicyDocument, isPending: isUploading } = useUploadPolicyDocument();
+
+  // ── FIX: combined loading flag — spinner shows during policy save OR document upload ──
+  const isLoading = isPending || isUploading;
+
+  const isEditMode = !!policy;
+  const { data: customers } = useCustomerDropdown();
+  const { data: agencies } = useAgencyDropdown();
+  const { data: users } = useUserDropdown();
 
   /*   PREFILL   */
   useEffect(() => {
     if (!open) {
       setForm(initialForm);
+      setOriginalForm(null);
       setExistingDocuments([]);
       setFiles([]);
       setErrors({});
@@ -195,9 +187,8 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
     }
   
     if (policy) {
-      setForm({
+      const mappedForm = {
         ...initialForm,
-  
         policyId: policy.policyId,
         customerId: policy.customerId,
         policyStatusId: policy.policyStatusId,
@@ -205,60 +196,41 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
         insuredName: policy.customerName || "",
         dobOfLa: policy.dob?.split("T")[0] || "",
         age: policy.age || "",
-  
         proposerName: policy.proposerName || "",
         nomineeName: policy.nomineeName || "",
         nomineeType: policy.nomineeType || "",
         relationWithLa: policy.relationWithLA || "",
-  
         policyNumber: policy.policyNumber || "",
-  
         baName: policy.baId || "",
         agencyName: policy.agencyId || "",
         insurerId: policy.companyId || "",
         productId: policy.productId || "",
-  
         premiumMode: policy.premiumMode || "",
         policyTerm: policy.policyTerm || "",
         ppt: policy.ppt || "",
-  
         startDate: policy.policyStartDate?.split("T")[0] || "",
         completionDate: policy.completionDate?.split("T")[0] || "",
         nextPremiumDueDate: policy.nextPremiumDueDate?.split("T")[0] || "",
         graceDate: policy.graceDate?.split("T")[0] || "",
         maturityDate: policy.maturityDate?.split("T")[0] || "",
-  
         objective: policy.objectiveOfInsurance || "",
         sumAssured: policy.sumAssured || "",
-  
-        /* PREMIUM DETAILS */
-  
         installmentPremium: policy.premiumDetails?.installmentPremium || 0,
-        premiumIncludingGst:
-          policy.premiumDetails?.premiumIncludingGST || false,
+        premiumIncludingGst: policy.premiumDetails?.premiumIncludingGST || false,
         basicPremium: policy.premiumDetails?.basicPremium || 0,
         gstPerc: policy.premiumDetails?.gstPercentage || 0,
         gstAmount: policy.premiumDetails?.gstAmount || 0,
-        finalInstallmentPremium:
-          policy.premiumDetails?.finalInstallmentPremium || 0,
+        finalInstallmentPremium: policy.premiumDetails?.finalInstallmentPremium || 0,
         annualPremium: policy.premiumDetails?.annualPremium || 0,
-  
-        /* PAYMENT DETAILS */
-  
         ecs: policy.paymentDetails?.ecs || "",
         paymentBy: policy.paymentDetails?.paymentBy || "",
         payReferenceNo: policy.paymentDetails?.paymentRefNo || "",
-        paymentDate:
-          policy.paymentDetails?.paymentDate?.split("T")[0] || "",
-        mandateExpDate:
-          policy.paymentDetails?.mandateExpDate?.split("T")[0] || "",
+        paymentDate: policy.paymentDetails?.paymentDate?.split("T")[0] || "",
+        mandateExpDate: policy.paymentDetails?.mandateExpDate?.split("T")[0] || "",
         accountNo: policy.paymentDetails?.accountNo || "",
         bankName: policy.paymentDetails?.bankName || "",
         branchName: policy.paymentDetails?.branchName || "",
         remarks: policy.paymentDetails?.remarks || "",
-  
-        /* RELATED DETAILS */
-  
         cashflows: (policy.cashflowDetails || []).map((c: any) => ({
           id: c.id,
           maturityDate: c.maturityDate?.split("T")[0],
@@ -267,7 +239,6 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
           description: c.description,
           isDeleted: c.isDeleted ?? false
         })),
-  
         funds: (policy.fundDetails || []).map((f: any) => ({
           id: f.id,
           fmcName: f.fmcName,
@@ -276,7 +247,6 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
           unitBalance: f.unitBalance,
           isDeleted: f.isDeleted ?? false
         })),
-  
         riders: (policy.riderDetails || []).map((r: any) => ({
           id: r.id,
           name: r.riderName,
@@ -287,36 +257,30 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
           yearlyPrem: r.yearlyPremium,
           isDeleted: r.isDeleted ?? false
         })),
-      });
-  
-      /* DOCUMENTS PREFILL */
-  
-      const docs = policy.documents || [];
-  
-      const mappedDocs = docs.map((d: any) => ({
-        id: d.id,          
+      };
+
+      setForm(mappedForm);
+      setOriginalForm(mappedForm);
+
+      const mappedDocs = (policy.documents || []).map((d: any) => ({
+        id: d.id,
         fileName: d.fileName,
-        url: d.url,        
+        url: d.url,
         type: d.documentType || "Policy",
       }));
-  
       setExistingDocuments(mappedDocs);
+
     } else {
-      setForm({
-        ...initialForm,
-        customerId: customerId || "",
-      });
-  
+      setForm({ ...initialForm, customerId: customerId || "" });
+      setOriginalForm(null);
       setExistingDocuments([]);
       setFiles([]);
     }
-  
+
     setErrors({});
-    console.log("POLICY DATA",policy)
+    console.log("POLICY DATA", policy);
 
   }, [open, policy, customerId]);
-
-
 
   /*   VALIDATION   */
   const validate = () => {
@@ -339,27 +303,21 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
 
   useEffect(() => {
     if (!form.startDate || !form.premiumMode) return;
-  
     const nextMonths = getMultiplier(form.premiumMode);
-  
     let next = "";
     let grace = "";
-  
     if (form.premiumMode !== "S") {
       next = addMonths(form.startDate, nextMonths);
-  
       if (form.premiumMode === "Q") {
-        grace = next; // quarterly rule
+        grace = next;
       } else {
         grace = addMonths(next, 1);
       }
     }
-  
     const maturity =
       form.policyTerm && form.startDate
         ? addYears(form.startDate, Number(form.policyTerm))
         : "";
-  
     setForm((prev: any) => ({
       ...prev,
       completionDate: prev.completionDate || form.startDate,
@@ -369,40 +327,27 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
     }));
   }, [form.startDate, form.premiumMode, form.policyTerm]);
 
-
   useEffect(() => {
-  if (!form.nextPremiumDueDate || form.premiumMode === "S") return;
-
-  let grace = "";
-
-  if (form.premiumMode === "Q") {
-    grace = form.nextPremiumDueDate;
-  } else {
-    grace = addMonths(form.nextPremiumDueDate, 1);
-  }
-
-  setForm((prev: any) => ({
-    ...prev,
-    graceDate: grace,
-  }));
-}, [form.nextPremiumDueDate]);
-
+    if (!form.nextPremiumDueDate || form.premiumMode === "S") return;
+    let grace = "";
+    if (form.premiumMode === "Q") {
+      grace = form.nextPremiumDueDate;
+    } else {
+      grace = addMonths(form.nextPremiumDueDate, 1);
+    }
+    setForm((prev: any) => ({ ...prev, graceDate: grace }));
+  }, [form.nextPremiumDueDate]);
 
   useEffect(() => {
     if (form.premiumMode === "S" && form.completionDate) {
-      setForm((prev: any) => ({
-        ...prev,
-        maturityDate: prev.completionDate,
-      }));
+      setForm((prev: any) => ({ ...prev, maturityDate: prev.completionDate }));
     }
   }, [form.completionDate]);
-
 
   useEffect(() => {
     const installment = Number(form.installmentPremium) || 0;
     const gstPerc = Number(form.gstPerc) || 0;
     const multiplier = getMultiplier(form.premiumMode);
-  
     if (!installment) {
       setForm((prev: any) => ({
         ...prev,
@@ -413,25 +358,19 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
       }));
       return;
     }
-  
     let basic = 0;
     let gstAmount = 0;
     let finalInstallment = 0;
-  
     if (form.premiumIncludingGst) {
-      // Installment already includes GST
       basic = installment / (1 + gstPerc / 100);
       gstAmount = installment - basic;
       finalInstallment = installment;
     } else {
-      // GST added on top
       basic = installment;
       gstAmount = basic * (gstPerc / 100);
       finalInstallment = basic + gstAmount;
     }
-  
     const annual = finalInstallment * multiplier;
-  
     setForm((prev: any) => ({
       ...prev,
       basicPremium: Math.round(basic),
@@ -439,37 +378,24 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
       finalInstallmentPremium: Math.round(finalInstallment),
       annualPremium: Math.round(annual)
     }));
-  
-  }, [
-    form.installmentPremium,
-    form.gstPerc,
-    form.premiumIncludingGst,
-    form.premiumMode
-  ]);
+  }, [form.installmentPremium, form.gstPerc, form.premiumIncludingGst, form.premiumMode]);
   
   useEffect(() => {
     if (!form.policyTerm) return;
-  
     setForm((prev: any) => {
-  
-      // Mode S → always PPT = 1
       if (form.premiumMode === "S") {
         if (prev.ppt === "1") return prev;
         return { ...prev, ppt: "1" };
       }
-  
-      // First time fill only
       if (!prev.ppt || prev.ppt === "1") {
         return { ...prev, ppt: form.policyTerm };
       }
-  
       return prev;
     });
-  
   }, [form.policyTerm, form.premiumMode]);
 
-  const mapCashflows = (cashflows: any[]) => {
-    return (cashflows || []).map((c) => {
+  const mapCashflows = (cashflows: any[]) =>
+    (cashflows || []).map((c) => {
       const obj: any = {
         maturityDate: toIso(c.maturityDate),
         noOfYears: Number(c.noOfYears) || 0,
@@ -477,15 +403,12 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
         description: c.description || "",
         isDeleted: c.isDeleted ?? false
       };
-  
-      if (c.id) obj.id = c.id; // only for existing record
-  
+      if (c.id) obj.id = c.id;
       return obj;
     });
-  };
   
-  const mapRiders = (riders: any[]) => {
-    return (riders || []).map((r) => {
+  const mapRiders = (riders: any[]) =>
+    (riders || []).map((r) => {
       const obj: any = {
         riderName: r.name || "",
         commDate: toIso(r.commDate),
@@ -495,15 +418,12 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
         yearlyPremium: Number(r.yearlyPrem) || 0,
         isDeleted: r.isDeleted ?? false
       };
-  
       if (r.id) obj.id = r.id;
-  
       return obj;
     });
-  };
   
-  const mapFunds = (funds: any[]) => {
-    return (funds || []).map((f) => {
+  const mapFunds = (funds: any[]) =>
+    (funds || []).map((f) => {
       const obj: any = {
         fmcName: f.fmcName || "",
         fmcPercentage: Number(f.fmcPercentage) || 0,
@@ -511,111 +431,124 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
         unitBalance: Number(f.unitBalance) || 0,
         isDeleted: f.isDeleted ?? false
       };
-  
       if (f.id) obj.id = f.id;
-  
       return obj;
     });
-  };
 
-  /*   SAVE  */
   const toIso = (date?: string) =>
     date ? new Date(date).toISOString() : undefined;
-  
+
+  const checkPolicyChanges = (form: any, originalForm: any) => {
+    if (!originalForm) return true;
+    const fieldsToCheck = [
+      "customerId", "policyStatusId", "policyTypeId", "dobOfLa", "age",
+      "proposerName", "nomineeName", "nomineeType", "relationWithLa",
+      "policyNumber", "baName", "agencyName", "insurerId", "productId",
+      "premiumMode", "policyTerm", "ppt", "startDate", "completionDate",
+      "nextPremiumDueDate", "graceDate", "maturityDate", "objective",
+      "sumAssured", "installmentPremium", "premiumIncludingGst", "basicPremium",
+      "gstPerc", "gstAmount", "finalInstallmentPremium", "annualPremium",
+      "ecs", "paymentBy", "payReferenceNo", "paymentDate", "mandateExpDate",
+      "accountNo", "bankName", "branchName", "remarks"
+    ];
+    return fieldsToCheck.some((field) => form[field] !== originalForm[field]);
+  };
+
+  /*   SAVE   */
   const handleSave = async () => {
     if (!validate()) return;
   
     try {
-      const payload = {
-        policyId: form.policyId || undefined,
+      let policyId = form.policyId;
+      let policyUpdated = false;
+      let documentUploaded = false;
   
-        customerId: form.customerId,
-        policyStatusId: Number(form.policyStatusId) || 0,
-        statusId: Number(form.policyTypeId) || 0,
+      const hasPolicyChanged = originalForm ? checkPolicyChanges(form, originalForm) : true;
   
-        dob: toIso(form.dobOfLa),
-        age: Number(form.age) || 0,
+      if (hasPolicyChanged) {
+        const payload = {
+          policyId: form.policyId || undefined,
+          customerId: form.customerId,
+          policyStatusId: Number(form.policyStatusId) || 0,
+          statusId: Number(form.policyTypeId) || 0,
+          dob: toIso(form.dobOfLa),
+          age: Number(form.age) || 0,
+          proposerName: form.proposerName || "",
+          nomineeName: form.nomineeName || "",
+          nomineeType: form.nomineeType || "",
+          relationWithLA: form.relationWithLa || "",
+          policyNumber: form.policyNumber,
+          baId: form.baName || null,
+          agencyId: form.agencyName || null,
+          companyId: form.insurerId || null,
+          productId: Number(form.productId) || 0,
+          premiumMode: form.premiumMode || "",
+          policyTerm: Number(form.policyTerm) || 0,
+          ppt: Number(form.ppt) || 0,
+          policyStartDate: toIso(form.startDate),
+          completionDate: toIso(form.completionDate),
+          nextPremiumDueDate: toIso(form.nextPremiumDueDate),
+          graceDate: toIso(form.graceDate),
+          maturityDate: toIso(form.maturityDate),
+          objectiveOfInsurance: form.objective || "",
+          sumAssured: Number(form.sumAssured) || 0,
+          premium: {
+            installmentPremium: Number(form.installmentPremium) || 0,
+            premiumIncludingGST: form.premiumIncludingGst,
+            basicPremium: Number(form.basicPremium) || 0,
+            gstPercentage: Number(form.gstPerc) || 0,
+            gstAmount: Number(form.gstAmount) || 0,
+            finalInstallmentPremium: Number(form.finalInstallmentPremium) || 0,
+            annualPremium: Number(form.annualPremium) || 0,
+          },
+          payment: {
+            ecs: form.ecs || "",
+            paymentBy: form.paymentBy || "",
+            paymentRefNo: form.payReferenceNo || "",
+            paymentDate: toIso(form.paymentDate),
+            mandateExpDate: toIso(form.mandateExpDate),
+            accountNo: form.accountNo || "",
+            bankName: form.bankName || "",
+            branchName: form.branchName || "",
+            remarks: form.remarks || "",
+          },
+          cashflows: mapCashflows(form.cashflows),
+          riders: mapRiders(form.riders),
+          funds: mapFunds(form.funds),
+        };
   
-        proposerName: form.proposerName || "",
-        nomineeName: form.nomineeName || "",
-        nomineeType: form.nomineeType || "",
-        relationWithLA: form.relationWithLa || "",
+        const response = await mutateAsync(payload);
+        policyId = response?.data?.policyId || response?.policyId || form.policyId;
+        policyUpdated = true;
   
-        policyNumber: form.policyNumber,
+        if (response?.statusMessage) {
+          toast.success(response.statusMessage);
+        }
+      }
   
-        baId: form.baName || null,
-        agencyId: form.agencyName || null,
-        companyId: form.insurerId || null,
-        productId: Number(form.productId) || 0,
-  
-        premiumMode: form.premiumMode || "",
-        policyTerm: Number(form.policyTerm) || 0,
-        ppt: Number(form.ppt) || 0,
-  
-        policyStartDate: toIso(form.startDate),
-        completionDate: toIso(form.completionDate),
-        nextPremiumDueDate: toIso(form.nextPremiumDueDate),
-        graceDate: toIso(form.graceDate),
-        maturityDate: toIso(form.maturityDate),
-  
-        objectiveOfInsurance: form.objective || "",
-        sumAssured: Number(form.sumAssured) || 0,
-  
-        premium: {
-          installmentPremium: Number(form.installmentPremium) || 0,
-          premiumIncludingGST: form.premiumIncludingGst,
-          basicPremium: Number(form.basicPremium) || 0,
-          gstPercentage: Number(form.gstPerc) || 0,
-          gstAmount: Number(form.gstAmount) || 0,
-          finalInstallmentPremium: Number(form.finalInstallmentPremium) || 0,
-          annualPremium: Number(form.annualPremium) || 0,
-        },
-  
-        payment: {
-          ecs: form.ecs || "",
-          paymentBy: form.paymentBy || "",
-          paymentRefNo: form.payReferenceNo || "",
-          paymentDate: toIso(form.paymentDate),
-          mandateExpDate: toIso(form.mandateExpDate),
-          accountNo: form.accountNo || "",
-          bankName: form.bankName || "",
-          branchName: form.branchName || "",
-          remarks: form.remarks || "",
-        },
-  
-        cashflows: mapCashflows(form.cashflows),
-        riders: mapRiders(form.riders),
-        funds: mapFunds(form.funds),
-      };
-  
-      const response = await mutateAsync(payload);
-  
-      const policyId =
-        response?.data?.policyId ||
-        response?.policyId ||
-        form.policyId;
-  
+      // ── FIX: no manual setIsUploading — isUploading comes from hook isPending ──
       if (files.length > 0 && policyId) {
         await Promise.all(
           files.map((f) => {
             const formData = new FormData();
-  
             formData.append("Id", policyId);
-            formData.append("Type", "2");        
-            formData.append("PolicyType", "1");  
+            formData.append("Type", "2");
+            formData.append("PolicyType", "1");
             formData.append("DocumentType", f.label);
             formData.append("Files", f.file);
-  
             return uploadPolicyDocument(formData);
           })
         );
-      }
+
+        documentUploaded = true;
   
-      toast.success(response?.statusMessage || "Policy saved successfully");
+        if (!policyUpdated) {
+          toast.success("Policy documents uploaded successfully");
+        }
+      }
   
       onClose();
       onSuccess();
-  
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Something went wrong");
     }
@@ -623,15 +556,9 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
 
   if (!open) return null;
 
-  const nomineeTypes = [{ id: "Nominee", name: "Nominee" }];
-  const relations = [{ id: "Spouse", name: "Spouse" }];
-  const premiumModes = [{ id: "Y", name: "Y" }, { id: "H", name: "H" }, { id: "Q", name: "Q" }, { id: "M", name: "M" }];
-
-  
-
   return (
     <>
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
 
       <div 
         className="fixed top-0 right-0 w-full max-w-[70vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right"
@@ -696,7 +623,7 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                       {/* ROW 1 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-2">
-                        <Select
+                          <Select
                             label="Policy Status"
                             value={form.policyStatusId}
                             options={policyStatuses}
@@ -707,9 +634,8 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                             }
                           />
                         </div>
-
                         <div className="md:col-span-2">
-                        <Select
+                          <Select
                             label="Status"
                             value={form.policyTypeId}
                             options={statusTypes}
@@ -721,7 +647,7 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                           />
                         </div>
                         <div className="md:col-span-4">
-                        <SearchableComboBox
+                          <SearchableComboBox
                             label="Life Assured"
                             required
                             error={errors.insuredName}
@@ -833,42 +759,42 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                           />
                         </div>
                         <div className="md:col-span-8">
-                        <SearchableComboBox
-                          label="BA NAME"
-                          items={(users || []).map((u: any) => ({
-                            value: u.id,
-                            label: u.name
-                          }))}
-                          value={form.baName}
-                          onSelect={(item: any) =>
-                            setForm((p: any) => ({
-                              ...p,
-                              baName: item?.value || ""
-                            }))
-                          }
-                        />
+                          <SearchableComboBox
+                            label="BA NAME"
+                            items={(users || []).map((u: any) => ({
+                              value: u.id,
+                              label: u.name
+                            }))}
+                            value={form.baName}
+                            onSelect={(item: any) =>
+                              setForm((p: any) => ({
+                                ...p,
+                                baName: item?.value || ""
+                              }))
+                            }
+                          />
                         </div>
                       </div>
 
                       {/* ROW 4 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                        <SearchableComboBox
-                          label="Agency Name"
-                          required
-                          error={errors.agencyName}
-                          items={(agencies || []).map((a: any) => ({
-                            value: a.id,
-                            label: a.agencyName
-                          }))}
-                          value={form.agencyName}
-                          onSelect={(item: any) =>
-                            setForm((p: any) => ({
-                              ...p,
-                              agencyName: item?.value || ""
-                            }))
-                          }
-                        />
+                          <SearchableComboBox
+                            label="Agency Name"
+                            required
+                            error={errors.agencyName}
+                            items={(agencies || []).map((a: any) => ({
+                              value: a.id,
+                              label: a.agencyName
+                            }))}
+                            value={form.agencyName}
+                            onSelect={(item: any) =>
+                              setForm((p: any) => ({
+                                ...p,
+                                agencyName: item?.value || ""
+                              }))
+                            }
+                          />
                         </div>
                         <div className="md:col-span-4">
                           <SearchableComboBox
@@ -910,65 +836,55 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                       {/* ROW 5 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                        <Select
-                          label="Premium Mode"
-                          value={form.premiumMode}
-                          options={[
-                            { id: "Y", name: "Y" },
-                            { id: "H", name: "H" },
-                            { id: "Q", name: "Q" },
-                            { id: "M", name: "M" },
-                            { id: "S", name: "S" },
-                          ]}
-                          onChange={(v: any) =>
-                            setForm((prev: any) => ({
-                              ...prev,
-                              premiumMode: v,
-                              ppt: v === "S" ? "1" : prev.policyTerm
-                            }))
-                          }
-                        />
+                          <Select
+                            label="Premium Mode"
+                            value={form.premiumMode}
+                            options={[
+                              { id: "Y", name: "Y" },
+                              { id: "H", name: "H" },
+                              { id: "Q", name: "Q" },
+                              { id: "M", name: "M" },
+                              { id: "S", name: "S" },
+                            ]}
+                            onChange={(v: any) =>
+                              setForm((prev: any) => ({
+                                ...prev,
+                                premiumMode: v,
+                                ppt: v === "S" ? "1" : prev.policyTerm
+                              }))
+                            }
+                          />
                         </div>
                         <div className="md:col-span-2">
-                        <Input
-                          label="Policy Term"
-                          value={form.policyTerm}
-                          placeholder="Policy Term"
-                          max={999}
-                          onChange={(v: any) => {
-
-                            const value = v.slice(0, 3);
-
-                            setForm((p: any) => ({
-                              ...p,
-                              policyTerm: value,
-                              ppt: p.premiumMode === "S" ? "1" : value
-                            }));
-
-                          }}
-                        />
+                          <Input
+                            label="Policy Term"
+                            value={form.policyTerm}
+                            placeholder="Policy Term"
+                            max={999}
+                            onChange={(v: any) => {
+                              const value = v.slice(0, 3);
+                              setForm((p: any) => ({
+                                ...p,
+                                policyTerm: value,
+                                ppt: p.premiumMode === "S" ? "1" : value
+                              }));
+                            }}
+                          />
                         </div>
                         <div className="md:col-span-2">
-                        <Input
+                          <Input
                             label="PPT"
                             value={form.ppt}
                             placeholder="PPT"
                             disabled={form.premiumMode === "S"}
                             onChange={(v: any) => {
-
                               if (form.premiumMode === "S") return;
-
                               const value = v.slice(0, 3);
-
                               if (Number(value) > Number(form.policyTerm)) {
                                 toast.error("Term should be greater than or equal to PPT.");
                                 return;
                               }
-
-                              setForm((p: any) => ({
-                                ...p,
-                                ppt: value
-                              }));
+                              setForm((p: any) => ({ ...p, ppt: value }));
                             }}
                           />
                         </div>
@@ -987,46 +903,42 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                       {/* ROW 6 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                        <Input
-                          type="date"
-                          label="Completion Date"
-                          value={form.completionDate}
-                          onChange={(v: any) =>
-                            setForm((p: any) => ({ ...p, completionDate: v }))
-                          }
-                        />
+                          <Input
+                            type="date"
+                            label="Completion Date"
+                            value={form.completionDate}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, completionDate: v }))}
+                          />
                         </div>
                         <div className="md:col-span-4">
-                        <Input
-                          type="date"
-                          label="Next Premium Due Date"
-                          value={form.nextPremiumDueDate}
-                          disabled={form.premiumMode === "S"}
-                          onChange={(v: any) =>
-                            setForm((p: any) => ({ ...p, nextPremiumDueDate: v }))
-                          }
-                        />
+                          <Input
+                            type="date"
+                            label="Next Premium Due Date"
+                            value={form.nextPremiumDueDate}
+                            disabled={form.premiumMode === "S"}
+                            onChange={(v: any) => setForm((p: any) => ({ ...p, nextPremiumDueDate: v }))}
+                          />
                         </div>
                         <div className="md:col-span-4">
-                        <Input
-                          type="date"
-                          label="Grace Date"
-                          value={form.graceDate}
-                          disabled={form.premiumMode === "S"}
-                          onChange={(v:any)=>setForm(p=>({...p,graceDate:v}))}
-                        />
+                          <Input
+                            type="date"
+                            label="Grace Date"
+                            value={form.graceDate}
+                            disabled={form.premiumMode === "S"}
+                            onChange={(v: any) => setForm(p => ({ ...p, graceDate: v }))}
+                          />
                         </div>
                       </div>
 
                       {/* ROW 7 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                        <Input
-                          type="date"
-                          label="Maturity Date"
-                          value={form.maturityDate}
-                          disabled
-                        />
+                          <Input
+                            type="date"
+                            label="Maturity Date"
+                            value={form.maturityDate}
+                            disabled
+                          />
                         </div>
                         <div className="md:col-span-8">
                           <SearchableComboBox
@@ -1061,7 +973,6 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                       </div>
                       <h3 className="font-bold uppercase tracking-wider text-[10px]">Premium Details</h3>
                     </div>
-
                     <div className="p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                         <div className="md:col-span-3">
@@ -1079,27 +990,13 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                           </label>
                         </div>
                         <div className="md:col-span-3">
-                          <Input
-                            label="Basic Premium"
-                            type="number"
-                            value={form.basicPremium}
-                            onChange={(v: any) =>
-                              setForm(p => ({ ...p, basicPremium: v }))
-                            }
-                          />
+                          <Input label="Basic Premium" type="number" value={form.basicPremium} onChange={(v: any) => setForm(p => ({ ...p, basicPremium: v }))} />
                         </div>
                         <div className="md:col-span-1">
                           <Input label="GST Perc." type="number" value={form.gstPerc} onChange={(v: any) => setForm(p => ({ ...p, gstPerc: Number(v) }))} suffix={<span className="text-xs font-bold text-slate-400">%</span>} />
                         </div>
                         <div className="md:col-span-2">
-                          <Input
-                            label="GST Amount"
-                            type="number"
-                            value={form.gstAmount}
-                            onChange={(v: any) =>
-                              setForm(p => ({ ...p, gstAmount: v }))
-                            }
-                          />
+                          <Input label="GST Amount" type="number" value={form.gstAmount} onChange={(v: any) => setForm(p => ({ ...p, gstAmount: v }))} />
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -1124,7 +1021,6 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                       </div>
                       <h3 className="font-bold uppercase tracking-wider text-[10px]">Payment Details</h3>
                     </div>
-
                     <div className="p-6 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-3">
@@ -1148,10 +1044,7 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                               { label: "Online", value: "Online" },
                             ]}
                             onSelect={(item: any) =>
-                              setForm((prev: any) => ({
-                                ...prev,
-                                paymentBy: item?.value || "",
-                              }))
+                              setForm((prev: any) => ({ ...prev, paymentBy: item?.value || "" }))
                             }
                           />
                         </div>
@@ -1165,7 +1058,6 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                           <Input label="Mandate Exp Date" type="date" value={form.mandateExpDate} onChange={(v: any) => setForm(p => ({ ...p, mandateExpDate: v }))} />
                         </div>
                       </div>
-
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-3">
                           <Input label="Account No" value={form.accountNo} placeholder="Account No" onChange={(v: any) => setForm(p => ({ ...p, accountNo: v }))} />
@@ -1177,7 +1069,6 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
                           <Input label="Branch Name" value={form.branchName} placeholder="Branch Name" onChange={(v: any) => setForm(p => ({ ...p, branchName: v }))} />
                         </div>
                       </div>
-
                       <div className="grid grid-cols-1 gap-4">
                         <div className="w-full space-y-1.5">
                           <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Remarks</label>
@@ -1195,7 +1086,7 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
               )}
 
               {activeTab === "related" && (
-                  <PolicyFundInfo 
+                <PolicyFundInfo 
                   form={form}
                   setForm={setForm}
                 />
@@ -1203,6 +1094,15 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
 
               {activeTab === "documents" && (
                 <div className="space-y-8">
+                  {!isEditMode && (
+                    <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
+                      <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                      <p className="text-xs text-amber-700 leading-relaxed">
+                        Documents will be uploaded automatically when you click <strong>SAVE</strong>.
+                      </p>
+                    </div>
+                  )}
+
                   {/* UPLOAD SECTION */}
                   <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -1309,51 +1209,51 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
 
                     {/* EXISTING DOCUMENTS */}
                     {existingDocuments.length > 0 && (
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                      <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
-                        <ShieldCheck size={18} className="text-emerald-600" /> Existing Documents
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {existingDocuments.map((file) => (
-                          <div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
-                                <FileText size={16} />
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
+                          <ShieldCheck size={18} className="text-emerald-600" /> Existing Documents
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {existingDocuments.map((file) => (
+                            <div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
+                                  <FileText size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
+                                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.type}</p>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
-                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.type}</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <button onClick={() => preview(file.url)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                                <Eye size={16} />
-                              </button>
-                              <button onClick={() => download(file.url, file.fileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                                <Download size={16} />
-                              </button>
-                              <button 
-                                onClick={async () => {
-                                  if (!confirm("Delete this document?")) return;
-                                  try {
-                                    await remove(policy.policyId, file.id);
-                                    setExistingDocuments(prev =>
-                                      prev.filter(f => f.id !== file.id)
-                                    );
+                              <div className="flex gap-1">
+                                <button onClick={() => preview(file.url)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                  <Eye size={16} />
+                                </button>
+                                <button onClick={() => download(file.url, file.fileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                  <Download size={16} />
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    if (!confirm("Delete this document?")) return;
+                                    try {
+                                      await remove(policy.policyId, file.id);
+                                      setExistingDocuments(prev =>
+                                        prev.filter(f => f.id !== file.id)
+                                      );
                                     } catch {
-                                    toast.error("Failed to delete document");
-                                  }
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                                      toast.error("Failed to delete document");
+                                    }
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                   </div>
                 </div>
               )}
@@ -1366,7 +1266,7 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
         <div className="px-8 py-6 bg-white border-t flex justify-between items-center">
           <div className="flex gap-4">
             <button
-              disabled={isLoading || loadingDropdowns}
+              disabled={isLoading}
               className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               onClick={handleSave}
             >

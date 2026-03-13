@@ -7,18 +7,5 @@ export const useUploadPolicyDocument = () => {
     mutationFn: async (formData: FormData) => {
       return await uploadPolicyDocumentApi(formData);
     },
-
-    onSuccess: (response: any) => {
-      toast.success(response?.statusMessage || "Policy document uploaded successfully");
-    },
-
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.statusMessage ||
-        error?.response?.data?.message ||
-        "Policy document upload failed";
-
-      toast.error(message);
-    },
   });
 };

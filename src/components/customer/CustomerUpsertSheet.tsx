@@ -121,6 +121,7 @@ const CustomerUpsertSheet = ({
   };
 
   const [form, setForm] = useState(initialForm);
+  const [originalForm, setOriginalForm] = useState<any>(null);
   const [files, setFiles] = useState<{ file: File; type: string; label: string }[]>([]);
   const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -134,6 +135,7 @@ const CustomerUpsertSheet = ({
     { id: "Others", name: "Others" },
   ];
 
+  
   const resolveSecondaryEmail = () => {
     if (form.resEmail2?.trim()) return form.resEmail2;
     if (form.osEmail?.trim()) return form.osEmail;
@@ -206,6 +208,7 @@ const CustomerUpsertSheet = ({
   useEffect(() => {
     if (!open) {
       setForm(initialForm);
+      setOriginalForm(null);
       setExistingDocuments([]);
       setFiles([]);
       setErrors({});
@@ -214,7 +217,7 @@ const CustomerUpsertSheet = ({
     }
   
     if (customer) {
-      setForm({
+      const mappedForm = {
         ...initialForm,
   
         customerId: customer.customerId || null,
@@ -275,17 +278,21 @@ const CustomerUpsertSheet = ({
         ...(mapAddressToForm?.(customer.addresses || []) || {}),
   
         leadId: leadId || ""
-      });
-  
+      };
+
+      setForm(mappedForm);
+      setOriginalForm(mappedForm);
       setExistingDocuments(customer.kycFiles || []);
     } else {
       setForm({ ...initialForm, leadId: leadId || "" });
+      setOriginalForm(null);
+      setExistingDocuments([]);
+      setFiles([]);
     }
   
     setErrors({});
   }, [open, customer, leadId]);
 
-  /*   VALIDATION   */
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.fullName?.trim()) e.fullName = "Full name is required";
@@ -299,82 +306,139 @@ const CustomerUpsertSheet = ({
     return true;
   };
 
-  /*   SAVE  */
+  const checkCustomerChanges = (form: any, originalForm: any) => {
+    if (!originalForm) return true;
+    const fieldsToCheck = [
+      "title", "fullName", "groupHeadName", "groupCode", "clientCategory",
+      "fatherSpouseName", "email", "mobileNumber", "dob", "passedAway",
+      "age", "anniversaryDate", "gender", "maritalStatus", "nationality",
+      "birthPlace", "aadharNumber", "panNumber", "gstNumber", "drivingLicenceNo",
+      "drivingLicenceExpDate", "ckycNumber", "eInsuranceNumber", "education",
+      "passportNumber", "passportExpDate", "reference", "remarks",
+      "resHouseNo", "resStreet", "resArea", "resCity", "resPincode", "resState",
+      "resCountry", "resTelR", "resTelO", "resOtherNo", "resEmail2", "resWebsite",
+      "occDetails", "designation", "grossIncome", "employerName",
+      "offBuildingNo", "offStreet", "offLandmark", "offCity", "offPincode", "offState",
+      "osHouseNo", "osStreet", "osArea", "osCity", "osPincode", "osState",
+      "osCountry", "osTelO", "osMobile", "osEmail"
+    ];
+
+    return fieldsToCheck.some((field) => {
+      const current = form[field];
+      const original = originalForm[field];
+      return current !== original;
+    });
+  };
+
   const handleSave = async () => {
     if (!validate()) return;
   
     try {
-      const payload: any = {
-        customerId: form.customerId || undefined,
-        title: form.title,
-        clientName: form.fullName,
-        groupHeadName: form.groupHeadName || null,
-        groupCode: form.groupCode || null,
-        clientCategory: form.clientCategory || null,
-        fatherSpouseCompanyName: form.fatherSpouseName || null,
-        primaryMobile: form.mobileNumber,
-        email: form.email || null,
-        dob: form.dob ? new Date(form.dob).toISOString() : null,
-        anniversaryDate: form.anniversaryDate
-          ? new Date(form.anniversaryDate).toISOString()
-          : null,
-        age: Number(form.age) || 0,
-        gender: form.gender || null,
-        maritalStatus: form.maritalStatus || null,
-        nationality: form.nationality || null,
-        birthPlace: form.birthPlace || null,
-        isPassedAway: form.passedAway || false,
-        education: form.education || null,
-        referenceName: form.reference || null,
-        notes: "",
-        remarks: form.remarks || null,
-        leadId: form.leadId || null,
+      let customerId = form.customerId;
+      let customerUpdated = false;
+      let documentUploaded = false;
   
-        occupation: {
-          occupationType: form.occDetails || null,
-          designation: form.designation || null,
-          grossIncome: Number(form.grossIncome) || 0,
-          employerName: form.employerName || null
-        },
+      const hasCustomerChanged = originalForm
+        ? checkCustomerChanges(form, originalForm)
+        : true;
   
-        addresses: [
-          buildAddressPayload("RESIDENCE"),
-          buildAddressPayload("OFFICE"),
-          buildAddressPayload("OVERSEAS")
-        ].filter(Boolean),
-  
-        identityDetails: {
-          aadharNumber: form.aadharNumber || null,
-          panNumber: form.panNumber || null,
-          gstNumber: form.gstNumber || null,
-          drivingLicenceNumber: form.drivingLicenceNo || null,
-          drivingLicenceExpDate: form.drivingLicenceExpDate
-            ? new Date(form.drivingLicenceExpDate).toISOString()
+      if (hasCustomerChanged) {
+        const payload: any = {
+          customerId: form.customerId || undefined,
+          title: form.title,
+          clientName: form.fullName,
+          groupHeadName: form.groupHeadName || null,
+          groupCode: form.groupCode || null,
+          clientCategory: form.clientCategory || null,
+          fatherSpouseCompanyName: form.fatherSpouseName || null,
+          primaryMobile: form.mobileNumber,
+          email: form.email || null,
+          dob: form.dob ? new Date(form.dob).toISOString() : null,
+          anniversaryDate: form.anniversaryDate
+            ? new Date(form.anniversaryDate).toISOString()
             : null,
-          ckycNumber: form.ckycNumber || null,
-          eInsuranceNumber: form.eInsuranceNumber || null,
-          passportNumber: form.passportNumber || null,
-          passportExpDate: form.passportExpDate
-            ? new Date(form.passportExpDate).toISOString()
-            : null
-        },
+          age: Number(form.age) || 0,
+          gender: form.gender || null,
+          maritalStatus: form.maritalStatus || null,
+          nationality: form.nationality || null,
+          birthPlace: form.birthPlace || null,
+          isPassedAway: form.passedAway || false,
+          education: form.education || null,
+          referenceName: form.reference || null,
+          notes: "",
+          remarks: form.remarks || null,
+          leadId: form.leadId || null,
+          occupation: {
+            occupationType: form.occDetails || null,
+            designation: form.designation || null,
+            grossIncome: Number(form.grossIncome) || 0,
+            employerName: form.employerName || null,
+          },
+          addresses: [
+            buildAddressPayload("RESIDENCE"),
+            buildAddressPayload("OFFICE"),
+            buildAddressPayload("OVERSEAS"),
+          ].filter(Boolean),
+          identityDetails: {
+            aadharNumber: form.aadharNumber || null,
+            panNumber: form.panNumber || null,
+            gstNumber: form.gstNumber || null,
+            drivingLicenceNumber: form.drivingLicenceNo || null,
+            drivingLicenceExpDate: form.drivingLicenceExpDate
+              ? new Date(form.drivingLicenceExpDate).toISOString()
+              : null,
+            ckycNumber: form.ckycNumber || null,
+            eInsuranceNumber: form.eInsuranceNumber || null,
+            passportNumber: form.passportNumber || null,
+            passportExpDate: form.passportExpDate
+              ? new Date(form.passportExpDate).toISOString()
+              : null,
+          },
+        };
   
-      };
+        const response = await mutateAsync(payload);
   
-      const response = await mutateAsync(payload);
-
-    if (response?.customerId) {
-      setForm(prev => ({
-        ...prev,
-        customerId: response.customerId
-      }));
-    }
+        customerId =
+          response?.customerId || response?.data?.customerId || form.customerId;
+  
+        if (customerId) setForm((prev) => ({ ...prev, customerId }));
+  
+        customerUpdated = true;
+  
+        if (response?.statusMessage) {
+          toast.success(response.statusMessage);
+        } else {
+          toast.success(
+            form.customerId
+              ? "Customer updated successfully"
+              : "Customer created successfully"
+          );
+        }
+      }
+  
+      if (files.length > 0 && customerId) {
+        await Promise.all(
+          files.map((item) => {
+            const formData = new FormData();
+            formData.append("Id", customerId);
+            formData.append("Type", "1");
+            formData.append("DocumentType", item.label);
+            formData.append("Files", item.file);
+            return uploadDocument(formData); 
+          })
+        );
+  
+        documentUploaded = true;
+  
+        if (!customerUpdated) {
+          toast.success("Documents uploaded successfully");
+        }
+      }
   
       onSuccess();
+      onClose();
     } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Something went wrong"
-      );
+      toast.error(error?.response?.data?.message || "Something went wrong");
     }
   };
 
@@ -384,11 +448,6 @@ const CustomerUpsertSheet = ({
   
     if (!selectedDocName) {
       toast.error("Please select a document type first");
-      return;
-    }
-  
-    if (!form.customerId) {
-      toast.error("Please save customer first");
       return;
     }
   
@@ -412,58 +471,6 @@ const CustomerUpsertSheet = ({
     setFiles(prev => [...prev, ...newFiles]);
     setSelectedDocName("");
     e.target.value = "";
-  };
-
-  const handleUploadDocuments = async () => {
-    if (!form.customerId) {
-      toast.error("Please save customer before uploading documents");
-      return;
-    }
-  
-    if (files.length === 0) {
-      toast.error("Please select at least one document");
-      return;
-    }
-  
-    try {
-      for (const item of files) {
-        const formData = new FormData();
-        formData.append("Id", form.customerId);
-        formData.append("Type", "1");
-        formData.append("DocumentType", item.label);
-        formData.append("Files", item.file);
-  
-        const response = await uploadDocument(formData);
-  
-        setExistingDocuments(prev => [
-          ...prev,
-          {
-            id: response?.data?.id || crypto.randomUUID(),
-            fileName: item.file.name,
-            url: response?.data?.url || "",
-            type: item.label,
-          }
-        ]);
-      }
-    
-      setFiles([]);
-  
-      onSuccess();
-  
-      onClose();
-  
-    } catch (error) {
-      console.error(error);
-      toast.error("Document upload failed");
-    }
-  };
-
-  const blockDocumentAccess = () => {
-    if (!isEditMode) {
-      toast.error("Please save customer first to access documents");
-      return true;
-    }
-    return false;
   };
 
 
@@ -540,38 +547,27 @@ const CustomerUpsertSheet = ({
         </div>
 
         {/* TABS */}
+        {/* ── CHANGE 7: documents tab is always enabled — no more disabled state ── */}
         <div className="px-8 bg-white border-b flex gap-8">
-        {[
+          {[
             { id: "basic", label: "Insured Member's Basic Information", icon: UserPlus },
             { id: "residential", label: "Residential Information", icon: Home },
-            ...(isEditMode
-              ? [{ id: "documents", label: "Personal Documents", icon: FileText }]
-              : [{ id: "documents", label: "Personal Documents", icon: FileText, disabled: true }]),
-          ].map((tab: any) => {
-
-            const isDisabled = tab.id === "documents" && !isEditMode;
-
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  if (tab.id === "documents" && blockDocumentAccess()) return;
-                
-                  setActiveTab(tab.id as TabType);
-                }}
-                className={`
-                  flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-all
-                  ${activeTab === tab.id
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200"}
-                  ${isDisabled ? "opacity-40 cursor-not-allowed pointer-events-auto" : ""}
-                `}
-              >
-                <tab.icon size={18} />
-                {tab.label}
-              </button>
-            );
-          })}
+            { id: "documents", label: "Personal Documents", icon: FileText },
+          ].map((tab: any) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              className={`
+                flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-all
+                ${activeTab === tab.id
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200"}
+              `}
+            >
+              <tab.icon size={18} />
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* BODY */}
@@ -771,8 +767,17 @@ const CustomerUpsertSheet = ({
               </div>
             )}
 
-              {isEditMode && activeTab === "documents" && (
+            {activeTab === "documents" && (
               <div className="space-y-8">
+                {!isEditMode && (
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
+                    <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Documents will be uploaded automatically when you click <strong>SAVE</strong>.
+                    </p>
+                  </div>
+                )}
+
                 {/* UPLOAD SECTION */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -839,15 +844,12 @@ const CustomerUpsertSheet = ({
                   {/* NEW FILES */}
                   {files.length > 0 && (
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-
-                      {/* Header */}
                       <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
                         <Plus size={18} className="text-blue-600" /> 
                         New Attachments
                       </h4>
 
-                      {/* File List */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {files.map((f, idx) => (
                           <div
                             key={idx}
@@ -878,18 +880,8 @@ const CustomerUpsertSheet = ({
                           </div>
                         ))}
                       </div>
-
-                      {/* Upload Button */}
-                      <div className="flex justify-end">
-                        <button
-                          onClick={handleUploadDocuments}
-                          disabled={isUploading}
-                          className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                          {isUploading ? "Uploading..." : "Upload Documents"}
-                        </button>
-                      </div>
-
+                      {/* ── CHANGE 10: removed standalone "Upload Documents" button
+                              — uploading now happens via the main SAVE button ── */}
                     </div>
                   )}
 
@@ -951,16 +943,16 @@ const CustomerUpsertSheet = ({
         <div className="px-8 py-6 bg-white border-t flex justify-between items-center">
           <div className="flex gap-4">
             <button
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
               className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               onClick={handleSave}
             >
-              {isLoading ? <Spinner className="text-white" /> : "SAVE"}
+              {isLoading || isUploading ? <Spinner className="text-white" /> : "SAVE"}
             </button>
             <button
               className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded flex items-center justify-center gap-2 shadow-lg transition-all"
               onClick={onClose}
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
             >
               CANCEL
             </button>
@@ -969,13 +961,13 @@ const CustomerUpsertSheet = ({
           <div className="flex gap-4">
             {activeTab !== "basic" && (
               <button
-              onClick={() => {
-                if (activeTab === "documents") {
-                  setActiveTab("residential");
-                } else if (activeTab === "residential") {
-                  setActiveTab("basic");
-                }
-              }}
+                onClick={() => {
+                  if (activeTab === "documents") {
+                    setActiveTab("residential");
+                  } else if (activeTab === "residential") {
+                    setActiveTab("basic");
+                  }
+                }}
                 className="px-6 py-2.5 text-sm font-bold text-white bg-red-400 hover:bg-red-500 rounded flex items-center gap-2 transition-all"
               >
                 Previous
@@ -983,19 +975,14 @@ const CustomerUpsertSheet = ({
             )}
             {activeTab !== "documents" && (
               <button
-              onClick={() => {
-                if (activeTab === "basic") {
-                  setActiveTab("residential");
-                  return;
-                }
-              
-                if (activeTab === "residential") {
-                  if (blockDocumentAccess()) return;
-              
-                  setActiveTab("documents");
-                }
-              }}
-              className="px-6 py-2.5 text-sm font-bold text-white bg-blue-400 hover:bg-blue-500 rounded flex items-center gap-2 transition-all"
+                onClick={() => {
+                  if (activeTab === "basic") {
+                    setActiveTab("residential");
+                  } else if (activeTab === "residential") {
+                    setActiveTab("documents");
+                  }
+                }}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-400 hover:bg-blue-500 rounded flex items-center gap-2 transition-all"
               >
                 Next <ChevronRight size={18} />
               </button>

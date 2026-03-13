@@ -208,7 +208,7 @@ export interface LifePolicy {
   maturityDate: string
 
   objectiveOfInsurance: string
-  sumAssured: number
+  sumAssured: string
 
   createdAt: string
 

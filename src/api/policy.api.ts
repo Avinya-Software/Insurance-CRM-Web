@@ -134,8 +134,8 @@ export const getInsuranceTypesApi = async () => {
   return res.data.data; 
 };
 
-export const getCompanyListApi = async () => {
-  const res = await api.get("/Admin/CompanyList");
+export const getCompanyListApi = async (policyType) => {
+  const res = await api.get(`/Companies/CompanyList?policyType=${policyType}`);
   return res.data?.data || [];
 };
 

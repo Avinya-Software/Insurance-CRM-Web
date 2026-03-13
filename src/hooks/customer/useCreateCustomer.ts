@@ -20,12 +20,6 @@ export const useUpsertCustomer = () => {
 
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["customers"] });
-
-      if (variables.customerId) {
-        toast.success("Customer updated successfully");
-      } else {
-        toast.success("Customer created successfully");
-      }
     },
 
     onError: (error: any, variables) => {
