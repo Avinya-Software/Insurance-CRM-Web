@@ -44,7 +44,7 @@ const PolicyUpsertSheet = ({
   }, [open]);
   
   const { data: insuranceTypes } = useInsuranceTypes();
-  const { data: companies } = useCompanyList();
+  const { data: companies } = useCompanyList(true);
 
   /*   POLICY DOCUMENT ACTIONS   */
   const [existingDocuments, setExistingDocuments] = useState<
