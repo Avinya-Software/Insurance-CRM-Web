@@ -321,15 +321,15 @@ const Sidebar = () => {
         {isAdmin && (
           <>
             <NavItem
-              to="/admin"
+              to="/company"
               icon={<History size={18} />}
-              label="Dashboard"
+              label="Company"
               isCollapsed={isCollapsed}
             />
             <NavItem
-              to="/admin/history"
+              to="/product"
               icon={<History size={18} />}
-              label="History"
+              label="Product"
               isCollapsed={isCollapsed}
             />
           </>
