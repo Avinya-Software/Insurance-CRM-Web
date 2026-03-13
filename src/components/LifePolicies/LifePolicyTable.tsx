@@ -4,7 +4,7 @@ import type { LifePolicy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
 import { useUpdatePolicyStatus } from "../../hooks/policy/useUpdatePolicyStatus";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getPolicyStatusesDropdownApi } from "../../api/policy.api";
 import TableSkeleton from "../common/TableSkeleton";
 
@@ -58,7 +58,7 @@ const LifePolicyTable = ({
   const { mutate: deletePolicy, isPending } = useDeletePolicy();
   const { mutate: updateStatus, isPending: updatingStatus } =
     useUpdatePolicyStatus();
-
+    const queryClient = useQueryClient();
   /* 🔥 Fetch policy statuses */
 const { data: statuses = [] } = useQuery({
   queryKey: ["policy-statuses"],
@@ -99,6 +99,8 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
 
     deletePolicy(confirmDelete.policyId, {
       onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["life-policies"] });
+    
         setConfirmDelete(null);
         setOpenPolicy(null);
       },
@@ -242,11 +244,11 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
           {showStatusMenu && (
             <div className="border-t">
               {statuses
-  .filter(
-    (s: any) =>
-      s.policyStatusId !== openPolicy.policyStatusId
-  )
-  .map((status: any, index: number) => (
+            .filter(
+              (s: any) =>
+                s.policyStatusId !== openPolicy.policyStatusId
+            )
+            .map((status: any, index: number) => (
                   <button
                     key={`status-${status.policyStatusId}`}
                     onClick={() =>
