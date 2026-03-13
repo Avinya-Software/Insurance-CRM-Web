@@ -182,8 +182,8 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
                   <Td>{showValue(p.premiumMode)}</Td>
                   <Td>{showValue(p.policyTerm)}</Td>
                   <Td>{p.policyStartDate ? p.policyStartDate.split("T")[0] : "-"}</Td>
-                  <Td>{showValue(p.sumAssured)}</Td>
                   <Td>{p.nextPremiumDueDate ? p.nextPremiumDueDate.split("T")[0] : "-"}</Td>
+                  <Td>{showValue(p.sumAssured)}</Td>
                   <Td>{showValue(p.premiumDetails?.basicPremium)}</Td>
                   <Td>{showValue(p.premiumDetails?.annualPremium)}</Td>
 
