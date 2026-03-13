@@ -1,12 +1,16 @@
 import { useState, useRef } from "react";
 import { MoreVertical, X, Check } from "lucide-react";
-import type { Lead } from "../../interfaces/lead.interface";
+import type { Lead, LeadDetails } from "../../interfaces/lead.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteLead } from "../../hooks/lead/useDeleteLead";
 import { useUpdateLeadStatus } from "../../hooks/lead/useUpdateLeadStatus";
 import { useQuery } from "@tanstack/react-query";
-import { getLeadStatusesApi } from "../../api/lead.api";
+import { getLeadByIdApi, getLeadStatusesApi } from "../../api/lead.api";
 import TableSkeleton from "../common/TableSkeleton";
+import { Dialog, DialogContent, DialogTitle } from "@radix-ui/react-dialog";
+import { DialogHeader } from "../ui/dialog";
+import { useNavigate } from "react-router-dom";
+
 
 /*   STATUS BADGE STYLES   */
 
@@ -49,6 +53,15 @@ const LeadTable = ({
   const [openLead, setOpenLead] = useState<Lead | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+  const { data: leadDetails, isLoading: loadingLeadDetails } = useQuery<LeadDetails | null>({
+    queryKey: ["lead-details", selectedLeadId],
+    queryFn: () => (selectedLeadId ? getLeadByIdApi(selectedLeadId) : Promise.resolve(null)),
+    enabled: !!selectedLeadId && isViewOpen,
+  });
+  
 
   const [style, setStyle] = useState<{ top: number; left: number }>({
     top: 0,
@@ -64,7 +77,7 @@ const LeadTable = ({
   const { mutate: deleteLead, isPending } = useDeleteLead();
   const { mutate: updateStatus, isPending: updatingStatus } =
     useUpdateLeadStatus();
-
+  const navigate = useNavigate();
   /* 🔥 Fetch statuses */
   const { data: statuses = [] } = useQuery({
     queryKey: ["lead-statuses"],
@@ -96,6 +109,13 @@ const LeadTable = ({
     setOpenLead(null);
     setShowStatusMenu(false);
     setTimeout(cb, 0);
+  };
+
+  const handleViewDetails = () => {
+    if (!openLead) return;
+    setSelectedLeadId(openLead.leadId);
+    setIsViewOpen(true);
+    setOpenLead(null);
   };
 
   const handleDelete = () => {
@@ -137,7 +157,7 @@ const LeadTable = ({
             <Th>Mobile</Th>
             <Th>Status</Th>
             <Th>Source</Th>
-            <Th>Created</Th>
+            <Th>Created Date</Th>
             <Th className="text-left">Actions</Th>
           </tr>
         </thead>
@@ -231,18 +251,26 @@ const LeadTable = ({
               </>
             )}
 
-          <MenuItem
-            label="View Follow Ups"
-            onClick={() =>
-              handleAction(() => onViewFollowUps?.(openLead))
-            }
-          />
+            {openLead?.followUps && openLead.followUps.length > 0 && (
+              <MenuItem
+                label="View Follow Ups"
+                onClick={() =>
+                  handleAction(() =>
+                    navigate(`/leads/${openLead.leadId}/followups`)
+                  )
+                }
+              />
+            )}
+
+          <MenuItem label="View Details" onClick={handleViewDetails} />
 
           <MenuItem
             label="Delete Lead"
             danger
             onClick={() => setConfirmDelete(openLead)}
           />
+
+
 
           {/* 🔥 STATUS SUBMENU */}
           {showStatusMenu && (
@@ -307,6 +335,64 @@ const LeadTable = ({
           </div>
         </div>
       )}
+
+     {/* VIEW DETAILS DIALOG */}
+        {isViewOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+              <DialogContent className="relative w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg">
+                <DialogHeader>
+                  <DialogTitle>
+                  <strong> Lead No: </strong> {leadDetails?.leadNo || "..."} | <strong>Status: </strong> {leadDetails?.leadStatusName || "..."}
+                  </DialogTitle>
+                  <button
+                    className="absolute right-4 top-4 p-1 rounded hover:bg-slate-200"
+                    onClick={() => setIsViewOpen(false)}
+                  >
+                    <X size={18} />
+                  </button>
+                </DialogHeader>
+
+                {loadingLeadDetails ? (
+                  <div className="py-10 text-center text-gray-500">Loading...</div>
+                ) : leadDetails ? (
+                  <div className="mt-4 space-y-4 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <strong>Full Name:</strong> {leadDetails.fullName}
+                      </div>
+                      <div>
+                        <strong>Mobile:</strong> {leadDetails.mobile || "N/A"}
+                      </div>
+                      <div>
+                        <strong>Email:</strong> {leadDetails.email || "N/A"}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <strong>Address:</strong>
+                        <p className="mt-1 bg-muted/40 rounded-md p-2">{leadDetails.address || "N/A"}</p>
+                      </div>
+                      <div>
+                        <strong>Lead Source:</strong> {leadDetails.leadSourceName}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <strong>Notes:</strong>
+                        <p className="mt-1 bg-muted/40 rounded-md p-2">{leadDetails.notes || "N/A"}</p>
+                      </div>
+                      <div>
+                        <strong>Created At:</strong>{" "}
+                        {leadDetails.createdAt
+                          ? new Date(leadDetails.createdAt).toLocaleString()
+                          : "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-10 text-center text-red-500">Failed to load lead details.</div>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
     </div>
   );
 };

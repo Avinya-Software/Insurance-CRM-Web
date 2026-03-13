@@ -2,7 +2,6 @@ import { ProductDropdown, ProductDropdownResponse } from "../interfaces/product.
 import api from "./axios";
 
 /*  ADD / UPDATE PRODUCT  */
-
 export const upsertProductApi = async (payload: {
   productId?: string;
   insurerId: string;
@@ -17,17 +16,23 @@ export const upsertProductApi = async (payload: {
   return res.data;
 };
 
-/*  PRODUCT CATEGORY DROPDOWN  */
 
+/*  PRODUCT CATEGORY DROPDOWN  */
 export const getProductCategoryDropdownApi = async () => {
-  const res = await api.get<{ id: number; name: string }[]>(
-    "/products/ProductCategorydropdown"
-  );
-  return res.data;
+  const res = await api.get<{
+    statusCode: number;
+    statusMessage: string;
+    data: { productCategoryId: number; categoryName: string }[];
+  }>("/products/product-category-dropdown"); 
+
+  return res.data.data.map((cat) => ({
+    id: cat.productCategoryId,
+    name: cat.categoryName,
+  }));
 };
 
-/*  GET PRODUCTS (WITH FILTER + PAGINATION)  */
 
+/*  GET PRODUCTS (WITH FILTER + PAGINATION)  */
 export const getProductsApi = async (params: {
   pageNumber: number;
   pageSize: number;

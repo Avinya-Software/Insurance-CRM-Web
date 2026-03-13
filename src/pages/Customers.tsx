@@ -65,7 +65,7 @@ const Customers = () => {
   const openCustomerPolicies = (customer: Customer) => {
     setViewCustomerPolicies({
       customerId: customer.customerId,
-      customerName: customer.fullName,
+      customerName: customer.clientName,
     });
   };
 
@@ -73,14 +73,14 @@ const Customers = () => {
   const openCustomerClaims = (customer: Customer) => {
     setViewCustomerClaims({
       customerId: customer.customerId,
-      customerName: customer.fullName,
+      customerName: customer.clientName,
     });
   };
 
   const handleCustomerSuccess = () => {
     setOpenCustomerSheet(false);
     refetch();
-    toast.success("Customer saved successfully!");
+    // toast.success("Customer saved successfully!");
   };
 
   const handlePolicySuccess = () => {

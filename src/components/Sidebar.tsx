@@ -15,9 +15,13 @@ import {
   ListTodo,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Shield,
+  CarFront,
+  Car,
+  Layers,
 } from "lucide-react";
 import { useState } from "react";
-
 /* ================= JWT HELPER ================= */
 
 const getUserFromToken = () => {
@@ -30,22 +34,30 @@ const getUserFromToken = () => {
 
     return {
       fullName: decoded.FullName,
-      email: decoded.email,
-      role:
-        decoded[
-          "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-        ],
+      email: decoded.email || "",
+      role: decoded.Role,
     };
   } catch {
     return null;
   }
 };
 
+
+
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * Sidebar component, displays a collapsible sidebar with navigation links and user information.
+ * @returns {JSX.Element} A JSX element representing the Sidebar component.
+ */
+
+/*******  71c90cbc-b468-4491-9b2f-c8552fd1dac0  *******/
 const Sidebar = () => {
   const user = getUserFromToken();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
-
+  const [openAgency, setOpenAgency] = useState(false);
+  const [openPolicies, setOpenPolicies] = useState(false);
+    const [openMaster, setOpenMaster] = useState(false);
   const isAdmin = user?.role === "SuperAdmin";
 
   /* ================= LOGOUT ================= */
@@ -90,7 +102,6 @@ const Sidebar = () => {
           </button>
         </div>
       </div>
-
       {/* ---------- NAV ---------- */}
       <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {/* ================= ADVISOR MENU ================= */}
@@ -117,26 +128,100 @@ const Sidebar = () => {
               isCollapsed={isCollapsed}
             />
 
-            <NavItem
+            {/* <NavItem
               to="/insurer"
               icon={<Building2 size={18} />}
               label="Insurers"
               isCollapsed={isCollapsed}
-            />
+            /> */}
 
-            <NavItem
+            <div>
+              <div
+                onClick={() => setOpenAgency(!openAgency)}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
+                  ${isCollapsed ? "justify-center" : ""}
+                  text-slate-300 hover:bg-slate-800`}
+              >
+                <FileText size={18} />
+
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1">Agency</span>
+                    {openAgency ? (
+                      <ChevronDown size={16} />
+                    ) : (
+                      <ChevronRight size={16} />
+                    )}
+                  </>
+                )}
+              </div>
+
+              {openAgency && !isCollapsed && (
+                <div className="ml-6 mt-1 space-y-1">
+                  <NavItem
+                    to="/agency"
+                    label="General Agency"
+                    icon={<FileText size={16} />}
+                    isCollapsed={false}
+                  />
+
+                  <NavItem
+                    to="/lifeagency"
+                    label="Life Agency"
+                    icon={<FileText size={16} />}
+                    isCollapsed={false}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* <NavItem
               to="/products"
               icon={<Package size={18} />}
               label="Products"
               isCollapsed={isCollapsed}
-            />
+            /> */}
 
-            <NavItem
-              to="/policies"
-              icon={<FileText size={18} />}
-              label="Policies"
-              isCollapsed={isCollapsed}
-            />
+            {/* ================= POLICIES MENU ================= */}
+            <div>
+                <div
+                  onClick={() => setOpenPolicies(!openPolicies)}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
+                    ${isCollapsed ? "justify-center" : ""}
+                    text-slate-300 hover:bg-slate-800`}
+                >
+                  <FileText size={18} />
+
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">Policies</span>
+                      {openPolicies ? (
+                        <ChevronDown size={16} />
+                      ) : (
+                        <ChevronRight size={16} />
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {openPolicies && !isCollapsed && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    <NavItem
+                      to="/policies"
+                      label="General Policy"
+                      icon={<FileText size={16} />}
+                      isCollapsed={false}
+                    />
+
+                    <NavItem
+                      to="/lifepolicies"
+                      label="Life Policy"
+                      icon={<FileText size={16} />}
+                      isCollapsed={false}
+                    />
+                  </div>
+                )}
+              </div>
 
             <NavItem
               to="/claims"
@@ -158,6 +243,70 @@ const Sidebar = () => {
               label="Campaign"
               isCollapsed={isCollapsed}
             />
+
+          <div>
+
+            <div
+              onClick={() => setOpenMaster(!openMaster)}
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
+                ${isCollapsed ? "justify-center" : ""}
+                text-slate-300 hover:bg-slate-800`}
+            >
+              <Layers size={18} />
+
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1">Master Details</span>
+                  {openMaster ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
+                </>
+              )}
+            </div>
+
+            {openMaster && !isCollapsed && (
+              <div className="ml-6 mt-1 space-y-1">
+
+                <NavItem
+                  to="/usertermmaster"
+                  label="User Master"
+                  icon={<ListTodo size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/addondetails"
+                  label="Add On Details"
+                  icon={<ListTodo size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/hpadetails"
+                  label="HPA Details"
+                  icon={<Shield size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/makedetails"
+                  label="Make Details"
+                  icon={<Car size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/modeldetails"
+                  label="Model Details"
+                  icon={<CarFront size={16} />}
+                  isCollapsed={false}
+                />
+
+              </div>
+            )}
+            </div>
 
             <NavItem
               to="/settings"
@@ -237,7 +386,6 @@ const NavItem = ({
 }) => (
   <NavLink
     to={to}
-    end
     title={isCollapsed ? label : ""}
     className={({ isActive }) =>
       `flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition

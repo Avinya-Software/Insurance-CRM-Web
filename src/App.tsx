@@ -14,7 +14,6 @@ import Claims from "./pages/Claims";
 import Settings from "./pages/Settings";
 import Lead from "./pages/Lead";
 import Product from "./pages/Product";
-import Campaign from "./pages/Campaign ";
 import Insurer from "./pages/Insurer";
 import TasksPage from "./pages/TasksPage";
 import { Toaster } from "react-hot-toast";
@@ -22,24 +21,33 @@ import { Toaster } from "react-hot-toast";
 /* -------- ADMIN PAGES -------- */
 import AdminAdvisorsByStatusPage from "./pages/AdminAdvisorsByStatusPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import LifePolicies from "./pages/LifePolicies";
+import Agency from "./pages/Agency";
+import AddOnDetails from "./pages/AddOnDetails";
+import HPADetails from "./pages/HPADetails";
+import MakeModelPage from "./pages/MakeModelPage";
+import Campaign from "./pages/Campaign";
+import LeadFollowUpPage from "./pages/LeadFollowUpPage";
+import UserTeamMaster from "./pages/UserTeamMaster";
 
 function App() {
-  return (
-    <>
-     <Toaster
+  return (  
+    <BrowserRouter>
+
+      <Toaster
         position="top-right"
         toastOptions={{
-          duration: 4000,
+          duration: 3000,
         }}
       />
-    <BrowserRouter>
-      <Routes> 
+
+      <Routes>
         {/* ================= PUBLIC ================= */}
         <Route path="/login" element={<Login />} />
-        <Route path="/login/admin" element={<Admin />}></Route>
+        <Route path="/login/admin" element={<Admin />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ================= PROTECTED + LAYOUT ================= */}
+        {/* ================= PROTECTED ================= */}
         <Route
           element={
             <ProtectedRoute>
@@ -47,19 +55,28 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* -------- ADVISOR ROUTES -------- */}
           <Route path="/" element={<Dashboard />} />
           <Route path="/leads" element={<Lead />} />
+          <Route path="/leads/:leadId/followups" element={<LeadFollowUpPage />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/policies" element={<Policies />} />
-          <Route path="/insurer" element={<Insurer />} />
+          <Route path="/lifepolicies" element={<LifePolicies />} />
+          {/* <Route path="/insurer" element={<Insurer />} /> */}
+          <Route path="/agency" element={<Agency type={0} title="General Agency" />} />
+          <Route path="/usertermmaster" element={<UserTeamMaster/>}/>
+          <Route path="/hpadetails" element={<HPADetails />} />
+          <Route path="/lifeagency" element={<Agency type={1} title="Life Agency" />} />
+          <Route path="/makedetails" element={<MakeModelPage type={1} title="Make Details" />} />
+          <Route path="/modeldetails" element={<MakeModelPage type={2} title="Model Details" />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/campaign" element={<Campaign />} />
-          <Route path="/products" element={<Product />} />
+          {/* <Route path="/products" element={<Product />} /> */}
+          <Route path="/addondetails" element={<AddOnDetails />} />
           <Route path="/tasks" element={<TasksPage />} />
-          {/* -------- ADMIN ROUTES -------- */}
+
+          {/* ADMIN */}
           <Route path="/admin" element={<AdminDashboard />} />
           <Route
             path="/admin/history"
@@ -67,8 +84,8 @@ function App() {
           />
         </Route>
       </Routes>
+
     </BrowserRouter>
-    </>
   );
 }
 

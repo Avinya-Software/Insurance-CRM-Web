@@ -8,7 +8,6 @@ import LeadTable from "../components/leads/LeadTable";
 import Pagination from "../components/leads/Pagination";
 import LeadFilterSheet from "../components/leads/LeadFilterSheet";
 import LeadUpsertSheet from "../components/leads/LeadUpsertSheet";
-import LeadFollowUpBottomSheet from "../components/followups/LeadFollowUpBottomSheet";
 import LeadFollowUpCreateSheet from "../components/followups/LeadFollowUpCreateSheet";
 import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
 
@@ -53,9 +52,15 @@ const Leads = () => {
     (state: RootState) => state.auth.advisorId
   );
 
+  const [editFollowUp, setEditFollowUp] = useState<{
+    leadId: string;
+    leadName?: string;
+    followUp: any;
+  } | null>(null);
+  
   /*   API   */
 
-  const { data, isLoading, isFetching } = useLeads(filters);
+  const { data, isLoading, isFetching, refetch } = useLeads(filters);
 
   /*   HELPERS   */
 
@@ -237,23 +242,32 @@ const Leads = () => {
         }}
       />
 
-      <LeadFollowUpBottomSheet
-        open={!!viewFollowUpLead}
-        leadId={viewFollowUpLead?.leadId || null}
-        leadName={viewFollowUpLead?.leadName}
-        onClose={() => setViewFollowUpLead(null)}
-      />
 
-      <LeadFollowUpCreateSheet
-        open={!!createFollowUpLead}
-        leadId={createFollowUpLead?.leadId || null}
-        leadName={createFollowUpLead?.leadName}
-        onClose={() => setCreateFollowUpLead(null)}
-        onSuccess={() => {
-          setCreateFollowUpLead(null);
-          setViewFollowUpLead(createFollowUpLead);
-        }}
-      />
+        <LeadFollowUpCreateSheet
+          open={!!createFollowUpLead || !!editFollowUp}
+          leadId={
+            createFollowUpLead?.leadId ||
+            editFollowUp?.leadId ||
+            null
+          }
+          leadName={
+            createFollowUpLead?.leadName ||
+            editFollowUp?.leadName
+          }
+          editData={editFollowUp?.followUp}
+          mode={editFollowUp ? "edit" : "create"}
+          onClose={() => {
+            setCreateFollowUpLead(null);
+            setEditFollowUp(null);
+          }}
+          onSuccess={() => {
+            setCreateFollowUpLead(null);
+            setEditFollowUp(null);
+
+            refetch();
+          }}
+        />
+
     </>
   );
 };

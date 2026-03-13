@@ -1,18 +1,28 @@
-import { useEffect, useState } from "react";
-import { X, Eye, Download, Trash2 } from "lucide-react";
-import toast from "react-hot-toast";
-
-import { useUpsertPolicy } from "../../hooks/policy/useUpsertPolicy";
-import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdown";
-import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
-import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
-import { useInsurerDropdown } from "../../hooks/insurer/useInsurerDropdown";
-import { useProductDropdown } from "../../hooks/product/useProductDropdown";
-import { usePolicyDocumentActions } from "../../hooks/policy/usePolicyDocumentActions";
-import SearchableComboBox from "../common/SearchableComboBox";
-
+import { use, useEffect, useState } from "react";
+import { X, Eye, Download, Trash2, Plus, FileText, ShieldCheck, CreditCard, UploadCloud, ChevronRight, ChevronDown, UserPlus, AlertCircle } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 import Spinner from "../common/Spinner";
-import { UpsertPolicyPayload } from "../../interfaces/policy.interface";
+import SearchableComboBox from "../common/SearchableComboBox";
+import { useInsuranceTypes } from "../../hooks/policy/useInsuranceTypes";
+import { useCompanyList } from "../../hooks/policy/useCompany";
+import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
+import PolicyRelatedInfo from "./PolicyRelatedInfo";
+import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
+import { usePolicyTypesDropdown } from "../../hooks/policy/usePolicyTypesDropdown";
+import { useAddOnDetails } from "../../hooks/policy/useAddOnDetails";
+import { useHPADetails } from "../../hooks/HPADetails/useHPADetails";
+
+// --- MOCK HOOKS (Replace with real ones in production) ---
+const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => { console.log("Saving...", d); await new Promise(r => setTimeout(r, 1000)); }, isPending: false });
+const useCustomerDropdown = () => ({ data: [{ customerId: "1", fullName: "John Doe" }], isLoading: false });
+const useInsurerDropdown = () => ({ data: [{ insurerId: "1", insurerName: "LIC" }, { insurerId: "2", insurerName: "HDFC ERGO" }], isLoading: false });
+const useProductDropdown = (id?: string) => ({ data: [{ productId: "1", productName: "Term Life" }, { productId: "2", productName: "Health Insurance" }], isLoading: false });
+const usePolicyDocumentActions = (cb: any) => ({ 
+  preview: (p: any, f: any) => toast.success("Previewing " + f), 
+  download: (p: any, f: any, n: any) => toast.success("Downloading " + n), 
+  remove: async (p: any, f: any) => { toast.success("Removed " + f); cb(f); } 
+});
+
 
 interface Props {
   open: boolean;
@@ -22,6 +32,8 @@ interface Props {
   onSuccess: () => void;
 }
 
+type TabType = "general" | "related" | "documents";
+
 const PolicyUpsertSheet = ({
   open,
   onClose,
@@ -29,6 +41,8 @@ const PolicyUpsertSheet = ({
   customerId,
   onSuccess,
 }: Props) => {
+  const [activeTab, setActiveTab] = useState<TabType>("general");
+
   /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
@@ -36,19 +50,24 @@ const PolicyUpsertSheet = ({
       document.body.style.overflow = "unset";
     };
   }, [open]);
+  const { data: insuranceTypes } = useInsuranceTypes();
+  const { data: companies } = useCompanyList();
+
 
   /*   POLICY DOCUMENT ACTIONS   */
-  const [existingDocuments, setExistingDocuments] = useState<string[]>([]);
+  const [existingDocuments, setExistingDocuments] = useState<
+    { fileName: string; savedFileName: string; type: string }[]
+  >([]);
+
   const { preview, download, remove } = usePolicyDocumentActions(
-    (deletedId) => {
+    (deletedId: string) => {
       setExistingDocuments((prev) =>
-        prev.filter((f) => !f.startsWith(deletedId + "_"))
+        prev.filter((f) => f.savedFileName !== deletedId)
       );
     }
   );
 
   /*   FORM STATE   */
-
   const initialForm = {
     policyId: null as string | null,
     customerId: "",
@@ -56,563 +75,948 @@ const PolicyUpsertSheet = ({
     productId: "",
     policyTypeId: undefined as number | undefined,
     policyStatusId: undefined as number | undefined,
-    registrationNo: "",
+    renewable: "Yes",
+    insuredName: "",
+    groupHeadName: "",
+    policyNumber: "",
+    agencyName: "",
+    baName: "",
+    companyName: "",
+    insuranceType: "",
+    productName: "",
+    loginDate: "",
     startDate: "",
     endDate: "",
+    addOnName: "",
+    hpaId: "",
+    hpaBranch: "",
+    insuranceSubType: "",
+    eligibleForHealthCheckup: "No",
+    longTermPolicy: "No",
+
+    // Premium Details
     premiumNet: 0,
     premiumGross: 0,
+    basicODPremium: 0,
+    tpPremium: 0,
+    otherTPPremium: 0,
+    addOnCover: 0,
+    ncb: 0,
+    discount: 0,
+    terrorismPremium: 0,
+    gstPerc: 0,
+    gstAmount: 0,
+    finalPremium: 0,
+    claimProcess: "Select",
+    brokerageOnIRDA: "",
+    brokeragePerIRDA: 0,
+    brokerageAmtIRDA: 0,
+    brokerageOnReward: "",
+    brokeragePerReward: 0,
+    brokerageAmtReward: 0,
+    baBrokerageOn: "",
+    baBrokeragePer: 0,
+    baBrokerageAmt: 0,
+    
+    // Checkboxes
+    calcIrda: false,
+    calcReward: false,
+    calcBa: false,
+
+    // Payment Details
     paymentMode: "",
+    paymentType: "",
+    payReferenceNo: "",
+    paymentDate: "",
+    paymentNo: "",
+    bankBranchName: "",
+    paymentAmount: 0,
+    cashAmount: 0,
+    totalAmount: 0,
+    diffAmount: 0,
+    remarks: "",
+    claimExist: "No",
+    noOfEndorsement: "",
     paymentDueDate: "",
     renewalDate: "",
     brokerCode: "",
     policyCode: "",
     paymentDone: false,
+
+    // Related Info
+    itemDetails: [] as any[],
+    totalIdvSa: 0,
+    vehicleValue: 0,
+    nonElecAccessories: 0,
+    elecAccessories: 0,
+    cngLpgKit: 0,
+    trailerTotalValue: 0,
+    make: "",
+    model: "",
+    fuelType: "",
+    color: "",
+    registrationNo: "",
+    placeOfRegistration: "",
+    mfgYear: "",
+    registrationDate: "",
+    seatingCapacity: "",
+    cubicCapacity: "",
+    engineNumber: "",
+    chasisNumber: "",
+    vehicleWeight: "",
+    permit: "",
+    trailerNo: "",
+    fitnessExpiryDate: "",
+    roadTax: "",
   };
-  
 
   const [form, setForm] = useState(initialForm);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<{ file: File; type: string; label: string }[]>([]);
+  const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [base64Files, setBase64Files] = useState<string[]>([]);
-
-  /*   API HOOKS   */
-
-  const { mutateAsync, isPending } = useUpsertPolicy();
-
-  const { data: customers, isLoading: cLoading } = useCustomerDropdown();
-  const { data: insurers, isLoading: iLoading } = useInsurerDropdown();
-  const { data: products, isLoading: pLoading } = useProductDropdown(
-    form.insurerId || undefined
+  const { data: products } = useCompanyWiseProduct(
+    form.insurerId,
+    Number(form.insuranceType), 
+    undefined                   
   );
-  const { data: policyTypes, isLoading: tLoading } = usePolicyTypesDropdown();
-  const { data: policyStatuses, isLoading: sLoading } =
-    usePolicyStatusesDropdown();
 
-  const loadingDropdowns = cLoading || iLoading || pLoading || tLoading || sLoading;
-  const isLoading = isPending;
-  const today = new Date().toISOString().split("T")[0];
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
-
-
-  /*   PREFILL   */
+  const documentOptions = [
+    { id: "Policy Copy", name: "Policy Copy" },
+    { id: "Proposal Form", name: "Proposal Form" },
+    { id: "Aadhar Card", name: "Aadhar Card" },
+    { id: "PAN Card", name: "PAN Card" },
+    { id: "Previous Policy", name: "Previous Policy" },
+    { id: "RC Copy", name: "RC Copy" },
+    { id: "Driving License", name: "Driving License" },
+    { id: "Others", name: "Others" },
+  ];
 
   useEffect(() => {
-    if (!open) return;
+    const premiumNet =
+      (form.basicODPremium || 0) +
+      (form.tpPremium || 0) +
+      (form.otherTPPremium || 0) +
+      (form.addOnCover || 0);
+  
+    const gstAmount = (premiumNet * (form.gstPerc || 0)) / 100;
+  
+    const finalPremium =
+      premiumNet +
+      gstAmount +
+      (form.terrorismPremium || 0);
+  
+    setForm(prev => {
+      const roundedGST = parseFloat(gstAmount.toFixed(2));
+      const roundedFinal = parseFloat(finalPremium.toFixed(2));
+  
+      if (
+        prev.premiumNet === premiumNet &&
+        prev.gstAmount === roundedGST &&
+        prev.finalPremium === roundedFinal
+      ) {
+        return prev;
+      }
+  
+      return {
+        ...prev,
+        premiumNet,
+        gstAmount: roundedGST,
+        finalPremium: roundedFinal
+      };
+    });
+  }, [
+    form.basicODPremium,
+    form.tpPremium,
+    form.otherTPPremium,
+    form.addOnCover,
+    form.gstPerc,
+    form.terrorismPremium
+  ]);
+  
+  /*   API HOOKS   */
+  const { mutateAsync, isPending } = useUpsertPolicy();
+  const { data: policyTypes, isLoading: tLoading } = usePolicyTypesDropdown();
+  const { data: policyStatuses, isLoading: sLoading } = usePolicyStatusesDropdown();
+
+  const loadingDropdowns = tLoading || sLoading;
+    const isLoading = isPending;
+
+const insuranceTypeId = Number(form.insuranceType || 0);
+
+const showInsuranceSubType =
+  [3, 4, 5, 6, 9, 10, 19, 22].includes(insuranceTypeId);
+
+const showHealthCheckup = insuranceTypeId === 6;
+
+const showLongTermPolicy =
+  [12, 13, 14, 15, 16, 17, 18].includes(insuranceTypeId); 
+
+  const hideHPAFields = [0, 4, 5, 6, 19, 22].includes(insuranceTypeId);
+  const { data: addOnDetails } = useAddOnDetails(
+    Number(form.insuranceType || 0)
+  );
+
+  const { data: hpaList = [], isLoading: hpaLoading } = useHPADetails();
+
+  const hpaItems =
+  (hpaList || []).map((h: any) => ({
+    value: h.id,
+    label: h.hpaName,
+  }));
+  /*   PREFILL   */
+  useEffect(() => {
+    if (!open) {
+      setForm(initialForm);
+      setExistingDocuments([]);
+      setFiles([]);
+      setErrors({});
+      setActiveTab("general");
+      return;
+    }
 
     if (policy) {
       setForm({
+        ...initialForm,
+        ...policy,
         policyId: policy.policyId ?? null,
-        customerId: policy.customerId ?? "",
-        insurerId: policy.insurerId ?? "",
-        productId: policy.productId ?? "",
-        policyTypeId: policy.policyTypeId ?? 0,
-        policyStatusId: policy.policyStatusId ?? 0,
-        registrationNo: policy.registrationNo ?? "",
         startDate: policy.startDate ? policy.startDate.split("T")[0] : "",
         endDate: policy.endDate ? policy.endDate.split("T")[0] : "",
-        premiumNet: policy.premiumNet ?? 0,
-        premiumGross: policy.premiumGross ?? 0,
-        paymentMode: policy.paymentMode ?? "",
-        paymentDueDate: policy.paymentDueDate
-          ? policy.paymentDueDate.split("T")[0]
-          : "",
-        renewalDate: policy.renewalDate
-          ? policy.renewalDate.split("T")[0]
-          : "",
-        brokerCode: policy.brokerCode ?? "",
-        policyCode: policy.policyCode ?? "",
-        paymentDone: policy.paymentDone ?? false,
+        loginDate: policy.loginDate ? policy.loginDate.split("T")[0] : "",
+        paymentDate: policy.paymentDate ? policy.paymentDate.split("T")[0] : "",
       });
 
-      setExistingDocuments(
-        policy.policyDocumentRef
-          ? policy.policyDocumentRef.split(",").filter(Boolean)
-          : []
-      );
+      const docs = policy.policyDocuments || [];
+      const mappedDocs = docs.map((d: any) => ({
+        fileName: d.fileName,
+        savedFileName: d.url.split("/").pop() || "",
+        type: d.type || "Policy"
+      }));
+      setExistingDocuments(mappedDocs);
+      setFiles([]);
     } else {
-      setForm({
-        ...initialForm,
-        customerId: customerId || "",
-      });
+      setForm({ ...initialForm, customerId: customerId || "" });
       setExistingDocuments([]);
       setFiles([]);
     }
-
     setErrors({});
   }, [open, policy, customerId]);
 
-  /*   RESET PRODUCT ON INSURER CHANGE   */
-
-  // useEffect(() => {
-  //   if (form.insurerId) {
-  //     setForm((prev) => ({
-  //       ...prev,
-  //       productId: "",
-  //     }));
-  //   }
-  // }, [form.insurerId]);
-
   /*   VALIDATION   */
-
   const validate = () => {
     const e: Record<string, string> = {};
-  
-    if (!form.customerId?.trim()) e.customerId = "Customer is required";
-    if (!form.insurerId?.trim()) e.insurerId = "Insurer is required";
-    if (!form.productId?.trim()) e.productId = "Product is required";
-  
-    if (!form.policyTypeId)
-      e.policyTypeId = "Policy type is required";
-  
-    if (!form.policyStatusId)
-      e.policyStatusId = "Policy status is required";
-  
-    if (!form.registrationNo?.trim())
-      e.registrationNo = "Registration no is required";
-  
+    if (!form.policyNumber?.trim()) e.policyNumber = "Policy number is required";
+    if (!form.policyStatusId) e.policyStatusId = "Policy status is required";
+    if (!form.policyTypeId) e.policyTypeId = "Policy type is required";
     if (!form.startDate) e.startDate = "Start date is required";
     if (!form.endDate) e.endDate = "End date is required";
-  
-    if (form.startDate && form.endDate) {
-      if (new Date(form.endDate) < new Date(form.startDate)) {
-        e.endDate = "End date cannot be before start date";
-      }
-    }
-  
-    if (!form.paymentDone && form.startDate && form.paymentDueDate) {
-      if (new Date(form.paymentDueDate) < new Date(form.startDate)) {
-        e.paymentDueDate = "Payment due date cannot be before start date";
-      }
-    }
-  
-    if (form.endDate && form.renewalDate) {
-      if (new Date(form.renewalDate) < new Date(form.endDate)) {
-        e.renewalDate = "Renewal date cannot be before end date";
-      }
-    }
-  
+    if (!form.finalPremium && form.finalPremium !== 0) e.finalPremium = "Final premium is required";
+
     setErrors(e);
-  
     if (Object.keys(e).length > 0) {
       toast.error("Please fix validation errors");
-      console.log("Validation failed:", e); // 👈 keep this while testing
       return false;
     }
-  
     return true;
   };
-  
-  
-  /*   SAVE  */
 
+  /*   SAVE  */
   const handleSave = async () => {
     if (!validate()) return;
-  
+
     try {
-      const payload: UpsertPolicyPayload = {
-        policyId: form.policyId || null,
-        customerId: form.customerId,
-        insurerId: form.insurerId,
-        productId: form.productId,
-  
-        policyStatusId: Number(form.policyStatusId),
-        policyTypeId: Number(form.policyTypeId),
-  
-        policyNumber: form.policyCode || form.registrationNo,  
-  
-        registrationNo: form.registrationNo?.trim(),
-  
-        startDate: form.startDate
-          ? new Date(form.startDate + "T00:00:00").toISOString()
-          : null,
-  
-        endDate: form.endDate
-          ? new Date(form.endDate + "T00:00:00").toISOString()
-          : null,
-  
-        premiumNet: Number(form.premiumNet) || 0,
-        premiumGross: Number(form.premiumGross) || 0,
-  
-        paymentMode: form.paymentMode?.trim() || undefined,
-  
-        paymentDueDate:
-          !form.paymentDone && form.paymentDueDate
-            ? new Date(form.paymentDueDate + "T00:00:00").toISOString()
-            : null,
-  
-        renewalDate: form.renewalDate
-          ? new Date(form.renewalDate + "T00:00:00").toISOString()
-          : null,
-  
-        brokerCode: form.brokerCode?.trim() || undefined,
-        policyCode: form.policyCode?.trim() || undefined,
-  
-        paymentDone: Boolean(form.paymentDone),
-  
-        policyDocuments: Array.isArray(base64Files) ? base64Files : [],
-      };
-  
-      await mutateAsync(payload);
-      toast.success("Policy saved successfully");
+      const formData = new FormData();
+      if (form.policyId) formData.append("PolicyId", form.policyId);
+      
+      Object.entries(form).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (key.toLowerCase().includes("date") && value) {
+            formData.append(key, new Date(value as string + "T00:00:00").toISOString());
+          } else if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+
+      files.forEach((f) => {
+        formData.append("PolicyDocuments", f.file);
+        formData.append("DocumentTypes", f.type);
+        formData.append("DocumentLabels", f.label);
+      });
+
+      await mutateAsync(formData);
       onClose();
       onSuccess();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Something went wrong");
     }
   };
-  
-  
 
   if (!open) return null;
 
-  /*  UI  */
+
 
   return (
     <>
-      {/* OVERLAY */}
-      <div
-        className="fixed inset-0 bg-black/40 z-[60]"
-        onClick={isLoading ? undefined : onClose}
-      />
+      <Toaster position="top-right"/>
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
 
-      {/* SHEET */}
-      <div className="fixed top-0 right-0 w-[420px] h-screen bg-white z-[70] shadow-2xl flex flex-col animate-slideInRight">
+      <div 
+        className="fixed top-0 right-0 w-full max-w-[70vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right"
+      >
         {/* HEADER */}
-        <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="font-semibold text-lg">
-            {policy ? "Edit Policy" : "Add Policy"}
-          </h2>
-          <button onClick={onClose} disabled={isLoading}>
-            <X />
+        <div className="px-8 py-6 bg-white border-b flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">
+              {policy ? "Edit GI Policy" : "Add New GI Policy"}
+            </h2>
+            <p className="text-slate-500 text-sm mt-1">Fill in the details to {policy ? 'update' : 'create'} the insurance policy.</p>
+          </div>
+          <button 
+            onClick={onClose} 
+            disabled={isLoading}
+            className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+          >
+            <X size={24} className="text-slate-400" />
           </button>
         </div>
 
+        {/* TABS */}
+        <div className="px-8 bg-white border-b flex gap-8">
+          {[
+            { id: "general", label: "General Insurance Policy Purchase", icon: ShieldCheck },
+            { id: "related", label: "Policy Related Information", icon: FileText },
+            { id: "documents", label: "Document Upload", icon: UploadCloud },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              className={`
+                flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-all
+                ${activeTab === tab.id 
+                  ? "border-blue-600 text-blue-600" 
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200"}
+              `}
+            >
+              <tab.icon size={18} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto p-8">
           {loadingDropdowns ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center justify-center h-full gap-4">
               <Spinner />
+              <p className="text-slate-500 animate-pulse">Loading configuration...</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              <SearchableComboBox
-                  label="Customer"
-                  required
-                  items={(customers || []).map((c) => ({
-                    value: c.customerId,
-                    label: c.fullName,
-                  }))}
-                  value={form.customerId}
-                  error={errors.customerId}
-                  disabled={!!customerId}
-                  placeholder="Select customer"
-                  onSelect={(item) =>
-                    setForm({
-                      ...form,
-                      customerId: item?.value || "",
-                    })
-                  }
-                />
+            <div className="max-w-full mx-auto space-y-10">
+              
+              {activeTab === "general" && (
+                <>
+                  {/* BASIC INFO */}
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <ShieldCheck size={16} />
+                      </div>
+                      <h3 className="font-bold uppercase tracking-wider text-[10px]">General Insurance Policy Purchase</h3>
+                    </div>
+                    
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Select
+                        label="Policy Status"
+                        required
+                        value={form.policyStatusId}
+                        error={errors.policyStatusId}
+                        options={policyStatuses}
+                        valueKey="policyStatusId"
+                        labelKey="statusName"
+                        onChange={(v: any) =>
+                          setForm(p => ({ ...p, policyStatusId: v ? Number(v) : undefined }))
+                        }
+                      />
 
-              <SearchableComboBox
-                label="Insurer"
-                required
-                items={(insurers || []).map((i) => ({
-                  value: i.insurerId,
-                  label: i.insurerName,
-                }))}
-                value={form.insurerId}
-                error={errors.insurerId}
-                placeholder="Select insurer"
-                onSelect={(item) =>
-                  setForm({
-                    ...form,
-                    insurerId: item?.value || "",
-                    productId: "",
-                  })
-                }
-/>
+                      <Select
+                        label="Policy Type"
+                        required
+                        value={form.policyTypeId}
+                        error={errors.policyTypeId}
+                        options={policyTypes}
+                        valueKey="policyTypeId"
+                        labelKey="typeName"
+                        onChange={(v: any) =>
+                          setForm(p => ({ ...p, policyTypeId: v ? Number(v) : undefined }))
+                        }
+                      />
+                      <Select
+                        label="Renewable"
+                        value={form.renewable}
+                        options={[{ id: "Yes", name: "Yes" }, { id: "No", name: "No" }]}
+                        onChange={(v: any) => setForm(p => ({ ...p, renewable: v }))}
+                      />
+                      <Input
+                        label="Insured Name"
+                        required
+                        value={form.insuredName}
+                        placeholder="Insured Name"
+                        onChange={(v: any) => setForm(p => ({ ...p, insuredName: v }))}
+                        suffix={<UserPlus size={14} className="text-slate-400" />}
+                      />
+                      <Input
+                        label="Group Head Name"
+                        value={form.groupHeadName}
+                        placeholder="Group Head Name"
+                        onChange={(v: any) => setForm(p => ({ ...p, groupHeadName: v }))}
+                      />
+                      <Input
+                        label="Policy Number"
+                        required
+                        value={form.policyNumber}
+                        error={errors.policyNumber}
+                        placeholder="Policy Number"
+                        onChange={(v: any) => setForm(p => ({ ...p, policyNumber: v }))}
+                      />
+                      <Select
+                        label="Agency Name"
+                        required
+                        value={form.agencyName}
+                        options={[{ id: "Agency 1", name: "Agency 1" }]}
+                        onChange={(v: any) => setForm(p => ({ ...p, agencyName: v }))}
+                      />
+                      <Select
+                        label="BA Name"
+                        value={form.baName}
+                        options={[{ id: "BA 1", name: "BA 1" }]}
+                        onChange={(v: any) => setForm(p => ({ ...p, baName: v }))}
+                      />
+                      <SearchableComboBox
+                          label="COMPANY NAME"
+                          required
+                          items={(companies || []).map((c: any) => ({
+                            value: c.companyId,
+                            label: c.companyName,
+                          }))}
+                          value={form.insurerId}
+                          error={errors.insurerId}
+                          onSelect={(item) =>
+                            setForm({
+                              ...form,
+                              insurerId: item?.value || "",
+                              productId: "",
+                            })
+                          }
+                        />
+                      <SearchableComboBox
+                          label="INSURANCE TYPE"
+                          required
+                          value={form.insuranceType}
+                          items={
+                            insuranceTypes?.map((item) => ({
+                              label: item.type,
+                              value: String(item.id),  
+                            })) || []
+                          }
+                          onSelect={(item) => {
+                            const selectedId = item?.value || "";
+                            const numericId = Number(selectedId);
 
-              <SearchableComboBox
-                label="Product"
-                required
-                items={(products || []).map((p) => ({
-                  value: p.productId,
-                  label: p.productName,
-                }))}
-                value={form.productId}
-                error={errors.productId}
-                placeholder={
-                  form.insurerId ? "Select product" : "Select insurer first"
-                }
-                onSelect={(item) =>
-                  setForm({
-                    ...form,
-                    productId: item?.value || "",
-                  })
-                }
-              />
+                            setForm((prev) => ({
+                              ...prev,
+                              insuranceType: selectedId,
+                              insuranceSubType: "",
+                              eligibleForHealthCheckup: numericId === 6 ? "No" : "",
+                              longTermPolicy: [12,13,14,15,16,17,18].includes(numericId) ? "No" : "",
+                            }));
+                          }}
+                        />
+                      <SearchableComboBox
+                          label="PRODUCT NAME"
+                          required
+                          items={(products || []).map((p: any) => ({
+                            value: p.id,
+                            label: p.productName,
+                          }))}
+                          value={form.productId}
+                          error={errors.productId}
+                          disabled={!form.insurerId || !form.insuranceType}
+                          onSelect={(item) => {
+                            const selectedId = item?.value || "";
+                          
+                            const numericId = Number(selectedId);
+                          
+                            setForm((prev) => ({
+                              ...prev,
+                              productId: selectedId, 
+                              insuranceSubType: "",
+                              eligibleForHealthCheckup: numericId === 6 ? "No" : "",
+                              longTermPolicy: [12,13,14,15,16,17,18].includes(numericId) ? "No" : "",
+                            }));
+                          }}
+                        />
 
+                        {/* Insurance Sub Type */}
+                          {showInsuranceSubType && (
+                            <Select
+                              label="Insurance Sub Type"
+                              required
+                              value={form.insuranceSubType}
+                              options={[
+                                { id: "Referred", name: "Referred" },
+                                { id: "Preferred", name: "Preferred" },
+                                { id: "Declined", name: "Declined" },
+                              ]}
+                              onChange={(v: any) =>
+                                setForm((p) => ({ ...p, insuranceSubType: v }))
+                              }
+                            />
+                          )}
 
-              <Select
-                label="Policy Status"
-                required
-                value={form.policyStatusId}
-                error={errors.policyStatusId}
-                options={policyStatuses}   // ✅ now always an array
-                valueKey="policyStatusId"
-                labelKey="statusName"
-                onChange={(v) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    policyStatusId: v ? Number(v) : undefined,
-                  }))
-                }
-              />
+                          {showHealthCheckup && (
+                            <div className="flex flex-col gap-2">
+                              <label className="text-sm font-medium text-slate-700">
+                                Eligible For Health Checkup
+                              </label>
 
-              <Select
-                label="Policy Type"
-                required
-                value={form.policyTypeId}
-                error={errors.policyTypeId}
-                options={policyTypes}
-                valueKey="policyTypeId"
-                labelKey="typeName"  
-                onChange={(v) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    policyTypeId: v ? Number(v) : undefined,
-                  }))
-                }
-              />
+                              <div className="flex items-center gap-6">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="eligibleForHealthCheckup"
+                                    value="Yes"
+                                    checked={form.eligibleForHealthCheckup === "Yes"}
+                                    onChange={(e) =>
+                                      setForm((p) => ({
+                                        ...p,
+                                        eligibleForHealthCheckup: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  Yes
+                                </label>
 
-              <Input
-                label="Registration No"
-                required
-                value={form.registrationNo}
-                error={errors.registrationNo}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    registrationNo: v,
-                  })
-                }
-              />
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="eligibleForHealthCheckup"
+                                    value="No"
+                                    checked={form.eligibleForHealthCheckup === "No"}
+                                    onChange={(e) =>
+                                      setForm((p) => ({
+                                        ...p,
+                                        eligibleForHealthCheckup: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  No
+                                </label>
+                              </div>
+                            </div>
+                          )}
+                      <Input
+                        type="date"
+                        label="Login Date"
+                        required
+                        value={form.loginDate}
+                        onChange={(v: any) => setForm({ ...form, loginDate: v })}
+                      />
+                      <Input
+                        type="date"
+                        label="Period From"
+                        required
+                        value={form.startDate}
+                        error={errors.startDate}
+                        onChange={(v: any) => setForm({ ...form, startDate: v })}
+                      />
+                      <Input
+                        type="date"
+                        label="Period To"
+                        required
+                        value={form.endDate}
+                        error={errors.endDate}
+                        min={form.startDate}
+                        onChange={(v: any) => setForm({ ...form, endDate: v })}
+                      />
+                      <SearchableComboBox
+                          label="ADD ON NAME"
+                          value={form.addOnName}
+                          items={(addOnDetails || []).map((item: any) => ({
+                            value: item.id,
+                            label: item.name,
+                          }))}
+                          disabled={!form.insuranceType}
+                          onSelect={(item) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              addOnName: item?.value || "",
+                            }))
+                          }
+                        />
+                      {!hideHPAFields && (
+  <>
+    <SearchableComboBox
+      label="HPA NAME"
+      required
+      items={hpaItems}
+      value={form.hpaId}
+      error={errors.hpaId}
+      onSelect={(item) =>
+        setForm((prev) => ({
+          ...prev,
+          hpaId: item?.value || "",
+        }))
+      }
+    />
 
-              <Input
-                type="date"
-                label="Start Date"
-                required
-                value={form.startDate}
-                error={errors.startDate}
-                max={today}
-                onChange={(v) => setForm({ ...form, startDate: v, endDate : "",})}
-              />
+    <Input
+      label="HPA Branch"
+      value={form.hpaBranch}
+      placeholder="HPA Branch"
+      onChange={(v: any) => setForm(p => ({ ...p, hpaBranch: v }))}
+    />
+  </>
+)}
+                    </div>
+                  </section>
 
-              <Input
-                type="date"
-                label="End Date"
-                required
-                value={form.endDate}
-                error={errors.endDate}
-                min={form.startDate}
-                disabled={!form.startDate} 
-                onChange={(v) => setForm({ ...form, endDate: v })}
-              />
+                  {/* PREMIUM DETAILS */}
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <CreditCard size={16} />
+                      </div>
+                      <h3 className="font-bold uppercase tracking-wider text-[10px]">Premium Details</h3>
+                    </div>
+                    
+                    <div className="p-6 space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <Input label="Basic/OD Premium" type="number" value={form.basicODPremium} onChange={(v: any) => setForm(p => ({ ...p, basicODPremium: Number(v) }))} />
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1">
+                            <Input 
+                              label="TP Premium" 
+                              type="number" 
+                              value={form.tpPremium} 
+                              onChange={(v: any) =>
+                                setForm(p => ({ ...p, tpPremium: Number(v) }))
+                              }
+                            />
+                          </div>
 
-              <Input
-                label="Premium Net"
-                value={form.premiumNet}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    premiumNet: Number(v.replace(/[^0-9]/g, "")),
-                  })
-                }
-              />
+                          <label className="flex items-center gap-1 text-sm text-gray-600 mb-2">
+                            <input type="checkbox" className="accent-blue-600" />
+                            12%
+                          </label>
+                        </div>
+                        <Input label="Other TP Premium" type="number" value={form.otherTPPremium} onChange={(v: any) => setForm(p => ({ ...p, otherTPPremium: Number(v) }))} />
+                        <Input label="Add On Cover" type="number" value={form.addOnCover} onChange={(v: any) => setForm(p => ({ ...p, addOnCover: Number(v) }))} />
+                        
+                        <Input label="NCB %" type="number" value={form.ncb} onChange={(v: any) => setForm(p => ({ ...p, ncb: Number(v) }))} />
+                        <Input label="Discount %" type="number" value={form.discount} onChange={(v: any) => setForm(p => ({ ...p, discount: Number(v) }))} />
+                        <Input label="Net Premium" type="number" value={form.premiumNet} onChange={(v: any) => setForm(p => ({ ...p, premiumNet: Number(v) }))} />
+                        <Input label="Terrorism Premium" type="number" value={form.terrorismPremium} onChange={(v: any) => setForm(p => ({ ...p, terrorismPremium: Number(v) }))} />
+                        
+                        <Input label="GST Perc." type="number" value={form.gstPerc} onChange={(v: any) => setForm(p => ({ ...p, gstPerc: Number(v) }))} />
+                        <Input label="GST Amount" type="number" value={form.gstAmount} onChange={(v: any) => setForm(p => ({ ...p, gstAmount: Number(v) }))} />
+                        <Input label="Final Premium" required type="number" value={form.finalPremium} error={errors.finalPremium} onChange={(v: any) => setForm(p => ({ ...p, finalPremium: Number(v) }))} />
+                        <Select label="Claim Process" value={form.claimProcess} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, claimProcess: v }))} />
+                      </div>
 
-              <Input
-                label="Premium Gross"
-                value={form.premiumGross}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    premiumGross: Number(v.replace(/[^0-9]/g, "")),
-                  })
-                }
-              />
-
-              <Input
-                label="Payment Mode"
-                value={form.paymentMode}
-                onChange={(v) => setForm({ ...form, paymentMode: v })}
-              />
-
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="checkbox"
-                  checked={form.paymentDone}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      paymentDone: e.target.checked,
-                      paymentDueDate: e.target.checked ? "" : form.paymentDueDate, // ✅ clear
-                    })
-                  }
-                  className="h-4 w-4"
-                />
-                <label className="text-sm">
-                  Payment Completed
-                </label>
-              </div>
-
-
-             {!form.paymentDone && (
-              <Input
-                type="date"
-                label="Payment Due Date"
-                value={form.paymentDueDate}
-                error={errors.paymentDueDate}
-                min={form.startDate}
-                onChange={(v) =>
-                  setForm({ ...form, paymentDueDate: v })
-                }
-              />
-            )}
-
-              <Input
-                type="date"
-                label="Renewal Date"
-                value={form.renewalDate}
-                error={errors.renewalDate}
-                min={form.endDate}
-                onChange={(v) => setForm({ ...form, renewalDate: v })}
-              />
-
-              <Input
-                label="Broker Code"
-                value={form.brokerCode}
-                onChange={(v) => setForm({ ...form, brokerCode: v.replace(/[^0-9]/g, "") })}
-              />
-
-              <Input
-                label="Policy Code"
-                value={form.policyCode}
-                onChange={(v) => setForm({ ...form, policyCode: v.replace(/[^0-9]/g, "") })}
-              />
-
-              {/*  EXISTING POLICY DOCUMENTS  */}
-              {policy?.policyId && existingDocuments.length > 0 && (
-                <div>
-                  <label className="text-sm font-medium">
-                    Uploaded Policy Documents
-                  </label>
-
-                  <div className="space-y-2 mt-2">
-                    {existingDocuments.map((file) => {
-                      const documentId = file.split("_")[0];
-
-                      return (
-                        <div
-                          key={file}
-                          className="flex justify-between items-center border rounded px-3 py-2 text-sm"
-                        >
-                          <span className="truncate flex-1">{file}</span>
-
-                          <div className="flex gap-2 ml-2">
-                            <button
-                              onClick={() => preview(policy.policyId, documentId)}
-                              className="p-1 hover:bg-gray-100 rounded"
-                              title="Preview"
-                            >
-                              <Eye size={16} />
-                            </button>
-
-                            <button
-                              onClick={() => download(policy.policyId, documentId)}
-                              className="p-1 hover:bg-gray-100 rounded"
-                              title="Download"
-                            >
-                              <Download size={16} />
-                            </button>
-
-                            <button
-                              onClick={async () => {
-                                if (!confirm("Delete this document?")) return;
-                                try {
-                                  await remove(policy.policyId, documentId);
-                                } catch {
-                                  toast.error("Failed to delete document");
-                                }
-                              }}
-                              className="p-1 hover:bg-red-100 text-red-600 rounded"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                      <div className="space-y-6 pt-4 border-t border-slate-50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                          <Select label="Brokerage On IRDA" value={form.brokerageOnIRDA} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnIRDA: v }))} />
+                          <Input label="Brokerage Per IRDA" type="number" value={form.brokeragePerIRDA} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerIRDA: Number(v) }))} />
+                          <Input label="Brokerage Amt IRDA" type="number" value={form.brokerageAmtIRDA} onChange={(v: any) => setForm(p => ({ ...p, brokerageAmtIRDA: Number(v) }))} />
+                          <div className="flex items-center gap-2 pb-3">
+                            <input 
+                              type="checkbox" 
+                              id="calcIrda"
+                              checked={form.calcIrda}
+                              onChange={(e) => setForm(p => ({ ...p, calcIrda: e.target.checked }))}
+                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                            />
+                            <label htmlFor="calcIrda" className="text-[10px] font-bold text-slate-600 uppercase tracking-wider cursor-pointer">Calculate Percentage</label>
                           </div>
                         </div>
-                      );
-                    })}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                          <Select label="Brokerage On Reward" value={form.brokerageOnReward} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, brokerageOnReward: v }))} />
+                          <Input label="Brokerage Per Reward" type="number" value={form.brokeragePerReward} onChange={(v: any) => setForm(p => ({ ...p, brokeragePerReward: Number(v) }))} />
+                          <Input label="Brokerage Amt Reward" type="number" value={form.brokerageAmtReward} onChange={(v: any) => setForm(p => ({ ...p, brokerageAmtReward: Number(v) }))} />
+                          <div className="flex items-center gap-2 pb-3">
+                            <input 
+                              type="checkbox" 
+                              id="calcReward"
+                              checked={form.calcReward}
+                              onChange={(e) => setForm(p => ({ ...p, calcReward: e.target.checked }))}
+                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                            />
+                            <label htmlFor="calcReward" className="text-[10px] font-bold text-slate-600 uppercase tracking-wider cursor-pointer">Calculate Percentage</label>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                          <Select label="BA Brokerage On" value={form.baBrokerageOn} options={[{ id: "Select", name: "Select" }]} onChange={(v: any) => setForm(p => ({ ...p, baBrokerageOn: v }))} />
+                          <Input label="BA Brokerage Per" type="number" value={form.baBrokeragePer} onChange={(v: any) => setForm(p => ({ ...p, baBrokeragePer: Number(v) }))} />
+                          <Input label="BA Brokerage Amt" type="number" value={form.baBrokerageAmt} onChange={(v: any) => setForm(p => ({ ...p, baBrokerageAmt: Number(v) }))} />
+                          <div className="flex items-center gap-2 pb-3">
+                            <input 
+                              type="checkbox" 
+                              id="calcBa"
+                              checked={form.calcBa}
+                              onChange={(e) => setForm(p => ({ ...p, calcBa: e.target.checked }))}
+                              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                            />
+                            <label htmlFor="calcBa" className="text-[10px] font-bold text-slate-600 uppercase tracking-wider cursor-pointer">Calculate Percentage</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* PAYMENT DETAILS */}
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <CreditCard size={16} />
+                      </div>
+                      <h3 className="font-bold uppercase tracking-wider text-[10px]">Payment Details</h3>
+                    </div>
+                    
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                      <Select
+                        label="Payment Type"
+                        value={form.paymentType}
+                        options={[{ id: "Online", name: "Online" }, { id: "Cheque", name: "Cheque" }, { id: "Cash", name: "Cash" }]}
+                        onChange={(v: any) => setForm(p => ({ ...p, paymentType: v }))}
+                      />
+                      <Input label="Pay. Reference No." value={form.payReferenceNo} onChange={(v: any) => setForm(p => ({ ...p, payReferenceNo: v }))} />
+                      <Input label="Payment Date" type="date" value={form.paymentDate} onChange={(v: any) => setForm(p => ({ ...p, paymentDate: v }))} />
+                      <Input label="Payment No." value={form.paymentNo} onChange={(v: any) => setForm(p => ({ ...p, paymentNo: v }))} />
+                      <Input label="Bank & Branch Name" value={form.bankBranchName} onChange={(v: any) => setForm(p => ({ ...p, bankBranchName: v }))} />
+                      
+                      <Input label="Payment Amount" type="number" value={form.paymentAmount} onChange={(v: any) => setForm(p => ({ ...p, paymentAmount: Number(v) }))} />
+                      <Input label="Cash Amount" type="number" value={form.cashAmount} onChange={(v: any) => setForm(p => ({ ...p, cashAmount: Number(v) }))} />
+                      <Input label="Total Amount" type="number" value={form.totalAmount} onChange={(v: any) => setForm(p => ({ ...p, totalAmount: Number(v) }))} />
+                      <Input label="Diff. Amount" type="number" value={form.diffAmount} onChange={(v: any) => setForm(p => ({ ...p, diffAmount: Number(v) }))} />
+                      
+                      <div className="lg:col-span-2">
+                        <Input label="Remarks" value={form.remarks} onChange={(v: any) => setForm(p => ({ ...p, remarks: v }))} />
+                      </div>
+                      <Select label="Claim Exist" value={form.claimExist} options={[{ id: "No", name: "No" }, { id: "Yes", name: "Yes" }]} onChange={(v: any) => setForm(p => ({ ...p, claimExist: v }))} />
+                      <Input label="No Of Endorsement" value={form.noOfEndorsement} onChange={(v: any) => setForm(p => ({ ...p, noOfEndorsement: v }))} />
+                    </div>
+                  </section>
+                </>
+              )}
+
+              {activeTab === "related" && (
+                <PolicyRelatedInfo
+                  form={form}
+                  setForm={setForm}
+                  insuranceTypeId={Number(form.insuranceType || 0)}
+                />
+              )}
+              
+              {activeTab === "documents" && (
+                <div className="space-y-8">
+                  {/* UPLOAD SECTION */}
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                      <div className="lg:col-span-1 space-y-6">
+                        <Select
+                          label="Document Name"
+                          required
+                          value={selectedDocName}
+                          options={documentOptions}
+                          onChange={(v: string) => setSelectedDocName(v)}
+                        />
+                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertCircle size={14} className="text-blue-600" />
+                            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Quick Tip</p>
+                          </div>
+                          <p className="text-xs text-blue-700 leading-relaxed">
+                            Select the document type first, then click or drag files to the upload area.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="lg:col-span-2 space-y-3">
+                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-xs">Select Document</label>
+                        <div className="relative">
+                          <input
+                            id="policy-upload"
+                            type="file"
+                            multiple
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="hidden"
+                            disabled={isLoading}
+                            onChange={(e) => {
+                              if (!e.target.files) return;
+                              if (!selectedDocName) {
+                                toast.error("Please select a document name first");
+                                return;
+                              }
+                              const newFiles = Array.from(e.target.files).map(f => ({ 
+                                file: f, 
+                                type: "Policy", 
+                                label: selectedDocName
+                              }));
+                              setFiles(prev => [...prev, ...newFiles]);
+                              setSelectedDocName(""); 
+                              e.target.value = ""; 
+                            }}                  
+                          />
+                          <label 
+                            htmlFor="policy-upload"
+                            className={`
+                              flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl transition-all cursor-pointer group
+                              ${!selectedDocName ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-50' : 'bg-white border-blue-200 hover:bg-blue-50/50 hover:border-blue-400 shadow-sm'}
+                            `}
+                          >
+                            <div className="flex items-center gap-6">
+                              <div className={`p-4 rounded-2xl shadow-sm transition-all ${selectedDocName ? 'bg-blue-600 text-white group-hover:scale-110 group-hover:shadow-blue-200 group-hover:shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
+                                <UploadCloud size={28} />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-base font-bold text-slate-800">
+                                  {selectedDocName ? `Click to upload ${selectedDocName}` : "Select name to enable upload"}
+                                </p>
+                                <p className="text-xs text-slate-400 font-medium mt-1">Supports PDF, PNG, JPG (Max 10MB per file)</p>
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* FILE LISTS */}
+                  <div className="space-y-8">
+                    {/* NEW FILES */}
+                    {files.length > 0 && (
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
+                          <Plus size={18} className="text-blue-600" /> New Attachments
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {files.map((f, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-2 bg-white rounded-lg text-blue-600 shadow-sm">
+                                  <FileText size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-slate-700 truncate">{f.label}</p>
+                                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{f.file.name} • {f.type}</p>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => setFiles(prev => prev.filter((_, i) => i !== idx))}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* EXISTING DOCUMENTS */}
+                    {existingDocuments.length > 0 && (
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
+                          <ShieldCheck size={18} className="text-emerald-600" /> Existing Documents
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {existingDocuments.map((file) => (
+                            <div key={file.savedFileName} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
+                                  <FileText size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
+                                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.type}</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-1">
+                                <button onClick={() => preview(policy.policyId, file.savedFileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                  <Eye size={16} />
+                                </button>
+                                <button onClick={() => download(policy.policyId, file.savedFileName, file.fileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                  <Download size={16} />
+                                </button>
+                                <button 
+                                  onClick={async () => {
+                                    if (!confirm("Delete this document?")) return;
+                                    try {
+                                      await remove(policy.policyId, file.savedFileName);
+                                      setExistingDocuments(prev => prev.filter(f => f.savedFileName !== file.savedFileName));
+                                    } catch {
+                                      toast.error("Failed to delete document");
+                                    }
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
-
-              {/* POLICY DOCUMENT UPLOAD  */}
-              <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  disabled={isLoading}
-                  onChange={async (e) => {
-                    const selectedFiles = e.target.files
-                      ? Array.from(e.target.files)
-                      : [];
-
-                    setFiles(selectedFiles); // only for UI
-
-                    const base64List = await Promise.all(
-                      selectedFiles.map((file) => fileToBase64(file))
-                    );
-
-                    console.log("Base64 Files 👉", base64List);
-
-                    setBase64Files(base64List);   // ✅ store base64
-                  }}
-                  className="block mt-1 text-sm"
-                />
-
 
             </div>
           )}
         </div>
 
         {/* FOOTER */}
-        <div className="px-6 py-4 border-t flex gap-3">
-          <button
-            className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
-            onClick={onClose}
-            disabled={isLoading}
-          >
-            Cancel
-          </button>
+        <div className="px-8 py-6 bg-white border-t flex justify-between items-center">
+          <div className="flex gap-4">
+            <button
+              disabled={isLoading || loadingDropdowns}
+              className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              onClick={handleSave}
+            >
+              {isLoading ? <Spinner className="text-white" /> : "SAVE"}
+            </button>
+            <button
+              className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded flex items-center justify-center gap-2 shadow-lg transition-all"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              CANCEL
+            </button>
+          </div>
 
-          <button
-            disabled={isLoading || loadingDropdowns}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleSave}
-          >
-            {isLoading && <Spinner />}
-            {isLoading ? "Saving..." : "Save"}
-          </button>
+          <div className="flex gap-4">
+            {activeTab !== "general" && (
+              <button
+                onClick={() => setActiveTab(activeTab === "documents" ? "related" : "general")}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-red-400 hover:bg-red-500 rounded flex items-center gap-2 transition-all"
+              >
+                Previous
+              </button>
+            )}
+            {activeTab !== "documents" && (
+              <button
+                onClick={() => setActiveTab(activeTab === "general" ? "related" : "documents")}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-400 hover:bg-blue-500 rounded flex items-center gap-2 transition-all"
+              >
+                Next <ChevronRight size={18} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </>
@@ -630,18 +1034,41 @@ const Input = ({
   error,
   type = "text",
   onChange,
+  placeholder,
+  min,
+  max,
+  disabled,
+  className = "",
+  suffix
 }: any) => (
-  <div>
-    <label className="text-sm font-medium">
+  <div className="space-y-1.5">
+    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
-    <input
-      type={type}
-      className={`input w-full ${error ? "border-red-500" : ""}`}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    <div className="relative">
+      <input
+        type={type}
+        disabled={disabled}
+        min={min}
+        max={max}
+        placeholder={placeholder}
+        className={`
+          w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none
+          ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
+          ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
+          ${suffix ? "pr-14" : ""}
+          ${className}
+        `}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {suffix && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+          {suffix}
+        </div>
+      )}
+    </div>
+    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
   </div>
 );
 
@@ -656,25 +1083,30 @@ const Select = ({
   labelKey = "name",
   error,
 }: any) => (
-  <div>
-    <label className="text-sm font-medium">
+  <div className="space-y-1.5">
+    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
-    <select
-      disabled={disabled}
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      } disabled:bg-gray-100 disabled:cursor-not-allowed`}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">Select {label}</option>
-      {options?.map((o: any) => (
-        <option key={o[valueKey]} value={o[valueKey]}>
-          {o[labelKey]}
-        </option>
-      ))}
-    </select>
-    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    <div className="relative">
+      <select
+        disabled={disabled}
+        className={`
+          w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none appearance-none
+          ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
+          ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
+        `}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">Select</option>
+        {options?.map((o: any) => (
+          <option key={o[valueKey]} value={o[valueKey]}>
+            {o[labelKey]}
+          </option>
+        ))}
+      </select>
+      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+    </div>
+    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
   </div>
 );

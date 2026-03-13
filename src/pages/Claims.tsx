@@ -6,17 +6,16 @@ import ClaimTable from "../components/claims/ClaimTable";
 import Pagination from "../components/leads/Pagination";
 import ClaimFilterSheet from "../components/claims/ClaimFilterSheet";
 import ClaimUpsertSheet from "../components/claims/ClaimUpsertSheet";
+import { ClaimFilters } from "../interfaces/claim.interface";
 
-const DEFAULT_FILTERS = {
-  pageNumber: 1,
+const DEFAULT_FILTERS: ClaimFilters = {
+  page: 1,
   pageSize: 10,
   search: "",
-  customerId: null as string | null,
-  policyId: null as string | null,
-  claimTypeId: null as number | null,
-  claimStageId: null as number | null,
-  claimHandlerId: null as number | null,
-  status: null as string | null,
+  customerId: undefined,
+  policyId: undefined,
+  claimTypeId: undefined,
+  status: undefined,
 };
 
 const Claims = () => {
@@ -39,8 +38,6 @@ const Claims = () => {
     filters.customerId ||
     filters.policyId ||
     filters.claimTypeId ||
-    filters.claimStageId ||
-    filters.claimHandlerId ||
     filters.status;
 
   const clearAllFilters = () => {
@@ -61,7 +58,7 @@ const Claims = () => {
                 Claims
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-                {data?.totalRecords ?? 0} total claims
+              {data?.totalCount ?? 0} total claims
               </p>
             </div>
 
@@ -90,7 +87,7 @@ const Claims = () => {
                     setFilters({
                       ...filters,
                       search: e.target.value,
-                      pageNumber: 1,
+                      page: 1,
                     })
                   }
                   className="w-full h-10 pl-10 pr-3 border rounded text-sm"
@@ -136,10 +133,10 @@ const Claims = () => {
 
         {/*   PAGINATION   */}
         <Pagination
-          page={filters.pageNumber}
+          page={filters.page}
           totalPages={data?.totalPages ?? 1}
           onChange={(page) =>
-            setFilters({ ...filters, pageNumber: page })
+            setFilters({ ...filters, page })
           }
         />
       </div>
@@ -149,7 +146,7 @@ const Claims = () => {
         open={openFilter}
         filters={filters}
         onApply={(f) =>
-          setFilters({ ...f, pageNumber: 1 })
+          setFilters({ ...f, page: 1  })
         }
         onClose={() => setOpenFilter(false)}
       />

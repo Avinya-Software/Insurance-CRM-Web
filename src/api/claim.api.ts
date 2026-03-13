@@ -3,6 +3,7 @@ import type {
   CreateClaimRequest,
   ClaimFilters,
   ClaimResponse,
+  PaginatedClaims,
 } from "../interfaces/claim.interface";
 
 /*   CREATE / UPDATE CLAIM   */
@@ -42,13 +43,16 @@ export const upsertClaimApi = async (
 
 export const getClaimsApi = async (
   params: ClaimFilters
-) => {
-  const res = await api.get("/claim", {
-    params,
-  });
+): Promise<PaginatedClaims> => {
+  const res = await api.get<{
+    statusCode: number;
+    statusMessage: string;
+    data: PaginatedClaims;
+  }>("/claim", { params });
 
-  return res.data;
+  return res.data.data; 
 };
+
 
 /*   CLAIM DOCUMENT PREVIEW   */
 

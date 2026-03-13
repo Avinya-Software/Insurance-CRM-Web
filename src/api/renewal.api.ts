@@ -28,7 +28,7 @@ export const getRenewalsApi = async (params: {
 /*   STATUS DROPDOWN   */
 export const getRenewalStatusesApi = async () => {
   const res = await api.get("/renewals/statuses");
-  return res.data;
+  return res.data?.data || [];
 };
 
 export const updateRenewalStatusApi = async (

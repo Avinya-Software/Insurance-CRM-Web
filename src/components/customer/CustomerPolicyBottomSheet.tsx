@@ -24,6 +24,8 @@ const CustomerPolicyBottomSheet = ({
     search: customerId || "",
   });
 
+  
+
   useOutsideClick(sheetRef, () => {
     if (open) onClose();
   });

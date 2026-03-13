@@ -44,29 +44,28 @@ const PolicyTable = ({
   onRenewal,
 }: Props) => {
   const [openPolicy, setOpenPolicy] = useState<Policy | null>(null);
-  const [confirmDelete, setConfirmDelete] =
-    useState<Policy | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Policy | null>(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
-
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+
   useOutsideClick(dropdownRef, () => {
     setOpenPolicy(null);
     setShowStatusMenu(false);
   });
 
-  const { mutate: deletePolicy, isPending } =
-    useDeletePolicy();
-
+  const { mutate: deletePolicy, isPending } = useDeletePolicy();
   const { mutate: updateStatus, isPending: updatingStatus } =
     useUpdatePolicyStatus();
 
   /* 🔥 Fetch policy statuses */
-  const { data: statuses = [] } = useQuery({
-    queryKey: ["policy-statuses"],
-    queryFn: getPolicyStatusesDropdownApi,
-  });
+  /* 🔥 Fetch policy statuses */
+const { data: statuses = [] } = useQuery({
+  queryKey: ["policy-statuses"],
+  queryFn: () => getPolicyStatusesDropdownApi(), 
+});
+  
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -139,20 +138,18 @@ const PolicyTable = ({
             <Th>End</Th>
             <Th>Net Premium</Th>
             <Th>Gross Premium</Th>
+            <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
         {loading ? (
-          <TableSkeleton rows={6} columns={10} />
+          <TableSkeleton rows={6} columns={12} />
         ) : (
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td
-                  colSpan={10}
-                  className="text-center py-12 text-slate-500"
-                >
+                <td colSpan={11} className="text-center py-12 text-slate-500">
                   No policies found
                 </td>
               </tr>
@@ -163,23 +160,27 @@ const PolicyTable = ({
                   className="border-t h-[52px] hover:bg-slate-50"
                 >
                   <Td>{p.policyNumber}</Td>
-                  <Td>{p.customerName}</Td>    
+                  <Td>{p.customerName}</Td>
+
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyTypeStyles[p.policyTypeName]
+                        policyTypeStyles[p.policyTypeName] ??
+                        "bg-gray-100 text-gray-600 border-gray-200"
                       }`}
                     >
                       {p.policyTypeName}
                     </span>
                   </Td>
+
                   <Td>{p.insurerName}</Td>
                   <Td>{p.productName}</Td>
 
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyStatusStyles[p.policyStatusName]
+                        policyStatusStyles[p.policyStatusName] ??
+                        "bg-gray-100 text-gray-600 border-gray-200"
                       }`}
                     >
                       {p.policyStatusName}
@@ -190,7 +191,7 @@ const PolicyTable = ({
                   <Td>{p.endDate?.split("T")[0]}</Td>
                   <Td>{p.premiumNet}</Td>
                   <Td>{p.premiumGross}</Td>
-
+                  <Td>{new Date(p.createdAt).toLocaleDateString()}</Td>
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, p)}
@@ -206,7 +207,7 @@ const PolicyTable = ({
         )}
       </table>
 
-      {/*   ACTION DROPDOWN   */}
+      {/* ACTION DROPDOWN */}
       {openPolicy && (
         <div
           ref={dropdownRef}
@@ -222,14 +223,15 @@ const PolicyTable = ({
           <MenuItem
             label="Create Renewal"
             icon={<RefreshCcw size={14} />}
-            onClick={() =>
-              handleAction(() => onRenewal(openPolicy))
-            }
+            onClick={() => handleAction(() => onRenewal(openPolicy))}
           />
 
           <MenuItem
             label="Change Status"
-            onClick={() => setShowStatusMenu((p) => !p)}
+            onClick={() => {
+              console.log("clicked");
+              setShowStatusMenu((p) => !p);
+            }}
           />
 
           <MenuItem
@@ -238,25 +240,25 @@ const PolicyTable = ({
             onClick={() => setConfirmDelete(openPolicy)}
           />
 
-          {/* 🔥 STATUS SUBMENU */}
+          {/* ✅ FIXED STATUS SUBMENU */}
           {showStatusMenu && (
             <div className="border-t">
               {statuses
                 .filter(
-                  (s) =>
-                    s.name !== openPolicy.policyStatusName
+                  (s: any) =>
+                    s.policyStatusId !== openPolicy.policyStatusId
                 )
-                .map((status) => (
+                .map((status: any) => (
                   <button
-                    key={status.id}
+                    key={status.policyStatusId}
                     onClick={() =>
-                      handleStatusChange(status.id)
+                      handleStatusChange(status.policyStatusId)
                     }
                     disabled={updatingStatus}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2"
                   >
                     <Check size={14} />
-                    {status.name}
+                    {status.statusName}
                   </button>
                 ))}
             </div>
@@ -264,14 +266,12 @@ const PolicyTable = ({
         </div>
       )}
 
-      {/*   CONFIRM DELETE   */}
+      {/* CONFIRM DELETE */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">
-                Delete Policy
-              </h3>
+              <h3 className="text-lg font-semibold">Delete Policy</h3>
               <button onClick={() => setConfirmDelete(null)}>
                 <X size={18} />
               </button>
