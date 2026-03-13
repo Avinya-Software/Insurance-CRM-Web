@@ -117,6 +117,7 @@ const PolicyUpsertSheet = ({
   };
 
   const [form, setForm] = useState(initialForm);
+  const [originalForm, setOriginalForm] = useState<any>(null);
   const [files, setFiles] = useState<{ file: File; type: string; label: string }[]>([]);
   const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -187,6 +188,7 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
   useEffect(() => {
     if (!open) {
       setForm(initialForm);
+      setOriginalForm(null);        
       setExistingDocuments([]);
       setFiles([]);
       setErrors({});
@@ -195,7 +197,7 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
     }
   
     if (policy) {
-      setForm({
+      const mappedForm = {
         ...initialForm,
   
         policyId: policy.policyId,
@@ -287,34 +289,36 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
           yearlyPrem: r.yearlyPremium,
           isDeleted: r.isDeleted ?? false
         })),
-      });
+      };
   
       /* DOCUMENTS PREFILL */
   
-      const docs = policy.documents || [];
-  
-      const mappedDocs = docs.map((d: any) => ({
-        id: d.id,          
-        fileName: d.fileName,
-        url: d.url,        
-        type: d.documentType || "Policy",
-      }));
-  
-      setExistingDocuments(mappedDocs);
-    } else {
-      setForm({
-        ...initialForm,
-        customerId: customerId || "",
-      });
-  
-      setExistingDocuments([]);
-      setFiles([]);
-    }
-  
-    setErrors({});
-    console.log("POLICY DATA",policy)
+      setForm(mappedForm);
+    setOriginalForm(mappedForm); // <-- store the original form for edit comparison
 
-  }, [open, policy, customerId]);
+    /* DOCUMENTS PREFILL */
+    const mappedDocs = (policy.documents || []).map((d: any) => ({
+      id: d.id,
+      fileName: d.fileName,
+      url: d.url,
+      type: d.documentType || "Policy",
+    }));
+    setExistingDocuments(mappedDocs);
+
+  } else {
+    setForm({
+      ...initialForm,
+      customerId: customerId || "",
+    });
+    setOriginalForm(null); // new policy, no original
+    setExistingDocuments([]);
+    setFiles([]);
+  }
+
+  setErrors({});
+  console.log("POLICY DATA", policy);
+
+}, [open, policy, customerId]);
 
 
 
@@ -521,97 +525,114 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
   /*   SAVE  */
   const toIso = (date?: string) =>
     date ? new Date(date).toISOString() : undefined;
+
+  const checkPolicyChanges = (form: any, originalForm: any) => {
+    if (!originalForm) return true;
+    const fieldsToCheck = [
+      "customerId", "policyStatusId", "policyTypeId", "dobOfLa", "age",
+      "proposerName", "nomineeName", "nomineeType", "relationWithLa",
+      "policyNumber", "baName", "agencyName", "insurerId", "productId",
+      "premiumMode", "policyTerm", "ppt", "startDate", "completionDate",
+      "nextPremiumDueDate", "graceDate", "maturityDate", "objective",
+      "sumAssured", "installmentPremium", "premiumIncludingGst", "basicPremium",
+      "gstPerc", "gstAmount", "finalInstallmentPremium", "annualPremium",
+      "ecs", "paymentBy", "payReferenceNo", "paymentDate", "mandateExpDate",
+      "accountNo", "bankName", "branchName", "remarks"
+    ];
   
+    return fieldsToCheck.some((field) => {
+      const current = form[field];
+      const original = originalForm[field];
+      return current !== original;
+    });
+  };
+
   const handleSave = async () => {
     if (!validate()) return;
   
     try {
-      const payload = {
-        policyId: form.policyId || undefined,
+      let policyId = form.policyId;
+      const isPolicyNew = !form.policyId;
+      let policyUpdated = false;
+      let documentUploaded = false;
   
-        customerId: form.customerId,
-        policyStatusId: Number(form.policyStatusId) || 0,
-        statusId: Number(form.policyTypeId) || 0,
+      const hasPolicyChanged = originalForm ? checkPolicyChanges(form, originalForm) : true;
   
-        dob: toIso(form.dobOfLa),
-        age: Number(form.age) || 0,
+      if (hasPolicyChanged) {
+        const payload = {
+          policyId: form.policyId || undefined,
+          customerId: form.customerId,
+          policyStatusId: Number(form.policyStatusId) || 0,
+          statusId: Number(form.policyTypeId) || 0,
+          dob: toIso(form.dobOfLa),
+          age: Number(form.age) || 0,
+          proposerName: form.proposerName || "",
+          nomineeName: form.nomineeName || "",
+          nomineeType: form.nomineeType || "",
+          relationWithLA: form.relationWithLa || "",
+          policyNumber: form.policyNumber,
+          baId: form.baName || null,
+          agencyId: form.agencyName || null,
+          companyId: form.insurerId || null,
+          productId: Number(form.productId) || 0,
+          premiumMode: form.premiumMode || "",
+          policyTerm: Number(form.policyTerm) || 0,
+          ppt: Number(form.ppt) || 0,
+          policyStartDate: toIso(form.startDate),
+          completionDate: toIso(form.completionDate),
+          nextPremiumDueDate: toIso(form.nextPremiumDueDate),
+          graceDate: toIso(form.graceDate),
+          maturityDate: toIso(form.maturityDate),
+          objectiveOfInsurance: form.objective || "",
+          sumAssured: Number(form.sumAssured) || 0,
+          premium: {
+            installmentPremium: Number(form.installmentPremium) || 0,
+            premiumIncludingGST: form.premiumIncludingGst,
+            basicPremium: Number(form.basicPremium) || 0,
+            gstPercentage: Number(form.gstPerc) || 0,
+            gstAmount: Number(form.gstAmount) || 0,
+            finalInstallmentPremium: Number(form.finalInstallmentPremium) || 0,
+            annualPremium: Number(form.annualPremium) || 0,
+          },
+          payment: {
+            ecs: form.ecs || "",
+            paymentBy: form.paymentBy || "",
+            paymentRefNo: form.payReferenceNo || "",
+            paymentDate: toIso(form.paymentDate),
+            mandateExpDate: toIso(form.mandateExpDate),
+            accountNo: form.accountNo || "",
+            bankName: form.bankName || "",
+            branchName: form.branchName || "",
+            remarks: form.remarks || "",
+          },
+          cashflows: mapCashflows(form.cashflows),
+          riders: mapRiders(form.riders),
+          funds: mapFunds(form.funds),
+        };
   
-        proposerName: form.proposerName || "",
-        nomineeName: form.nomineeName || "",
-        nomineeType: form.nomineeType || "",
-        relationWithLA: form.relationWithLa || "",
+        const response = await mutateAsync(payload);
+        policyId = response?.data?.policyId || response?.policyId || form.policyId;
+        policyUpdated = true;
   
-        policyNumber: form.policyNumber,
-  
-        baId: form.baName || null,
-        agencyId: form.agencyName || null,
-        companyId: form.insurerId || null,
-        productId: Number(form.productId) || 0,
-  
-        premiumMode: form.premiumMode || "",
-        policyTerm: Number(form.policyTerm) || 0,
-        ppt: Number(form.ppt) || 0,
-  
-        policyStartDate: toIso(form.startDate),
-        completionDate: toIso(form.completionDate),
-        nextPremiumDueDate: toIso(form.nextPremiumDueDate),
-        graceDate: toIso(form.graceDate),
-        maturityDate: toIso(form.maturityDate),
-  
-        objectiveOfInsurance: form.objective || "",
-        sumAssured: Number(form.sumAssured) || 0,
-  
-        premium: {
-          installmentPremium: Number(form.installmentPremium) || 0,
-          premiumIncludingGST: form.premiumIncludingGst,
-          basicPremium: Number(form.basicPremium) || 0,
-          gstPercentage: Number(form.gstPerc) || 0,
-          gstAmount: Number(form.gstAmount) || 0,
-          finalInstallmentPremium: Number(form.finalInstallmentPremium) || 0,
-          annualPremium: Number(form.annualPremium) || 0,
-        },
-  
-        payment: {
-          ecs: form.ecs || "",
-          paymentBy: form.paymentBy || "",
-          paymentRefNo: form.payReferenceNo || "",
-          paymentDate: toIso(form.paymentDate),
-          mandateExpDate: toIso(form.mandateExpDate),
-          accountNo: form.accountNo || "",
-          bankName: form.bankName || "",
-          branchName: form.branchName || "",
-          remarks: form.remarks || "",
-        },
-  
-        cashflows: mapCashflows(form.cashflows),
-        riders: mapRiders(form.riders),
-        funds: mapFunds(form.funds),
-      };
-  
-      const response = await mutateAsync(payload);
-  
-      const policyId =
-        response?.data?.policyId ||
-        response?.policyId ||
-        form.policyId;
+        if (response?.statusMessage) {
+          toast.success(response.statusMessage);
+        }
+      }
   
       if (files.length > 0 && policyId) {
         await Promise.all(
           files.map((f) => {
             const formData = new FormData();
-  
             formData.append("Id", policyId);
-            formData.append("Type", "2");        
-            formData.append("PolicyType", "1");  
+            formData.append("Type", "2");
+            formData.append("PolicyType", "1");
             formData.append("DocumentType", f.label);
             formData.append("Files", f.file);
-  
             return uploadPolicyDocument(formData);
           })
         );
+        documentUploaded = true;
       }
-  
-      toast.success(response?.statusMessage || "Policy saved successfully");
   
       onClose();
       onSuccess();
@@ -620,6 +641,8 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
       toast.error(error?.response?.data?.message || "Something went wrong");
     }
   };
+
+
 
   if (!open) return null;
 
