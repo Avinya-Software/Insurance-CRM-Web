@@ -160,7 +160,7 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
                 >                  
                 <Td>{showValue(p.policyNumber)}</Td>
                   {/* Customer Name */}
-                  <Td>{showValue(p.proposerName)}</Td>
+                  <Td>{showValue(p.customerName)}</Td>
 
                   {/* Policy Status */}
                   <Td>

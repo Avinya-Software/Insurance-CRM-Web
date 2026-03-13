@@ -179,6 +179,7 @@ const { data: statusTypes, isLoading: stLoading } =
   usePolicyStatusesDropdown(1);
 const loadingDropdowns = sLoading || stLoading; 
 const isLoading = isPending;
+const isEditMode = !!policy;
 const { data: customers } = useCustomerDropdown();
 const { data: agencies } = useAgencyDropdown();
 const { data: users } = useUserDropdown();
@@ -628,20 +629,22 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
             formData.append("PolicyType", "1");
             formData.append("DocumentType", f.label);
             formData.append("Files", f.file);
-            return uploadPolicyDocument(formData);
+            return uploadPolicyDocument(formData); 
           })
         );
         documentUploaded = true;
+  
+        if (!policyUpdated) {
+          toast.success("Policy documents uploaded successfully");
+        }
       }
   
       onClose();
       onSuccess();
-  
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Something went wrong");
     }
   };
-
 
 
   if (!open) return null;
@@ -1226,6 +1229,14 @@ const { mutateAsync: uploadPolicyDocument } = useUploadPolicyDocument();
 
               {activeTab === "documents" && (
                 <div className="space-y-8">
+                  {!isEditMode && (
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
+                    <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Documents will be uploaded automatically when you click <strong>SAVE</strong>.
+                    </p>
+                  </div>
+                )}
                   {/* UPLOAD SECTION */}
                   <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
