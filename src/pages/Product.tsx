@@ -1,137 +1,160 @@
-import { useEffect, useState } from "react";
-import { Toaster, toast } from "react-hot-toast";
-import InsurerTable from "../components/insurer/InsurerTable";
-import InsurerUpsertSheet from "../components/insurer/InsurerUpsertSheet";
-import ProductUpsertSheet from "../components/product/ProductUpsertSheet";
+import { useState } from "react";
+import { Toaster } from "react-hot-toast";
 import Pagination from "../components/leads/Pagination";
-import { useInsurers } from "../hooks/insurer/useInsurers";
+import { Product } from "../interfaces/product.interface";
+import { useProducts } from "../hooks/product/useProducts";
+import ProductTable from "../components/product/ProductTable";
+import ProductUpsertSheet from "../components/product/ProductUpsertSheet";
 
-const Product = () => {
+const ProductPage = () => {
+
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize] = useState(10);
+
   const [search, setSearch] = useState("");
+  const [policyType, setPolicyType] = useState<boolean | undefined>(undefined);
 
-  const [openInsurerSheet, setOpenInsurerSheet] = useState(false);
-  const [openProductSheet, setOpenProductSheet] = useState(false);
-  const [selectedInsurer, setSelectedInsurer] = useState<any | null>(null);
+  const [openSheet, setOpenSheet] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Product | null>(null);
 
-  const { data, isLoading, refetch } = useInsurers({
+  const { data, isLoading, refetch } = useProducts(
     pageNumber,
     pageSize,
-    search,
-  });
-    
-  
-  /*   HANDLERS   */
+    policyType,
+    search
+  );
 
-  const handleAddInsurer = () => {
-    setSelectedInsurer(null);
-    setOpenInsurerSheet(true);
+  const allData = data?.products ?? [];
+  const totalPages = data?.totalPages ?? 1;
+  const totalCount = data?.totalRecords ?? 0;
+
+  /* HANDLERS */
+
+  const handleAddItem = () => {
+    setSelectedItem(null);
+    setOpenSheet(true);
   };
 
-  const handleEditInsurer = (insurer: any) => {
-    setSelectedInsurer(insurer);
-    setOpenInsurerSheet(true);
+  const handleEditItem = (item: Product) => {
+    setSelectedItem(item);
+    setOpenSheet(true);
   };
 
-  const handleAddProduct = (insurer: any) => {
-    setSelectedInsurer(insurer);
-    setOpenProductSheet(true);
-  };
-
-  const handleInsurerSuccess = () => {
-    setOpenInsurerSheet(false);
+  const handleSuccess = () => {
+    setOpenSheet(false);
     refetch();
   };
 
-  const handleProductSuccess = () => {
-    setOpenProductSheet(false);
-    setSelectedInsurer(null);
-  };
+  const handlePolicyChange = (e: any) => {
+    const value = e.target.value;
 
-  /*   UI   */
+    if (value === "") {
+      setPolicyType(undefined);
+    } else {
+      setPolicyType(value === "true");
+    }
+
+    setPageNumber(1);
+  };
 
   return (
     <>
-      {/* 🔔 TOASTER */}
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="top-right" />
 
       <div className="bg-white rounded-lg border">
-        {/*   HEADER   */}
+
+        {/* HEADER */}
+
         <div className="px-4 py-5 border-b bg-gray-100">
+
           <div className="grid grid-cols-2 gap-y-4 items-start">
+
             <div>
               <h1 className="text-4xl font-serif font-semibold text-slate-900">
-                Insurers
+                Products
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-                {data?.totalCount ?? 0} total insurers
+                {totalCount} total products
               </p>
             </div>
 
             <div className="text-right">
               <button
                 className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm font-medium"
-                onClick={handleAddInsurer}
+                onClick={handleAddItem}
               >
-                + Add Insurer
+                + Add Product
               </button>
             </div>
 
             {/* SEARCH */}
-            <div>
-              <input
-                type="text"
-                placeholder=" 🔍 Search insurer..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPageNumber(1);
-                }}
-                className="w-[360px] h-10 px-3 border rounded text-sm"
-              />
+
+            <div className="flex gap-4">
+
+              <div className="relative w-[300px]">
+                <input
+                  type="text"
+                  placeholder="Search Product..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPageNumber(1);
+                  }}
+                  className="w-full h-10 pl-10 pr-3 border rounded text-sm"
+                />
+
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  🔍
+                </span>
+              </div>
+
+              {/* POLICY TYPE DROPDOWN */}
+
+              <div className="relative w-[220px]">
+                <select
+                  value={policyType === undefined ? "" : policyType.toString()}
+                  onChange={handlePolicyChange}
+                  className="h-10 w-full border rounded px-3 text-sm cursor-pointer"
+                >
+                  <option value="">All Types</option>
+                  <option value="true">Life</option>
+                  <option value="false">General</option>
+                </select>
+              </div>
+
             </div>
 
-            <div />
           </div>
+
         </div>
 
-        {/*   TABLE   */}
-        <InsurerTable
-          data={data?.data || []}
+        {/* TABLE */}
+
+        <ProductTable
+          data={allData}
           loading={isLoading}
-          onEdit={handleEditInsurer}
-          onAddProduct={handleAddProduct}
+          onEdit={handleEditItem}
         />
 
-        {/*   PAGINATION   */}
+        {/* PAGINATION */}
+
         <Pagination
           page={pageNumber}
-          totalPages={data?.totalPages ?? 1}
+          totalPages={totalPages}
           onChange={(page) => setPageNumber(page)}
         />
+
       </div>
 
-      {/*   INSURER UPSERT   */}
-      <InsurerUpsertSheet
-        open={openInsurerSheet}
-        insurer={selectedInsurer}
-        onClose={() => setOpenInsurerSheet(false)}
-        onSuccess={handleInsurerSuccess}
+      <ProductUpsertSheet
+        open={openSheet}
+        item={selectedItem}
+        onClose={() => setOpenSheet(false)}
+        onSuccess={handleSuccess}
       />
 
-      {/*   PRODUCT UPSERT   */}
-      <ProductUpsertSheet
-        open={openProductSheet}
-        insurerId={selectedInsurer?.insurerId}
-        onClose={() => {
-          setOpenProductSheet(false);
-          setSelectedInsurer(null);
-        }}
-        onSuccess={handleProductSuccess}
-      />
     </>
   );
 };
 
-export default Product;
+export default ProductPage;
