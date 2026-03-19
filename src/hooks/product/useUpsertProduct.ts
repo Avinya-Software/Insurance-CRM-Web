@@ -5,7 +5,14 @@ export const useUpsertProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: upsertProductApi,
+    mutationFn: (payload: {
+      productId?: number;
+      companyId: string;
+      policyType: boolean;
+      insurance: number;
+      productName: string;
+    }) => upsertProductApi(payload),
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },

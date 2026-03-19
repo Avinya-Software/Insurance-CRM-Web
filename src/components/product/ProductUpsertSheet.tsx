@@ -1,117 +1,70 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import toast from "react-hot-toast";
-
-import { useUpsertProduct } from "../../hooks/product/useUpsertProduct";
-import { useProductCategoryDropdown } from "../../hooks/product/useProductCategoryDropdown";
-import { useInsurerDropdown } from "../../hooks/insurer/useInsurerDropdown";
 import Spinner from "../common/Spinner";
-import SearchableComboBox from "../common/SearchableComboBox";
+import { Product } from "../../interfaces/product.interface";
+import { useUpsertProduct } from "../../hooks/product/useUpsertProduct";
+
 interface Props {
   open: boolean;
   onClose: () => void;
-  product?: any;
-  insurerId?: string;
+  item?: Product | null;
   onSuccess: () => void;
 }
 
-/*   VALIDATION RULES   */
+const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
 
-const regex = {
-  productName: /^[A-Za-z0-9\s]{3,50}$/,
-  productCode: /^[A-Z0-9_-]{2,20}$/,
-  commissionRules: /^[A-Za-z0-9\s,.\-\/]{3,500}$/,
-};
+  const isEdit = !!item;
 
-const ProductUpsertSheet = ({
-  open,
-  onClose,
-  product,
-  insurerId,
-  onSuccess,
-}: Props) => {
-  /*   API   */
-  const { mutateAsync, isPending } = useUpsertProduct();
-  const { data: categories, isLoading: catLoading } =
-    useProductCategoryDropdown();
-  const { data: insurers, isLoading: insurerLoading } =
-    useInsurerDropdown();
-  const isLoading = catLoading || insurerLoading || isPending;
-  const loadingDropdowns = catLoading || insurerLoading;
-
-  /*   FORM STATE   */
-
-  const initialForm = {
-    productId: null as string | null,
-    insurerId: "",
-    productCategoryId: 0,
+  const initialForm: any = {
     productName: "",
-    productCode: "",
-    defaultReminderDays: 0,
-    commissionRules: "",
-    isActive: true,
+    companyId: "",
+    policyType: false,
+    insurance: 0,
   };
 
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<any>({});
 
-  /*   PREFILL   */
+  const { mutate: upsert, isPending: saving } = useUpsertProduct();
+
+  /* PREFILL */
 
   useEffect(() => {
+
     if (!open) return;
 
-    if (product) {
+    if (isEdit && item) {
+
       setForm({
-        productId: product.productId ?? null,
-        insurerId: product.insurerId ?? "",
-        productCategoryId: product.productCategoryId ?? 0, 
-        productName: product.productName ?? "",
-        productCode: product.productCode ?? "",
-        defaultReminderDays: product.defaultReminderDays ?? 0,
-        commissionRules: product.commissionRules ?? "",
-        isActive: product.isActive ?? true,
+        productId: item.productId,
+        productName: item.productName,
+        companyId: item.companyId,
+        policyType: item.policyType,
+        insurance: item.insuranceTypeId,
       });
+
     } else {
-      setForm({
-        ...initialForm,
-        insurerId: insurerId || "",
-      });
+
+      setForm(initialForm);
+
     }
 
     setErrors({});
-  }, [open, product, insurerId]);
+
+  }, [open, item]);
+
+  /* VALIDATION */
 
   const validate = () => {
+
     const e: any = {};
 
-    if (!form.insurerId)
-      e.insurerId = "Insurer is required";
-
-    if (!form.productCategoryId)
-      e.productCategoryId = "Category is required";
-
     if (!form.productName)
-      e.productName = "Product name is required";
-    else if (!regex.productName.test(form.productName))
-      e.productName = "3–50 letters/numbers only";
+      e.productName = "Product name required";
 
-    if (!form.productCode)
-      e.productCode = "Product code is required";
-    else if (!regex.productCode.test(form.productCode))
-      e.productCode =
-        "Uppercase letters, numbers, _ or -";
-
-    if (
-      form.defaultReminderDays === null ||
-      form.defaultReminderDays < 0
-    )
-      e.defaultReminderDays = "Must be 0 or greater";
-
-    if (!form.commissionRules)
-      e.commissionRules = "Commission rules required";
-    else if (!regex.commissionRules.test(form.commissionRules))
-      e.commissionRules =
-        "Min 3 characters, no special symbols";
+    if (!form.companyId)
+      e.companyId = "Company is required";
 
     setErrors(e);
 
@@ -123,168 +76,174 @@ const ProductUpsertSheet = ({
     return true;
   };
 
-  /*   SAVE   */
+  /* SAVE */
 
-  const handleSave = async () => {
+  const handleSave = () => {
+
     if (!validate()) return;
 
-    await mutateAsync(form);
-    toast.success("Product saved successfully");
-    onClose();
-    onSuccess();
+    const payload: any = {
+      productName: form.productName,
+      companyId: form.companyId,
+      policyType: form.policyType,
+      insurance: form.insurance,
+    };
+
+    if (isEdit && form.productId) {
+      payload.productId = form.productId;
+    }
+
+    upsert(payload, {
+      onSuccess: () => {
+        toast.success(
+          `Product ${isEdit ? "updated" : "created"} successfully`
+        );
+        onSuccess();
+        onClose();
+      },
+      onError: () => toast.error("Something went wrong"),
+    });
+
   };
 
   if (!open) return null;
 
   return (
     <>
-      {/* OVERLAY */}
+      {/* Overlay */}
+
       <div
-        className="fixed inset-0 bg-black/40 z-[60]"
-        onClick={isLoading ? undefined : onClose}
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]"
+        onClick={onClose}
       />
 
-      {/* SHEET */}
-      <div className="fixed top-0 right-0 h-screen w-[420px] bg-white z-[70] shadow-2xl flex flex-col animate-slideInRight">
-        {/*   HEADER   */}
-        <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="font-semibold text-lg">
-            {product ? "Edit Product" : "Add Product"}
-          </h2>
-          <button onClick={onClose} disabled={isLoading}>
-            <X />
+      {/* Sheet */}
+
+      <div className="fixed top-0 right-0 w-full max-w-[20vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right">
+
+        {/* Header */}
+
+        <div className="px-8 py-6 bg-white border-b flex justify-between items-center">
+
+          <div>
+
+            <h2 className="text-2xl font-bold text-slate-900">
+              {isEdit ? "Edit Product" : "Add Product"}
+            </h2>
+
+            <p className="text-slate-500 text-sm mt-1">
+              Manage product information
+            </p>
+
+          </div>
+
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-full"
+          >
+            <X size={22} />
           </button>
+
         </div>
 
-        {/*   BODY   */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {loadingDropdowns ? (
-            <div className="flex items-center justify-center h-full">
-              <Spinner />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className={insurerId ? "opacity-50 pointer-events-none" : ""}>
-                <SearchableComboBox
-                  label="Insurer"
-                  items={insurers.map((i) => ({
-                    value: i.insurerId,
-                    label: i.insurerName,
-                  }))}
-                  value={form.insurerId}
-                  placeholder="Select insurer"
-                  onSelect={(item) =>
-                    setForm({
-                      ...form,
-                      insurerId: item?.value || "",
-                    })
-                  }
-                />
-              </div>
+        {/* Body */}
 
-              {errors.insurerId && (
-                <p className="text-sm text-red-500 mt-1">{errors.insurerId}</p>
-              )}
+        <div className="flex-1 overflow-y-auto p-4">
 
-              <Select
-                label="Product Category"
-                value={form.productCategoryId}
-                error={errors.productCategoryId}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    productCategoryId: Number(v),
-                  })
-                }
-                options={categories}
-                valueKey="id"
-                labelKey="name"
-              />
+          <section className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5">
 
               <Input
                 label="Product Name"
+                required
                 value={form.productName}
                 error={errors.productName}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    productName: v,
-                  })
-                }
+                onChange={(v: any) => setForm({ ...form, productName: v })}
               />
 
               <Input
-                label="Product Code"
-                value={form.productCode}
-                error={errors.productCode}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    productCode: v,
-                  })
-                }
+                label="Company ID"
+                required
+                value={form.companyId}
+                error={errors.companyId}
+                onChange={(v: any) => setForm({ ...form, companyId: v })}
               />
 
               <Input
-                label="Default Reminder Days"
-                value={form.defaultReminderDays}
-                error={errors.defaultReminderDays}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    defaultReminderDays: Number(v.replace(/[^0-9]/g, "")),
-                  })
+                label="Insurance Type"
+                type="number"
+                value={form.insurance}
+                onChange={(v: any) =>
+                  setForm({ ...form, insurance: Number(v) })
                 }
               />
 
-              <Textarea
-                label="Commission Rules"
-                value={form.commissionRules}
-                error={errors.commissionRules}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    commissionRules: v,
-                  })
-                }
-              />
+              {/* Policy Type */}
 
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.isActive}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      isActive: e.target.checked,
-                    })
-                  }
-                />
-                Active
-              </label>
+              <div className="space-y-1.5">
+
+                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                  Policy Type
+                </label>
+
+                <div className="flex gap-3">
+
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, policyType: false })}
+                    className={`px-4 py-2.5 text-sm font-medium border rounded transition-all
+                    ${!form.policyType
+                      ? "bg-blue-50 border-blue-200 text-blue-700"
+                      : "bg-white border-slate-200"
+                    }`}
+                  >
+                    General
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, policyType: true })}
+                    className={`px-4 py-2.5 text-sm font-medium border rounded transition-all
+                    ${form.policyType
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                      : "bg-white border-slate-200"
+                    }`}
+                  >
+                    Life
+                  </button>
+
+                </div>
+
+              </div>
+
             </div>
-          )}
+
+          </section>
+
         </div>
 
-        {/*   FOOTER   */}
-        <div className="px-6 py-4 border-t flex gap-3">
-          <button
-            className="flex-1 border rounded-lg py-2"
-            onClick={onClose}
-            disabled={isLoading}
-          >
-            Cancel
-          </button>
+        {/* Footer */}
+
+        <div className="px-8 py-6 bg-white border-t flex gap-4">
 
           <button
-            disabled={isLoading}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 flex items-center justify-center gap-2"
+            disabled={saving}
             onClick={handleSave}
+            className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center gap-2"
           >
-            {isLoading && <Spinner />}
-            {isLoading ? "Saving..." : "Save"}
+            {saving ? <Spinner className="text-white" /> : "SAVE"}
           </button>
+
+          <button
+            onClick={onClose}
+            className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 rounded"
+          >
+            CANCEL
+          </button>
+
         </div>
+
       </div>
     </>
   );
@@ -292,91 +251,40 @@ const ProductUpsertSheet = ({
 
 export default ProductUpsertSheet;
 
-/*   HELPERS   */
+/* INPUT HELPER */
 
 const Input = ({
   label,
+  required,
   value,
-  onChange,
-  type = "text",
   error,
+  type = "text",
+  onChange,
+  placeholder,
+  disabled,
+  className = "",
 }: any) => (
-  <div>
-    <label className="text-sm font-medium">
-      {label}
+  <div className="space-y-1.5">
+    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+      {label} {required && <span className="text-red-500">*</span>}
     </label>
+
     <input
       type={type}
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      }`}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-    {error && (
-      <p className="text-xs text-red-500 mt-1">
-        {error}
-      </p>
-    )}
-  </div>
-);
-
-const Textarea = ({
-  label,
-  value,
-  onChange,
-  error,
-}: any) => (
-  <div>
-    <label className="text-sm font-medium">
-      {label}
-    </label>
-    <textarea
-      className={`input w-full h-24 resize-none ${
-        error ? "border-red-500" : ""
-      }`}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-    {error && (
-      <p className="text-xs text-red-500 mt-1">
-        {error}
-      </p>
-    )}
-  </div>
-);
-
-const Select = ({
-  label,
-  value,
-  onChange,
-  options,
-  valueKey,
-  labelKey,
-  error,
-  disabled = false,
-}: any) => (
-  <div>
-    <label className="text-sm font-medium">
-      {label}
-    </label>
-    <select
       disabled={disabled}
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      } disabled:bg-gray-100`}
-      value={value}
+      placeholder={placeholder}
+      className={`
+        w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none
+        ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
+        ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
+        ${className}
+      `}
+      value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">Select</option>
-      {options?.map((o: any) => (
-        <option key={o[valueKey]} value={o[valueKey]}>
-          {o[labelKey]}
-        </option>
-      ))}
-    </select>
+    />
+
     {error && (
-      <p className="text-xs text-red-500 mt-1">
+      <p className="text-[10px] font-medium text-red-500 mt-1">
         {error}
       </p>
     )}

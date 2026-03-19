@@ -1,24 +1,9 @@
 export interface Product {
-  productId: string;
-  insurerId: string;
-  insurerName?: string;
-  productCategoryId: number;
-  productCategoryName?: string;
+  productId: number;
   productName: string;
-  productCode: string;
-  defaultReminderDays: number;
-  commissionRules: string;
-  isActive: boolean;
-  createdAt?: string; 
-}
-
-export interface ProductDropdown {
-  productId: string;
-  productName: string;
-}
-
-export interface ProductDropdownResponse {
-  statusCode: number;
-  statusMessage: string;
-  data: ProductDropdown[];
+  companyId: string;
+  companyName?: string;
+  insuranceTypeId: number;
+  insuranceType: string | null;
+  policyType: boolean;
 }
