@@ -119,17 +119,6 @@ const Insurers = () => {
         onClose={() => setOpenInsurerSheet(false)}
         onSuccess={handleInsurerSuccess}
       />
-
-      {/*   PRODUCT UPSERT   */}
-      <ProductUpsertSheet
-        open={openProductSheet}
-        insurerId={selectedInsurer?.insurerId}
-        onClose={() => {
-          setOpenProductSheet(false);
-          setSelectedInsurer(null);
-        }}
-        onSuccess={handleProductSuccess}
-      />
     </>
   );
 };
