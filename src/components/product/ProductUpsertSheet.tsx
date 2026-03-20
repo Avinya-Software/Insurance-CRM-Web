@@ -4,6 +4,9 @@ import toast from "react-hot-toast";
 import Spinner from "../common/Spinner";
 import { Product } from "../../interfaces/product.interface";
 import { useUpsertProduct } from "../../hooks/product/useUpsertProduct";
+import { useCompanyDropdown } from "../../hooks/product/useCompanyDropdown";
+import SearchableComboBox from "../common/SearchableComboBox";
+import { useInsuranceTypes } from "../../hooks/policy/useInsuranceTypes";
 
 interface Props {
   open: boolean;
@@ -27,37 +30,38 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
   const [errors, setErrors] = useState<any>({});
 
   const { mutate: upsert, isPending: saving } = useUpsertProduct();
+  const { data: companies = [] } = useCompanyDropdown();
+  const { data: insuranceTypes = [] } = useInsuranceTypes();
+
+  const insuranceOptions = insuranceTypes.map((item: any) => ({
+    value: item.id,
+    label: item.type,
+  }));
 
   /* PREFILL */
 
   useEffect(() => {
-
     if (!open) return;
 
     if (isEdit && item) {
-
       setForm({
         productId: item.productId,
         productName: item.productName,
         companyId: item.companyId,
+        companyName: item.companyName,
         policyType: item.policyType,
         insurance: item.insuranceTypeId,
       });
-
     } else {
-
       setForm(initialForm);
-
     }
 
     setErrors({});
-
   }, [open, item]);
 
   /* VALIDATION */
 
   const validate = () => {
-
     const e: any = {};
 
     if (!form.productName)
@@ -79,7 +83,6 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
   /* SAVE */
 
   const handleSave = () => {
-
     if (!validate()) return;
 
     const payload: any = {
@@ -103,7 +106,6 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
       },
       onError: () => toast.error("Something went wrong"),
     });
-
   };
 
   if (!open) return null;
@@ -126,7 +128,6 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
         <div className="px-8 py-6 bg-white border-b flex justify-between items-center">
 
           <div>
-
             <h2 className="text-2xl font-bold text-slate-900">
               {isEdit ? "Edit Product" : "Add Product"}
             </h2>
@@ -134,7 +135,6 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
             <p className="text-slate-500 text-sm mt-1">
               Manage product information
             </p>
-
           </div>
 
           <button
@@ -154,34 +154,9 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
 
             <div className="grid grid-cols-1 gap-x-6 gap-y-5">
 
-              <Input
-                label="Product Name"
-                required
-                value={form.productName}
-                error={errors.productName}
-                onChange={(v: any) => setForm({ ...form, productName: v })}
-              />
+                {/* Policy Type */}
 
-              <Input
-                label="Company ID"
-                required
-                value={form.companyId}
-                error={errors.companyId}
-                onChange={(v: any) => setForm({ ...form, companyId: v })}
-              />
-
-              <Input
-                label="Insurance Type"
-                type="number"
-                value={form.insurance}
-                onChange={(v: any) =>
-                  setForm({ ...form, insurance: Number(v) })
-                }
-              />
-
-              {/* Policy Type */}
-
-              <div className="space-y-1.5">
+                <div className="space-y-1.5">
 
                 <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
                   Policy Type
@@ -194,9 +169,9 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
                     onClick={() => setForm({ ...form, policyType: false })}
                     className={`px-4 py-2.5 text-sm font-medium border rounded transition-all
                     ${!form.policyType
-                      ? "bg-blue-50 border-blue-200 text-blue-700"
-                      : "bg-white border-slate-200"
-                    }`}
+                        ? "bg-blue-50 border-blue-200 text-blue-700"
+                        : "bg-white border-slate-200"
+                      }`}
                   >
                     General
                   </button>
@@ -206,16 +181,93 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
                     onClick={() => setForm({ ...form, policyType: true })}
                     className={`px-4 py-2.5 text-sm font-medium border rounded transition-all
                     ${form.policyType
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                      : "bg-white border-slate-200"
-                    }`}
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                        : "bg-white border-slate-200"
+                      }`}
                   >
                     Life
                   </button>
 
                 </div>
 
-              </div>
+                </div>
+
+              {/* LIFE POLICY */}
+              {form.policyType && (
+                <>
+                  <Input
+                    label="Product Name"
+                    required
+                    value={form.productName}
+                    error={errors.productName}
+                    onChange={(v: any) => setForm({ ...form, productName: v })}
+                  />
+
+                  <SearchableComboBox
+                    label="Company"
+                    required
+                    error={errors.companyId}
+                    items={companies.map((c: any) => ({
+                      value: c.companyId,
+                      label: c.companyName,
+                    }))}
+                    value={form.companyId}
+                    onSelect={(item: any) =>
+                      setForm((p: any) => ({
+                        ...p,
+                        companyId: item?.value || "",
+                        companyName: item?.label || "",
+                      }))
+                    }
+                  />
+                </>
+              )}
+
+              {/* GENERAL POLICY */}
+              {!form.policyType && (
+                <>
+                  <Input
+                    label="Product Name"
+                    required
+                    value={form.productName}
+                    error={errors.productName}
+                    onChange={(v: any) => setForm({ ...form, productName: v })}
+                  />
+
+                  <SearchableComboBox
+                    label="Company"
+                    required
+                    error={errors.companyId}
+                    items={companies.map((c: any) => ({
+                      value: c.companyId,
+                      label: c.companyName,
+                    }))}
+                    value={form.companyId}
+                    onSelect={(item: any) =>
+                      setForm((p: any) => ({
+                        ...p,
+                        companyId: item?.value || "",
+                        companyName: item?.label || "",
+                      }))
+                    }
+                  />
+
+                  <SearchableComboBox
+                    label="Insurance Type"
+                    items={insuranceOptions}
+                    value={form.insurance}
+                    onSelect={(item: any) =>
+                      setForm((p: any) => ({
+                        ...p,
+                        insurance: item?.value || null,
+                        insuranceName: item?.label || "",
+                      }))
+                    }
+                  />
+                </>
+              )}
+
+              
 
             </div>
 
