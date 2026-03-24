@@ -190,8 +190,8 @@ const Leads = () => {
           onCreateFollowUp={(lead) => {
             closeAllSheets();
             setCreateFollowUpLead({
-              leadId: lead.leadId,
-              leadName: lead.fullName,
+              leadId: lead.leadID,
+              leadName: lead.contactPerson,
             });
           }}
           onAddCustomer={handleAddCustomerFromLead}

@@ -16,11 +16,20 @@ import { useNavigate } from "react-router-dom";
 
 const leadStatusStyles: Record<string, string> = {
   New: "bg-slate-100 text-slate-700 border-slate-200",
-  Contacted: "bg-blue-100 text-blue-700 border-blue-200",
-  Qualified: "bg-purple-100 text-purple-700 border-purple-200",
-  "Follow Up": "bg-amber-100 text-amber-700 border-amber-200",
+  "Quotation Sent": "bg-blue-100 text-blue-700 border-blue-200",
   Converted: "bg-green-100 text-green-700 border-green-200",
+  "JobWork In Process": "bg-purple-100 text-purple-700 border-purple-200",
+  "Dispatched To Customer": "bg-indigo-100 text-indigo-700 border-indigo-200",
+  "Delivered/Done": "bg-emerald-100 text-emerald-700 border-emerald-200",
   Lost: "bg-red-100 text-red-700 border-red-200",
+};
+
+const leadSourceStyles: Record<string, string> = {
+  Call: "bg-blue-100 text-blue-700 border-blue-200",
+  "Walk-in": "bg-green-100 text-green-700 border-green-200",
+  WhatsApp: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Referral: "bg-purple-100 text-purple-700 border-purple-200",
+  "Other Sources": "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 /*   TYPES   */
@@ -113,7 +122,7 @@ const LeadTable = ({
 
   const handleViewDetails = () => {
     if (!openLead) return;
-    setSelectedLeadId(openLead.leadId);
+    setSelectedLeadId(openLead.leadID);
     setIsViewOpen(true);
     setOpenLead(null);
   };
@@ -121,7 +130,7 @@ const LeadTable = ({
   const handleDelete = () => {
     if (!confirmDelete) return;
 
-    deleteLead(confirmDelete.leadId, {
+    deleteLead(confirmDelete.leadID, {
       onSuccess: () => {
         setConfirmDelete(null);
         setOpenLead(null);
@@ -134,7 +143,7 @@ const LeadTable = ({
 
     updateStatus(
       {
-        leadId: openLead.leadId,
+        leadId: openLead.leadID,
         statusId,
       },
       {
@@ -150,16 +159,16 @@ const LeadTable = ({
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
-          <tr>
-            <Th>Lead No</Th>
-            <Th>Name</Th>
-            <Th>Email</Th>
-            <Th>Mobile</Th>
-            <Th>Status</Th>
-            <Th>Source</Th>
-            <Th>Created Date</Th>
-            <Th className="text-left">Actions</Th>
-          </tr>
+        <tr>
+          <Th>Lead No</Th>
+          <Th>Name</Th>
+          <Th>Email</Th>
+          <Th>Mobile</Th>
+          <Th>Status</Th>
+          <Th>Source</Th>
+          <Th>Created Date</Th> {/* updated */}
+          <Th className="text-left">Actions</Th>
+        </tr>
         </thead>
 
         {loading ? (
@@ -175,7 +184,7 @@ const LeadTable = ({
             ) : (
               data.map((lead) => (
                 <tr
-                  key={lead.leadId}
+                  key={lead.leadID}
                   onClick={() =>
                     onRowClick
                       ? onRowClick(lead)
@@ -184,24 +193,30 @@ const LeadTable = ({
                   className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
                 >
                   <Td>{lead.leadNo}</Td>
-                  <Td>{lead.fullName}</Td>
+                  <Td>{lead.contactPerson}</Td>
                   <Td>{lead.email}</Td>
                   <Td>{lead.mobile}</Td>
 
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        leadStatusStyles[lead.leadStatusName]
+                        leadStatusStyles[lead.statusName]
                       }`}
                     >
-                      {lead.leadStatusName}
+                      {lead.statusName}
                     </span>
                   </Td>
 
-                  <Td>{lead.leadSourceName}</Td>
-
                   <Td>
-                    {new Date(lead.createdAt).toLocaleDateString()}
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${leadSourceStyles[lead.leadSourceName]
+                        }`}
+                    >
+                      {lead.leadSourceName || "—"}
+                    </span>
+                  </Td>
+                  <Td>
+                    {new Date(lead.createdDate).toLocaleDateString()}
                   </Td>
 
                   <Td className="text-left">
@@ -227,8 +242,8 @@ const LeadTable = ({
           className="fixed z-50 w-[230px] bg-white border rounded-lg shadow-lg overflow-hidden"
           style={{ top: style.top, left: style.left }}
         >
-          {openLead.leadStatusName !== "Lost" &&
-            openLead.leadStatusName !== "Converted" && (
+          {openLead.statusName !== "Lost" &&
+            openLead.statusName !== "Converted" && (
               <>
                 <MenuItem
                   label="Edit Lead"
@@ -250,18 +265,6 @@ const LeadTable = ({
                 />
               </>
             )}
-
-            {openLead?.followUps && openLead.followUps.length > 0 && (
-              <MenuItem
-                label="View Follow Ups"
-                onClick={() =>
-                  handleAction(() =>
-                    navigate(`/leads/${openLead.leadId}/followups`)
-                  )
-                }
-              />
-            )}
-
           <MenuItem label="View Details" onClick={handleViewDetails} />
 
           <MenuItem
@@ -276,7 +279,7 @@ const LeadTable = ({
           {showStatusMenu && (
             <div className="border-t mt-1">
               {statuses
-                .filter((s) => s.name !== openLead.leadStatusName)
+                .filter((s) => s.name !== openLead.statusName)
                 .map((status) => (
                   <button
                     key={status.id}
