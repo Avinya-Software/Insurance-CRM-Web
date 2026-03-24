@@ -1,28 +1,26 @@
+// useUpdateLead.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { upsertLeadApi } from "../../api/lead.api";
+import { updateLeadApi } from "../../api/lead.api";
 
-export const useUpsertLead = () => {
+export const useUpdateLead = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: upsertLeadApi,
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
+      updateLeadApi(id, payload),
 
     onSuccess: (data) => {
-      toast.success(
-        data?.message ?? "Lead saved successfully"
-      );
+      toast.success(data?.message ?? "Lead updated successfully");
 
-      queryClient.invalidateQueries({
-        queryKey: ["leads"],
-      });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead-summary"] });
     },
 
     onError: (error: any) => {
-      const msg =
-        error?.response?.data?.message ||
-        "Failed to save lead";
-      toast.error(msg);
+      toast.error(
+        error?.response?.data?.message || "Failed to update lead"
+      );
     },
   });
 };

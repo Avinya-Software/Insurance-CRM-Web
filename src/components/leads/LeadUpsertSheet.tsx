@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { X, User, ChevronDown } from "lucide-react";
-import { useUpsertLead } from "../../hooks/lead/useUpsertLead";
+import { X, User, MapPin, ClipboardList, ChevronDown, Loader2 } from "lucide-react";
 import { useLeadStatuses } from "../../hooks/lead/useLeadStatuses";
 import { useLeadSources } from "../../hooks/lead/useLeadSources";
 import { getCustomerDropdownApi } from "../../api/customer.api";
 import SearchableComboBox from "../common/SearchableComboBox";
-import Spinner from "../common/Spinner";
 import { toast } from "react-hot-toast";
+import { useCreateLead } from "../../hooks/lead/useCreateLead";
+import { useUpdateLead } from "../../hooks/lead/useUpsertLead";
+import { useStates } from "../../hooks/state/useStates";
+import { useCities } from "../../hooks/city/useCities";
 
 interface Props {
   open: boolean;
@@ -15,22 +17,25 @@ interface Props {
   advisorId: string | null;
 }
 
-interface Customer {
-  customerId: string;
-  clientName: string;
-  email: string;
-  primaryMobile?: string;
-  address?: string;
-}
-
 const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
+  const { mutate: createLead, isPending: isCreating } = useCreateLead();
+  const { mutate: updateLead, isPending: isUpdating } = useUpdateLead();
 
-  const { mutate, isPending } = useUpsertLead();
+  const isEdit = !!lead;
+  const isPending = isEdit ? isUpdating : isCreating;
+
   const { data: statuses } = useLeadStatuses();
   const { data: sources } = useLeadSources();
+  const { data: states = [] } = useStates();
 
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [selectedStateId, setSelectedStateId] = useState("");
+
+  // cities fetched reactively whenever selectedStateId changes
+  const { data: cities = [] } = useCities(
+    selectedStateId ? Number(selectedStateId) : null
+  );
 
   const initialForm = {
     customerId: null as string | null,
@@ -38,168 +43,177 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
     email: "",
     mobile: "",
     address: "",
+    assignedTo: "",
+    requirementDetails: "",
+    links: "",
+    nextFollowupDate: "",
     leadStatusId: "",
     leadSourceId: "",
-    leadSourceDescription: "",
     notes: "",
+    cityId: "",
   };
 
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const selectedSource = sources?.find(
-    (s: any) => String(s.id) === String(form.leadSourceId)
-  );
-  
-  const isOtherSource =
-    selectedSource?.name?.toLowerCase() === "other";
-  /* BODY LOCK */
+
+  /* ── BODY LOCK ── */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
-    return () => {
-      document.body.style.overflow = "unset";
-    };
+    return () => { document.body.style.overflow = "unset"; };
   }, [open]);
 
-  /* CUSTOMER LIST */
+  /* ── CUSTOMER LIST ── */
   useEffect(() => {
-    getCustomerDropdownApi().then((res) => {
-      setCustomers(res?.data ?? []);
-    });
+    getCustomerDropdownApi().then((res) => setCustomers(res?.data ?? []));
   }, []);
 
-  /* PREFILL */
+  /* ── PREFILL ON EDIT ── */
   useEffect(() => {
-    if (!open) return;
-    if (!statuses || !sources) return;
+    if (!open || !lead) return;
 
-    if (lead) {
-      const mappedStatusId =
-        String(
-          lead.leadStatusId ||
-            statuses?.find(
-              (s: any) =>
-                s.name?.toLowerCase() === lead.leadStatus?.toLowerCase()
-            )?.id ||
-            ""
-        );
+    // Set state first so useCities fires and cities load before we set cityId
+    const stateId = lead.stateID?.toString() ?? "";
+    setSelectedStateId(stateId);
+    setSelectedCustomerId(lead.clientID ?? "");
 
-      const mappedSourceId =
-        String(
-          lead.leadSourceId ||
-            sources?.find(
-              (s: any) =>
-                s.name?.toLowerCase() === lead.leadSource?.toLowerCase()
-            )?.id ||
-            ""
-        );
-
-        setForm({
-          customerId: lead.customerId ?? null,
-          fullName: lead.clientName  ?? "",
-          email: lead.email ?? "",
-          mobile: lead.mobile ?? "",
-          address: lead.address ?? "",
-          leadStatusId: mappedStatusId,
-          leadSourceId: mappedSourceId,
-          leadSourceDescription: lead.leadSourceDescription ?? "",
-          notes: lead.notes ?? "",
-        });
-
-      setSelectedCustomerId(lead.customerId ?? "");
-    } else {
-      setForm(initialForm);
-      setSelectedCustomerId("");
-    }
+    setForm({
+      customerId: lead.clientID ?? null,
+      fullName:   lead.contactPerson ?? "",
+      email:      lead.email ?? "",
+      mobile:     lead.mobile ?? "",
+      address:    lead.billingAddress ?? "",
+      assignedTo: lead.assignedTo ?? "",
+      requirementDetails: lead.requirementDetails ?? "",
+      links:      lead.links ?? "",
+      nextFollowupDate: lead.nextFollowupDate
+        ? lead.nextFollowupDate.slice(0, 16)
+        : "",
+      leadSourceId: lead.leadSourceID?.toString() ?? "",
+      leadStatusId: lead.status?.toString() ?? "",
+      notes:   lead.notes ?? "",
+      cityId:  lead.cityID?.toString() ?? "",
+    });
 
     setErrors({});
-  }, [open, lead, statuses, sources]);
+  }, [lead, open]);
 
-  /* CUSTOMER AUTO FILL */
+  /* ── RESET ON CLOSE ── */
   useEffect(() => {
-    if (!selectedCustomerId) return;
-    if (lead) return;
-  
-    const customer = customers.find(
-      (c) => c.customerId === selectedCustomerId
-    );
-  
-    if (!customer) return;
-  
-    setForm((prev) => ({
-      ...prev,
-      customerId: customer.customerId,
-      fullName: customer.clientName ?? "",
-      email: customer.email ?? "",
-      mobile: customer.primaryMobile ?? "",
-      address: customer.address ?? "",
-    }));
-  }, [selectedCustomerId, customers, lead]);
+    if (!open) {
+      setForm(initialForm);
+      setSelectedCustomerId("");
+      setSelectedStateId("");
+      setErrors({});
+    }
+  }, [open]);
 
+  /* ── CUSTOMER AUTO-FILL ── */
+  const onCustomerSelect = (customerId: string | null) => {
+    if (customerId) {
+      setSelectedCustomerId(customerId);
+      const customer = customers.find((c: any) =>
+        String(c.clientID ?? c.customerId) === String(customerId)
+      );
+      if (customer) {
+        const stateId = customer.stateID?.toString() ?? "";
+        setSelectedStateId(stateId);
+        setForm((prev) => ({
+          ...prev,
+          customerId,
+          fullName: customer.contactPerson ?? customer.clientName ?? "",
+          email:    customer.email ?? "",
+          mobile:   customer.mobileNumber ?? customer.primaryMobile ?? "",
+          address:  customer.billAddress ?? customer.address ?? "",
+          cityId:   customer.cityID?.toString() ?? "",
+        }));
+        setErrors((prev) => ({
+          ...prev,
+          fullName: "", email: "", mobile: "", address: "",
+        }));
+      }
+    } else {
+      setSelectedCustomerId("");
+      setSelectedStateId("");
+      setForm((prev) => ({
+        ...prev,
+        customerId: null,
+        fullName: "", email: "", mobile: "", address: "", cityId: "",
+      }));
+    }
+  };
 
-  useEffect(() => {
-    if (!selectedCustomerId) return;
-  
-    const customer = customers.find(
-      (c) => c.customerId === selectedCustomerId
-    );
-  
-    if (!customer) return;
-  
-    setForm((prev) => ({
-      ...prev,
-      customerId: customer.customerId,
-      fullName: customer.clientName ?? "",
-      email: customer.email ?? "",
-      mobile: customer.primaryMobile ?? "",
-      address: customer.address ?? "",
-    }));
-  }, [selectedCustomerId, customers]);
-
-  /* VALIDATION */
-
+  /* ── VALIDATION ── */
   const validate = () => {
     const e: Record<string, string> = {};
     const mobileRegex = /^[6-9]\d{9}$/;
-
-    if (!form.fullName.trim()) e.fullName = "Full name is required";
-
-    if (!form.mobile.trim()) e.mobile = "Mobile is required";
-    else if (!mobileRegex.test(form.mobile))
-      e.mobile = "Invalid mobile number";
-
-    if (!form.leadStatusId) e.leadStatusId = "Lead status required";
-
-    if (!form.leadSourceId) e.leadSourceId = "Lead source required";
-
+    if (!form.fullName.trim())            e.fullName     = "Full name is required";
+    if (!form.mobile.trim())              e.mobile       = "Mobile is required";
+    else if (!mobileRegex.test(form.mobile)) e.mobile   = "Invalid mobile number";
+    if (!form.leadStatusId)               e.leadStatusId = "Status is required";
+    if (!form.leadSourceId)               e.leadSourceId = "Source is required";
     setErrors(e);
-
     if (Object.keys(e).length) {
       toast.error("Please fix validation errors");
       return false;
     }
-
     return true;
   };
 
-  /* SAVE */
-
+  /* ── SAVE ── */
   const handleSave = () => {
     if (!validate()) return;
 
-    mutate(
-      {
-        leadId: lead?.leadId,
-        advisorId,
-        ...form,
-        leadStatusId:
-          form.leadStatusId ||
-          statuses?.find((s: any) => s.name === "New")?.id,
-      },
-      { onSuccess: onClose }
-    );
+    const payload = {
+      ClientID:           form.customerId,
+      ContactPerson:      form.fullName,
+      Mobile:             form.mobile,
+      Email:              form.email,
+      BillingAddress:     form.address,
+      StateID:            selectedStateId ? Number(selectedStateId) : null,
+      CityID:             form.cityId ? Number(form.cityId) : null,
+      RequirementDetails: form.requirementDetails,
+      Links:              form.links,
+      Notes:              form.notes,
+      NextFollowupDate:   form.nextFollowupDate ? new Date(form.nextFollowupDate) : null,
+      Status:             form.leadStatusId,
+      LeadSource:         form.leadSourceId,
+      AssignedTo:         form.assignedTo || advisorId,
+    };
+
+    if (isEdit) {
+      updateLead({ id: lead.leadID, payload }, { onSuccess: onClose });
+    } else {
+      createLead(payload, { onSuccess: onClose });
+    }
   };
 
   if (!open) return null;
+
+  /* ── COMBOBOX ITEMS ── */
+  const customerItems = customers.map((c: any) => ({
+    value: String(c.clientID ?? c.customerId ?? ""),
+    label: `${c.contactPerson ?? c.clientName ?? ""} (${c.email ?? c.mobileNumber ?? ""})`,
+  }));
+
+  const stateItems = (states as any[]).map((s) => ({
+    value: String(s.stateID),
+    label: s.stateName,
+  }));
+
+  const cityItems = (cities as any[]).map((c) => ({
+    value: String(c.cityID),
+    label: c.cityName,
+  }));
+
+  const statusOptions = (statuses ?? []).map((s: any) => ({
+    value: String(s.id ?? s.leadStatusId ?? s.statusId ?? ""),
+    label: s.name ?? s.statusName ?? s.leadStatusName ?? "",
+  }));
+
+  const sourceOptions = (sources ?? []).map((s: any) => ({
+    value: String(s.id ?? s.leadSourceId ?? s.sourceId ?? ""),
+    label: s.name ?? s.sourceName ?? s.leadSourceName ?? "",
+  }));
 
   return (
     <>
@@ -212,80 +226,46 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
       {/* Sheet */}
       <div className="fixed top-0 right-0 w-full max-w-[30vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right">
 
-        {/* HEADER */}
-
-        <div className="px-8 py-6 bg-white border-b flex justify-between items-center">
-
+        {/* ── HEADER ── */}
+        <div className="px-8 py-6 bg-white border-b flex justify-between items-center shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">
-              {lead ? "Edit Lead" : "Add Lead"}
+              {isEdit ? "Edit Lead" : "Add Lead"}
             </h2>
-
-            <p className="text-slate-500 text-sm mt-1">
-              Lead Information
-            </p>
+            <p className="text-slate-500 text-sm mt-1">Lead Information</p>
           </div>
-
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-full"
+            className="p-2 hover:bg-slate-100 rounded-full transition-colors"
           >
             <X size={22} />
           </button>
-
         </div>
 
-        {/* BODY */}
+        {/* ── BODY ── */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white rounded-2xl shadow-sm">
 
-        <div className="flex-1 overflow-y-auto p-8">
-
-          <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-
-            <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
-
-              <div className="p-1.5 bg-white/10 rounded">
-                <User size={16}/>
-              </div>
-
-              <h3 className="font-bold uppercase tracking-wider text-xs">
-                Lead Information
-              </h3>
-
-            </div>
-
-            <div className="p-6 grid grid-cols-2 gap-x-6 gap-y-5">
-
-              {/* CUSTOMER */}
+            {/* Customer Dropdown - single line */}
+            <div>
               <SearchableComboBox
                 label="Customer"
-                items={customers.map((c) => ({
-                  value: c.customerId,
-                  label: `${c.clientName} (${c.email ?? c.primaryMobile ?? ""})`,
-                }))}
+                items={customerItems}
                 value={selectedCustomerId}
-                placeholder="Search Customer..."
+                placeholder="Search customer..."
                 emptyText="No customer found"
-                createText="Add new customer"
-                onSelect={(item) => {
-                  setSelectedCustomerId(item?.value);
-                }}
+                onSelect={(item: any) => onCustomerSelect(item?.value ?? null)}
               />
+            </div>
 
+            {/* Full Name & Mobile - two fields in one row */}
+            <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Full Name"
                 required
                 value={form.fullName}
                 error={errors.fullName}
-                onChange={(v:any)=>
-                  setForm({...form,fullName:v.replace(/[^a-zA-Z ]/g,"")})
-                }
-              />
-
-              {/* EMAIL + MOBILE */}
-              <Input
-                label="Email"
-                value={form.email}
-                onChange={(v:any)=>setForm({...form,email:v})}
+                onChange={(v: string) => setForm({ ...form, fullName: v.replace(/[^a-zA-Z ]/g, "") })}
+                disabled={!!form.customerId}
               />
 
               <Input
@@ -293,90 +273,138 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
                 required
                 value={form.mobile}
                 error={errors.mobile}
-                onChange={(v:any)=>
-                  setForm({...form,mobile:v.replace(/[^0-9]/g,"").slice(0,10)})
-                }
+                onChange={(v: string) => setForm({ ...form, mobile: v.replace(/\D/g, "").slice(0, 10) })}
               />
-
-              {/* ADDRESS + STATUS */}
-              <Input
-                label="Address"
-                value={form.address}
-                onChange={(v:any)=>setForm({...form,address:v})}
-              />
-
-              <Select
-                label="Lead Status"
-                required
-                options={statuses}
-                value={form.leadStatusId}
-                error={errors.leadStatusId}
-                onChange={(v:any)=>setForm({...form,leadStatusId:v})}
-              />
-
-              {/* SOURCE + SOURCE DESCRIPTION */}
-              <Select
-                label="Lead Source"
-                required
-                options={sources}
-                value={form.leadSourceId}
-                error={errors.leadSourceId}
-                onChange={(v:any)=>
-                  setForm({
-                    ...form,
-                    leadSourceId:v,
-                    leadSourceDescription:""
-                  })
-                }
-              />
-
-              {isOtherSource ? (
-                <Input
-                  label="Lead Source Description"
-                  required
-                  value={form.leadSourceDescription}
-                  onChange={(v:any)=>
-                    setForm({...form,leadSourceDescription:v})
-                  }
-                />
-              ) : (
-                <div />
-              )}
-
-              {/* NOTES */}
-              <div className="col-span-2">
-                <Textarea
-                  label="Notes"
-                  value={form.notes}
-                  onChange={(v:any)=>setForm({...form,notes:v})}
-                />
-              </div>
-
             </div>
 
-          </section>
+            {/* Email - single field */}
+            <div>
+              <Input
+                label="Email"
+                type="email"
+                value={form.email}
+                onChange={(v: string) => setForm({ ...form, email: v })}
+                disabled={!!form.customerId}
+              />
+            </div>
 
-        </div>
+            {/* Billing Address - single field */}
+            <div>
+              <Textarea
+                label="Billing Address"
+                value={form.address}
+                onChange={(v: string) => setForm({ ...form, address: v })}
+                disabled={!!form.customerId}
+              />
+            </div>
 
-        {/* FOOTER */}
+            {/* State & City - two fields in one row */}
+            <div className="grid grid-cols-2 gap-4">
+              <SearchableComboBox
+                label="State"
+                items={stateItems}
+                value={selectedStateId}
+                placeholder="Search state..."
+                emptyText="No state found"
+                onSelect={(item: any) => {
+                  const val = item?.value ?? "";
+                  setSelectedStateId(val);
+                  setForm((prev) => ({ ...prev, cityId: "" }));
+                }}
+              />
 
-        <div className="px-8 py-6 bg-white border-t flex gap-4">
+              <SearchableComboBox
+                label="City"
+                items={cityItems}
+                value={form.cityId}
+                placeholder={selectedStateId ? "Search city..." : "Select state first"}
+                emptyText="No city found"
+                onSelect={(item: any) => setForm((prev) => ({ ...prev, cityId: item?.value ?? "" }))}
+              />
+            </div>
 
+            {/* Lead Status & Lead Source - two fields in one row */}
+          <div className="grid grid-cols-2 gap-4">
+            <SearchableComboBox
+              label="Lead Status"
+              items={statusOptions.map((s: any) => ({ value: s.value, label: s.label }))}
+              value={form.leadStatusId}
+              placeholder="Select status"
+              emptyText="No status found"
+              onSelect={(item: any) =>
+                setForm((prev) => ({ ...prev, leadStatusId: item?.value ?? "" }))
+              }
+            />
+
+          {/* Lead Source */}
+            <SearchableComboBox
+              label="Lead Source"
+              items={sourceOptions.map((s: any) => ({ value: s.value, label: s.label }))}
+              value={form.leadSourceId}
+              placeholder="Select source"
+              emptyText="No source found"
+              onSelect={(item: any) =>
+                setForm((prev) => ({ ...prev, leadSourceId: item?.value ?? "" }))
+              }
+            />
+          </div>
+
+            {/* Requirement Details - single field */}
+            <div>
+              <Textarea
+                label="Requirement Details"
+                value={form.requirementDetails}
+                onChange={(v: string) => setForm({ ...form, requirementDetails: v })}
+              />
+            </div>
+
+            {/* Links & Notes - single field each (stacked) */}
+            <div>
+              <Input
+                label="Links"
+                value={form.links}
+                onChange={(v: string) => setForm({ ...form, links: v })}
+              />
+            </div>
+
+            <div>
+              <Textarea
+                label="Notes"
+                value={form.notes}
+                onChange={(v: string) => setForm({ ...form, notes: v })}
+              />
+            </div>
+
+            {/* Next Follow-up Date - single field */}
+            <div>
+              <Input
+                label="Next Follow-up Date"
+                type="datetime-local"
+                value={form.nextFollowupDate}
+                onChange={(v: string) => setForm({ ...form, nextFollowupDate: v })}
+              />
+            </div>
+
+            </div>
+        {/* ── FOOTER ── */}
+        <div className="px-8 py-6 bg-white border-t flex gap-4 shrink-0">
           <button
             disabled={isPending}
             onClick={handleSave}
-            className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center gap-2"
+            className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 disabled:opacity-60 rounded flex items-center gap-2 transition-colors"
           >
-            {isPending ? <Spinner className="text-white"/> : "SAVE"}
+            {isPending
+              ? <><Loader2 size={14} className="animate-spin" /> Saving…</>
+              : "SAVE"
+            }
           </button>
 
           <button
             onClick={onClose}
-            className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 rounded"
+            className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded transition-colors"
           >
             CANCEL
           </button>
-
         </div>
 
       </div>
@@ -386,116 +414,75 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
 
 export default LeadUpsertSheet;
 
-/*   HELPERS   */
+/* ─────────────── CARD SECTION ─────────────── */
+
+const Card = ({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+      <div className="p-1.5 bg-white/10 rounded">{icon}</div>
+      <h3 className="font-bold uppercase tracking-wider text-xs">{title}</h3>
+    </div>
+    <div className="p-6 grid grid-cols-2 gap-x-6 gap-y-5">{children}</div>
+  </section>
+);
+
+/* ─────────────── FIELD HELPERS ─────────────── */
+
+const labelCls =
+  "block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5";
+
+const inputCls = (error?: string, disabled?: boolean) =>
+  [
+    "w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none",
+    error
+      ? "border-red-500 ring-2 ring-red-50"
+      : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50",
+    disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
 const Input = ({
-  label,
-  required,
-  value,
-  error,
-  type = "text",
-  onChange,
-  placeholder,
-  min,
-  max,
-  disabled,
-  className = ""
+  label, required, value, error, onChange, type = "text", disabled,
 }: any) => (
   <div className="space-y-1.5">
-    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+    <label className={labelCls}>
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <input
       type={type}
       disabled={disabled}
-      min={min}
-      max={max}
-      placeholder={placeholder}
-      className={`
-        w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none
-        ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
-        ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
-        ${className}
-      `}
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
+      className={inputCls(error, disabled)}
     />
     {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
   </div>
 );
 
-const Select = ({
-  label,
-  required,
-  options,
-  value,
-  onChange,
-  disabled = false,
-  valueKey = "id",
-  labelKey = "name",
-  error,
-}: any) => (
-  <div className="space-y-1.5">
-    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <div className="relative">
-      <select
-        disabled={disabled}
-        className={`
-          w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none appearance-none
-          ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
-          ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
-        `}
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        <option value="">Select</option>
-        {options?.map((o: any) => (
-          <option key={o[valueKey]} value={o[valueKey]}>
-            {o[labelKey]}
-          </option>
-        ))}
-      </select>
-      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-    </div>
-    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
-  </div>
-);
 
 const Textarea = ({
-  label,
-  required,
-  value,
-  error,
-  onChange,
-  placeholder,
-  disabled,
-  className = ""
+  label, required, value, error, onChange, disabled,
 }: any) => (
   <div className="space-y-1.5">
-    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+    <label className={labelCls}>
       {label} {required && <span className="text-red-500">*</span>}
     </label>
-
     <textarea
+      rows={3}
       disabled={disabled}
-      placeholder={placeholder}
-      rows={4}
-      className={`
-        w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none resize-none
-        ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
-        ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
-        ${className}
-      `}
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
+      className={inputCls(error, disabled) + " resize-none"}
     />
-
-    {error && (
-      <p className="text-[10px] font-medium text-red-500 mt-1">
-        {error}
-      </p>
-    )}
+    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
   </div>
 );

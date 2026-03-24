@@ -23,25 +23,15 @@ export interface LeadResponse {
 // src/interfaces/lead.interface.ts
 
 export interface Lead {
-  leadId: string;
+  leadID: string;
   leadNo: string;
-  fullName: string;
+  contactPerson: string;
   email: string;
   mobile: string;
-  address: string;
-  leadStatusId: number;
-  leadStatusName: string;
-  leadSourceId: number;
-  leadSourceName: string;
-  leadSourceDescription: string;
-  companyId: string | null;
-  advisorId: string;
-  isConverted: boolean;
   customerId: string | null;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string | null;
-  followUps: FollowUp[];
+  statusName: string;
+  leadSourceName: string;
+  createdDate: string;
 }
 
 export interface LeadFilters {

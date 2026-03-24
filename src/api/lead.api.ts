@@ -4,51 +4,49 @@ import type {
   LeadFilters,
   LeadListResponse,
 } from "../interfaces/lead.interface";
+import { ApiResponse } from "../interfaces/common.interface";
 
 /*   GET LEADS (PAGINATED)   */
 
-export const getLeadsApi = async (filters: LeadFilters) => {
-  const res = await api.get("/Lead", { params: filters });
+export const getLeadsApi = async (
+  filters: LeadFilters
+): Promise<LeadListResponse> => {
 
-  const apiData = res.data.data; 
+  const res = await api.get<ApiResponse<LeadListResponse>>(
+    "/Lead/filter",
+    { params: filters }
+  );
 
-  return {
-    totalRecords: apiData.totalCount,
-    pageNumber: apiData.page,
-    pageSize: apiData.pageSize,
-    totalPages: apiData.totalPages,
-    data: apiData.data,
-  };
+  return res.data.data; // ⭐ unwrap here
 };
 
 /*   LEAD STATUSES   */
 
-export const getLeadStatusesApi = async () => {
-  const res = await api.get("/Lead/lead-statuses");
+export const getLeadStatusesApi = async (): Promise<any[]> => {
+  const res = await api.get<ApiResponse<any[]>>(
+    "/lead/status-dropdown"
+  );
 
-  return (res.data?.data ?? []).map((s: any) => ({
-    id: s.leadStatusId,
-    name: s.statusName,
-  }));
+  return res.data.data; // ⭐ unwrap
 };
-
 
 /*   LEAD SOURCES   */
 
-export const getLeadSourcesApi = async () => {
-  const res = await api.get("/Lead/lead-sources");
+export const getLeadSourcesApi = async (): Promise<any[]> => {
+  const res = await api.get<ApiResponse<any[]>>(
+    "/lead/source-dropdown"
+  );
 
-  return (res.data?.data ?? []).map((s: any) => ({
-    id: s.leadSourceId,
-    name: s.sourceName,
-  }));
+  return res.data.data;
 };
-
-
-/*   CREATE / UPDATE LEAD   */
 
 export const upsertLeadApi = async (data: any) => {
   const res = await api.post("/Lead", data);
+  return res.data;
+};
+
+export const updateLeadApi = async (id: string, payload: any) => {
+  const res = await api.put(`/Lead/${id}`, payload);
   return res.data;
 };
 
