@@ -47,6 +47,7 @@ interface LeadTableProps {
   onViewFollowUps?: (lead: Lead) => void;
   onRowClick?: (lead: Lead) => void;
   onAddCustomer?: (lead: Lead) => void;
+  onViewDetails?: (lead: Lead) => void;
 }
 
 /*   COMPONENT   */
@@ -128,8 +129,8 @@ const LeadTable = ({
 
   const handleViewDetails = () => {
     if (!openLead) return;
-    setSelectedLeadId(openLead.leadID);
-    setIsViewOpen(true);
+  
+    onRowClick?.(openLead);
     setOpenLead(null);
   };
 
@@ -256,14 +257,14 @@ const LeadTable = ({
                   onClick={() => handleAction(() => onEdit(openLead))}
                 />
 
-                <MenuItem
+                {/* <MenuItem
                   label="Create Follow Up"
                   onClick={() =>
                     handleAction(() =>
                       onCreateFollowUp?.(openLead)
                     )
                   }
-                />
+                /> */}
 
                 <MenuItem
                   label="Change Status"

@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
-import { useCreateFollowUp } from "../../hooks/leadFollowUp/useCreateFollowUp";
 import toast from "react-hot-toast";
 import { LeadFollowUp } from "../../interfaces/leadFollowUp.interface";
 import Spinner from "../common/Spinner";
+import { useCreateFollowUp } from "../../hooks/followup/useFollowUpMutations";
 
 interface Props {
   open: boolean;
