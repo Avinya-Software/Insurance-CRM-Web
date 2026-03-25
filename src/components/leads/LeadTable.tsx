@@ -10,6 +10,7 @@ import TableSkeleton from "../common/TableSkeleton";
 import { Dialog, DialogContent, DialogTitle } from "@radix-ui/react-dialog";
 import { DialogHeader } from "../ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { useLeadStatuses } from "../../hooks/lead/useLeadStatuses";
 
 
 /*   STATUS BADGE STYLES   */
@@ -87,11 +88,16 @@ const LeadTable = ({
   const { mutate: updateStatus, isPending: updatingStatus } =
     useUpdateLeadStatus();
   const navigate = useNavigate();
+  const { data: statuses = [] } = useLeadStatuses();
+
   /* 🔥 Fetch statuses */
-  const { data: statuses = [] } = useQuery({
-    queryKey: ["lead-statuses"],
-    queryFn: getLeadStatusesApi,
-  });
+  // const { data: statuses = [] } = useQuery({
+  //   queryKey: ["lead-statuses"],
+  //   queryFn: getLeadStatusesApi,
+  // });
+
+// console.log(statuses) 
+
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
     lead: Lead
@@ -138,13 +144,13 @@ const LeadTable = ({
     });
   };
 
-  const handleStatusChange = (statusId: number) => {
+  const handleStatusChange = (statusId: string) => {
     if (!openLead) return;
-
+  
     updateStatus(
       {
         leadId: openLead.leadID,
-        statusId,
+        statusId, 
       },
       {
         onSuccess: () => {
@@ -283,9 +289,7 @@ const LeadTable = ({
                 .map((status) => (
                   <button
                     key={status.id}
-                    onClick={() =>
-                      handleStatusChange(status.id)
-                    }
+                    onClick={() => handleStatusChange(status.id)}
                     disabled={updatingStatus}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2"
                   >

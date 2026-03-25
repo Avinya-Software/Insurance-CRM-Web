@@ -39,8 +39,9 @@ const SearchableComboBox = <T extends ComboBoxItem>({
 
   const selected = items.find((i) => i.value === value);
 
-  const filtered = items.filter((i) =>
-    i.label.toLowerCase().includes(search.toLowerCase())
+  const filtered = items.filter(
+    (i) =>
+      i.label?.toLowerCase().includes((search || "").toLowerCase())
   );
 
   useEffect(() => {

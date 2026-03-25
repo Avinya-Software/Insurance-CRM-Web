@@ -50,6 +50,8 @@ export const updateLeadApi = async (id: string, payload: any) => {
   return res.data;
 };
 
+
+
 /*   DELETE LEAD (BY ID)   */
 
 export const deleteLeadApi = async (
@@ -60,20 +62,15 @@ export const deleteLeadApi = async (
   );
   return res.data;
 };
-export const updateLeadStatusApi = async (
-  leadId: string,
-  statusId: number,
-  notes?: string
-) => {
-  const payload: any = {
-    LeadId: leadId,
-    LeadStatusId: statusId,
-  };
 
-  if (notes) payload.Notes = notes;
+export const updateLeadStatusApi = async (leadId: string, statusId: string, notes?: string) => {
+  const params = new URLSearchParams({ id: leadId, statusId });
+  if (notes) {
+    params.append("notes", notes);
+  }
 
-  const res = await api.post("/Lead", payload); 
-  return res.data;
+  const { data } = await api.put(`/Lead/update-status?${params.toString()}`);
+  return data;
 };
 
 export const getLeadByIdApi = async (leadId: string) => {
