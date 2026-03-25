@@ -52,7 +52,7 @@ const TasksPanel = () => {
                 <TaskCard
                   key={event.eventId}
                   event={event}
-                  showAction
+                  showAction={true}
                   onAcknowledge={() => handleAcknowledge(event.eventId)}
                 />
               ))}
@@ -130,11 +130,10 @@ const TaskCard = ({
 
   return (
     <div
-      className={`border rounded-lg p-4 transition-all ${
-        showAction
+      className={`border rounded-lg p-4 transition-all ${showAction
           ? "bg-white hover:bg-slate-50 hover:border-slate-300"
           : "bg-slate-50 border-slate-200"
-      }`}
+        }`}
     >
       <div className="flex justify-between items-start gap-4">
         <div className="flex-1 min-w-0">

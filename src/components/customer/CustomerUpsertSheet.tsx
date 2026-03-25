@@ -5,6 +5,9 @@ import Spinner from "../common/Spinner";
 import { useUploadCustomerDocument } from "../../hooks/customer/useUploadCustomerDocument";
 import { useUpsertCustomer } from "../../hooks/customer/useCreateCustomer";
 import { useKycFileActions } from "../../hooks/customer/useKycFileActions";
+import { useCities } from "../../hooks/city/useCities";
+import { useStates } from "../../hooks/state/useStates";
+import SearchableComboBox from "../common/SearchableComboBox";
 
 
 interface Props {
@@ -126,6 +129,18 @@ const CustomerUpsertSheet = ({
   const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const { data: states = [] } = useStates();
+
+  // Separate state per address type ✅
+  const [resStateId, setResStateId] = useState("");
+  const [offStateId, setOffStateId] = useState("");
+  const [osStateId, setOsStateId] = useState("");
+
+  // Cities per state ✅
+  const { data: resCities = [] } = useCities(resStateId ? Number(resStateId) : null);
+  const { data: offCities = [] } = useCities(offStateId ? Number(offStateId) : null);
+  const { data: osCities = [] } = useCities(osStateId ? Number(osStateId) : null);
+
   const documentOptions = [
     { id: "Aadhar Card", name: "Aadhar Card" },
     { id: "PAN Card", name: "PAN Card" },
@@ -141,6 +156,17 @@ const CustomerUpsertSheet = ({
     if (form.osEmail?.trim()) return form.osEmail;
     return null;
   };
+
+  const stateItems = (states as any[]).map((s) => ({
+    value: String(s.stateID),
+    label: s.stateName,
+  }));
+  
+  const mapCities = (cities: any[]) =>
+    cities.map((c) => ({
+      value: String(c.cityID),
+      label: c.cityName,
+    }));
 
   const buildAddressPayload = (type: "RESIDENCE" | "OFFICE" | "OVERSEAS") => {
 
@@ -213,6 +239,7 @@ const CustomerUpsertSheet = ({
       setFiles([]);
       setErrors({});
       setActiveTab("basic");
+      
       return;
     }
   
@@ -283,6 +310,9 @@ const CustomerUpsertSheet = ({
       setForm(mappedForm);
       setOriginalForm(mappedForm);
       setExistingDocuments(customer.kycFiles || []);
+      setResStateId(mappedForm.resState || "");
+      setOffStateId(mappedForm.offState || "");
+      setOsStateId(mappedForm.osState || "");
     } else {
       setForm({ ...initialForm, leadId: leadId || "" });
       setOriginalForm(null);
@@ -673,7 +703,7 @@ const CustomerUpsertSheet = ({
             {activeTab === "residential" && (
               <div className="space-y-10">
                 {/* RESIDENCE ADDRESS */}
-                <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <section className="bg-white rounded-2xl shadow-sm border border-slate-100">
                   <div className="flex items-center justify-between bg-slate-800 px-6 py-3 text-white">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-white/10 text-white rounded">
@@ -691,9 +721,27 @@ const CustomerUpsertSheet = ({
                     <Input label="House / Flat Number" value={form.resHouseNo} placeholder="House / Flat No" onChange={(v: any) => setForm(p => ({ ...p, resHouseNo: v }))} />
                     <Input label="Street" value={form.resStreet} placeholder="Street" onChange={(v: any) => setForm(p => ({ ...p, resStreet: v }))} />
                     <Input label="Area" value={form.resArea} placeholder="Area" onChange={(v: any) => setForm(p => ({ ...p, resArea: v }))} />
-                    <Input label="City" value={form.resCity} placeholder="City" onChange={(v: any) => setForm(p => ({ ...p, resCity: v }))} />
+                    <SearchableComboBox
+                        label="State"
+                        items={stateItems}
+                        value={resStateId}
+                        placeholder="Search state..."
+                        onSelect={(item: any) => {
+                          const val = item?.value ?? "";
+                          setResStateId(val);
+                          setForm(p => ({ ...p, resState: val, resCity: "" }));
+                        }}
+                      />
+                      <SearchableComboBox
+                        label="City"
+                        items={mapCities(resCities)}
+                        value={form.resCity}
+                        placeholder={resStateId ? "Search city..." : "Select state first"}
+                        onSelect={(item: any) =>
+                          setForm(p => ({ ...p, resCity: item?.value ?? "" }))
+                        }
+                      />
                     <Input label="Pincode" value={form.resPincode} placeholder="Pincode" onChange={(v: any) => setForm(p => ({ ...p, resPincode: v }))} />
-                    <Input label="State" value={form.resState} placeholder="State" onChange={(v: any) => setForm(p => ({ ...p, resState: v }))} />
                     <Input label="Country" value={form.resCountry} placeholder="India" onChange={(v: any) => setForm(p => ({ ...p, resCountry: v }))} />
                     <Input label="Telephone No (R)" value={form.resTelR} placeholder="Telephone No (R)" onChange={(v: any) => setForm(p => ({ ...p, resTelR: v }))} />
                     <Input label="Telephone No (O)" value={form.resTelO} placeholder="Telephone No (O)" onChange={(v: any) => setForm(p => ({ ...p, resTelO: v }))} />
@@ -704,7 +752,7 @@ const CustomerUpsertSheet = ({
                 </section>
 
                 {/* OFFICE ADDRESS */}
-                <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <section className="bg-white rounded-2xl shadow-sm border border-slate-100">
                   <div className="flex items-center justify-between bg-slate-800 px-6 py-3 text-white">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-white/10 text-white rounded">
@@ -726,16 +774,34 @@ const CustomerUpsertSheet = ({
                     <Input label="Building Name / Number" value={form.offBuildingNo} placeholder="Building Name / No" onChange={(v: any) => setForm(p => ({ ...p, offBuildingNo: v }))} />
                     <Input label="Street / Area" value={form.offStreet} placeholder="Street / Area" onChange={(v: any) => setForm(p => ({ ...p, offStreet: v }))} />
                     <Input label="Landmark" value={form.offLandmark} placeholder="Landmark" onChange={(v: any) => setForm(p => ({ ...p, offLandmark: v }))} />
-                    <Input label="City" value={form.offCity} placeholder="City" onChange={(v: any) => setForm(p => ({ ...p, offCity: v }))} />
+                    <SearchableComboBox
+                        label="State"
+                        items={stateItems}
+                        value={offStateId}
+                        placeholder="Search state..."
+                        onSelect={(item: any) => {
+                          const val = item?.value ?? "";
+                          setOffStateId(val);
+                          setForm(p => ({ ...p, offState: val, offCity: "" }));
+                        }}
+                      />
+
+
+                      <SearchableComboBox
+                        label="City"
+                        items={mapCities(offCities)}
+                        value={form.offCity}
+                        placeholder={offStateId ? "Search city..." : "Select state first"}
+                        onSelect={(item: any) =>
+                          setForm(p => ({ ...p, offCity: item?.value ?? "" }))
+                        }
+                      />
                     <Input label="Pincode" value={form.offPincode} placeholder="Pincode" onChange={(v: any) => setForm(p => ({ ...p, offPincode: v }))} />
-                    <div className="lg:col-span-3">
-                      <Input label="State" value={form.offState} placeholder="State" onChange={(v: any) => setForm(p => ({ ...p, offState: v }))} />
-                    </div>
                   </div>
                 </section>
 
                 {/* OVERSEAS */}
-                <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <section className="bg-white rounded-2xl shadow-sm border border-slate-100">
                   <div className="flex items-center justify-between bg-slate-800 px-6 py-3 text-white">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-white/10 text-white rounded">
@@ -753,9 +819,30 @@ const CustomerUpsertSheet = ({
                     <Input label="House / Flat Number" value={form.osHouseNo} placeholder="House / Flat No" onChange={(v: any) => setForm(p => ({ ...p, osHouseNo: v }))} />
                     <Input label="Street" value={form.osStreet} placeholder="Street" onChange={(v: any) => setForm(p => ({ ...p, osStreet: v }))} />
                     <Input label="Area" value={form.osArea} placeholder="Area" onChange={(v: any) => setForm(p => ({ ...p, osArea: v }))} />
-                    <Input label="City" value={form.osCity} placeholder="City" onChange={(v: any) => setForm(p => ({ ...p, osCity: v }))} />
+
+                    <SearchableComboBox
+                      label="State"
+                      items={stateItems}
+                      value={osStateId}
+                      placeholder="Search state..."
+                      onSelect={(item: any) => {
+                        const val = item?.value ?? "";
+                        setOsStateId(val);
+                        setForm(p => ({ ...p, osState: val, osCity: "" }));
+                      }}
+                    />
+
+
+                    <SearchableComboBox
+                      label="City"
+                      items={mapCities(osCities)}
+                      value={form.osCity}
+                      placeholder={osStateId ? "Search city..." : "Select state first"}
+                      onSelect={(item: any) =>
+                        setForm(p => ({ ...p, osCity: item?.value ?? "" }))
+                      }
+                    />
                     <Input label="Pincode" value={form.osPincode} placeholder="Pincode" onChange={(v: any) => setForm(p => ({ ...p, osPincode: v }))} />
-                    <Input label="State" value={form.osState} placeholder="State" onChange={(v: any) => setForm(p => ({ ...p, osState: v }))} />
                     <Input label="Country" value={form.osCountry} placeholder="Country" onChange={(v: any) => setForm(p => ({ ...p, osCountry: v }))} />
                     <Input label="Telephone No (O)" value={form.osTelO} placeholder="Telephone No (O)" onChange={(v: any) => setForm(p => ({ ...p, osTelO: v }))} />
                     <Input label="Mobile Number" value={form.osMobile} placeholder="Mobile No" onChange={(v: any) => setForm(p => ({ ...p, osMobile: v }))} />

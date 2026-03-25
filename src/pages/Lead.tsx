@@ -12,6 +12,7 @@ import LeadFollowUpCreateSheet from "../components/followups/LeadFollowUpCreateS
 import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
 
 import type { RootState } from "../store";
+import LeadDetailSheet from "../components/leads/LeadDetailsModal";
 
 const DEFAULT_FILTERS = {
   pageNumber: 1,
@@ -47,7 +48,7 @@ const Leads = () => {
   // 🔥 ADD CUSTOMER FROM LEAD
   const [openCustomerSheet, setOpenCustomerSheet] = useState(false);
   const [leadForCustomer, setLeadForCustomer] = useState<any>(null);
-
+  const [viewLeadDetails, setViewLeadDetails] = useState<any | null>(null);
   const advisorId = useSelector(
     (state: RootState) => state.auth.advisorId
   );
@@ -87,6 +88,10 @@ const Leads = () => {
       leadId: lead.leadId,
       leadName: lead.fullName,
     });
+  };
+
+  const handleViewLeadDetails = (lead: any) => {
+    setViewLeadDetails(lead);
   };
 
   const handleAddLead = () => {
@@ -185,8 +190,9 @@ const Leads = () => {
           loading={isLoading || isFetching}
           onAdd={handleAddLead}
           onEdit={handleEditLead}
-          onRowClick={openViewFollowUps}
+          onRowClick={handleViewLeadDetails}
           onViewFollowUps={openViewFollowUps}
+          onViewDetails={handleViewLeadDetails}
           onCreateFollowUp={(lead) => {
             closeAllSheets();
             setCreateFollowUpLead({
@@ -254,6 +260,8 @@ const Leads = () => {
             createFollowUpLead?.leadName ||
             editFollowUp?.leadName
           }
+
+
           editData={editFollowUp?.followUp}
           mode={editFollowUp ? "edit" : "create"}
           onClose={() => {
@@ -267,6 +275,18 @@ const Leads = () => {
             refetch();
           }}
         />
+
+        {viewLeadDetails && (
+          <LeadDetailSheet
+            lead={viewLeadDetails}
+            onClose={() => setViewLeadDetails(null)}
+            onEditLead={handleEditLead}
+            onCreateQuotation={(lead) => {
+              setViewLeadDetails(null);
+              setLeadForCustomer(null); 
+            }}
+          />
+        )}
 
     </>
   );

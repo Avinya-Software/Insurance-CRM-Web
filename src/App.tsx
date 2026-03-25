@@ -29,6 +29,7 @@ import LeadFollowUpPage from "./pages/LeadFollowUpPage";
 import UserTeamMaster from "./pages/UserTeamMaster";
 import Company from "./pages/Company";
 import RoleRedirect from "./RoleRedirect";
+import Tasks from "./pages/Tasks";
 
 function App() {
   return (  
@@ -76,7 +77,7 @@ function App() {
           <Route path="/campaign" element={<Campaign />} />
           {/* <Route path="/products" element={<Product />} /> */}
           <Route path="/addondetails" element={<AddOnDetails />} />
-          <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/tasks" element={<Tasks />} />
 
           {/* ADMIN */}
           <Route path="/company" element={<Company />} />

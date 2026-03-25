@@ -70,30 +70,29 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
   /* ── PREFILL ON EDIT ── */
   useEffect(() => {
     if (!open || !lead) return;
-
-    // Set state first so useCities fires and cities load before we set cityId
-    const stateId = lead.stateID?.toString() ?? "";
+  
+    const stateId = lead.stateid?.toString() ?? "";
     setSelectedStateId(stateId);
-    setSelectedCustomerId(lead.clientID ?? "");
-
+    setSelectedCustomerId(lead.customerId ?? "");
+  
     setForm({
-      customerId: lead.clientID ?? null,
-      fullName:   lead.contactPerson ?? "",
-      email:      lead.email ?? "",
-      mobile:     lead.mobile ?? "",
-      address:    lead.billingAddress ?? "",
+      customerId: lead.customerId ?? null,
+      fullName: lead.clientName ?? "",
+      email: lead.email ?? "",
+      mobile: lead.mobile ?? "",
+      address: lead.address ?? "",
       assignedTo: lead.assignedTo ?? "",
       requirementDetails: lead.requirementDetails ?? "",
-      links:      lead.links ?? "",
+      links: lead.links ?? "",
       nextFollowupDate: lead.nextFollowupDate
         ? lead.nextFollowupDate.slice(0, 16)
         : "",
       leadSourceId: lead.leadSourceID?.toString() ?? "",
-      leadStatusId: lead.status?.toString() ?? "",
-      notes:   lead.notes ?? "",
-      cityId:  lead.cityID?.toString() ?? "",
+      leadStatusId: lead.leadStatusID?.toString() ?? "",
+      notes: lead.notes ?? "",
+      cityId: lead.cityid?.toString() ?? "",
     });
-
+  
     setErrors({});
   }, [lead, open]);
 
@@ -107,28 +106,65 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open || !lead) return;
+  
+    const stateId = lead.stateID?.toString() ?? "";
+    const cityId = lead.cityID?.toString() ?? "";
+    const customerId = lead.clientID ?? "";
+  
+    setSelectedStateId(stateId);
+    setSelectedCustomerId(customerId);
+  
+    setForm({
+      customerId: customerId,
+      fullName: lead.contactPerson ?? "",
+      email: lead.email ?? "",
+      mobile: lead.mobile ?? "",
+      address: lead.billingAddress ?? "",
+      assignedTo: lead.assignedTo ?? "",
+      requirementDetails: lead.requirementDetails ?? "",
+      links: lead.links ?? "",
+      nextFollowupDate: lead.nextFollowupDate
+        ? lead.nextFollowupDate.slice(0, 16)
+        : "",
+      leadSourceId: lead.leadSourceID ?? "",
+      leadStatusId: lead.status ?? "",
+      notes: lead.notes ?? "",
+      cityId: cityId,
+    });
+  
+    setErrors({});
+  }, [lead, open]);
+
   /* ── CUSTOMER AUTO-FILL ── */
   const onCustomerSelect = (customerId: string | null) => {
     if (customerId) {
       setSelectedCustomerId(customerId);
-      const customer = customers.find((c: any) =>
-        String(c.clientID ?? c.customerId) === String(customerId)
+      const customer = customers.find(
+        (c: any) => String(c.customerId) === String(customerId)
       );
       if (customer) {
-        const stateId = customer.stateID?.toString() ?? "";
+        // Set state first so cities load
+        const stateId = customer.stateid?.toString() ?? "";
         setSelectedStateId(stateId);
+  
         setForm((prev) => ({
           ...prev,
           customerId,
-          fullName: customer.contactPerson ?? customer.clientName ?? "",
-          email:    customer.email ?? "",
-          mobile:   customer.mobileNumber ?? customer.primaryMobile ?? "",
-          address:  customer.billAddress ?? customer.address ?? "",
-          cityId:   customer.cityID?.toString() ?? "",
+          fullName: customer.clientName ?? "",
+          email: customer.email ?? "",
+          mobile: customer.mobile ?? "",
+          address: customer.address ?? "",
+          cityId: customer.cityid?.toString() ?? "",
         }));
+  
         setErrors((prev) => ({
           ...prev,
-          fullName: "", email: "", mobile: "", address: "",
+          fullName: "",
+          email: "",
+          mobile: "",
+          address: "",
         }));
       }
     } else {
@@ -137,7 +173,11 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
       setForm((prev) => ({
         ...prev,
         customerId: null,
-        fullName: "", email: "", mobile: "", address: "", cityId: "",
+        fullName: "",
+        email: "",
+        mobile: "",
+        address: "",
+        cityId: "",
       }));
     }
   };
@@ -145,10 +185,10 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
   /* ── VALIDATION ── */
   const validate = () => {
     const e: Record<string, string> = {};
-    const mobileRegex = /^[6-9]\d{9}$/;
+    // const mobileRegex = /^[6-9]\d{9}$/;
     if (!form.fullName.trim())            e.fullName     = "Full name is required";
     if (!form.mobile.trim())              e.mobile       = "Mobile is required";
-    else if (!mobileRegex.test(form.mobile)) e.mobile   = "Invalid mobile number";
+    // else if (!mobileRegex.test(form.mobile)) e.mobile   = "Invalid mobile number";
     if (!form.leadStatusId)               e.leadStatusId = "Status is required";
     if (!form.leadSourceId)               e.leadSourceId = "Source is required";
     setErrors(e);
@@ -164,21 +204,23 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
     if (!validate()) return;
 
     const payload = {
-      ClientID:           form.customerId,
-      ContactPerson:      form.fullName,
-      Mobile:             form.mobile,
-      Email:              form.email,
-      BillingAddress:     form.address,
-      StateID:            selectedStateId ? Number(selectedStateId) : null,
-      CityID:             form.cityId ? Number(form.cityId) : null,
-      RequirementDetails: form.requirementDetails,
-      Links:              form.links,
-      Notes:              form.notes,
-      NextFollowupDate:   form.nextFollowupDate ? new Date(form.nextFollowupDate) : null,
-      Status:             form.leadStatusId,
-      LeadSource:         form.leadSourceId,
-      AssignedTo:         form.assignedTo || advisorId,
-    };
+  ClientID: form.customerId,
+  ContactPerson: form.fullName,
+  Mobile: form.mobile,
+  Email: form.email,
+  BillingAddress: form.address,
+  StateID: selectedStateId ? Number(selectedStateId) : null,
+  CityID: form.cityId ? Number(form.cityId) : null,
+  RequirementDetails: form.requirementDetails,
+  Links: form.links,
+  Notes: form.notes,
+  NextFollowupDate: form.nextFollowupDate
+    ? new Date(form.nextFollowupDate)
+    : null,
+  Status: form.leadStatusId,
+  LeadSource: form.leadSourceId,
+  AssignedTo: form.assignedTo || advisorId,
+};
 
     if (isEdit) {
       updateLead({ id: lead.leadID, payload }, { onSuccess: onClose });
@@ -206,8 +248,8 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
   }));
 
   const statusOptions = (statuses ?? []).map((s: any) => ({
-    value: String(s.id ?? s.leadStatusId ?? s.statusId ?? ""),
-    label: s.name ?? s.statusName ?? s.leadStatusName ?? "",
+    value: String(s.id),     // ✅ correct
+    label: s.name,           // ✅ correct
   }));
 
   const sourceOptions = (sources ?? []).map((s: any) => ({
@@ -274,6 +316,7 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
                 value={form.mobile}
                 error={errors.mobile}
                 onChange={(v: string) => setForm({ ...form, mobile: v.replace(/\D/g, "").slice(0, 10) })}
+                disabled={!!form.customerId}
               />
             </div>
 
@@ -306,6 +349,7 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
                 value={selectedStateId}
                 placeholder="Search state..."
                 emptyText="No state found"
+                disabled={!!form.customerId}
                 onSelect={(item: any) => {
                   const val = item?.value ?? "";
                   setSelectedStateId(val);
@@ -319,6 +363,7 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
                 value={form.cityId}
                 placeholder={selectedStateId ? "Search city..." : "Select state first"}
                 emptyText="No city found"
+                disabled={!!form.customerId}
                 onSelect={(item: any) => setForm((prev) => ({ ...prev, cityId: item?.value ?? "" }))}
               />
             </div>
@@ -327,6 +372,8 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
           <div className="grid grid-cols-2 gap-4">
             <SearchableComboBox
               label="Lead Status"
+              required
+              error={errors.leadStatusId}
               items={statusOptions.map((s: any) => ({ value: s.value, label: s.label }))}
               value={form.leadStatusId}
               placeholder="Select status"
@@ -339,6 +386,8 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
           {/* Lead Source */}
             <SearchableComboBox
               label="Lead Source"
+              required
+              error={errors.leadSourceId}
               items={sourceOptions.map((s: any) => ({ value: s.value, label: s.label }))}
               value={form.leadSourceId}
               placeholder="Select source"
@@ -450,39 +499,78 @@ const inputCls = (error?: string, disabled?: boolean) =>
     .filter(Boolean)
     .join(" ");
 
-const Input = ({
-  label, required, value, error, onChange, type = "text", disabled,
-}: any) => (
-  <div className="space-y-1.5">
-    <label className={labelCls}>
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <input
-      type={type}
-      disabled={disabled}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
-      className={inputCls(error, disabled)}
-    />
-    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
-  </div>
-);
+    const Input = ({
+      label,
+      required,
+      value,
+      error,
+      type = "text",
+      onChange,
+      placeholder,
+      min,
+      max,
+      disabled,
+      className = ""
+    }: any) => (
+      <div className="space-y-1.5">
+        <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        <input
+          type={type}
+          disabled={disabled}
+          min={min}
+          max={max}
+          placeholder={placeholder}
+          className={`
+            w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none
+            ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
+            ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
+            ${className}
+          `}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
+      </div>
+    );
 
 
-const Textarea = ({
-  label, required, value, error, onChange, disabled,
-}: any) => (
-  <div className="space-y-1.5">
-    <label className={labelCls}>
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-    <textarea
-      rows={3}
-      disabled={disabled}
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
-      className={inputCls(error, disabled) + " resize-none"}
-    />
-    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
-  </div>
-);
+    const Textarea = ({
+      label,
+      required,
+      value,
+      error,
+      onChange,
+      disabled,
+      placeholder,
+      className = ""
+    }: any) => (
+      <div className="space-y-1.5">
+        <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+    
+        <textarea
+          rows={3}
+          disabled={disabled}
+          placeholder={placeholder}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          className={`
+            w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none resize-none
+            ${error 
+              ? "border-red-500 ring-2 ring-red-50" 
+              : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
+            ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
+            ${className}
+          `}
+        />
+    
+        {error && (
+          <p className="text-[10px] font-medium text-red-500 mt-1">
+            {error}
+          </p>
+        )}
+      </div>
+    );
