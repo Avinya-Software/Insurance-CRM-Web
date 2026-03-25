@@ -231,6 +231,13 @@ const Sidebar = () => {
             />
 
             <NavItem
+              to="/tasks"
+              icon={<AlertTriangle size={18} />}
+              label="Task"
+              isCollapsed={isCollapsed}
+            />
+
+            <NavItem
               to="/renewals"
               icon={<RefreshCcw size={18} />}
               label="Renewals"
