@@ -1,31 +1,107 @@
 // src/interfaces/policy.interface.ts
 
-export interface UpsertPolicyPayload {
-  policyId?: string | null;
-  customerId: string;
-  insurerId: string;
+export interface IGeneralPolicyMember {
+  memberId: string | null;
+  memberName: string;
+}
+
+export interface IRiskLocation {
+  srNo: number;
+  sumAssured: number;
+  riskAddress: string;
+}
+
+export interface IVehicleDetail {
+  vehicleNumber: string;
+  vehicleName: string;
+  engineNo: string;
+  chassisNo: string;
+  brand: string;
+  fuelType: string;
+  registerDate: string;
+  manufactureYear: string | number;
+  rto: string;
+  cc: string;
+  gvw: string;
+  ncb: string;
+  fitnessCertificate: boolean;
+  bhSeries: boolean;
+}
+
+export interface IPremiumDetail {
+  sumAssured?: number;
+  idvValue?: number;
+  basicPremium: number;
+  tpaPremium?: number;
+  taxAmount: number;
+  totalPremium: number;
+  isCommission: boolean;
+  commissionableAmount: number;
+  commissionEntry: number;
+  commitmentAmount: number;
+}
+
+export interface IPaymentDetail {
+  paidByClient: string;
+  clientAmount: number;
+  paidByAgent: string;
+  agentAmount: number;
+}
+
+export interface IPolicyDetail {
+  divisionType: string;
+  segmentId: string;
+  policyType: string;
+  insuranceCompanyId: string;
+  branchId: string;
   productId: string;
+  zone: string;
+  optionalCover: string[];
+  addOns: string[];
+  isPolicyReceived: boolean;
+  currentPolicyNumber: string;
+  previousPolicyNumber: string;
+  policyModeId: string;
+  riskStartDate: string;
+  riskEndDate: string;
+  brokerId: string;
+  agencyId: string;
+  subAgentId: string;
+  nomineeName: string;
+  nomineeContact: string;
+  remarks: string;
+  vehicleUse?: string;
+  vehicleClass?: string;
+  tpPolicyMode?: string;
+  tpDueDate?: string;
+  bankId?: string;
+}
 
-  policyTypeId: number;
-  policyStatusId: number;
-
-  registrationNo?: string;
-
-  startDate: string | null;
-  endDate: string | null;
-
-  premiumNet: number;
-  premiumGross: number;
-
-  paymentMode?: string;
-  paymentDueDate?: string | null;
-  renewalDate?: string | null;
-
-  brokerCode?: string;
-  policyCode?: string;
-  paymentDone: boolean;
-
-  policyDocuments?: File[]; 
+export interface IGeneralPolicyForm {
+  type: string;
+  transactionDate: string;
+  documentNumber: string;
+  familyGroupId: string;
+  policyHolderId: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  area: string;
+  mobileNumber: string;
+  gender: string;
+  email: string;
+  dob: string;
+  relationWithHead: string;
+  detail: IPolicyDetail;
+  members: IGeneralPolicyMember[];
+  riskLocations: IRiskLocation[];
+  vehicle: IVehicleDetail | null;
+  premium: IPremiumDetail;
+  payment: IPaymentDetail;
+  files?: File[];
 }
 
 export interface Policy {

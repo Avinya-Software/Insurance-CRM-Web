@@ -1,19 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   X, ChevronRight, ChevronDown, Plus, Trash2,
-  AlertCircle, ShieldCheck, Car, Activity, CreditCard, Users, MapPin
+  ShieldCheck, Car, Activity, CreditCard, Users
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
-
-// --- Mock/Real Hooks ---
-const useUpsertPolicy = () => ({ mutateAsync: async (d: any) => console.log("Payload:", d), isPending: false });
-
-interface Props {
-  open: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  policy?: any;
-}
+import { useUpsertPolicy } from "../../hooks/policy/useUpsertPolicy";
 
 type TabType = "customer" | "policy" | "premium";
 
@@ -131,11 +122,13 @@ const makeInitial = () => ({
 });
 
 /* ─── COMPONENT ─────────────────────────────────────────────── */
-const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: Props) => {
+const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
   const [activeTab, setActiveTab]     = useState<TabType>("customer");
   const [form, setForm]               = useState(makeInitial());
   const [memberInput, setMemberInput] = useState("");
-  const { mutateAsync, isPending }    = useUpsertPolicy();
+  const [errors, setErrors] = useState<any>({});
+
+  const { mutateAsync, isPending } = useUpsertPolicy();
 
   const isHealth  = form.detail.divisionType === "Health";
   const isVehicle = form.detail.divisionType === "Vehicle";
@@ -147,7 +140,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: Props) => {
   }, [open]);
 
   useEffect(() => {
-    if (!open) { setForm(makeInitial()); setActiveTab("customer"); }
+    if (!open) {
+      setForm(makeInitial());
+      setErrors({});
+      setMemberInput("");
+      setActiveTab("customer");
+    }
   }, [open]);
 
   const patchDetail  = (patch: any) => setForm(f => ({ ...f, detail:  { ...f.detail,  ...patch } }));
@@ -172,9 +170,243 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: Props) => {
     setForm(f => ({ ...f, riskLocations: [...f.riskLocations, { srNo: f.riskLocations.length + 1, sumAssured: 0, riskAddress: "" }] }));
   };
 
+  const validateForm = () => {
+    const newErrors: any = {};
+
+    // Customer
+    if (!form.familyGroupId) newErrors.familyGroupId = "Family Group is required";
+    if (!form.policyHolderId) newErrors.policyHolderId = "Policy Holder Name is required";
+
+    // Policy
+    if (!form.detail.divisionType) newErrors.divisionType = "Select Division is required";
+    if (!form.detail.segmentId) newErrors.segmentId = "Select Segment is required";
+    if (!form.detail.insuranceCompanyId) newErrors.insuranceCompanyId = "Insurance Company is required";
+    if (!form.detail.policyModeId) newErrors.policyModeId = "Policy Mode is required";
+    if (!form.detail.riskStartDate) newErrors.riskStartDate = "Risk Start Date is required";
+    if (!form.detail.riskEndDate) newErrors.riskEndDate = "Risk End Date is required";
+
+    // Broker / Agency
+    if (!form.detail.brokerId) newErrors.brokerId = "Select Broker is required";
+    if (!form.detail.agencyId) newErrors.agencyId = "Select Agency Name is required";
+
+    // Vehicle Required Fields
+    if (isVehicle) {
+      if (!form.vehicle.vehicleNumber) newErrors.vehicleNumber = "Vehicle Registration Number is required";
+      if (!form.detail.tpPolicyMode) newErrors.tpPolicyMode = "TP Policy Mode is required";
+      if (!form.detail.tpDueDate) newErrors.tpDueDate = "TP Due Date is required";
+      if (!form.vehicle.vehicleName) newErrors.vehicleName = "Vehicle Name is required";
+      if (!form.vehicle.fuelType) newErrors.fuelType = "Fuel Type is required";
+      if (!form.vehicle.rto) newErrors.rto = "RTO is required";
+      if (!form.vehicle.cc) newErrors.cc = "CC is required";
+      if (!form.vehicle.gvw) newErrors.gvw = "GVW is required";
+      if (!form.vehicle.ncb) newErrors.ncb = "NCB is required";
+
+      if (!form.premium.idvValue || form.premium.idvValue <= 0) {
+        newErrors.idvValue = "IDV Value is required";
+      }
+      if (!form.premium.basicPremium || form.premium.basicPremium <= 0) {
+        newErrors.basicPremium = "Basic Premium Amount is required";
+      }
+      if (!form.premium.tpaPremium || form.premium.tpaPremium <= 0) {
+        newErrors.tpaPremium = "TPA Premium Amount is required";
+      }
+      if (!form.premium.totalPremium || form.premium.totalPremium <= 0) {
+        newErrors.totalPremium = "Total Premium Amount is required";
+      }
+    }
+
+    // Health / Other
+    if (!isVehicle) {
+      if (!form.premium.sumAssured || form.premium.sumAssured <= 0) {
+        newErrors.sumAssured = "Sum Assured is required";
+      }
+      if (!form.premium.basicPremium || form.premium.basicPremium <= 0) {
+        newErrors.basicPremium = "Basic Premium Amount is required";
+      }
+      if (!form.premium.totalPremium || form.premium.totalPremium <= 0) {
+        newErrors.totalPremium = "Total Premium Amount is required";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async () => {
-    try { await mutateAsync(form); toast.success("Policy saved!"); onClose(); onSuccess(); }
-    catch { toast.error("Error saving policy"); }
+    const isValid = validateForm();
+
+    if (!isValid) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    try {
+      const STATIC_GUID = "88888888-8888-8888-8888-888888888888";
+      const division = form.detail.divisionType;
+
+      const payload = {
+        type: form.type,
+        transactionDate: form.transactionDate || null,
+        documentNumber: form.documentNumber || "",
+
+        familyGroupId: form.familyGroupId || STATIC_GUID,
+        policyHolderId: form.policyHolderId || STATIC_GUID,
+
+        firstName: form.firstName || "",
+        middleName: form.middleName || "",
+        lastName: form.lastName || "",
+        addressLine1: form.addressLine1 || "",
+        addressLine2: form.addressLine2 || "",
+        city: form.city || "",
+        area: form.area || "",
+        mobileNumber: form.mobileNumber || "",
+        gender: form.gender || "",
+        email: form.email || "",
+        dob: form.dob || null,
+        relationWithHead: form.relationWithHead || "",
+
+        detail: {
+          divisionType: form.detail.divisionType || "",
+          vehicleUse: division === "Vehicle" ? form.detail.vehicleUse || "" : null,
+          vehicleClass: division === "Vehicle" ? form.detail.vehicleClass || "" : null,
+
+          segmentId: form.detail.segmentId || STATIC_GUID,
+          policyType: form.detail.policyType || "",
+          insuranceCompanyId: form.detail.insuranceCompanyId || STATIC_GUID,
+          branchId: form.detail.branchId || STATIC_GUID,
+          productId: form.detail.productId || STATIC_GUID,
+          zone: form.detail.zone || "",
+
+          optionalCover:
+            division === "Health" || division === "OtherGeneral"
+              ? form.detail.optionalCover || []
+              : [],
+
+          addOns:
+            division === "Vehicle"
+              ? form.detail.addOns || []
+              : [],
+
+          isPolicyReceived: form.detail.isPolicyReceived || false,
+          currentPolicyNumber: form.detail.currentPolicyNumber || "",
+          previousPolicyNumber: form.detail.previousPolicyNumber || "",
+
+          policyModeId: form.detail.policyModeId || STATIC_GUID,
+          riskStartDate: form.detail.riskStartDate || null,
+          riskEndDate: form.detail.riskEndDate || null,
+
+          tpPolicyMode:
+            division === "Vehicle"
+              ? form.detail.tpPolicyMode || ""
+              : null,
+
+          tpDueDate:
+            division === "Vehicle"
+              ? form.detail.tpDueDate || null
+              : null,
+
+          bankId:
+            division === "OtherGeneral" || division === "Vehicle"
+              ? form.detail.bankId || STATIC_GUID
+              : null,
+
+          brokerId: form.detail.brokerId || STATIC_GUID,
+          agencyId: form.detail.agencyId || STATIC_GUID,
+          subAgentId: form.detail.subAgentId || STATIC_GUID,
+
+          nomineeName: form.detail.nomineeName || "",
+          nomineeContact: form.detail.nomineeContact || "",
+          remarks: form.detail.remarks || ""
+        },
+
+        members:
+          division === "Health"
+            ? form.members.map((m: any) => ({
+                memberId: m.memberId || STATIC_GUID,
+                memberName: m.memberName || ""
+              }))
+            : [],
+
+        riskLocations:
+          division === "OtherGeneral"
+            ? form.riskLocations.map((loc: any, index: number) => ({
+                srNo: loc.srNo || index + 1,
+                sumAssured: Number(loc.sumAssured) || 0,
+                riskAddress: loc.riskAddress || ""
+              }))
+            : [],
+
+        vehicle:
+          division === "Vehicle"
+            ? {
+                vehicleNumber: form.vehicle.vehicleNumber || "",
+                vehicleName: form.vehicle.vehicleName || "",
+                engineNo: form.vehicle.engineNo || "",
+                chassisNo: form.vehicle.chassisNo || "",
+                brand: form.vehicle.brand || "",
+                fuelType: form.vehicle.fuelType || "",
+                registerDate: form.vehicle.registerDate || null,
+                manufactureYear: Number(form.vehicle.manufactureYear) || 0,
+                rto: form.vehicle.rto || "",
+                cc: Number(form.vehicle.cc) || 0,
+                gvw: Number(form.vehicle.gvw) || 0,
+                ncb: form.vehicle.ncb || "",
+                fitnessCertificate: Boolean(form.vehicle.fitnessCertificate),
+                bhSeries: Boolean(form.vehicle.bhSeries)
+              }
+            : null,
+
+        premium: {
+          sumAssured:
+            division !== "Vehicle"
+              ? Number(form.premium.sumAssured) || 0
+              : 0,
+
+          idvValue:
+            division === "Vehicle"
+              ? Number(form.premium.idvValue) || 0
+              : 0,
+
+          basicPremium: Number(form.premium.basicPremium) || 0,
+          tpaPremium:
+            division === "Vehicle"
+              ? Number(form.premium.tpaPremium) || 0
+              : 0,
+
+          isCommission: Boolean(form.premium.isCommission),
+          taxAmount: Number(form.premium.taxAmount) || 0,
+          totalPremium: Number(form.premium.totalPremium) || 0,
+          commissionableAmount: Number(form.premium.commissionableAmount) || 0,
+          commissionEntry: Number(form.premium.commissionEntry) || 0,
+          commitmentAmount: Number(form.premium.commitmentAmount) || 0
+        },
+
+        payment: {
+          paidByClient: form.payment.paidByClient || "",
+          clientAmount: Number(form.payment.clientAmount) || 0,
+          paidByAgent: form.payment.paidByAgent || "",
+          agentAmount: Number(form.payment.agentAmount) || 0
+        }
+      };
+
+      console.log("Final Payload => ", payload);
+
+      const response = await mutateAsync(payload);
+
+      toast.success(response?.statusMessage || "Policy saved successfully!");
+
+      onClose();
+      onSuccess();
+    } catch (error: any) {
+      console.error("Save Policy Error => ", error);
+
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.response?.data?.title ||
+        "Error saving policy";
+
+      toast.error(errorMsg);
+    }
   };
 
   if (!open) return null;
@@ -187,10 +419,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: Props) => {
 
   return (
     <>
-      <Toaster position="top-right" />
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isPending ? undefined : onClose} />
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={onClose} />
 
-      <div className="fixed top-0 right-0 w-full max-w-[82vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col">
+      <div className="fixed top-0 right-0 w-full max-w-[82vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right">
 
         {/* HEADER */}
         <div className="px-8 py-5 bg-white border-b flex justify-between items-center shrink-0">
@@ -222,7 +453,6 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: Props) => {
           {/* ══ TAB 1: CUSTOMER ══ */}
           {activeTab === "customer" && (
             <Section icon={<Users size={14} />} title="Customer Information">
-              {/* Insurance Type */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
                   Insurance Type <span className="text-red-500">*</span>
@@ -238,66 +468,54 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: Props) => {
                 </div>
               </div>
 
-              {/* Transaction Date | Document Number */}
               <div className="grid grid-cols-2 gap-4">
                 <Input label="Transaction Date" required type="date" value={form.transactionDate}
-                  onChange={(v) => setForm(f => ({ ...f, transactionDate: v }))} />
-                <Input label="Document Number" required value={form.documentNumber} placeholder="Document number"
-                  onChange={(v) => setForm(f => ({ ...f, documentNumber: v }))} />
+                  onChange={(v:any) => setForm(f => ({ ...f, transactionDate: v }))} />
+                <Input label="Document Number" value={form.documentNumber} placeholder="Document number"
+                  onChange={(v:any) => setForm(f => ({ ...f, documentNumber: v }))} />
               </div>
 
-              {/* Family Group + Add | Policy Holder + Add */}
-              <div className="grid grid-cols-12 gap-4 items-end">
+              <div className="grid grid-cols-12 gap-4 items-start">
                 <div className="col-span-5">
-                  <Select label="Family Group" required options={FAMILY_GROUP_OPTIONS} value={form.familyGroupId}
-                    onChange={(v) => setForm(f => ({ ...f, familyGroupId: v }))} />
+                  <Select
+                    label="Family Group"
+                    required
+                    options={FAMILY_GROUP_OPTIONS}
+                    value={form.familyGroupId}
+                    error={errors.familyGroupId}
+                    onChange={(v:any) => setForm(f => ({ ...f, familyGroupId: v }))}
+                  />
                 </div>
-                <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Family Group")} /></div>
+                <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                 <div className="col-span-5">
-                  <Select label="Policy Holder Name" required options={HOLDER_OPTIONS} value={form.policyHolderId}
-                    onChange={(v) => setForm(f => ({ ...f, policyHolderId: v }))} />
+                  <Select label="Policy Holder Name" required options={HOLDER_OPTIONS} value={form.policyHolderId} error={errors.policyHolderId}
+                    onChange={(v:any) => setForm(f => ({ ...f, policyHolderId: v }))} />
                 </div>
-                <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Policy Holder")} /></div>
+                <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
               </div>
 
-              {/* First / Middle / Last */}
               <div className="grid grid-cols-3 gap-4">
-                <Input label="First Name" value={form.firstName} placeholder="First Name"
-                  onChange={(v) => setForm(f => ({ ...f, firstName: v }))} />
-                <Input label="Middle Name" value={form.middleName} placeholder="Middle name"
-                  onChange={(v) => setForm(f => ({ ...f, middleName: v }))} />
-                <Input label="Last Name" value={form.lastName} placeholder="Last name"
-                  onChange={(v) => setForm(f => ({ ...f, lastName: v }))} />
+                <Input label="First Name" value={form.firstName} onChange={(v:any) => setForm(f => ({ ...f, firstName: v }))} />
+                <Input label="Middle Name" value={form.middleName} onChange={(v:any) => setForm(f => ({ ...f, middleName: v }))} />
+                <Input label="Last Name" value={form.lastName} onChange={(v:any) => setForm(f => ({ ...f, lastName: v }))} />
               </div>
 
-              {/* Address */}
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Address Line1" value={form.addressLine1} placeholder="Address Line 1"
-                  onChange={(v) => setForm(f => ({ ...f, addressLine1: v }))} />
-                <Input label="Address Line2" value={form.addressLine2} placeholder="Address line 2"
-                  onChange={(v) => setForm(f => ({ ...f, addressLine2: v }))} />
+                <Input label="Address Line1" value={form.addressLine1} onChange={(v:any) => setForm(f => ({ ...f, addressLine1: v }))} />
+                <Input label="Address Line2" value={form.addressLine2} onChange={(v:any) => setForm(f => ({ ...f, addressLine2: v }))} />
               </div>
 
-              {/* City / Area / Mobile / Gender */}
               <div className="grid grid-cols-4 gap-4">
-                <Input label="City" value={form.city} placeholder="City"
-                  onChange={(v) => setForm(f => ({ ...f, city: v }))} />
-                <Input label="Area" value={form.area} placeholder="Area"
-                  onChange={(v) => setForm(f => ({ ...f, area: v }))} />
-                <Input label="Mobile Number" value={form.mobileNumber} placeholder="Mobile Number"
-                  onChange={(v) => setForm(f => ({ ...f, mobileNumber: v }))} />
-                <Select label="Gender" options={GENDER_OPTIONS} value={form.gender}
-                  onChange={(v) => setForm(f => ({ ...f, gender: v }))} />
+                <Input label="City" value={form.city} onChange={(v:any) => setForm(f => ({ ...f, city: v }))} />
+                <Input label="Area" value={form.area} onChange={(v:any) => setForm(f => ({ ...f, area: v }))} />
+                <Input label="Mobile Number" value={form.mobileNumber} onChange={(v:any) => setForm(f => ({ ...f, mobileNumber: v }))} />
+                <Select label="Gender" options={GENDER_OPTIONS} value={form.gender} onChange={(v:any) => setForm(f => ({ ...f, gender: v }))} />
               </div>
 
-              {/* Email / DOB / Relation */}
               <div className="grid grid-cols-3 gap-4">
-                <Input label="Email Address" value={form.email} placeholder="Email address"
-                  onChange={(v) => setForm(f => ({ ...f, email: v }))} />
-                <Input label="DOB" type="date" value={form.dob} placeholder="dd-mm-yyyy"
-                  onChange={(v) => setForm(f => ({ ...f, dob: v }))} />
-                <Select label="Relation With Head" options={RELATION_OPTIONS} value={form.relationWithHead}
-                  onChange={(v) => setForm(f => ({ ...f, relationWithHead: v }))} />
+                <Input label="Email Address" value={form.email} onChange={(v:any) => setForm(f => ({ ...f, email: v }))} />
+                <Input label="DOB" type="date" value={form.dob} onChange={(v:any) => setForm(f => ({ ...f, dob: v }))} />
+                <Select label="Relation With Head" options={RELATION_OPTIONS} value={form.relationWithHead} onChange={(v:any) => setForm(f => ({ ...f, relationWithHead: v }))} />
               </div>
             </Section>
           )}
@@ -307,356 +525,401 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: Props) => {
             <div className="space-y-6">
               <Section icon={<ShieldCheck size={14} />} title="Policy Specifications">
 
-                {/* ── ROW 1: Division + division-specific fields ── */}
+                <div className="grid grid-cols-12 gap-4 items-start">
+                  <div className="col-span-4">
+                    <Select label="Select Division" required options={DIVISION_OPTIONS} value={form.detail.divisionType} error={errors.divisionType}
+                      onChange={(v:any) => patchDetail({ divisionType: v })} />
+                  </div>
+                </div>
 
-                {/* HEALTH: Division | Segment + Add | Policy Type */}
                 {isHealth && (
-                  <div className="grid grid-cols-12 gap-4 items-end">
-                    <div className="col-span-3">
-                      <Select label="Select Division" required options={DIVISION_OPTIONS} value={form.detail.divisionType}
-                        onChange={(v) => patchDetail({ divisionType: v })} />
+                  <div className="grid grid-cols-12 gap-4 items-start">
+                    <div className="col-span-6">
+                      <Select label="Select Segment" required options={SEGMENT_OPTIONS} value={form.detail.segmentId} error={errors.segmentId}
+                        onChange={(v:any) => patchDetail({ segmentId: v })} />
                     </div>
-                    <div className="col-span-4">
-                      <Select label="Select Segment" required options={SEGMENT_OPTIONS} value={form.detail.segmentId}
-                        onChange={(v) => patchDetail({ segmentId: v })} />
-                    </div>
-                    <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Segment")} /></div>
-                    <div className="col-span-4">
+                    <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                    <div className="col-span-5">
                       <Select label="Policy Type" options={POLICY_TYPE_OPTIONS} value={form.detail.policyType}
-                        onChange={(v) => patchDetail({ policyType: v })} clearable />
+                        onChange={(v:any) => patchDetail({ policyType: v })} />
                     </div>
                   </div>
                 )}
 
-                {/* OTHER GENERAL: Division | Segment + Add | Policy Type */}
                 {isOther && (
-                  <div className="grid grid-cols-12 gap-4 items-end">
-                    <div className="col-span-3">
-                      <Select label="Select Division" required options={DIVISION_OPTIONS} value={form.detail.divisionType}
-                        onChange={(v) => patchDetail({ divisionType: v })} />
+                  <div className="grid grid-cols-12 gap-4 items-start">
+                    <div className="col-span-6">
+                      <Select label="Select Segment" required options={SEGMENT_OPTIONS} value={form.detail.segmentId} error={errors.segmentId}
+                        onChange={(v:any) => patchDetail({ segmentId: v })} />
                     </div>
-                    <div className="col-span-4">
-                      <Select label="Select Segment" required options={SEGMENT_OPTIONS} value={form.detail.segmentId}
-                        placeholder="Search for segment" onChange={(v) => patchDetail({ segmentId: v })} />
-                    </div>
-                    <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Segment")} /></div>
-                    <div className="col-span-4">
+                    <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                    <div className="col-span-5">
                       <Select label="Policy Type" options={POLICY_TYPE_OPTIONS} value={form.detail.policyType}
-                        onChange={(v) => patchDetail({ policyType: v })} clearable />
+                        onChange={(v:any) => patchDetail({ policyType: v })} />
                     </div>
                   </div>
                 )}
 
-                {/* VEHICLE: Division | Vehicle Uses | Vehicle Class | Segment + Add */}
                 {isVehicle && (
-                  <div className="grid grid-cols-12 gap-4 items-end">
+                  <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-3">
-                      <Select label="Select Division" required options={DIVISION_OPTIONS} value={form.detail.divisionType}
-                        onChange={(v) => patchDetail({ divisionType: v })} />
-                    </div>
-                    <div className="col-span-2">
                       <Select label="Vehicle Uses" options={VEHICLE_USE_OPTIONS} value={form.detail.vehicleUse}
-                        placeholder="Search for vehicle uses" onChange={(v) => patchDetail({ vehicleUse: v })} />
+                        onChange={(v:any) => patchDetail({ vehicleUse: v })} />
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-3">
                       <Select label="Vehicle Class" options={VEHICLE_CLASS_OPTIONS} value={form.detail.vehicleClass}
-                        placeholder="Search for vehicle class" onChange={(v) => patchDetail({ vehicleClass: v })} />
+                        onChange={(v:any) => patchDetail({ vehicleClass: v })} />
                     </div>
-                    <div className="col-span-4">
-                      <Select label="Select Segment" required options={SEGMENT_OPTIONS} value={form.detail.segmentId}
-                        placeholder="Search for segment" onChange={(v) => patchDetail({ segmentId: v })} />
+                    <div className="col-span-5">
+                      <Select label="Select Segment" required options={SEGMENT_OPTIONS} value={form.detail.segmentId} error={errors.segmentId}
+                        onChange={(v:any) => patchDetail({ segmentId: v })} />
                     </div>
-                    <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Segment")} /></div>
+                    <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                   </div>
                 )}
 
-                {/* ── ROW 2: Insurance Company | Branch + Add ── */}
-                <div className="grid grid-cols-12 gap-4 items-end">
+                <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-6">
                     <Select label="Select Insurance Company" required options={COMPANY_OPTIONS}
-                      value={form.detail.insuranceCompanyId}
-                      onChange={(v) => patchDetail({ insuranceCompanyId: v })} />
+                      value={form.detail.insuranceCompanyId} error={errors.insuranceCompanyId} onChange={(v:any) => patchDetail({ insuranceCompanyId: v })} />
                   </div>
                   <div className="col-span-4">
                     <Select label="Select Branch" options={BRANCH_OPTIONS} value={form.detail.branchId}
-                      onChange={(v) => patchDetail({ branchId: v })} clearable />
+                      onChange={(v:any) => patchDetail({ branchId: v })} />
                   </div>
-                  <div className="col-span-2"><AddBtn onClick={() => toast.success("Add Branch")} /></div>
+                  <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
                 </div>
 
-                {/* ── ROW 3: Product Name + Add | Zone ── */}
-                <div className="grid grid-cols-12 gap-4 items-end">
+                <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-5">
                     <Select label="Product Name" options={PRODUCT_OPTIONS} value={form.detail.productId}
-                      placeholder="Search for product name" onChange={(v) => patchDetail({ productId: v })} />
+                      onChange={(v:any) => patchDetail({ productId: v })} />
                   </div>
-                  <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Product")} /></div>
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                   <div className="col-span-6">
                     <Select label="Zone" options={ZONE_OPTIONS} value={form.detail.zone}
-                      onChange={(v) => patchDetail({ zone: v })} clearable />
+                      onChange={(v:any) => patchDetail({ zone: v })} />
                   </div>
                 </div>
-
-                {/* ── HEALTH ONLY: Optional Cover ── */}
-                {isHealth && (
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Optional Cover</label>
-                    <div className="border border-slate-200 rounded bg-white px-3 py-2 min-h-[42px] flex flex-wrap gap-2 items-center">
+                
+                {isOther && (
+                  <div className="space-y-0.5 w-full">
+                    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      Optional Cover
+                    </label>
+                    <div
+                      className={`
+                        border rounded bg-white px-3 py-2 min-h-[42px] flex flex-wrap gap-2 items-center
+                        ${errors.optionalCover
+                          ? "border-red-500 ring-2 ring-red-50"
+                          : "border-slate-200 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50"}
+                      `}
+                    >
                       {form.detail.optionalCover.map(v => (
                         <span key={v} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded border border-blue-200">
-                          × {OPT_COVER_OPTIONS.find(o => o.id === v)?.name ?? v}
-                          <button onClick={() => toggleMulti("optionalCover", v)} className="ml-1 hover:text-red-500 text-slate-400">✕</button>
+                          {OPT_COVER_OPTIONS.find(o => o.id === v)?.name ?? v}
+                          <button onClick={() => toggleMulti("optionalCover", v)} className="ml-1 text-slate-400 hover:text-red-500">✕</button>
                         </span>
                       ))}
-                      <select className="flex-1 min-w-[200px] text-sm outline-none bg-transparent text-slate-400"
+                      <select className="flex-1 min-w-[200px] text-sm outline-none bg-transparent"
                         value="" onChange={e => { if (e.target.value) toggleMulti("optionalCover", e.target.value); }}>
                         <option value="">Search for optional cover</option>
                         {OPT_COVER_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
                       </select>
-                      {form.detail.optionalCover.length > 0 && (
-                        <button onClick={() => patchDetail({ optionalCover: [] })}
-                          className="text-slate-400 hover:text-red-400 text-xs px-1">✕</button>
-                      )}
                     </div>
+                    {/* Always reserve error space — same as Input/Select */}
+                    <p className="text-[10px] font-medium text-red-500">
+                      {errors.optionalCover || ""}
+                    </p>
                   </div>
                 )}
 
-                {/* ── VEHICLE ONLY: Add Ons ── */}
-                {isVehicle && (
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Add Ons</label>
-                    <div className="border border-slate-200 rounded bg-white px-3 py-2 min-h-[42px] flex flex-wrap gap-2 items-center">
-                      {form.detail.addOns.map(v => (
+                {/* ── OPTIONAL COVER (Health) ── FIXED: label now matches Input/Select exactly */}
+                {isHealth && (
+                  <div className="space-y-0.5 w-full">
+                    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      Optional Cover
+                    </label>
+                    <div
+                      className={`
+                        border rounded bg-white px-3 py-2 min-h-[42px] flex flex-wrap gap-2 items-center
+                        ${errors.optionalCover
+                          ? "border-red-500 ring-2 ring-red-50"
+                          : "border-slate-200 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50"}
+                      `}
+                    >
+                      {form.detail.optionalCover.map(v => (
                         <span key={v} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded border border-blue-200">
-                          {ADD_ON_OPTIONS.find(o => o.id === v)?.name ?? v}
-                          <button onClick={() => toggleMulti("addOns", v)} className="ml-1 hover:text-red-500 text-slate-400">✕</button>
+                          {OPT_COVER_OPTIONS.find(o => o.id === v)?.name ?? v}
+                          <button onClick={() => toggleMulti("optionalCover", v)} className="ml-1 text-slate-400 hover:text-red-500">✕</button>
                         </span>
                       ))}
-                      <select className="flex-1 min-w-[200px] text-sm outline-none bg-transparent text-slate-400"
-                        value="" onChange={e => { if (e.target.value) toggleMulti("addOns", e.target.value); }}>
-                        <option value="">Search for add ons</option>
-                        {ADD_ON_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                      <select className="flex-1 min-w-[200px] text-sm outline-none bg-transparent"
+                        value="" onChange={e => { if (e.target.value) toggleMulti("optionalCover", e.target.value); }}>
+                        <option value="">Search for optional cover</option>
+                        {OPT_COVER_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
                       </select>
                     </div>
+                    {/* Always reserve error space — same as Input/Select */}
+                    <p className="text-[10px] font-medium text-red-500">
+                      {errors.optionalCover || ""}
+                    </p>
                   </div>
                 )}
 
-                {/* ── Is Policy Received + Current / Previous Policy Number ── */}
-                <div className="grid grid-cols-12 gap-4 items-end">
+                {/* ── ADD ONS (Vehicle) ── FIXED: label now matches Input/Select exactly */}
+                {isVehicle && (
+                  <div className="space-y-0.5 w-full">
+                    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      Add Ons
+                    </label>
+                    <div
+                      className={`
+                        border rounded bg-white px-3 py-2 min-h-[42px]
+                        flex flex-wrap gap-1.5 items-center
+                        ${errors.addOns
+                          ? "border-red-500 ring-2 ring-red-50"
+                          : "border-slate-200 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50"}
+                      `}
+                    >
+                      {form.detail.addOns.map((v: string) => (
+                        <span
+                          key={v}
+                          className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-[10px] font-semibold px-2 py-0.5 rounded border border-blue-200"
+                        >
+                          {ADD_ON_OPTIONS.find(o => o.id === v)?.name ?? v}
+                          <button
+                            onClick={() => toggleMulti("addOns", v)}
+                            className="text-slate-400 hover:text-red-500"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                      <select
+                        className="flex-1 min-w-[120px] text-sm outline-none bg-transparent"
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) toggleMulti("addOns", e.target.value);
+                        }}
+                      >
+                        <option value="">Select add ons</option>
+                        {ADD_ON_OPTIONS.map(o => (
+                          <option key={o.id} value={o.id}>{o.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Always reserve error space — same as Input/Select */}
+                    <p className="text-[10px] font-medium text-red-500">
+                      {errors.addOns || ""}
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-2 flex items-center gap-2 pb-2.5">
                     <input type="checkbox" id="isPolicyReceived" checked={form.detail.isPolicyReceived}
                       onChange={e => patchDetail({ isPolicyReceived: e.target.checked })}
                       className="w-4 h-4 accent-blue-600 rounded" />
-                    <label htmlFor="isPolicyReceived" className="text-sm text-slate-700 font-medium cursor-pointer whitespace-nowrap">
-                      Is Policy Received
-                    </label>
+                    <label htmlFor="isPolicyReceived" className="text-sm font-medium">Is Received</label>
                   </div>
                   <div className="col-span-5">
-                    <Input label="Current Policy Number" value={form.detail.currentPolicyNumber}
-                      placeholder="Current policy number" onChange={(v) => patchDetail({ currentPolicyNumber: v })} />
+                    <Input label="Current Policy Number" value={form.detail.currentPolicyNumber} onChange={(v:any) => patchDetail({ currentPolicyNumber: v })} />
                   </div>
                   <div className="col-span-5">
-                    <Input label="Previous Policy Number" value={form.detail.previousPolicyNumber}
-                      placeholder="Previous policy number" onChange={(v) => patchDetail({ previousPolicyNumber: v })} />
+                    <Input label="Previous Policy Number" value={form.detail.previousPolicyNumber} onChange={(v:any) => patchDetail({ previousPolicyNumber: v })} />
                   </div>
                 </div>
 
-                {/* ── Policy Documents ── */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                    Policy Documents{" "}
-                    <span className="font-normal normal-case text-slate-400">(JPG, PNG, JPEG Or PDF)</span>
-                  </label>
-                  <div className="border border-slate-200 rounded bg-white flex items-center overflow-hidden">
-                    <label className="px-4 py-2.5 bg-slate-100 border-r border-slate-200 text-sm font-medium text-slate-700 cursor-pointer hover:bg-slate-200 transition-colors whitespace-nowrap">
-                      Choose Files
-                      <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png" className="hidden" />
-                    </label>
-                    <span className="px-4 text-sm text-slate-400">No file chosen</span>
-                  </div>
-                </div>
-
-                {/* ── Policy Mode + Risk Start + Risk End ── */}
                 <div className="grid grid-cols-3 gap-4">
-                  <Select label="Select Policy Mode" required options={POLICY_MODE_OPTIONS} value={form.detail.policyModeId}
-                    onChange={(v) => patchDetail({ policyModeId: v })} />
-                  <Input label="Risk Start Date" required type="date" value={form.detail.riskStartDate}
-                    onChange={(v) => patchDetail({ riskStartDate: v })} />
-                  <Input label="Risk End Date" required type="date" value={form.detail.riskEndDate}
-                    onChange={(v) => patchDetail({ riskEndDate: v })} />
+                  <Select label="Policy Mode" required options={POLICY_MODE_OPTIONS} value={form.detail.policyModeId} error={errors.policyModeId}
+                    onChange={(v:any) => patchDetail({ policyModeId: v })} />
+                  <Input label="Risk Start Date" required type="date" value={form.detail.riskStartDate} error={errors.riskStartDate}
+                    onChange={(v:any) => patchDetail({ riskStartDate: v })} />
+                  <Input label="Risk End Date" required type="date" value={form.detail.riskEndDate} error={errors.riskEndDate}
+                    onChange={(v:any) => patchDetail({ riskEndDate: v })} />
                 </div>
 
-                {/* ── VEHICLE ONLY: TP Policy Mode + TP Due Date ── */}
                 {isVehicle && (
                   <div className="grid grid-cols-2 gap-4">
-                    <Select label="Select Tp Policy Mode" required options={TP_MODE_OPTIONS} value={form.detail.tpPolicyMode}
-                      placeholder="Search for tp mode" onChange={(v) => patchDetail({ tpPolicyMode: v })} />
+                    <Select label="TP Policy Mode" required options={TP_MODE_OPTIONS} value={form.detail.tpPolicyMode}
+                      onChange={(v:any) => patchDetail({ tpPolicyMode: v })} />
                     <Input label="TP Due Date" required type="date" value={form.detail.tpDueDate}
-                      onChange={(v) => patchDetail({ tpDueDate: v })} />
+                      onChange={(v:any) => patchDetail({ tpDueDate: v })} />
                   </div>
                 )}
 
-                {/* ── OTHER GENERAL + VEHICLE: Select Bank Name + Add ── */}
                 {(isOther || isVehicle) && (
-                  <div className="grid grid-cols-12 gap-4 items-end">
+                  <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-10">
                       <Select label="Select Bank Name" options={BANK_OPTIONS} value={form.detail.bankId}
-                        placeholder="Search for bank" onChange={(v) => patchDetail({ bankId: v })} />
+                        onChange={(v:any) => patchDetail({ bankId: v })} />
                     </div>
-                    <div className="col-span-2"><AddBtn onClick={() => toast.success("Add Bank")} /></div>
+                    <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
                   </div>
                 )}
 
-                {/* ── HEALTH ONLY: Select Family Member + Add Member ── */}
                 {isHealth && (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-12 gap-4 items-end">
+                    <div className="grid grid-cols-12 gap-4 items-start">
                       <div className="col-span-10">
-                        <Input label="Select Family Member" value={memberInput}
-                          placeholder="Search for family member" onChange={(v) => setMemberInput(v)} />
+                        <Input label="Select Family Member" value={memberInput} onChange={(v:any) => setMemberInput(v)} />
                       </div>
                       <div className="col-span-2">
-                        <button onClick={addMember}
-                          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded transition-colors">
-                          + Add Member
-                        </button>
+                        <button onClick={addMember} className="w-full py-2.5 bg-blue-600 text-white text-sm font-bold rounded">+ Add</button>
                       </div>
                     </div>
-                    {form.members.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {form.members.map((m, i) => (
-                          <span key={i} className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-200">
-                            {m.memberName}
-                            <button onClick={() => setForm(f => ({ ...f, members: f.members.filter((_, idx) => idx !== i) }))}
-                              className="hover:text-red-500 text-slate-400">✕</button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <div className="p-3 bg-blue-50 border border-blue-100 rounded text-center">
-                      <p className="text-xs text-blue-600">
-                        Selected members are displayed in the claim intimation under the patient name field.
-                      </p>
+                    <div className="flex flex-wrap gap-2">
+                      {form.members.map((m, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-200">
+                          {m.memberName}
+                          <button onClick={() => setForm(f => ({ ...f, members: f.members.filter((_, idx) => idx !== i) }))} className="hover:text-red-500">✕</button>
+                        </span>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* ── OTHER GENERAL ONLY: Risk Location rows ── */}
                 {isOther && (
                   <div className="space-y-3">
-                    {/* header row with labels + Row button */}
-                    <div className="grid grid-cols-12 gap-3 items-end">
-                      <div className="col-span-1">
-                        <Input label="Sr. No." value="" disabled onChange={() => {}} />
-                      </div>
-                      <div className="col-span-3">
-                        <Input label="Risk Location Sum Assured" value="" onChange={() => {}} />
-                      </div>
-                      <div className="col-span-6">
-                        <Input label="Enter Risk Location Address" value="" onChange={() => {}} />
-                      </div>
-                      <div className="col-span-2">
-                        <button onClick={addRiskRow}
-                          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded transition-colors flex items-center justify-center gap-1">
-                          <Plus size={14} /> Row
-                        </button>
-                      </div>
-                    </div>
+                    <button onClick={addRiskRow} className="py-2 px-4 bg-blue-600 text-white text-sm font-bold rounded flex items-center gap-2"><Plus size={14}/> Add Risk Row</button>
                     {form.riskLocations.map((loc, i) => (
                       <div key={i} className="grid grid-cols-12 gap-3 items-center">
-                        <div className="col-span-1">
-                          <Input label="" value={loc.srNo} disabled onChange={() => {}} />
-                        </div>
-                        <div className="col-span-3">
-                          <Input label="" value={loc.sumAssured} type="number"
-                            onChange={(v) => {
-                              const updated = [...form.riskLocations];
-                              updated[i].sumAssured = Number(v);
-                              setForm(f => ({ ...f, riskLocations: updated }));
-                            }} />
-                        </div>
-                        <div className="col-span-7">
-                          <Input label="" value={loc.riskAddress}
-                            onChange={(v) => {
-                              const updated = [...form.riskLocations];
-                              updated[i].riskAddress = v;
-                              setForm(f => ({ ...f, riskLocations: updated }));
-                            }} />
-                        </div>
-                        <div className="col-span-1 flex justify-center">
-                          <button onClick={() => setForm(f => ({ ...f, riskLocations: f.riskLocations.filter((_, idx) => idx !== i) }))}
-                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all">
-                            <Trash2 size={14} />
-                          </button>
+                        <div className="col-span-1"><Input label="No" value={loc.srNo} disabled onChange={()=>{}}/></div>
+                        <div className="col-span-3"><Input label="Sum Assured" value={loc.sumAssured} error={errors.sumAssured} type="number" onChange={(v:any)=> {
+                          const updated = [...form.riskLocations]; updated[i].sumAssured = Number(v); setForm(f=>({...f, riskLocations: updated}))
+                        }}/></div>
+                        <div className="col-span-7"><Input label="Address" value={loc.riskAddress} onChange={(v:any)=>{
+                          const updated = [...form.riskLocations]; updated[i].riskAddress = v; setForm(f=>({...f, riskLocations: updated}))
+                        }}/></div>
+                        <div className="col-span-1 flex justify-center pt-5">
+                          <button onClick={() => setForm(f => ({ ...f, riskLocations: f.riskLocations.filter((_, idx) => idx !== i) }))} className="text-red-500"><Trash2 size={16} /></button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-
               </Section>
 
-              {/* ── VEHICLE DETAILS SECTION (shown only for Vehicle) ── */}
               {isVehicle && (
                 <Section icon={<Car size={14} />} title="Vehicle Details">
-                  {/* BH Series + Registration + Vehicle Name + Engine No + Chassis No */}
-                  <div className="grid grid-cols-12 gap-4 items-end">
+                  <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-1 flex items-center gap-1.5 pb-2.5">
-                      <input type="checkbox" id="bhSeries" checked={form.vehicle.bhSeries}
+                      <input
+                        type="checkbox"
+                        checked={form.vehicle.bhSeries}
                         onChange={e => patchVehicle({ bhSeries: e.target.checked })}
-                        className="w-4 h-4 accent-blue-600" />
-                      <label htmlFor="bhSeries" className="text-xs text-slate-700 font-medium cursor-pointer whitespace-nowrap">BH Series</label>
+                        className="w-4 h-4 accent-blue-600"
+                      />
+                      <label className="text-xs font-bold">BH Series</label>
                     </div>
+
                     <div className="col-span-3">
-                      <Input label="Vehicle Registration Number" required value={form.vehicle.vehicleNumber}
-                        placeholder="EG. GJ-05-AB-1234" onChange={(v) => patchVehicle({ vehicleNumber: v })} />
+                      <Input
+                        label="Vehicle Registration Number"
+                        required
+                        value={form.vehicle.vehicleNumber}
+                        error={errors.vehicleNumber}
+                        onChange={(v: any) => patchVehicle({ vehicleNumber: v })}
+                      />
                     </div>
+
                     <div className="col-span-2">
-                      <Input label="Vehicle Name" required value={form.vehicle.vehicleName}
-                        placeholder="Vehicle name" onChange={(v) => patchVehicle({ vehicleName: v })} />
+                      <Input
+                        label="Vehicle Name"
+                        required
+                        value={form.vehicle.vehicleName}
+                        error={errors.vehicleName}
+                        onChange={(v: any) => patchVehicle({ vehicleName: v })}
+                      />
                     </div>
+
                     <div className="col-span-3">
-                      <Input label="Engine No" value={form.vehicle.engineNo}
-                        placeholder="VEHICLE ENGINE NO" onChange={(v) => patchVehicle({ engineNo: v })} />
+                      <Input
+                        label="Engine No"
+                        value={form.vehicle.engineNo}
+                        onChange={(v: any) => patchVehicle({ engineNo: v })}
+                      />
                     </div>
+
                     <div className="col-span-3">
-                      <Input label="Chassis No" value={form.vehicle.chassisNo}
-                        placeholder="Vehicle Chassis No" onChange={(v) => patchVehicle({ chassisNo: v })} />
+                      <Input
+                        label="Chassis No"
+                        value={form.vehicle.chassisNo}
+                        onChange={(v: any) => patchVehicle({ chassisNo: v })}
+                      />
                     </div>
                   </div>
 
-                  {/* Brand + Fuel Type + Register Date + Year of Manufacture */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Input label="Vehicle Brand" value={form.vehicle.brand}
-                      placeholder="Vehicle brand" onChange={(v) => patchVehicle({ brand: v })} />
-                    <Select label="Vehicle Fuel Type" required options={FUEL_TYPE_OPTIONS} value={form.vehicle.fuelType}
-                      placeholder="Search for fuel type" onChange={(v) => patchVehicle({ fuelType: v })} />
-                    <Input label="Register Date" type="date" value={form.vehicle.registerDate}
-                      onChange={(v) => patchVehicle({ registerDate: v })} />
-                    <Input label="Year Of Manufacture" value={form.vehicle.manufactureYear}
-                      placeholder="YYYY" onChange={(v) => patchVehicle({ manufactureYear: v })} />
+                    <Input
+                      label="Vehicle Brand"
+                      value={form.vehicle.brand}
+                      error={errors.brand}
+                      onChange={(v: any) => patchVehicle({ brand: v })}
+                    />
+                    <Select
+                      label="Vehicle Fuel Type"
+                      required
+                      options={FUEL_TYPE_OPTIONS}
+                      value={form.vehicle.fuelType}
+                      error={errors.fuelType}
+                      onChange={(v: any) => patchVehicle({ fuelType: v })}
+                    />
+                    <Input
+                      label="Register Date"
+                      type="date"
+                      value={form.vehicle.registerDate}
+                      onChange={(v: any) => patchVehicle({ registerDate: v })}
+                    />
+                    <Input
+                      label="Year Of Manufacture"
+                      value={form.vehicle.manufactureYear}
+                      onChange={(v: any) => patchVehicle({ manufactureYear: v })}
+                    />
                   </div>
 
-                  {/* RTO + CC + GVW + NCB */}
-                  <div className="grid grid-cols-4 gap-4">
-                    <Select label="RTO" required options={RTO_OPTIONS} value={form.vehicle.rto}
-                      placeholder="Search for RTO" onChange={(v) => patchVehicle({ rto: v })} />
-                    <Input label="CC" required value={form.vehicle.cc}
-                      placeholder="Enter cc" onChange={(v) => patchVehicle({ cc: v })} />
-                    <Input label="GVW" required value={form.vehicle.gvw}
-                      placeholder="Enter amount" onChange={(v) => patchVehicle({ gvw: v })} />
-                    <Select label="NCB" required options={NCB_OPTIONS} value={form.vehicle.ncb}
-                      placeholder="Search for ncb" onChange={(v) => patchVehicle({ ncb: v })} />
+                  <div className="grid grid-cols-4 gap-4 mt-4">
+                    <Input
+                      label="RTO"
+                      required
+                      value={form.vehicle.rto}
+                      error={errors.rto}
+                      onChange={(v: any) => patchVehicle({ rto: v })}
+                    />
+                    <Input
+                      label="CC"
+                      required
+                      type="number"
+                      value={form.vehicle.cc}
+                      error={errors.cc}
+                      onChange={(v: any) => patchVehicle({ cc: v })}
+                    />
+                    <Input
+                      label="GVW"
+                      required
+                      type="number"
+                      value={form.vehicle.gvw}
+                      error={errors.gvw}
+                      onChange={(v: any) => patchVehicle({ gvw: v })}
+                    />
+                    <Input
+                      label="NCB"
+                      required
+                      value={form.vehicle.ncb}
+                      error={errors.ncb}
+                      onChange={(v: any) => patchVehicle({ ncb: v })}
+                    />
                   </div>
 
-                  {/* Fitness Certificate */}
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" id="fitnessCert" checked={form.vehicle.fitnessCertificate}
+                  <div className="mt-4 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.vehicle.fitnessCertificate}
                       onChange={e => patchVehicle({ fitnessCertificate: e.target.checked })}
-                      className="w-4 h-4 accent-blue-600" />
-                    <label htmlFor="fitnessCert" className="text-sm text-slate-700 font-medium cursor-pointer">
-                      Fitness Certificate
-                    </label>
+                      className="w-4 h-4 accent-blue-600"
+                    />
+                    <label className="text-sm font-medium">Fitness Certificate</label>
                   </div>
                 </Section>
               )}
@@ -666,142 +929,60 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: Props) => {
           {/* ══ TAB 3: PREMIUM & PAYMENT ══ */}
           {activeTab === "premium" && (
             <div className="space-y-6">
-
               <Section icon={<Activity size={14} />} title="Premium Details">
-
-                {/* Row 1: IDV/Sum Assured | Basic Premium | TPA (vehicle) or empty | Tax Amount */}
                 <div className="grid grid-cols-4 gap-4">
                   {isVehicle
-                    ? <Input label="IDV Value" required type="number" value={form.premium.idvValue}
-                        onChange={(v) => patchPremium({ idvValue: Number(v) })} />
-                    : <Input label="Sum Assured" required type="number" value={form.premium.sumAssured}
-                        onChange={(v) => patchPremium({ sumAssured: Number(v) })} />
+                    ? <Input label="IDV Value" required type="number" value={form.premium.idvValue} onChange={(v:any) => patchPremium({ idvValue: Number(v) })} />
+                    : <Input label="Sum Assured" required type="number" value={form.premium.sumAssured} error={errors.sumAssured} onChange={(v:any) => patchPremium({ sumAssured: Number(v) })} />
                   }
-                  <Input label="Basic Premium Amount" required type="number" value={form.premium.basicPremium}
-                    onChange={(v) => patchPremium({ basicPremium: Number(v) })} />
-                  {isVehicle
-                    ? (
-                      <div className="space-y-1">
-                        <Input label="Tpa Premium Amt." required type="number" value={form.premium.tpaPremium}
-                          onChange={(v) => patchPremium({ tpaPremium: Number(v) })} />
-                        <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600 font-medium mt-1">
-                          <input type="checkbox" checked={form.premium.isCommission}
-                            onChange={e => patchPremium({ isCommission: e.target.checked })}
-                            className="w-3.5 h-3.5 accent-blue-600" />
-                          Is Commi.?
-                        </label>
-                      </div>
-                    )
-                    : <div />
-                  }
-                  <Input label="Tax Amount" type="number" value={form.premium.taxAmount}
-                    onChange={(v) => patchPremium({ taxAmount: Number(v) })} />
+                  <Input label="Basic Premium" required type="number" value={form.premium.basicPremium} error={errors.basicPremium} onChange={(v:any) => patchPremium({ basicPremium: Number(v) })} />
+                  {isVehicle && <Input label="Tpa Premium" type="number" value={form.premium.tpaPremium} onChange={(v:any) => patchPremium({ tpaPremium: Number(v) })} />}
+                  <Input label="Tax Amount" type="number" value={form.premium.taxAmount} onChange={(v:any) => patchPremium({ taxAmount: Number(v) })} />
                 </div>
-
-                {/* Row 2: Total Premium | Commissionable | Commission Entry | Commitment */}
                 <div className="grid grid-cols-4 gap-4">
-                  <Input label="Total Premium Amount" required type="number" value={form.premium.totalPremium}
-                    className="bg-slate-50" onChange={(v) => patchPremium({ totalPremium: Number(v) })} />
-                  <Input label="Commissionable Amount" type="number" value={form.premium.commissionableAmount}
-                    onChange={(v) => patchPremium({ commissionableAmount: Number(v) })} />
-                  <Input label="Commission Entry(%)" type="number" value={form.premium.commissionEntry}
-                    onChange={(v) => patchPremium({ commissionEntry: Number(v) })} />
-                  <Input label="Commitment Amount" type="number" value={form.premium.commitmentAmount}
-                    className="bg-slate-50" onChange={(v) => patchPremium({ commitmentAmount: Number(v) })} />
-                </div>
-
-                {/* Broker | Agency + Add | Sub Agent + Add */}
-                <div className="grid grid-cols-12 gap-4 items-end">
-                  <div className="col-span-3">
-                    <Select label="Select Broker" required options={BROKER_OPTIONS} value={form.detail.brokerId}
-                      onChange={(v) => patchDetail({ brokerId: v })} />
-                  </div>
-                  <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Broker")} /></div>
-                  <div className="col-span-3">
-                    <Select label="Select Agency Name" required options={AGENCY_OPTIONS} value={form.detail.agencyId}
-                      onChange={(v) => patchDetail({ agencyId: v })} />
-                  </div>
-                  <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Agency")} /></div>
-                  <div className="col-span-3">
-                    <Select label="Select Sub Agent Name" options={SUB_AGENT_OPTIONS} value={form.detail.subAgentId}
-                      onChange={(v) => patchDetail({ subAgentId: v })} clearable />
-                  </div>
-                  <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Sub Agent")} /></div>
-                </div>
-
-                {/* Nominee Name + Contact */}
-                <div className="grid grid-cols-2 gap-4">
-                  <Select label="Nominee Name" options={NOMINEE_OPTIONS} value={form.detail.nomineeName}
-                    placeholder="Search for nominee name" onChange={(v) => patchDetail({ nomineeName: v })} />
-                  <Input label="Nominee Contact No." value={form.detail.nomineeContact}
-                    placeholder="Nominee Contact" onChange={(v) => patchDetail({ nomineeContact: v })} />
-                </div>
-
-                {/* Remarks */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Remarks</label>
-                  <textarea
-                    rows={3}
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all resize-none"
-                    placeholder="Remarks"
-                    value={form.detail.remarks}
-                    onChange={e => patchDetail({ remarks: e.target.value })}
-                  />
+                  <Input label="Total Premium" required type="number" value={form.premium.totalPremium} error={errors.totalPremium} onChange={(v:any) => patchPremium({ totalPremium: Number(v) })} />
+                  <Input label="Comm. Amount" type="number" value={form.premium.commissionableAmount} onChange={(v:any) => patchPremium({ commissionableAmount: Number(v) })} />
+                  <Input label="Entry (%)" type="number" value={form.premium.commissionEntry} onChange={(v:any) => patchPremium({ commissionEntry: Number(v) })} />
+                  <Input label="Commitment" type="number" value={form.premium.commitmentAmount} onChange={(v:any) => patchPremium({ commitmentAmount: Number(v) })} />
                 </div>
               </Section>
 
-              {/* PAYMENT */}
               <Section icon={<CreditCard size={14} />} title="Payment Details">
-                <div className="grid grid-cols-12 gap-4 items-end">
-                  <div className="col-span-3">
-                    <Select label="Paid By Client" options={PAID_BY_OPTIONS} value={form.payment.paidByClient}
-                      onChange={(v) => patchPayment({ paidByClient: v })} clearable />
-                  </div>
-                  <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Client Payment")} /></div>
-                  <div className="col-span-3">
-                    <Input label="Amount" type="number" value={form.payment.clientAmount}
-                      onChange={(v) => patchPayment({ clientAmount: Number(v) })} />
-                  </div>
-                  <div className="col-span-3">
-                    <Select label="Paid By Agent" options={PAID_BY_OPTIONS} value={form.payment.paidByAgent}
-                      onChange={(v) => patchPayment({ paidByAgent: v })} clearable />
-                  </div>
-                  <div className="col-span-1"><AddBtn onClick={() => toast.success("Add Agent Payment")} /></div>
-                  <div className="col-span-1">
-                    <Input label="Amount" type="number" value={form.payment.agentAmount}
-                      onChange={(v) => patchPayment({ agentAmount: Number(v) })} />
-                  </div>
+                <div className="grid grid-cols-12 gap-4 items-start">
+                  <div className="col-span-3"><Select label="Paid By Client" options={PAID_BY_OPTIONS} value={form.payment.paidByClient} onChange={(v:any) => patchPayment({ paidByClient: v })} /></div>
+                  <div className="col-span-3"><Input label="Client Amount" type="number" value={form.payment.clientAmount} onChange={(v:any) => patchPayment({ clientAmount: Number(v) })} /></div>
+                  <div className="col-span-3"><Select label="Paid By Agent" options={PAID_BY_OPTIONS} value={form.payment.paidByAgent} onChange={(v:any) => patchPayment({ paidByAgent: v })} /></div>
+                  <div className="col-span-3"><Input label="Agent Amount" type="number" value={form.payment.agentAmount} onChange={(v:any) => patchPayment({ agentAmount: Number(v) })} /></div>
                 </div>
               </Section>
-
             </div>
           )}
         </div>
 
         {/* FOOTER */}
-        <div className="px-8 py-5 bg-white border-t flex justify-between items-center shrink-0">
+        <div className="px-8 py-5 bg-white border-t flex justify-between shrink-0">
           <div className="flex gap-3">
-            <button disabled={isPending} onClick={handleSave}
-              className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded shadow-md disabled:opacity-50 transition-all">
+            <button disabled={isPending} onClick={handleSave} className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded disabled:opacity-50 transition-all">
               {isPending ? "Saving..." : "SAVE"}
             </button>
-            <button onClick={onClose} disabled={isPending}
-              className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded shadow-md transition-all">
+            <button
+              onClick={() => {
+                setErrors({});
+                setForm(makeInitial());
+                setMemberInput("");
+                onClose();
+              }}
+              className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded"
+            >
               CANCEL
             </button>
           </div>
           <div className="flex gap-3">
             {activeTab !== "customer" && (
-              <button onClick={() => setActiveTab(activeTab === "premium" ? "policy" : "customer")}
-                className="px-6 py-2.5 text-sm font-bold text-white bg-red-400 hover:bg-red-500 rounded transition-all">
-                Previous
-              </button>
+              <button onClick={() => setActiveTab(activeTab === "premium" ? "policy" : "customer")} className="px-6 py-2.5 text-sm font-bold text-white bg-red-400 rounded">Previous</button>
             )}
             {activeTab !== "premium" && (
-              <button onClick={() => setActiveTab(activeTab === "customer" ? "policy" : "premium")}
-                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-500 hover:bg-blue-600 rounded flex items-center gap-1.5 transition-all">
-                Next <ChevronRight size={16} />
-              </button>
+              <button onClick={() => setActiveTab(activeTab === "customer" ? "policy" : "premium")} className="px-6 py-2.5 text-sm font-bold text-white bg-blue-500 rounded flex items-center gap-1.5">Next <ChevronRight size={16} /></button>
             )}
           </div>
         </div>
@@ -813,22 +994,27 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: Props) => {
 export default PolicyUpsertSheet;
 
 /* ─── SHARED HELPERS ─────────────────────────────────────────── */
-
-const Section = ({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
-  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
-      <div className="p-1.5 bg-white/10 rounded">{icon}</div>
-      <h3 className="font-bold uppercase tracking-wider text-[10px]">{title}</h3>
+const Section = ({ icon, title, children }: any) => (
+  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-4">
+    <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 text-white">
+      <div className="p-1 bg-white/10 rounded">{icon}</div>
+      <h3 className="font-bold uppercase tracking-wider text-[10px] leading-none">{title}</h3>
     </div>
-    <div className="p-6 space-y-5">{children}</div>
+    <div className="p-4 space-y-3">{children}</div>
   </section>
 );
 
-const AddBtn = ({ onClick }: { onClick: () => void }) => (
-  <button onClick={onClick}
-    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded transition-colors">
-    Add
-  </button>
+const AddBtn = ({ onClick }: any) => (
+  <div className="space-y-1.5 w-full">
+    <label className="text-[10px] font-bold uppercase invisible">Add</label>
+    <button
+      onClick={onClick}
+      className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded"
+    >
+      Add
+    </button>
+    <p className="h-4 text-[10px] invisible">error</p>
+  </div>
 );
 
 const Input = ({
@@ -845,7 +1031,7 @@ const Input = ({
   className = "",
   suffix
 }: any) => (
-  <div className="space-y-1.5 w-full">
+  <div className="space-y-0.5 w-full">
     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
@@ -867,12 +1053,10 @@ const Input = ({
         onChange={(e) => onChange(e.target.value)}
       />
       {suffix && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-          {suffix}
-        </div>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">{suffix}</div>
       )}
     </div>
-    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
+    <p className="text-[10px] font-medium text-red-500">{error || ""}</p>
   </div>
 );
 
@@ -887,7 +1071,7 @@ const Select = ({
   labelKey = "name",
   error,
 }: any) => (
-  <div className="space-y-1.5 w-full">
+  <div className="space-y-0.5 w-full">
     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
@@ -904,13 +1088,11 @@ const Select = ({
       >
         <option value="">Select</option>
         {options?.map((o: any) => (
-          <option key={o[valueKey]} value={o[valueKey]}>
-            {o[labelKey]}
-          </option>
+          <option key={o[valueKey]} value={o[valueKey]}>{o[labelKey]}</option>
         ))}
       </select>
       <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
     </div>
-    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
+    <p className="text-[10px] font-medium text-red-500">{error || ""}</p>
   </div>
 );

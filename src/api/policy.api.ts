@@ -1,19 +1,15 @@
 import { CustomerDropdown } from "../interfaces/customer.interface";
-import type { AgencyDropdown, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UpsertPolicyPayload, UserDropdown } from "../interfaces/policy.interface";
+import type { AgencyDropdown, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UserDropdown } from "../interfaces/policy.interface";
 import axios from "./axios";
 import api from "./axios";
 
 /*   UPSERT POLICY   */
 
-export const upsertPolicyApi = async (formData: FormData) => {
-  const res = await api.post("/policy/upsert", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+export const upsertPolicyApi = async (payload: any) => {
+  // Since the backend uses [FromBody], we send a plain JSON object
+  const res = await api.post("/GeneralPolicy/add", payload);
   return res.data;
 };
-
 
 /*   GET POLICIES   */
 
