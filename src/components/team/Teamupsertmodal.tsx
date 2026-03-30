@@ -1,10 +1,9 @@
 // src/components/teams/TeamUpsertModal.tsx
 import { useState, useEffect } from "react";
 import { X, Save, Loader2, Users } from "lucide-react";
-import { Team, TeamUpsertModalProps } from "../../interfaces/team.interface";
+import { TeamUpsertModalProps } from "../../interfaces/team.interface";
 import { useCreateTeam, useUpdateTeam } from "../../hooks/team/useTeamMutation";
 import TeamMultiSelect from "./Teammultiselect";
-import { usePermissions } from "../../context/PermissionContext"; // ✅ ADDED
 
 const TeamUpsertModal = ({
   open,
@@ -13,11 +12,6 @@ const TeamUpsertModal = ({
   userOptions,
 }: TeamUpsertModalProps) => {
   const isEdit = !!team;
-
-  const { hasPermission } = usePermissions(); // ✅ ADDED
-
-  const canCreate = hasPermission("team", "add");
-  const canEdit = hasPermission("team", "edit");
 
   const createTeam = useCreateTeam();
   const updateTeam = useUpdateTeam();
@@ -51,10 +45,6 @@ const TeamUpsertModal = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ PERMISSION GUARD (important security layer)
-    if (isEdit && !canEdit) return;
-    if (!isEdit && !canCreate) return;
-
     if (!validate()) return;
 
     if (isEdit) {
@@ -73,9 +63,6 @@ const TeamUpsertModal = ({
   const isLoading = createTeam.isPending || updateTeam.isPending;
 
   if (!open) return null;
-
-  // ✅ user cannot access modal action
-  const canSubmit = isEdit ? canEdit : canCreate;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -117,13 +104,11 @@ const TeamUpsertModal = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Design Team, Sales East..."
-              disabled={!canSubmit}
               className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 transition
                 ${errors.name
                   ? "border-red-400 focus:ring-red-400"
                   : "border-slate-300 focus:ring-blue-500"
                 }
-                ${!canSubmit ? "bg-slate-50 text-slate-400" : ""}
               `}
             />
 
@@ -146,11 +131,9 @@ const TeamUpsertModal = ({
 
               <button
                 type="button"
-                disabled={!canSubmit}
                 onClick={() => setIsActive((p) => !p)}
                 className={`relative w-11 h-6 rounded-full transition-colors duration-200
                   ${isActive ? "bg-blue-600" : "bg-slate-300"}
-                  ${!canSubmit ? "opacity-50 cursor-not-allowed" : ""}
                 `}
               >
                 <span
@@ -194,7 +177,7 @@ const TeamUpsertModal = ({
 
             <button
               type="submit"
-              disabled={isLoading || !canSubmit}
+              disabled={isLoading}
               className="flex-1 px-4 py-2.5 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading ? (

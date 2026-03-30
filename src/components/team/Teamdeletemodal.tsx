@@ -1,19 +1,12 @@
-// src/components/teams/TeamDeleteModal.tsx
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { useDeleteTeam } from "../../hooks/team/useTeamMutation";
 import { TeamDeleteModalProps } from "../../interfaces/team.interface";
-import { usePermissions } from "../../context/PermissionContext"; // ✅ ADDED
 
 const TeamDeleteModal = ({ open, team, onClose }: TeamDeleteModalProps) => {
-  const { hasPermission } = usePermissions(); // ✅ ADDED
-  const canDelete = hasPermission("team", "delete");
-
   const deleteTeam = useDeleteTeam();
 
   const handleConfirm = () => {
-    // ✅ Permission Guard (important security layer)
     if (!team) return;
-    if (!canDelete) return;
 
     deleteTeam.mutate(team.id, { onSuccess: onClose });
   };
@@ -73,7 +66,7 @@ const TeamDeleteModal = ({ open, team, onClose }: TeamDeleteModalProps) => {
 
             <button
               onClick={handleConfirm}
-              disabled={deleteTeam.isPending || !canDelete} // ✅ Protected
+              disabled={deleteTeam.isPending}
               className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {deleteTeam.isPending ? (

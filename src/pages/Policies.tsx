@@ -190,7 +190,7 @@ onClear={clearAllFilters}
 {/*   POLICY UPSERT   */}
 <PolicyUpsertSheet
 open={openPolicySheet}
-policy={selectedPolicy}
+// policy={selectedPolicy}
 onClose={() => {
 setOpenPolicySheet(false);
 setSelectedPolicy(null);

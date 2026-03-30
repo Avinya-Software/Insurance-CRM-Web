@@ -1,4 +1,3 @@
-// src/components/teams/TeamMembersDrawer.tsx
 import { useState } from "react";
 import {
   X,
@@ -17,7 +16,6 @@ import {
   useRemoveTeamMember,
 } from "../../hooks/team/useTeamMutation";
 import TeamMultiSelect from "./Teammultiselect";
-import { usePermissions } from "../../context/PermissionContext"; // ✅ ADDED
 
 const TeamMembersDrawer = ({
   open,
@@ -25,9 +23,6 @@ const TeamMembersDrawer = ({
   team,
   userOptions,
 }: TeamMembersDrawerProps) => {
-  const { hasPermission } = usePermissions(); // ✅ ADDED
-  const canUpdateTeam = hasPermission("team", "edit");
-
   const [addIds, setAddIds] = useState<string[]>([]);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
@@ -42,10 +37,9 @@ const TeamMembersDrawer = ({
 
   const existingUserIds = members.map((m) => m.userId);
 
-  // ✅ Protected Add Members
+  /* ✅ Add Members (no permission check) */
   const handleAddMembers = () => {
     if (!team || addIds.length === 0) return;
-    if (!canUpdateTeam) return;
 
     const addNext = (index: number) => {
       if (index >= addIds.length) return;
@@ -64,10 +58,9 @@ const TeamMembersDrawer = ({
     addNext(0);
   };
 
-  // ✅ Protected Remove Member
+  /* ✅ Remove Member (no permission check) */
   const handleRemove = (memberId: string) => {
     if (!team) return;
-    if (!canUpdateTeam) return;
 
     removeMember.mutate(
       { teamId: team.id, memberId },
@@ -120,13 +113,12 @@ const TeamMembersDrawer = ({
             onChange={setAddIds}
             placeholder="Search users to add..."
             excludeIds={existingUserIds}
-            disabled={!canUpdateTeam} // ✅ protected UI
           />
 
           {addIds.length > 0 && (
             <button
               onClick={handleAddMembers}
-              disabled={addMember.isPending || !canUpdateTeam}
+              disabled={addMember.isPending}
               className="mt-2.5 w-full px-4 py-2 bg-blue-900 text-white rounded-lg text-sm font-medium hover:bg-blue-800 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {addMember.isPending ? (
@@ -188,44 +180,38 @@ const TeamMembersDrawer = ({
                   </div>
 
                   {/* Remove Controls */}
-                  {canUpdateTeam && (
-                    <>
-                      {confirmRemoveId === member.memberId ? (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs text-red-600 font-medium">
-                            Remove?
-                          </span>
+                  {confirmRemoveId === member.memberId ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-red-600 font-medium">
+                        Remove?
+                      </span>
 
-                          <button
-                            onClick={() => handleRemove(member.userId)}
-                            disabled={removeMember.isPending}
-                            className="p-1 bg-red-100 hover:bg-red-200 rounded-lg text-red-600"
-                          >
-                            {removeMember.isPending ? (
-                              <Loader2 size={13} className="animate-spin" />
-                            ) : (
-                              <CheckCircle size={13} />
-                            )}
-                          </button>
+                      <button
+                        onClick={() => handleRemove(member.userId)}
+                        disabled={removeMember.isPending}
+                        className="p-1 bg-red-100 hover:bg-red-200 rounded-lg text-red-600"
+                      >
+                        {removeMember.isPending ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <CheckCircle size={13} />
+                        )}
+                      </button>
 
-                          <button
-                            onClick={() => setConfirmRemoveId(null)}
-                            className="p-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-500"
-                          >
-                            <XCircle size={13} />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            setConfirmRemoveId(member.memberId)
-                          }
-                          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition"
-                        >
-                          <UserMinus size={14} />
-                        </button>
-                      )}
-                    </>
+                      <button
+                        onClick={() => setConfirmRemoveId(null)}
+                        className="p-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-500"
+                      >
+                        <XCircle size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmRemoveId(member.memberId)}
+                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <UserMinus size={14} />
+                    </button>
                   )}
                 </div>
               ))}
