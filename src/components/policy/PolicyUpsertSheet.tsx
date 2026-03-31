@@ -9,24 +9,24 @@ import { useUpsertPolicy } from "../../hooks/policy/useUpsertPolicy";
 type TabType = "customer" | "policy" | "premium";
 
 /* ─── OPTION LISTS ──────────────────────────────────────────── */
-const FAMILY_GROUP_OPTIONS   = [{ id: "1", name: "Family Group A" }];
-const HOLDER_OPTIONS         = [{ id: "2", name: "Anant Jaiswal" }];
+const FAMILY_GROUP_OPTIONS   = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Family Group A" }];
+const HOLDER_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Anant Jaiswal" }];
 const GENDER_OPTIONS         = [{ id: "Male", name: "Male" }, { id: "Female", name: "Female" }, { id: "Other", name: "Other" }];
 const RELATION_OPTIONS       = [{ id: "Self", name: "Self" }, { id: "Spouse", name: "Spouse" }, { id: "Son", name: "Son" }, { id: "Daughter", name: "Daughter" }, { id: "Father", name: "Father" }, { id: "Mother", name: "Mother" }];
 const DIVISION_OPTIONS       = [{ id: "Health", name: "Health Insurance" }, { id: "OtherGeneral", name: "Other General Insurance" }, { id: "Vehicle", name: "Vehicle Insurance" }];
-const SEGMENT_OPTIONS        = [{ id: "1", name: "Critical Illness" }, { id: "2", name: "Individual" }];
+const SEGMENT_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Critical Illness" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Individual" }];
 const POLICY_TYPE_OPTIONS    = [{ id: "FamilyFloter", name: "Family Floter" }, { id: "Package", name: "Package Policy" }];
-const COMPANY_OPTIONS        = [{ id: "1", name: "Acko General Insurance Limited" }, { id: "2", name: "Bajaj General" }];
-const BRANCH_OPTIONS         = [{ id: "1", name: "Althan" }];
-const PRODUCT_OPTIONS        = [{ id: "1", name: "Product X" }];
+const COMPANY_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Acko General Insurance Limited" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Bajaj General" }];
+const BRANCH_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Althan" }];
+const PRODUCT_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Product X" }];
 const ZONE_OPTIONS           = [{ id: "Zone I", name: "Zone I" }, { id: "Zone II", name: "Zone II" }];
-const POLICY_MODE_OPTIONS    = [{ id: "Yearly", name: "Yearly" }, { id: "HalfYearly", name: "Half Yearly" }, { id: "Quarterly", name: "Quarterly" }, { id: "Monthly", name: "Monthly" }];
+const POLICY_MODE_OPTIONS    = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Yearly" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Half Yearly" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Quarterly" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Monthly" }];
 const OPT_COVER_OPTIONS      = [{ id: "NoClaim", name: "No Claim Bonus Protection" }, { id: "PA", name: "Personal Accident" }];
 const ADD_ON_OPTIONS         = [{ id: "ZeroDepreciation", name: "Zero Depreciation" }, { id: "RoadsideAssist", name: "Roadside Assistance" }];
-const BROKER_OPTIONS         = [{ id: "1", name: "Rajeshbhai" }];
-const AGENCY_OPTIONS         = [{ id: "1", name: "Jk" }];
-const SUB_AGENT_OPTIONS      = [{ id: "1", name: "Seni" }];
-const NOMINEE_OPTIONS        = [{ id: "1", name: "Anant Jaiswal" }];
+const BROKER_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Rajeshbhai" }];
+const AGENCY_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Jk" }];
+const SUB_AGENT_OPTIONS      = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Seni" }];
+const NOMINEE_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Anant Jaiswal" }];
 const PAID_BY_OPTIONS        = [{ id: "Cash", name: "Cash" }, { id: "Online", name: "Online" }, { id: "Cheque", name: "Cheque" }];
 const VEHICLE_USE_OPTIONS    = [{ id: "Private", name: "Private" }, { id: "Commercial", name: "Commercial" }];
 const VEHICLE_CLASS_OPTIONS  = [{ id: "Misc", name: "Miscellaneous" }, { id: "2W", name: "Two Wheeler" }, { id: "4W", name: "Four Wheeler" }];
@@ -34,7 +34,7 @@ const FUEL_TYPE_OPTIONS      = [{ id: "Petrol", name: "Petrol" }, { id: "Diesel"
 const RTO_OPTIONS            = [{ id: "GJ05", name: "GJ-05 Surat" }];
 const NCB_OPTIONS            = [{ id: "0", name: "0%" }, { id: "20", name: "20%" }, { id: "25", name: "25%" }, { id: "35", name: "35%" }];
 const TP_MODE_OPTIONS        = [{ id: "Yearly", name: "Yearly" }, { id: "2Year", name: "2 Years" }, { id: "3Year", name: "3 Years" }];
-const BANK_OPTIONS           = [{ id: "1", name: "SBI Bank" }, { id: "2", name: "HDFC Bank" }];
+const BANK_OPTIONS           = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "SBI Bank" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "HDFC Bank" }];
 
 /* ─── INITIAL FORM ──────────────────────────────────────────── */
 const makeInitial = () => ({
@@ -172,62 +172,159 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
   const validateForm = () => {
     const newErrors: any = {};
-
-    // Customer
+  
+    // Common validations
     if (!form.familyGroupId) newErrors.familyGroupId = "Family Group is required";
     if (!form.policyHolderId) newErrors.policyHolderId = "Policy Holder Name is required";
-
-    // Policy
-    if (!form.detail.divisionType) newErrors.divisionType = "Select Division is required";
-    if (!form.detail.segmentId) newErrors.segmentId = "Select Segment is required";
-    if (!form.detail.insuranceCompanyId) newErrors.insuranceCompanyId = "Insurance Company is required";
-    if (!form.detail.policyModeId) newErrors.policyModeId = "Policy Mode is required";
-    if (!form.detail.riskStartDate) newErrors.riskStartDate = "Risk Start Date is required";
-    if (!form.detail.riskEndDate) newErrors.riskEndDate = "Risk End Date is required";
-
-    // Broker / Agency
-    if (!form.detail.brokerId) newErrors.brokerId = "Select Broker is required";
-    if (!form.detail.agencyId) newErrors.agencyId = "Select Agency Name is required";
-
-    // Vehicle Required Fields
-    if (isVehicle) {
-      if (!form.vehicle.vehicleNumber) newErrors.vehicleNumber = "Vehicle Registration Number is required";
-      if (!form.detail.tpPolicyMode) newErrors.tpPolicyMode = "TP Policy Mode is required";
-      if (!form.detail.tpDueDate) newErrors.tpDueDate = "TP Due Date is required";
-      if (!form.vehicle.vehicleName) newErrors.vehicleName = "Vehicle Name is required";
-      if (!form.vehicle.fuelType) newErrors.fuelType = "Fuel Type is required";
-      if (!form.vehicle.rto) newErrors.rto = "RTO is required";
-      if (!form.vehicle.cc) newErrors.cc = "CC is required";
-      if (!form.vehicle.gvw) newErrors.gvw = "GVW is required";
-      if (!form.vehicle.ncb) newErrors.ncb = "NCB is required";
-
-      if (!form.premium.idvValue || form.premium.idvValue <= 0) {
-        newErrors.idvValue = "IDV Value is required";
-      }
-      if (!form.premium.basicPremium || form.premium.basicPremium <= 0) {
-        newErrors.basicPremium = "Basic Premium Amount is required";
-      }
-      if (!form.premium.tpaPremium || form.premium.tpaPremium <= 0) {
-        newErrors.tpaPremium = "TPA Premium Amount is required";
-      }
-      if (!form.premium.totalPremium || form.premium.totalPremium <= 0) {
-        newErrors.totalPremium = "Total Premium Amount is required";
-      }
+  
+    if (!form.detail.divisionType) {
+      newErrors.divisionType = "Select Division is required";
+    }
+  
+    if (!form.detail.segmentId) {
+      newErrors.segmentId = "Select Segment is required";
+    }
+  
+    if (!form.detail.insuranceCompanyId) {
+      newErrors.insuranceCompanyId = "Insurance Company is required";
+    }
+  
+    if (!form.detail.policyModeId) {
+      newErrors.policyModeId = "Policy Mode is required";
+    }
+  
+    if (!form.detail.riskStartDate) {
+      newErrors.riskStartDate = "Risk Start Date is required";
+    }
+  
+    if (!form.detail.riskEndDate) {
+      newErrors.riskEndDate = "Risk End Date is required";
     }
 
-    // Health / Other
-    if (!isVehicle) {
+    if (!form.detail.brokerId) {
+      newErrors.brokerId = "Broker is required";
+    }
+    
+    if (!form.detail.agencyId) {
+      newErrors.agencyId = "Agency is required";
+    }
+
+    // Health Validation
+    if (isHealth) {
+  
+      if (form.members.length === 0) {
+        newErrors.members = "At least one family member is required";
+      }
+  
       if (!form.premium.sumAssured || form.premium.sumAssured <= 0) {
         newErrors.sumAssured = "Sum Assured is required";
       }
+  
       if (!form.premium.basicPremium || form.premium.basicPremium <= 0) {
-        newErrors.basicPremium = "Basic Premium Amount is required";
+        newErrors.basicPremium = "Basic Premium is required";
       }
+  
       if (!form.premium.totalPremium || form.premium.totalPremium <= 0) {
-        newErrors.totalPremium = "Total Premium Amount is required";
+        newErrors.totalPremium = "Total Premium is required";
       }
     }
-
+  
+    // Other General Validation
+    if (isOther) {
+      if (!form.detail.policyType) {
+        newErrors.policyType = "Policy Type is required";
+      }
+  
+      if (form.riskLocations.length === 0) {
+        newErrors.riskLocations = "At least one risk location is required";
+      }
+  
+      form.riskLocations.forEach((loc, index) => {
+        if (!loc.sumAssured || loc.sumAssured <= 0) {
+          newErrors[`riskSumAssured_${index}`] = "Sum Assured is required";
+        }
+  
+        if (!loc.riskAddress) {
+          newErrors[`riskAddress_${index}`] = "Risk Address is required";
+        }
+      });
+  
+      if (!form.premium.sumAssured || form.premium.sumAssured <= 0) {
+        newErrors.sumAssured = "Sum Assured is required";
+      }
+  
+      if (!form.premium.basicPremium || form.premium.basicPremium <= 0) {
+        newErrors.basicPremium = "Basic Premium is required";
+      }
+  
+      if (!form.premium.totalPremium || form.premium.totalPremium <= 0) {
+        newErrors.totalPremium = "Total Premium is required";
+      }
+    }
+  
+    // Vehicle Validation
+    if (isVehicle) {
+      if (!form.detail.vehicleUse) {
+        newErrors.vehicleUse = "Vehicle Use is required";
+      }
+  
+      if (!form.detail.vehicleClass) {
+        newErrors.vehicleClass = "Vehicle Class is required";
+      }
+  
+      if (!form.vehicle.vehicleNumber) {
+        newErrors.vehicleNumber = "Vehicle Registration Number is required";
+      }
+  
+      if (!form.vehicle.vehicleName) {
+        newErrors.vehicleName = "Vehicle Name is required";
+      }
+  
+      if (!form.vehicle.fuelType) {
+        newErrors.fuelType = "Fuel Type is required";
+      }
+  
+      if (!form.vehicle.rto) {
+        newErrors.rto = "RTO is required";
+      }
+  
+      if (!form.vehicle.cc) {
+        newErrors.cc = "CC is required";
+      }
+  
+      if (!form.vehicle.gvw) {
+        newErrors.gvw = "GVW is required";
+      }
+  
+      if (!form.vehicle.ncb) {
+        newErrors.ncb = "NCB is required";
+      }
+  
+      if (!form.detail.tpPolicyMode) {
+        newErrors.tpPolicyMode = "TP Policy Mode is required";
+      }
+  
+      if (!form.detail.tpDueDate) {
+        newErrors.tpDueDate = "TP Due Date is required";
+      }
+  
+      if (!form.premium.idvValue || form.premium.idvValue <= 0) {
+        newErrors.idvValue = "IDV Value is required";
+      }
+  
+      if (!form.premium.basicPremium || form.premium.basicPremium <= 0) {
+        newErrors.basicPremium = "Basic Premium is required";
+      }
+  
+      if (!form.premium.tpaPremium || form.premium.tpaPremium <= 0) {
+        newErrors.tpaPremium = "TPA Premium is required";
+      }
+  
+      if (!form.premium.totalPremium || form.premium.totalPremium <= 0) {
+        newErrors.totalPremium = "Total Premium is required";
+      }
+    }
+  
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -348,8 +445,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 registerDate: form.vehicle.registerDate || null,
                 manufactureYear: Number(form.vehicle.manufactureYear) || 0,
                 rto: form.vehicle.rto || "",
-                cc: Number(form.vehicle.cc) || 0,
-                gvw: Number(form.vehicle.gvw) || 0,
+                cc: form.vehicle.cc,
+                gvw: form.vehicle.gvw,
                 ncb: form.vehicle.ncb || "",
                 fitnessCertificate: Boolean(form.vehicle.fitnessCertificate),
                 bhSeries: Boolean(form.vehicle.bhSeries)
@@ -563,11 +660,11 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 {isVehicle && (
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-3">
-                      <Select label="Vehicle Uses" options={VEHICLE_USE_OPTIONS} value={form.detail.vehicleUse}
+                      <Select label="Vehicle Uses" options={VEHICLE_USE_OPTIONS} value={form.detail.vehicleUse}   error={errors.vehicleUse}
                         onChange={(v:any) => patchDetail({ vehicleUse: v })} />
                     </div>
                     <div className="col-span-3">
-                      <Select label="Vehicle Class" options={VEHICLE_CLASS_OPTIONS} value={form.detail.vehicleClass}
+                      <Select label="Vehicle Class" options={VEHICLE_CLASS_OPTIONS} value={form.detail.vehicleClass}  error={errors.vehicleClass}
                         onChange={(v:any) => patchDetail({ vehicleClass: v })} />
                     </div>
                     <div className="col-span-5">
@@ -600,6 +697,42 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                     <Select label="Zone" options={ZONE_OPTIONS} value={form.detail.zone}
                       onChange={(v:any) => patchDetail({ zone: v })} />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-12 gap-4 items-start">
+                  <div className="col-span-3">
+                    <Select
+                      label="Select Broker"
+                      required
+                      options={BROKER_OPTIONS}
+                      value={form.detail.brokerId}
+                      error={errors.brokerId}
+                      onChange={(v: any) => patchDetail({ brokerId: v })}
+                    />
+                  </div>
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+
+                  <div className="col-span-3">
+                    <Select
+                      label="Select Agency Name"
+                      required
+                      options={AGENCY_OPTIONS}
+                      value={form.detail.agencyId}
+                      error={errors.agencyId}
+                      onChange={(v: any) => patchDetail({ agencyId: v })}
+                    />
+                  </div>
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+
+                  <div className="col-span-3">
+                    <Select
+                      label="Select Sub Agent Name"
+                      options={SUB_AGENT_OPTIONS}
+                      value={form.detail.subAgentId}
+                      onChange={(v: any) => patchDetail({ subAgentId: v })}
+                    />
+                  </div>
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                 </div>
                 
                 {isOther && (
@@ -742,9 +875,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
                 {isVehicle && (
                   <div className="grid grid-cols-2 gap-4">
-                    <Select label="TP Policy Mode" required options={TP_MODE_OPTIONS} value={form.detail.tpPolicyMode}
+                    <Select label="TP Policy Mode" required options={TP_MODE_OPTIONS} value={form.detail.tpPolicyMode}  error={errors.tpPolicyMode}
                       onChange={(v:any) => patchDetail({ tpPolicyMode: v })} />
-                    <Input label="TP Due Date" required type="date" value={form.detail.tpDueDate}
+                    <Input label="TP Due Date" required type="date" value={form.detail.tpDueDate}   error={errors.tpDueDate}
                       onChange={(v:any) => patchDetail({ tpDueDate: v })} />
                   </div>
                 )}
