@@ -700,7 +700,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 </div>
 
                 <div className="grid grid-cols-12 gap-4 items-start">
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <Select
                       label="Select Broker"
                       required
@@ -710,8 +710,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                       onChange={(v: any) => patchDetail({ brokerId: v })}
                     />
                   </div>
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
 
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <Select
                       label="Select Agency Name"
                       required
@@ -721,8 +722,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                       onChange={(v: any) => patchDetail({ agencyId: v })}
                     />
                   </div>
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
 
-                  <div className="col-span-4">
+                  <div className="col-span-3">
                     <Select
                       label="Select Sub Agent Name"
                       options={SUB_AGENT_OPTIONS}
@@ -730,6 +732,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                       onChange={(v: any) => patchDetail({ subAgentId: v })}
                     />
                   </div>
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                 </div>
                 
                 {isOther && (
