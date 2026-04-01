@@ -148,6 +148,74 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
     }
   }, [open]);
 
+  useEffect(() => {
+    if (policy && open) {
+      setForm({
+        type: policy.type || "Fresh",
+        transactionDate: policy.transactionDate?.split("T")[0] || "",
+        documentNumber: policy.documentNumber || "",
+        familyGroupId: policy.familyGroupId || "",
+        policyHolderId: policy.policyHolderId || "",
+        firstName: policy.firstName || "",
+        middleName: policy.middleName || "",
+        lastName: policy.lastName || "",
+        addressLine1: policy.addressLine1 || "",
+        addressLine2: policy.addressLine2 || "",
+        city: policy.city || "",
+        area: policy.area || "",
+        mobileNumber: policy.mobileNumber || "",
+        gender: policy.gender || "",
+        email: policy.email || "",
+        dob: policy.dob?.split("T")[0] || "",
+        relationWithHead: policy.relationWithHead || "Self",
+        detail: {
+          divisionType: policy.detail?.divisionType || "Health",
+          segmentId: policy.detail?.segmentId || "",
+          policyType: policy.detail?.policyType || "",
+          insuranceCompanyId: policy.detail?.insuranceCompanyId || "",
+          branchId: policy.detail?.branchId || "",
+          productId: policy.detail?.productId || "",
+          zone: policy.detail?.zone || "",
+          optionalCover: typeof policy.detail?.optionalCover === "string" ? policy.detail.optionalCover.split(",").filter(Boolean) : [],
+          addOns: typeof policy.detail?.addOns === "string" ? policy.detail.addOns.split(",").filter(Boolean) : [],
+          isPolicyReceived: policy.detail?.isPolicyReceived || false,
+          currentPolicyNumber: policy.detail?.currentPolicyNumber || "",
+          previousPolicyNumber: policy.detail?.previousPolicyNumber || "",
+          policyModeId: policy.detail?.policyModeId || "",
+          riskStartDate: policy.detail?.riskStartDate?.split("T")[0] || "",
+          riskEndDate: policy.detail?.riskEndDate?.split("T")[0] || "",
+          brokerId: policy.detail?.brokerId || "",
+          agencyId: policy.detail?.agencyId || "",
+          subAgentId: policy.detail?.subAgentId || "",
+          nomineeName: policy.detail?.nomineeName || "",
+          nomineeContact: policy.detail?.nomineeContact || "",
+          remarks: policy.detail?.remarks || "",
+          vehicleUse: policy.detail?.vehicleUse || "",
+          vehicleClass: policy.detail?.vehicleClass || "",
+          tpPolicyMode: policy.detail?.tpPolicyMode || "",
+          tpDueDate: policy.detail?.tpDueDate?.split("T")[0] || "",
+          bankId: policy.detail?.bankId || "",
+        },
+        members: policy.members?.map((m: any) => ({ 
+          memberId: m.memberId, 
+          memberName: m.memberName 
+        })) || [],
+        riskLocations: policy.riskLocations || [],
+        vehicle: policy.vehicle ? {
+          ...policy.vehicle,
+          registerDate: policy.vehicle.registerDate?.split("T")[0] || "",
+          manufactureYear: String(policy.vehicle.manufactureYear || "")
+        } : makeInitial().vehicle,
+        premium: {
+          ...policy.premium
+        },
+        payment: {
+          ...policy.payment
+        }
+      });
+    }
+  }, [policy, open]);
+
   const patchDetail  = (patch: any) => setForm(f => ({ ...f, detail:  { ...f.detail,  ...patch } }));
   const patchVehicle = (patch: any) => setForm(f => ({ ...f, vehicle: { ...f.vehicle, ...patch } }));
   const patchPremium = (patch: any) => setForm(f => ({ ...f, premium: { ...f.premium, ...patch } }));
@@ -341,7 +409,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
       const STATIC_GUID = "88888888-8888-8888-8888-888888888888";
       const division = form.detail.divisionType;
 
-      const payload = {
+      const payload: any = {
+        policyId: policy?.policyId || undefined,
         type: form.type,
         transactionDate: form.transactionDate || null,
         documentNumber: form.documentNumber || "",
@@ -565,7 +634,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Input label="Transaction Date" required type="date" value={form.transactionDate}
                   onChange={(v:any) => setForm(f => ({ ...f, transactionDate: v }))} />
                 <Input label="Document Number" value={form.documentNumber} placeholder="Document number"

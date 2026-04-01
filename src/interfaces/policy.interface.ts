@@ -420,6 +420,7 @@ export interface IGeneralPolicy {
   city: string;
   area: string;
   divisionType: string;
+  createdat: string
   detail: {
     id: string;
     policyId: string;
@@ -527,4 +528,4 @@ export interface GeneralPolicyFilters {
   endDate?: string;
   page: number;
   pageSize: number;
-}
+}

@@ -140,12 +140,13 @@ const { data: statuses = [] } = useQuery({
             <Th>Premium</Th>
             <Th>Risk Start</Th>
             <Th>Risk End</Th>
+            <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
         {loading ? (
-          <TableSkeleton rows={6} columns={12} />
+          <TableSkeleton rows={6} columns={13} />
         ) : (
           <tbody>
             {data.length === 0 ? (
@@ -196,7 +197,9 @@ const { data: statuses = [] } = useQuery({
                   <Td className="whitespace-nowrap font-medium text-slate-600">
                     {p.detail?.riskEndDate?.split("T")[0]}
                   </Td>
-
+                  <Td className="whitespace-nowrap font-medium text-slate-600">
+                    {p.createdat?.split("T")[0] || p.transactionDate?.split("T")[0] || "-"}
+                  </Td>      
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, p)}
