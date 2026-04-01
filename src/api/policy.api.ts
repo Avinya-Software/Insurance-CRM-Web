@@ -218,3 +218,8 @@ export const updateGeneralPolicyApi = async (policyId: string, payload: any) => 
   const res = await api.put(`/GeneralPolicy/update/${policyId}`, payload);
   return res.data;
 };
+
+export const deleteGeneralPolicyApi = async (policyId: string) => {
+  const res = await api.delete(`/GeneralPolicy/delete/${policyId}`);
+  return res.data;
+};
