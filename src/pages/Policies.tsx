@@ -8,7 +8,7 @@ import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
 import RenewalUpsertSheet from "../components/renewal/RenewalUpsertSheet";
 import PolicyFilterSheet from "../components/policy/PolicyFilterSheet";
 import Pagination from "../components/leads/Pagination";
-import type { GeneralPolicyFilters } from "../interfaces/policy.interface";
+import type { GeneralPolicyFilters, IGeneralPolicy } from "../interfaces/policy.interface";
 
 const DEFAULT_FILTERS: GeneralPolicyFilters = {
   page: 1,
@@ -34,7 +34,8 @@ const Policies = () => {
   const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
   const { data, isLoading, isFetching } = useGeneralPolicies(filters);
-
+const [editPolicy, setEditPolicy] = useState<IGeneralPolicy | null>(null);
+const [sheetOpen, setSheetOpen] = useState(false);
 /*   HELPERS   */
 
 const hasActiveFilters =
@@ -153,12 +154,15 @@ Filters
 </div>
 
 {/*   TABLE   */}
-<PolicyTable
-data={data?.data ?? []}
-loading={isLoading || isFetching}
-onEdit={handleEditPolicy}
-onRenewal={handleCreateRenewal}
-/>
+        <PolicyTable
+          data={data?.data ?? []}
+          loading={isLoading || isFetching}
+          onEdit={(p) => {
+            setSelectedPolicy(p);
+            setOpenPolicySheet(true);
+          }}
+          onRenewal={handleCreateRenewal}
+        />
 
 {/*   PAGINATION   */}
 <div className="border-t px-4 py-3">
@@ -185,15 +189,15 @@ onClear={clearAllFilters}
 />
 
 {/*   POLICY UPSERT   */}
-<PolicyUpsertSheet
-open={openPolicySheet}
-// policy={selectedPolicy}
-onClose={() => {
-setOpenPolicySheet(false);
-setSelectedPolicy(null);
-}}
-onSuccess={handlePolicySuccess}
-/>
+      <PolicyUpsertSheet
+        open={openPolicySheet}
+        policy={selectedPolicy}
+        onClose={() => {
+          setOpenPolicySheet(false);
+          setSelectedPolicy(null);
+        }}
+        onSuccess={handlePolicySuccess}
+      />
 
 {/*   RENEWAL UPSERT   */}
 <RenewalUpsertSheet

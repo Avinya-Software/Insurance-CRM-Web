@@ -213,3 +213,8 @@ export const getGeneralPoliciesApi = async (params: GeneralPolicyFilters): Promi
   const res = await api.get<GeneralPolicyResponse>("/GeneralPolicy/filter", { params });
   return res.data;
 };
+
+export const updateGeneralPolicyApi = async (policyId: string, payload: any) => {
+  const res = await api.put(`/GeneralPolicy/update/${policyId}`, payload);
+  return res.data;
+};

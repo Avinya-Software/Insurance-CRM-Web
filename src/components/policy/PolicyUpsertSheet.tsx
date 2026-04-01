@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { useUpsertPolicy } from "../../hooks/policy/useUpsertPolicy";
+import { useUpdateGeneralPolicy } from "../../hooks/policy/useUpdateGeneralPolicy";
 
 type TabType = "customer" | "policy" | "premium";
 
@@ -121,6 +122,18 @@ const makeInitial = () => ({
   },
 });
 
+/* ─── HELPER: merge real API id+name into a static option list ── */
+const mergeOption = (
+  staticList: { id: string; name: string }[],
+  realId?: string,
+  realName?: string
+) => {
+  if (!realId || !realName) return staticList;
+  const already = staticList.some((o) => o.id === realId);
+  if (already) return staticList;
+  return [{ id: realId, name: realName }, ...staticList];
+};
+
 /* ─── COMPONENT ─────────────────────────────────────────────── */
 const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
   const [activeTab, setActiveTab]     = useState<TabType>("customer");
@@ -128,12 +141,84 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
   const [memberInput, setMemberInput] = useState("");
   const [errors, setErrors] = useState<any>({});
 
-  const { mutateAsync, isPending } = useUpsertPolicy();
+  const { mutateAsync: addPolicy, isPending: isAdding } = useUpsertPolicy();
+  const { mutateAsync: updatePolicy, isPending: isUpdating } = useUpdateGeneralPolicy();
+
+  const isPending = isAdding || isUpdating;
 
   const isHealth  = form.detail.divisionType === "Health";
   const isVehicle = form.detail.divisionType === "Vehicle";
   const isOther   = form.detail.divisionType === "OtherGeneral";
 
+  /* ─── DYNAMIC OPTION LISTS (inject real API ids so selects can match) ─── */
+  const dynamicFamilyGroups = mergeOption(
+    FAMILY_GROUP_OPTIONS,
+    policy?.familyGroupId,
+    policy?.familyGroupName
+  );
+
+  const dynamicHolders = mergeOption(
+    HOLDER_OPTIONS,
+    policy?.policyHolderId,
+    policy?.policyHolderName ||
+      `${policy?.firstName || ""} ${policy?.lastName || ""}`.trim() || undefined
+  );
+
+  const dynamicSegments = mergeOption(
+    SEGMENT_OPTIONS,
+    policy?.detail?.segmentId,
+    policy?.detail?.segmentName
+  );
+
+  const dynamicCompanies = mergeOption(
+    COMPANY_OPTIONS,
+    policy?.detail?.insuranceCompanyId,
+    policy?.detail?.insuranceCompanyName
+  );
+
+  const dynamicBranches = mergeOption(
+    BRANCH_OPTIONS,
+    policy?.detail?.branchId,
+    policy?.detail?.branchName
+  );
+
+  const dynamicProducts = mergeOption(
+    PRODUCT_OPTIONS,
+    policy?.detail?.productId,
+    policy?.detail?.productName
+  );
+
+  const dynamicPolicyModes = mergeOption(
+    POLICY_MODE_OPTIONS,
+    policy?.detail?.policyModeId,
+    policy?.detail?.policyModeName
+  );
+
+  const dynamicBrokers = mergeOption(
+    BROKER_OPTIONS,
+    policy?.detail?.brokerId,
+    policy?.detail?.brokerName
+  );
+
+  const dynamicAgencies = mergeOption(
+    AGENCY_OPTIONS,
+    policy?.detail?.agencyId,
+    policy?.detail?.agencyName
+  );
+
+  const dynamicSubAgents = mergeOption(
+    SUB_AGENT_OPTIONS,
+    policy?.detail?.subAgentId,
+    policy?.detail?.subAgentName
+  );
+
+  const dynamicBanks = mergeOption(
+    BANK_OPTIONS,
+    policy?.detail?.bankId,
+    policy?.detail?.bankName
+  );
+
+  /* ─── EFFECTS ───────────────────────────────────────────────── */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
     return () => { document.body.style.overflow = "unset"; };
@@ -148,6 +233,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
     }
   }, [open]);
 
+  /* ─── PREFILL FORM WHEN EDITING ─────────────────────────────── */
   useEffect(() => {
     if (policy && open) {
       setForm({
@@ -169,16 +255,27 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
         dob: policy.dob?.split("T")[0] || "",
         relationWithHead: policy.relationWithHead || "Self",
         detail: {
-          divisionType: policy.detail?.divisionType || "Health",
+          divisionType:
+            policy.detail?.divisionType || policy.divisionType || "Health",
           segmentId: policy.detail?.segmentId || "",
           policyType: policy.detail?.policyType || "",
           insuranceCompanyId: policy.detail?.insuranceCompanyId || "",
           branchId: policy.detail?.branchId || "",
           productId: policy.detail?.productId || "",
           zone: policy.detail?.zone || "",
-          optionalCover: typeof policy.detail?.optionalCover === "string" ? policy.detail.optionalCover.split(",").filter(Boolean) : [],
-          addOns: typeof policy.detail?.addOns === "string" ? policy.detail.addOns.split(",").filter(Boolean) : [],
-          isPolicyReceived: policy.detail?.isPolicyReceived || false,
+          optionalCover:
+            typeof policy.detail?.optionalCover === "string"
+              ? policy.detail.optionalCover.split(",").filter(Boolean)
+              : Array.isArray(policy.detail?.optionalCover)
+              ? policy.detail.optionalCover
+              : [],
+          addOns:
+            typeof policy.detail?.addOns === "string"
+              ? policy.detail.addOns.split(",").filter(Boolean)
+              : Array.isArray(policy.detail?.addOns)
+              ? policy.detail.addOns
+              : [],
+          isPolicyReceived: Boolean(policy.detail?.isPolicyReceived),
           currentPolicyNumber: policy.detail?.currentPolicyNumber || "",
           previousPolicyNumber: policy.detail?.previousPolicyNumber || "",
           policyModeId: policy.detail?.policyModeId || "",
@@ -196,22 +293,48 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
           tpDueDate: policy.detail?.tpDueDate?.split("T")[0] || "",
           bankId: policy.detail?.bankId || "",
         },
-        members: policy.members?.map((m: any) => ({ 
-          memberId: m.memberId, 
-          memberName: m.memberName 
-        })) || [],
+        members:
+          policy.members?.map((m: any) => ({
+            memberId: m.memberId,
+            memberName: m.memberName,
+          })) || [],
         riskLocations: policy.riskLocations || [],
-        vehicle: policy.vehicle ? {
-          ...policy.vehicle,
-          registerDate: policy.vehicle.registerDate?.split("T")[0] || "",
-          manufactureYear: String(policy.vehicle.manufactureYear || "")
-        } : makeInitial().vehicle,
+        vehicle: policy.vehicle
+          ? {
+              vehicleNumber: policy.vehicle.vehicleNumber || "",
+              vehicleName: policy.vehicle.vehicleName || "",
+              engineNo: policy.vehicle.engineNo || "",
+              chassisNo: policy.vehicle.chassisNo || "",
+              brand: policy.vehicle.brand || "",
+              fuelType: policy.vehicle.fuelType || "",
+              registerDate: policy.vehicle.registerDate?.split("T")[0] || "",
+              manufactureYear: String(policy.vehicle.manufactureYear || ""),
+              rto: policy.vehicle.rto || "",
+              cc: policy.vehicle.cc || "",
+              gvw: policy.vehicle.gvw || "",
+              ncb: policy.vehicle.ncb || "",
+              fitnessCertificate: Boolean(policy.vehicle.fitnessCertificate),
+              bhSeries: Boolean(policy.vehicle.bhSeries),
+            }
+          : makeInitial().vehicle,
         premium: {
-          ...policy.premium
+          sumAssured: policy.premium?.sumAssured || 0,
+          idvValue: policy.premium?.idvValue || 0,
+          basicPremium: policy.premium?.basicPremium || 0,
+          tpaPremium: policy.premium?.tpaPremium || 0,
+          taxAmount: policy.premium?.taxAmount || 0,
+          totalPremium: policy.premium?.totalPremium || 0,
+          isCommission: Boolean(policy.premium?.isCommission),
+          commissionableAmount: policy.premium?.commissionableAmount || 0,
+          commissionEntry: policy.premium?.commissionEntry || 0,
+          commitmentAmount: policy.premium?.commitmentAmount || 0,
         },
         payment: {
-          ...policy.payment
-        }
+          paidByClient: policy.payment?.paidByClient || "",
+          clientAmount: policy.payment?.clientAmount || 0,
+          paidByAgent: policy.payment?.paidByAgent || "",
+          agentAmount: policy.payment?.agentAmount || 0,
+        },
       });
     }
   }, [policy, open]);
@@ -557,9 +680,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
       console.log("Final Payload => ", payload);
 
-      const response = await mutateAsync(payload);
-
-      toast.success(response?.statusMessage || "Policy saved successfully!");
+      if (policy?.policyId) {
+        const response = await updatePolicy({ policyId: policy.policyId, payload });
+        toast.success(response?.statusMessage || "Policy updated successfully!");
+      } else {
+        const response = await addPolicy(payload);
+        toast.success(response?.statusMessage || "Policy saved successfully!");
+      }
 
       onClose();
       onSuccess();
@@ -594,8 +721,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-600 rounded-lg"><ShieldCheck size={20} className="text-white" /></div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900">{policy ? "Edit General Policy" : "Add General Policy"}</h2>
-              <p className="text-slate-500 text-xs mt-0.5">Fill in the details to {policy ? "update" : "create"} the insurance policy.</p>
+              <h2 className="text-xl font-bold text-slate-900">
+                {policy ? "Edit General Policy" : "Add General Policy"}
+              </h2>
+              <p className="text-slate-500 text-xs mt-0.5">
+                Fill in the details to {policy ? "update" : "create"} the insurance policy.
+              </p>
             </div>
           </div>
           <button onClick={onClose} disabled={isPending} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
@@ -626,9 +757,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 <div className="flex items-center gap-8">
                   {["Fresh","Prospect","Renewal","Endorsement"].map(t => (
                     <label key={t} className="flex items-center gap-2 cursor-pointer text-sm font-medium text-slate-700">
-                      <input type="radio" checked={form.type === t}
+                      <input
+                        type="radio"
+                        checked={form.type === t}
                         onChange={() => setForm(f => ({ ...f, type: t }))}
-                        className="w-4 h-4 accent-blue-600" />{t}
+                        className="w-4 h-4 accent-blue-600"
+                      />
+                      {t}
                     </label>
                   ))}
                 </div>
@@ -646,7 +781,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                   <Select
                     label="Family Group"
                     required
-                    options={FAMILY_GROUP_OPTIONS}
+                    options={dynamicFamilyGroups}
                     value={form.familyGroupId}
                     error={errors.familyGroupId}
                     onChange={(v:any) => setForm(f => ({ ...f, familyGroupId: v }))}
@@ -654,8 +789,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 </div>
                 <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                 <div className="col-span-5">
-                  <Select label="Policy Holder Name" required options={HOLDER_OPTIONS} value={form.policyHolderId} error={errors.policyHolderId}
-                    onChange={(v:any) => setForm(f => ({ ...f, policyHolderId: v }))} />
+                  <Select
+                    label="Policy Holder Name"
+                    required
+                    options={dynamicHolders}
+                    value={form.policyHolderId}
+                    error={errors.policyHolderId}
+                    onChange={(v:any) => setForm(f => ({ ...f, policyHolderId: v }))}
+                  />
                 </div>
                 <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
               </div>
@@ -693,21 +834,37 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-4">
-                    <Select label="Select Division" required options={DIVISION_OPTIONS} value={form.detail.divisionType} error={errors.divisionType}
-                      onChange={(v:any) => patchDetail({ divisionType: v })} />
+                    <Select
+                      label="Select Division"
+                      required
+                      options={DIVISION_OPTIONS}
+                      value={form.detail.divisionType}
+                      error={errors.divisionType}
+                      onChange={(v:any) => patchDetail({ divisionType: v })}
+                    />
                   </div>
                 </div>
 
                 {isHealth && (
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-6">
-                      <Select label="Select Segment" required options={SEGMENT_OPTIONS} value={form.detail.segmentId} error={errors.segmentId}
-                        onChange={(v:any) => patchDetail({ segmentId: v })} />
+                      <Select
+                        label="Select Segment"
+                        required
+                        options={dynamicSegments}
+                        value={form.detail.segmentId}
+                        error={errors.segmentId}
+                        onChange={(v:any) => patchDetail({ segmentId: v })}
+                      />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                     <div className="col-span-5">
-                      <Select label="Policy Type" options={POLICY_TYPE_OPTIONS} value={form.detail.policyType}
-                        onChange={(v:any) => patchDetail({ policyType: v })} />
+                      <Select
+                        label="Policy Type"
+                        options={POLICY_TYPE_OPTIONS}
+                        value={form.detail.policyType}
+                        onChange={(v:any) => patchDetail({ policyType: v })}
+                      />
                     </div>
                   </div>
                 )}
@@ -715,13 +872,23 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 {isOther && (
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-6">
-                      <Select label="Select Segment" required options={SEGMENT_OPTIONS} value={form.detail.segmentId} error={errors.segmentId}
-                        onChange={(v:any) => patchDetail({ segmentId: v })} />
+                      <Select
+                        label="Select Segment"
+                        required
+                        options={dynamicSegments}
+                        value={form.detail.segmentId}
+                        error={errors.segmentId}
+                        onChange={(v:any) => patchDetail({ segmentId: v })}
+                      />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                     <div className="col-span-5">
-                      <Select label="Policy Type" options={POLICY_TYPE_OPTIONS} value={form.detail.policyType}
-                        onChange={(v:any) => patchDetail({ policyType: v })} />
+                      <Select
+                        label="Policy Type"
+                        options={POLICY_TYPE_OPTIONS}
+                        value={form.detail.policyType}
+                        onChange={(v:any) => patchDetail({ policyType: v })}
+                      />
                     </div>
                   </div>
                 )}
@@ -729,16 +896,32 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 {isVehicle && (
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-3">
-                      <Select label="Vehicle Uses" options={VEHICLE_USE_OPTIONS} value={form.detail.vehicleUse}   error={errors.vehicleUse}
-                        onChange={(v:any) => patchDetail({ vehicleUse: v })} />
+                      <Select
+                        label="Vehicle Uses"
+                        options={VEHICLE_USE_OPTIONS}
+                        value={form.detail.vehicleUse}
+                        error={errors.vehicleUse}
+                        onChange={(v:any) => patchDetail({ vehicleUse: v })}
+                      />
                     </div>
                     <div className="col-span-3">
-                      <Select label="Vehicle Class" options={VEHICLE_CLASS_OPTIONS} value={form.detail.vehicleClass}  error={errors.vehicleClass}
-                        onChange={(v:any) => patchDetail({ vehicleClass: v })} />
+                      <Select
+                        label="Vehicle Class"
+                        options={VEHICLE_CLASS_OPTIONS}
+                        value={form.detail.vehicleClass}
+                        error={errors.vehicleClass}
+                        onChange={(v:any) => patchDetail({ vehicleClass: v })}
+                      />
                     </div>
                     <div className="col-span-5">
-                      <Select label="Select Segment" required options={SEGMENT_OPTIONS} value={form.detail.segmentId} error={errors.segmentId}
-                        onChange={(v:any) => patchDetail({ segmentId: v })} />
+                      <Select
+                        label="Select Segment"
+                        required
+                        options={dynamicSegments}
+                        value={form.detail.segmentId}
+                        error={errors.segmentId}
+                        onChange={(v:any) => patchDetail({ segmentId: v })}
+                      />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                   </div>
@@ -746,25 +929,43 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-6">
-                    <Select label="Select Insurance Company" required options={COMPANY_OPTIONS}
-                      value={form.detail.insuranceCompanyId} error={errors.insuranceCompanyId} onChange={(v:any) => patchDetail({ insuranceCompanyId: v })} />
+                    <Select
+                      label="Select Insurance Company"
+                      required
+                      options={dynamicCompanies}
+                      value={form.detail.insuranceCompanyId}
+                      error={errors.insuranceCompanyId}
+                      onChange={(v:any) => patchDetail({ insuranceCompanyId: v })}
+                    />
                   </div>
                   <div className="col-span-4">
-                    <Select label="Select Branch" options={BRANCH_OPTIONS} value={form.detail.branchId}
-                      onChange={(v:any) => patchDetail({ branchId: v })} />
+                    <Select
+                      label="Select Branch"
+                      options={dynamicBranches}
+                      value={form.detail.branchId}
+                      onChange={(v:any) => patchDetail({ branchId: v })}
+                    />
                   </div>
                   <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-5">
-                    <Select label="Product Name" options={PRODUCT_OPTIONS} value={form.detail.productId}
-                      onChange={(v:any) => patchDetail({ productId: v })} />
+                    <Select
+                      label="Product Name"
+                      options={dynamicProducts}
+                      value={form.detail.productId}
+                      onChange={(v:any) => patchDetail({ productId: v })}
+                    />
                   </div>
                   <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                   <div className="col-span-6">
-                    <Select label="Zone" options={ZONE_OPTIONS} value={form.detail.zone}
-                      onChange={(v:any) => patchDetail({ zone: v })} />
+                    <Select
+                      label="Zone"
+                      options={ZONE_OPTIONS}
+                      value={form.detail.zone}
+                      onChange={(v:any) => patchDetail({ zone: v })}
+                    />
                   </div>
                 </div>
 
@@ -773,7 +974,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                     <Select
                       label="Select Broker"
                       required
-                      options={BROKER_OPTIONS}
+                      options={dynamicBrokers}
                       value={form.detail.brokerId}
                       error={errors.brokerId}
                       onChange={(v: any) => patchDetail({ brokerId: v })}
@@ -785,7 +986,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                     <Select
                       label="Select Agency Name"
                       required
-                      options={AGENCY_OPTIONS}
+                      options={dynamicAgencies}
                       value={form.detail.agencyId}
                       error={errors.agencyId}
                       onChange={(v: any) => patchDetail({ agencyId: v })}
@@ -796,14 +997,15 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                   <div className="col-span-3">
                     <Select
                       label="Select Sub Agent Name"
-                      options={SUB_AGENT_OPTIONS}
+                      options={dynamicSubAgents}
                       value={form.detail.subAgentId}
                       onChange={(v: any) => patchDetail({ subAgentId: v })}
                     />
                   </div>
                   <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                 </div>
-                
+
+                {/* ── OPTIONAL COVER (OtherGeneral) ── */}
                 {isOther && (
                   <div className="space-y-0.5 w-full">
                     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
@@ -823,20 +1025,22 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                           <button onClick={() => toggleMulti("optionalCover", v)} className="ml-1 text-slate-400 hover:text-red-500">✕</button>
                         </span>
                       ))}
-                      <select className="flex-1 min-w-[200px] text-sm outline-none bg-transparent"
-                        value="" onChange={e => { if (e.target.value) toggleMulti("optionalCover", e.target.value); }}>
+                      <select
+                        className="flex-1 min-w-[200px] text-sm outline-none bg-transparent"
+                        value=""
+                        onChange={e => { if (e.target.value) toggleMulti("optionalCover", e.target.value); }}
+                      >
                         <option value="">Search for optional cover</option>
                         {OPT_COVER_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
                       </select>
                     </div>
-                    {/* Always reserve error space — same as Input/Select */}
                     <p className="text-[10px] font-medium text-red-500">
                       {errors.optionalCover || ""}
                     </p>
                   </div>
                 )}
 
-                {/* ── OPTIONAL COVER (Health) ── FIXED: label now matches Input/Select exactly */}
+                {/* ── OPTIONAL COVER (Health) ── */}
                 {isHealth && (
                   <div className="space-y-0.5 w-full">
                     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
@@ -856,20 +1060,22 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                           <button onClick={() => toggleMulti("optionalCover", v)} className="ml-1 text-slate-400 hover:text-red-500">✕</button>
                         </span>
                       ))}
-                      <select className="flex-1 min-w-[200px] text-sm outline-none bg-transparent"
-                        value="" onChange={e => { if (e.target.value) toggleMulti("optionalCover", e.target.value); }}>
+                      <select
+                        className="flex-1 min-w-[200px] text-sm outline-none bg-transparent"
+                        value=""
+                        onChange={e => { if (e.target.value) toggleMulti("optionalCover", e.target.value); }}
+                      >
                         <option value="">Search for optional cover</option>
                         {OPT_COVER_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
                       </select>
                     </div>
-                    {/* Always reserve error space — same as Input/Select */}
                     <p className="text-[10px] font-medium text-red-500">
                       {errors.optionalCover || ""}
                     </p>
                   </div>
                 )}
 
-                {/* ── ADD ONS (Vehicle) ── FIXED: label now matches Input/Select exactly */}
+                {/* ── ADD ONS (Vehicle) ── */}
                 {isVehicle && (
                   <div className="space-y-0.5 w-full">
                     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
@@ -911,7 +1117,6 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                         ))}
                       </select>
                     </div>
-                    {/* Always reserve error space — same as Input/Select */}
                     <p className="text-[10px] font-medium text-red-500">
                       {errors.addOns || ""}
                     </p>
@@ -920,42 +1125,88 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-2 flex items-center gap-2 pb-2.5">
-                    <input type="checkbox" id="isPolicyReceived" checked={form.detail.isPolicyReceived}
+                    <input
+                      type="checkbox"
+                      id="isPolicyReceived"
+                      checked={form.detail.isPolicyReceived}
                       onChange={e => patchDetail({ isPolicyReceived: e.target.checked })}
-                      className="w-4 h-4 accent-blue-600 rounded" />
+                      className="w-4 h-4 accent-blue-600 rounded"
+                    />
                     <label htmlFor="isPolicyReceived" className="text-sm font-medium">Is Received</label>
                   </div>
                   <div className="col-span-5">
-                    <Input label="Current Policy Number" value={form.detail.currentPolicyNumber} onChange={(v:any) => patchDetail({ currentPolicyNumber: v })} />
+                    <Input
+                      label="Current Policy Number"
+                      value={form.detail.currentPolicyNumber}
+                      onChange={(v:any) => patchDetail({ currentPolicyNumber: v })}
+                    />
                   </div>
                   <div className="col-span-5">
-                    <Input label="Previous Policy Number" value={form.detail.previousPolicyNumber} onChange={(v:any) => patchDetail({ previousPolicyNumber: v })} />
+                    <Input
+                      label="Previous Policy Number"
+                      value={form.detail.previousPolicyNumber}
+                      onChange={(v:any) => patchDetail({ previousPolicyNumber: v })}
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  <Select label="Policy Mode" required options={POLICY_MODE_OPTIONS} value={form.detail.policyModeId} error={errors.policyModeId}
-                    onChange={(v:any) => patchDetail({ policyModeId: v })} />
-                  <Input label="Risk Start Date" required type="date" value={form.detail.riskStartDate} error={errors.riskStartDate}
-                    onChange={(v:any) => patchDetail({ riskStartDate: v })} />
-                  <Input label="Risk End Date" required type="date" value={form.detail.riskEndDate} error={errors.riskEndDate}
-                    onChange={(v:any) => patchDetail({ riskEndDate: v })} />
+                  <Select
+                    label="Policy Mode"
+                    required
+                    options={dynamicPolicyModes}
+                    value={form.detail.policyModeId}
+                    error={errors.policyModeId}
+                    onChange={(v:any) => patchDetail({ policyModeId: v })}
+                  />
+                  <Input
+                    label="Risk Start Date"
+                    required
+                    type="date"
+                    value={form.detail.riskStartDate}
+                    error={errors.riskStartDate}
+                    onChange={(v:any) => patchDetail({ riskStartDate: v })}
+                  />
+                  <Input
+                    label="Risk End Date"
+                    required
+                    type="date"
+                    value={form.detail.riskEndDate}
+                    error={errors.riskEndDate}
+                    onChange={(v:any) => patchDetail({ riskEndDate: v })}
+                  />
                 </div>
 
                 {isVehicle && (
                   <div className="grid grid-cols-2 gap-4">
-                    <Select label="TP Policy Mode" required options={TP_MODE_OPTIONS} value={form.detail.tpPolicyMode}  error={errors.tpPolicyMode}
-                      onChange={(v:any) => patchDetail({ tpPolicyMode: v })} />
-                    <Input label="TP Due Date" required type="date" value={form.detail.tpDueDate}   error={errors.tpDueDate}
-                      onChange={(v:any) => patchDetail({ tpDueDate: v })} />
+                    <Select
+                      label="TP Policy Mode"
+                      required
+                      options={TP_MODE_OPTIONS}
+                      value={form.detail.tpPolicyMode}
+                      error={errors.tpPolicyMode}
+                      onChange={(v:any) => patchDetail({ tpPolicyMode: v })}
+                    />
+                    <Input
+                      label="TP Due Date"
+                      required
+                      type="date"
+                      value={form.detail.tpDueDate}
+                      error={errors.tpDueDate}
+                      onChange={(v:any) => patchDetail({ tpDueDate: v })}
+                    />
                   </div>
                 )}
 
                 {(isOther || isVehicle) && (
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-10">
-                      <Select label="Select Bank Name" options={BANK_OPTIONS} value={form.detail.bankId}
-                        onChange={(v:any) => patchDetail({ bankId: v })} />
+                      <Select
+                        label="Select Bank Name"
+                        options={dynamicBanks}
+                        value={form.detail.bankId}
+                        onChange={(v:any) => patchDetail({ bankId: v })}
+                      />
                     </div>
                     <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
                   </div>
@@ -965,37 +1216,95 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                   <div className="space-y-3">
                     <div className="grid grid-cols-12 gap-4 items-start">
                       <div className="col-span-10">
-                        <Input label="Select Family Member" value={memberInput} onChange={(v:any) => setMemberInput(v)} />
+                        <Input
+                          label="Select Family Member"
+                          value={memberInput}
+                          onChange={(v:any) => setMemberInput(v)}
+                        />
                       </div>
                       <div className="col-span-2">
-                        <button onClick={addMember} className="w-full py-2.5 bg-blue-600 text-white text-sm font-bold rounded">+ Add</button>
+                        <div className="space-y-0.5 w-full">
+                          <label className="text-sm font-bold uppercase tracking-wider text-[10px] invisible block">Spacer</label>
+                          <button
+                            onClick={addMember}
+                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded transition-all h-[42px] flex items-center justify-center shadow-sm"
+                          >
+                            + Add
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {form.members.map((m, i) => (
-                        <span key={i} className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-200">
-                          {m.memberName}
-                          <button onClick={() => setForm(f => ({ ...f, members: f.members.filter((_, idx) => idx !== i) }))} className="hover:text-red-500">✕</button>
-                        </span>
-                      ))}
-                    </div>
+                    {form.members.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {form.members.map((m, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-200"
+                          >
+                            {m.memberName}
+                            <button
+                              onClick={() => setForm(f => ({ ...f, members: f.members.filter((_, idx) => idx !== i) }))}
+                              className="hover:text-red-500"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {isOther && (
                   <div className="space-y-3">
-                    <button onClick={addRiskRow} className="py-2 px-4 bg-blue-600 text-white text-sm font-bold rounded flex items-center gap-2"><Plus size={14}/> Add Risk Row</button>
+                    <div className="flex items-end gap-3">
+                      <button
+                        onClick={addRiskRow}
+                        className="h-[42px] px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded flex items-center gap-2 transition-all shadow-sm"
+                      >
+                        <Plus size={14}/> Add Risk Row
+                      </button>
+                    </div>
+                    {errors.riskLocations && (
+                      <p className="text-[10px] font-medium text-red-500">{errors.riskLocations}</p>
+                    )}
                     {form.riskLocations.map((loc, i) => (
                       <div key={i} className="grid grid-cols-12 gap-3 items-center">
-                        <div className="col-span-1"><Input label="No" value={loc.srNo} disabled onChange={()=>{}}/></div>
-                        <div className="col-span-3"><Input label="Sum Assured" value={loc.sumAssured} error={errors.sumAssured} type="number" onChange={(v:any)=> {
-                          const updated = [...form.riskLocations]; updated[i].sumAssured = Number(v); setForm(f=>({...f, riskLocations: updated}))
-                        }}/></div>
-                        <div className="col-span-7"><Input label="Address" value={loc.riskAddress} onChange={(v:any)=>{
-                          const updated = [...form.riskLocations]; updated[i].riskAddress = v; setForm(f=>({...f, riskLocations: updated}))
-                        }}/></div>
+                        <div className="col-span-1">
+                          <Input label="No" value={loc.srNo} disabled onChange={()=>{}}/>
+                        </div>
+                        <div className="col-span-3">
+                          <Input
+                            label="Sum Assured"
+                            value={loc.sumAssured}
+                            error={errors[`riskSumAssured_${i}`]}
+                            type="number"
+                            onChange={(v:any)=> {
+                              const updated = [...form.riskLocations];
+                              updated[i].sumAssured = Number(v);
+                              setForm(f=>({...f, riskLocations: updated}));
+                            }}
+                          />
+                        </div>
+                        <div className="col-span-7">
+                          <Input
+                            label="Address"
+                            value={loc.riskAddress}
+                            error={errors[`riskAddress_${i}`]}
+                            onChange={(v:any)=>{
+                              const updated = [...form.riskLocations];
+                              updated[i].riskAddress = v;
+                              setForm(f=>({...f, riskLocations: updated}));
+                            }}
+                          />
+                        </div>
                         <div className="col-span-1 flex justify-center pt-5">
-                          <button onClick={() => setForm(f => ({ ...f, riskLocations: f.riskLocations.filter((_, idx) => idx !== i) }))} className="text-red-500"><Trash2 size={16} /></button>
+                          <button
+                            onClick={() => setForm(f => ({ ...f, riskLocations: f.riskLocations.filter((_, idx) => idx !== i) }))}
+                            className="text-red-500"
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -1134,27 +1443,111 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
               <Section icon={<Activity size={14} />} title="Premium Details">
                 <div className="grid grid-cols-4 gap-4">
                   {isVehicle
-                    ? <Input label="IDV Value" required type="number" value={form.premium.idvValue} onChange={(v:any) => patchPremium({ idvValue: Number(v) })} />
-                    : <Input label="Sum Assured" required type="number" value={form.premium.sumAssured} error={errors.sumAssured} onChange={(v:any) => patchPremium({ sumAssured: Number(v) })} />
+                    ? <Input
+                        label="IDV Value"
+                        required
+                        type="number"
+                        value={form.premium.idvValue}
+                        error={errors.idvValue}
+                        onChange={(v:any) => patchPremium({ idvValue: Number(v) })}
+                      />
+                    : <Input
+                        label="Sum Assured"
+                        required
+                        type="number"
+                        value={form.premium.sumAssured}
+                        error={errors.sumAssured}
+                        onChange={(v:any) => patchPremium({ sumAssured: Number(v) })}
+                      />
                   }
-                  <Input label="Basic Premium" required type="number" value={form.premium.basicPremium} error={errors.basicPremium} onChange={(v:any) => patchPremium({ basicPremium: Number(v) })} />
-                  {isVehicle && <Input label="Tpa Premium" type="number" value={form.premium.tpaPremium} onChange={(v:any) => patchPremium({ tpaPremium: Number(v) })} />}
-                  <Input label="Tax Amount" type="number" value={form.premium.taxAmount} onChange={(v:any) => patchPremium({ taxAmount: Number(v) })} />
+                  <Input
+                    label="Basic Premium"
+                    required
+                    type="number"
+                    value={form.premium.basicPremium}
+                    error={errors.basicPremium}
+                    onChange={(v:any) => patchPremium({ basicPremium: Number(v) })}
+                  />
+                  {isVehicle && (
+                    <Input
+                      label="Tpa Premium"
+                      type="number"
+                      value={form.premium.tpaPremium}
+                      error={errors.tpaPremium}
+                      onChange={(v:any) => patchPremium({ tpaPremium: Number(v) })}
+                    />
+                  )}
+                  <Input
+                    label="Tax Amount"
+                    type="number"
+                    value={form.premium.taxAmount}
+                    onChange={(v:any) => patchPremium({ taxAmount: Number(v) })}
+                  />
                 </div>
                 <div className="grid grid-cols-4 gap-4">
-                  <Input label="Total Premium" required type="number" value={form.premium.totalPremium} error={errors.totalPremium} onChange={(v:any) => patchPremium({ totalPremium: Number(v) })} />
-                  <Input label="Comm. Amount" type="number" value={form.premium.commissionableAmount} onChange={(v:any) => patchPremium({ commissionableAmount: Number(v) })} />
-                  <Input label="Entry (%)" type="number" value={form.premium.commissionEntry} onChange={(v:any) => patchPremium({ commissionEntry: Number(v) })} />
-                  <Input label="Commitment" type="number" value={form.premium.commitmentAmount} onChange={(v:any) => patchPremium({ commitmentAmount: Number(v) })} />
+                  <Input
+                    label="Total Premium"
+                    required
+                    type="number"
+                    value={form.premium.totalPremium}
+                    error={errors.totalPremium}
+                    onChange={(v:any) => patchPremium({ totalPremium: Number(v) })}
+                  />
+                  <Input
+                    label="Comm. Amount"
+                    type="number"
+                    value={form.premium.commissionableAmount}
+                    onChange={(v:any) => patchPremium({ commissionableAmount: Number(v) })}
+                  />
+                  <Input
+                    label="Entry (%)"
+                    type="number"
+                    value={form.premium.commissionEntry}
+                    onChange={(v:any) => patchPremium({ commissionEntry: Number(v) })}
+                  />
+                  <Input
+                    label="Commitment"
+                    type="number"
+                    value={form.premium.commitmentAmount}
+                    onChange={(v:any) => patchPremium({ commitmentAmount: Number(v) })}
+                  />
                 </div>
               </Section>
 
               <Section icon={<CreditCard size={14} />} title="Payment Details">
                 <div className="grid grid-cols-12 gap-4 items-start">
-                  <div className="col-span-3"><Select label="Paid By Client" options={PAID_BY_OPTIONS} value={form.payment.paidByClient} onChange={(v:any) => patchPayment({ paidByClient: v })} /></div>
-                  <div className="col-span-3"><Input label="Client Amount" type="number" value={form.payment.clientAmount} onChange={(v:any) => patchPayment({ clientAmount: Number(v) })} /></div>
-                  <div className="col-span-3"><Select label="Paid By Agent" options={PAID_BY_OPTIONS} value={form.payment.paidByAgent} onChange={(v:any) => patchPayment({ paidByAgent: v })} /></div>
-                  <div className="col-span-3"><Input label="Agent Amount" type="number" value={form.payment.agentAmount} onChange={(v:any) => patchPayment({ agentAmount: Number(v) })} /></div>
+                  <div className="col-span-3">
+                    <Select
+                      label="Paid By Client"
+                      options={PAID_BY_OPTIONS}
+                      value={form.payment.paidByClient}
+                      onChange={(v:any) => patchPayment({ paidByClient: v })}
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      label="Client Amount"
+                      type="number"
+                      value={form.payment.clientAmount}
+                      onChange={(v:any) => patchPayment({ clientAmount: Number(v) })}
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Select
+                      label="Paid By Agent"
+                      options={PAID_BY_OPTIONS}
+                      value={form.payment.paidByAgent}
+                      onChange={(v:any) => patchPayment({ paidByAgent: v })}
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      label="Agent Amount"
+                      type="number"
+                      value={form.payment.agentAmount}
+                      onChange={(v:any) => patchPayment({ agentAmount: Number(v) })}
+                    />
+                  </div>
                 </div>
               </Section>
             </div>
@@ -1164,7 +1557,11 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
         {/* FOOTER */}
         <div className="px-8 py-5 bg-white border-t flex justify-between shrink-0">
           <div className="flex gap-3">
-            <button disabled={isPending} onClick={handleSave} className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded disabled:opacity-50 transition-all">
+            <button
+              disabled={isPending}
+              onClick={handleSave}
+              className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded disabled:opacity-50 transition-all"
+            >
               {isPending ? "Saving..." : "SAVE"}
             </button>
             <button
@@ -1181,10 +1578,20 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
           </div>
           <div className="flex gap-3">
             {activeTab !== "customer" && (
-              <button onClick={() => setActiveTab(activeTab === "premium" ? "policy" : "customer")} className="px-6 py-2.5 text-sm font-bold text-white bg-red-400 rounded">Previous</button>
+              <button
+                onClick={() => setActiveTab(activeTab === "premium" ? "policy" : "customer")}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-red-400 rounded"
+              >
+                Previous
+              </button>
             )}
             {activeTab !== "premium" && (
-              <button onClick={() => setActiveTab(activeTab === "customer" ? "policy" : "premium")} className="px-6 py-2.5 text-sm font-bold text-white bg-blue-500 rounded flex items-center gap-1.5">Next <ChevronRight size={16} /></button>
+              <button
+                onClick={() => setActiveTab(activeTab === "customer" ? "policy" : "premium")}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-500 rounded flex items-center gap-1.5"
+              >
+                Next <ChevronRight size={16} />
+              </button>
             )}
           </div>
         </div>
@@ -1207,15 +1614,14 @@ const Section = ({ icon, title, children }: any) => (
 );
 
 const AddBtn = ({ onClick }: any) => (
-  <div className="space-y-1.5 w-full">
-    <label className="text-[10px] font-bold uppercase invisible">Add</label>
+  <div className="space-y-0.5 w-full">
+    <label className="text-sm font-bold uppercase tracking-wider text-[10px] invisible block">Spacer</label>
     <button
       onClick={onClick}
-      className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded"
+      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded shadow-sm transition-all h-[42px] flex items-center justify-center"
     >
       Add
     </button>
-    <p className="h-4 text-[10px] invisible">error</p>
   </div>
 );
 
