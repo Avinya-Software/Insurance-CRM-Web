@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { MoreVertical, X, RefreshCcw, Check } from "lucide-react";
-import type { Policy } from "../../interfaces/policy.interface";
+import type { IGeneralPolicy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
 import { useUpdatePolicyStatus } from "../../hooks/policy/useUpdatePolicyStatus";
@@ -29,10 +29,10 @@ const DROPDOWN_HEIGHT = 260;
 const DROPDOWN_WIDTH = 220;
 
 interface Props {
-  data: Policy[];
+  data: IGeneralPolicy[];
   loading?: boolean;
-  onEdit: (policy: Policy) => void;
-  onRenewal: (policy: Policy) => void;
+  onEdit: (policy: IGeneralPolicy) => void;
+  onRenewal: (policy: IGeneralPolicy) => void;
 }
 
 /*   COMPONENT   */
@@ -43,8 +43,8 @@ const PolicyTable = ({
   onEdit,
   onRenewal,
 }: Props) => {
-  const [openPolicy, setOpenPolicy] = useState<Policy | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<Policy | null>(null);
+  const [openPolicy, setOpenPolicy] = useState<IGeneralPolicy | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<IGeneralPolicy | null>(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
@@ -69,7 +69,7 @@ const { data: statuses = [] } = useQuery({
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
-    policy: Policy
+    policy: IGeneralPolicy
   ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -128,17 +128,18 @@ const { data: statuses = [] } = useQuery({
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
-            <Th>Policy Number</Th>
-            <Th>Customer</Th>
+            <Th>Doc Number</Th>
+            <Th>Type</Th>
+            <Th>Policy Holder</Th>
+            <Th>Mobile</Th>
+            <Th>Gender</Th>
+            <Th>Relation</Th>
+            <Th>Family Group</Th>
+            <Th>Division</Th>
             <Th>Policy Type</Th>
-            <Th>Insurer</Th>
-            <Th>Product</Th>
-            <Th>Policy Status</Th>
-            <Th>Start</Th>
-            <Th>End</Th>
-            <Th>Net Premium</Th>
-            <Th>Gross Premium</Th>
-            <Th>Created Date</Th>
+            <Th>Premium</Th>
+            <Th>Risk Start</Th>
+            <Th>Risk End</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
@@ -149,7 +150,7 @@ const { data: statuses = [] } = useQuery({
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={11} className="text-center py-12 text-slate-500">
+                <td colSpan={15} className="text-center py-12 text-slate-500">
                   No policies found
                 </td>
               </tr>
@@ -159,39 +160,43 @@ const { data: statuses = [] } = useQuery({
                   key={p.policyId}
                   className="border-t h-[52px] hover:bg-slate-50"
                 >
-                  <Td>{p.policyNumber}</Td>
-                  <Td>{p.customerName}</Td>
+                  <Td className="whitespace-nowrap font-medium text-blue-700">
+                    {p.documentNumber}
+                  </Td>
 
                   <Td>
                     <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyTypeStyles[p.policyTypeName] ??
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                        policyTypeStyles[p.type] ??
                         "bg-gray-100 text-gray-600 border-gray-200"
                       }`}
                     >
-                      {p.policyTypeName}
+                      {p.type}
                     </span>
                   </Td>
 
-                  <Td>{p.insurerName}</Td>
-                  <Td>{p.productName}</Td>
-
-                  <Td>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyStatusStyles[p.policyStatusName] ??
-                        "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      {p.policyStatusName}
-                    </span>
+                  <Td className="whitespace-nowrap font-medium text-slate-900">
+                    {p.firstName} {p.middleName} {p.lastName}
                   </Td>
 
-                  <Td>{p.startDate?.split("T")[0]}</Td>
-                  <Td>{p.endDate?.split("T")[0]}</Td>
-                  <Td>{p.premiumNet}</Td>
-                  <Td>{p.premiumGross}</Td>
-                  <Td>{new Date(p.createdAt).toLocaleDateString()}</Td>
+                  <Td>{p.mobileNumber}</Td>
+                  <Td>{p.gender}</Td>
+                  <Td>{p.relationWithHead}</Td>
+                  <Td className="whitespace-nowrap">{p.familyGroupName || "-"}</Td>
+                  <Td className="whitespace-nowrap">{p.divisionType || p.detail?.divisionType}</Td>
+                  <Td className="whitespace-nowrap">{p.detail?.policyType}</Td>
+
+                  <Td className="font-semibold text-green-700 text-right">
+                    ₹{p.premium?.totalPremium?.toLocaleString()}
+                  </Td>
+
+                  <Td className="whitespace-nowrap font-medium text-slate-600">
+                    {p.detail?.riskStartDate?.split("T")[0]}
+                  </Td>
+                  <Td className="whitespace-nowrap font-medium text-slate-600">
+                    {p.detail?.riskEndDate?.split("T")[0]}
+                  </Td>
+
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, p)}
@@ -246,7 +251,7 @@ const { data: statuses = [] } = useQuery({
               {statuses
                 .filter(
                   (s: any) =>
-                    s.policyStatusId !== openPolicy.policyStatusId
+                    s.policyStatusId !== (openPolicy as any).policyStatusId
                 )
                 .map((status: any) => (
                   <button

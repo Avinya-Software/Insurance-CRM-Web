@@ -397,3 +397,134 @@ export interface UpsertLifePolicyPayload {
   riders: Rider[];
   funds: Fund[];
 }
+
+export interface IGeneralPolicy {
+  policyId: string;
+  type: string;
+  transactionDate: string;
+  documentNumber: string;
+  familyGroupId: string;
+  familyGroupName: string;
+  policyHolderId: string;
+  policyHolderName: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  mobileNumber: string;
+  gender: string;
+  email: string;
+  dob: string;
+  relationWithHead: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  area: string;
+  divisionType: string;
+  detail: {
+    id: string;
+    policyId: string;
+    divisionType: string;
+    vehicleUse: string;
+    vehicleClass: string;
+    segmentId: string;
+    segmentName: string;
+    policyType: string;
+    insuranceCompanyId: string;
+    insuranceCompanyName: string;
+    branchId: string;
+    branchName: string;
+    productId: string;
+    productName: string;
+    zone: string;
+    optionalCover: string;
+    addOns: string;
+    isPolicyReceived: boolean;
+    currentPolicyNumber: string;
+    previousPolicyNumber: string;
+    policyModeId: string;
+    policyModeName: string;
+    riskStartDate: string;
+    riskEndDate: string;
+    bankId: string | null;
+    bankName: string;
+    brokerId: string;
+    brokerName: string;
+    agencyId: string;
+    agencyName: string;
+    subAgentId: string;
+    subAgentName: string;
+    nomineeName: string;
+    nomineeContact: string;
+    remarks: string;
+  };
+  members: {
+    id: string;
+    memberId: string;
+    memberName: string;
+    isDeleted: boolean;
+  }[];
+  riskLocations: any[];
+  vehicle: {
+    id: string;
+    policyId: string;
+    vehicleNumber: string;
+    vehicleName: string;
+    engineNo: string;
+    chassisNo: string;
+    brand: string;
+    fuelType: string;
+    registerDate: string | null;
+    manufactureYear: number;
+    rto: string;
+    cc: string;
+    gvw: string;
+    ncb: string;
+    fitnessCertificate: boolean;
+    bhSeries: boolean;
+  };
+  premium: {
+    id: string;
+    policyId: string;
+    idvValue: number;
+    basicPremium: number;
+    tpaPremium: number;
+    tpPolicyMode: string;
+    tpDueDate: string | null;
+    isCommission: boolean;
+    taxAmount: number;
+    totalPremium: number;
+    commissionableAmount: number;
+    commissionEntry: number;
+    commitmentAmount: number;
+    sumAssured: number;
+  };
+  payment: {
+    id: string;
+    policyId: string;
+    paidByClient: string;
+    clientAmount: number;
+    paidByAgent: string;
+    agentAmount: number;
+  };
+}
+
+export interface GeneralPolicyResponse {
+  statusCode: number;
+  statusMessage: string;
+  data: {
+    totalCount: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    data: IGeneralPolicy[];
+  };
+}
+
+export interface GeneralPolicyFilters {
+  search?: string;
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  page: number;
+  pageSize: number;
+}

@@ -2,49 +2,46 @@ import { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { Filter, X } from "lucide-react";
 
-import { usePolicies } from "../hooks/policy/usePolicies";
+import { useGeneralPolicies } from "../hooks/policy/usePolicies";
 import PolicyTable from "../components/policy/PolicyTable";
 import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
 import RenewalUpsertSheet from "../components/renewal/RenewalUpsertSheet";
 import PolicyFilterSheet from "../components/policy/PolicyFilterSheet";
 import Pagination from "../components/leads/Pagination";
+import type { GeneralPolicyFilters } from "../interfaces/policy.interface";
 
-const DEFAULT_FILTERS = {
-pageNumber: 1,
-pageSize: 10,
-search: "",
-policyStatusId: null as number | null,
-policyTypeId: null as number | null,
-customerId: null as string | null,
-insurerId: null as string | null,
-productId: null as string | null,
+const DEFAULT_FILTERS: GeneralPolicyFilters = {
+  page: 1,
+  pageSize: 10,
+  search: "",
+  type: "",
+  startDate: "",
+  endDate: "",
 };
 
 const Policies = () => {
-/*   STATE   */
+  /*   STATE   */
 
-const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<GeneralPolicyFilters>(DEFAULT_FILTERS);
 
-const [openPolicySheet, setOpenPolicySheet] = useState(false);
-const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
+  const [openPolicySheet, setOpenPolicySheet] = useState(false);
+  const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
 
-// 🔥 RENEWAL STATE
-const [openRenewalSheet, setOpenRenewalSheet] = useState(false);
-const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
+  // 🔥 RENEWAL STATE
+  const [openRenewalSheet, setOpenRenewalSheet] = useState(false);
+  const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
 
-const [openFilterSheet, setOpenFilterSheet] = useState(false);
+  const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
-  const { data, isLoading, isFetching } = usePolicies(filters);
+  const { data, isLoading, isFetching } = useGeneralPolicies(filters);
 
 /*   HELPERS   */
 
 const hasActiveFilters =
-filters.search ||
-filters.policyStatusId ||
-filters.policyTypeId ||
-filters.customerId ||
-filters.insurerId ||
-filters.productId;
+  filters.search ||
+  filters.type ||
+  filters.startDate ||
+  filters.endDate;
 
 const clearAllFilters = () => {
 setFilters(DEFAULT_FILTERS);
@@ -98,7 +95,7 @@ return (
 General Policies
 </h1>
 <p className="mt-1 text-sm text-slate-600">
-{data?.totalRecords ?? 0} total policies
+  {data?.totalCount ?? 0} total policies
 </p>
 </div>
 
@@ -118,11 +115,11 @@ onClick={handleAddPolicy}
 placeholder="Search by policy number..."
 value={filters.search}
 onChange={(e) =>
-setFilters({
-...filters,
-search: e.target.value,
-pageNumber: 1,
-})
+  setFilters({
+    ...filters,
+    search: e.target.value,
+    page: 1,
+  })
 }
 className="w-full h-10 pl-10 border rounded"
 />
@@ -166,11 +163,11 @@ onRenewal={handleCreateRenewal}
 {/*   PAGINATION   */}
 <div className="border-t px-4 py-3">
 <Pagination
-page={filters.pageNumber}
-totalPages={data?.totalPages || 1}
-onChange={(page) =>
-setFilters({ ...filters, pageNumber: page })
-}
+  page={filters.page}
+  totalPages={data?.totalPages || 1}
+  onChange={(page) =>
+    setFilters({ ...filters, page: page })
+  }
 />
 </div>
 </div>
@@ -181,8 +178,8 @@ open={openFilterSheet}
 filters={filters}
 onClose={() => setOpenFilterSheet(false)}
 onApply={(f) => {
-setFilters({ ...f, pageNumber: 1 });
-toast.success("Filters applied");
+  setFilters({ ...f, page: 1 });
+  toast.success("Filters applied");
 }}
 onClear={clearAllFilters}
 />

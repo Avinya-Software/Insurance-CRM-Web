@@ -1,5 +1,5 @@
 import { CustomerDropdown } from "../interfaces/customer.interface";
-import type { AgencyDropdown, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UserDropdown } from "../interfaces/policy.interface";
+import type { AgencyDropdown, GeneralPolicyFilters, GeneralPolicyResponse, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UserDropdown } from "../interfaces/policy.interface";
 import axios from "./axios";
 import api from "./axios";
 
@@ -208,3 +208,8 @@ export const uploadPolicyDocumentApi = async (data: FormData) => {
 
   return res.data;
 };
+
+export const getGeneralPoliciesApi = async (params: GeneralPolicyFilters): Promise<GeneralPolicyResponse> => {
+  const res = await api.get<GeneralPolicyResponse>("/GeneralPolicy/filter", { params });
+  return res.data;
+};

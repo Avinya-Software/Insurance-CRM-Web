@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
-import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
-import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import Spinner from "../common/Spinner";
 
 interface Props {
@@ -14,26 +12,8 @@ interface Props {
 
 const PolicyFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) => {
   const [local, setLocal] = useState(filters);
-  const [statusOptions, setStatusOptions] = useState<any[]>([]);
-  const [customerOptions, setCustomerOptions] = useState<any[]>([]);
+  const loading = false;
 
-  const { data: statuses, isLoading: sLoading } = usePolicyStatusesDropdown();
-  const { data: statusOption, isLoading: stLoading } = usePolicyStatusesDropdown(1);
-  const { data: customers, isLoading: cLoading } = useCustomerDropdown();
-
-  const loading = sLoading || cLoading;
-
-  useEffect(() => {
-    if (statuses) {
-      setStatusOptions(statuses);
-    }
-  }, [statuses]);
-
-  useEffect(() => {
-    if (customers) {
-      setCustomerOptions(customers);
-    }
-  }, [customers]);
 
   // Update local state when filters prop changes
   useEffect(() => {
@@ -63,37 +43,43 @@ const PolicyFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) 
           ) : (
             <div className="space-y-4">
               <Select
-                label="Policy Status"
-                value={local.policyStatusId}
-                options={statusOptions}
-                valueKey="policyStatusId"
-                labelKey="statusName"
+                label="Policy Type"
+                value={local.type}
+                options={[
+                  { id: "Fresh", name: "Fresh" },
+                  { id: "Renewal", name: "Renewal" },
+                  { id: "Lost", name: "Lost" },
+                ]}
+                valueKey="id"
+                labelKey="name"
                 onChange={(v) => {
-                  setLocal({ ...local, policyStatusId: v || null, pageNumber: 1 });
+                  setLocal({ ...local, type: v || "", page: 1 });
                 }}
               />
 
-              <Select
-                label="Status"
-                value={local.statusId}
-                options={statusOption}
-                valueKey="statusId"
-                labelKey="statusName"
-                onChange={(v) => {
-                  setLocal({ ...local, statusId: v || null, pageNumber: 1 });
-                }}
-              />
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                  value={local.startDate || ""}
+                  onChange={(e) => setLocal({ ...local, startDate: e.target.value, page: 1 })}
+                />
+              </div>
 
-              <Select
-                label="Customer"
-                value={local.customerId}
-                options={customerOptions}
-                valueKey="customerId"
-                labelKey="clientName"
-                onChange={(v) => {
-                  setLocal({ ...local, customerId: v || null, pageNumber: 1 });
-                }}
-              />
+              <div className="space-y-1.5">
+                <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+                  value={local.endDate || ""}
+                  onChange={(e) => setLocal({ ...local, endDate: e.target.value, page: 1 })}
+                />
+              </div>
             </div>
           )}
         </div>
