@@ -277,6 +277,13 @@ const Sidebar = () => {
               <div className="ml-6 mt-1 space-y-1">
 
                 <NavItem
+                  to="/familymembers"
+                  label="Family Member"
+                  icon={<Users size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
                   to="/usertermmaster"
                   label="User Master"
                   icon={<ListTodo size={16} />}
