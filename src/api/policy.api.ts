@@ -1,5 +1,5 @@
 import { CustomerDropdown } from "../interfaces/customer.interface";
-import type { AgencyDropdown, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UserDropdown } from "../interfaces/policy.interface";
+import type { AgencyDropdown, GeneralPolicyFilters, GeneralPolicyResponse, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UserDropdown } from "../interfaces/policy.interface";
 import axios from "./axios";
 import api from "./axios";
 
@@ -31,7 +31,7 @@ export const getPoliciesApi = async (params: {
 
 export const getPolicyTypesDropdownApi = async () => {
   const res = await api.get("/policy/policy-types-dropdown");
-  return res.data.data;   
+  return res.data.data;
 };
 
 export const getPolicyStatusesDropdownApi = async (type?: number) => {
@@ -99,7 +99,7 @@ export const getPolicyDropdownApi = async (
     }
   );
 
-  return res.data?.data || []; 
+  return res.data?.data || [];
 };
 
 export const updatePolicyStatusApi = async (
@@ -119,7 +119,7 @@ export const getPoliciesByCustomerApi = async (
 ): Promise<PolicyByCustomerDropdownDto[]> => {
   const res = await api.get("/policy/by-customer/" + customerId);
 
-  return res.data?.data || [];   
+  return res.data?.data || [];
 };
 
 export const getInsuranceTypesApi = async () => {
@@ -127,7 +127,7 @@ export const getInsuranceTypesApi = async () => {
     "/Insurer/InsuranceType"
   );
 
-  return res.data.data; 
+  return res.data.data;
 };
 
 export const getCompanyListApi = async (policyType?: boolean | null) => {
@@ -170,7 +170,7 @@ export const getCustomerDropdownApi = async (): Promise<CustomerDropdown[]> => {
   return res.data?.data || [];
 };
 
-export const getAgencyDropdownApi  = async (): Promise<AgencyDropdown[]> => {
+export const getAgencyDropdownApi = async (): Promise<AgencyDropdown[]> => {
   const res = await api.get("/Agency/Agency-dropdown");
   return res.data?.data || [];
 }
@@ -206,5 +206,20 @@ export const uploadPolicyDocumentApi = async (data: FormData) => {
     },
   });
 
+  return res.data;
+};
+
+export const getGeneralPoliciesApi = async (params: GeneralPolicyFilters): Promise<GeneralPolicyResponse> => {
+  const res = await api.get<GeneralPolicyResponse>("/GeneralPolicy/filter", { params });
+  return res.data;
+};
+
+export const updateGeneralPolicyApi = async (policyId: string, payload: any) => {
+  const res = await api.put(`/GeneralPolicy/update/${policyId}`, payload);
+  return res.data;
+};
+
+export const deleteGeneralPolicyApi = async (policyId: string) => {
+  const res = await api.delete(`/GeneralPolicy/delete/${policyId}`);
   return res.data;
 };

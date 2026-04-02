@@ -30,6 +30,7 @@ import UserTeamMaster from "./pages/UserTeamMaster";
 import Company from "./pages/Company";
 import RoleRedirect from "./RoleRedirect";
 import Tasks from "./pages/Tasks";
+import FamilyMembers from "./pages/FamilyMembers";
 
 function App() {
   return (  
@@ -78,6 +79,7 @@ function App() {
           {/* <Route path="/products" element={<Product />} /> */}
           <Route path="/addondetails" element={<AddOnDetails />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/familymembers" element={<FamilyMembers />} />
 
           {/* ADMIN */}
           <Route path="/company" element={<Company />} />

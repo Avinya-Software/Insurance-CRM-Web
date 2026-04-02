@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 import Spinner from "../common/Spinner";
 
@@ -10,12 +10,10 @@ interface Props {
   onClose: () => void;
 }
 
-const PolicyFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) => {
+const FamilyMemberFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) => {
   const [local, setLocal] = useState(filters);
   const loading = false;
 
-
-  // Update local state when filters prop changes
   useEffect(() => {
     setLocal(filters);
   }, [filters]);
@@ -28,7 +26,7 @@ const PolicyFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) 
       <div className="w-96 bg-white h-full shadow-xl flex flex-col">
         {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between">
-          <h2 className="font-semibold text-lg">Filter Policies</h2>
+          <h2 className="font-semibold text-lg">Filter Family Members</h2>
           <button onClick={onClose}>
             <X />
           </button>
@@ -43,17 +41,23 @@ const PolicyFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) 
           ) : (
             <div className="space-y-4">
               <Select
-                label="Policy Type"
-                value={local.type}
+                label="Relation with Head"
+                value={local.relationWithFamilyHead}
                 options={[
-                  { id: "Fresh", name: "Fresh" },
-                  { id: "Renewal", name: "Renewal" },
-                  { id: "Lost", name: "Lost" },
+                  { id: "Self", name: "Self" },
+                  { id: "Husband", name: "Husband" },
+                  { id: "Wife", name: "Wife" },
+                  { id: "Father", name: "Father" },
+                  { id: "Mother", name: "Mother" },
+                  { id: "Son", name: "Son" },
+                  { id: "Daughter", name: "Daughter" },
+                  { id: "Brother", name: "Brother" },
+                  { id: "Sister", name: "Sister" },
                 ]}
                 valueKey="id"
                 labelKey="name"
-                onChange={(v) => {
-                  setLocal({ ...local, type: v || "", page: 1 });
+                onChange={(v: string) => {
+                  setLocal({ ...local, relationWithFamilyHead: v || "", page: 1 });
                 }}
               />
 
@@ -119,7 +123,7 @@ const PolicyFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) 
   );
 };
 
-export default PolicyFilterSheet;
+export default FamilyMemberFilterSheet;
 
 /* HELPER SELECT COMPONENT */
 const Select = ({
@@ -133,7 +137,7 @@ const Select = ({
   labelKey = "name",
   error,
 }: any) => (
-  <div className="space-y-1.5">
+  <div className="space-y-1.5 border-none">
     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>

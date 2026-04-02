@@ -1,22 +1,24 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { deletePolicyApi } from "../../api/policy.api";
+import { deleteGeneralPolicyApi } from "../../api/policy.api";
 
 export const useDeletePolicy = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (policyId: string) =>
-      deletePolicyApi(policyId),
+      deleteGeneralPolicyApi(policyId),
 
-    onSuccess: () => {
-      toast.success("Policy deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["policies"] });
+    onSuccess: (res) => {
+      toast.success(res?.statusMessage || "Policy deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["general-policies"] });
     },
 
     onError: (err: any) => {
       toast.error(
-        err?.response?.data?.message || "Failed to delete policy"
+        err?.response?.data?.statusMessage || 
+        err?.response?.data?.message || 
+        "Failed to delete policy"
       );
     },
   });
