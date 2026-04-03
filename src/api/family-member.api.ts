@@ -1,5 +1,5 @@
 import api from "./axios";
-import { FamilyMemberFilterParams, FamilyMemberResponse, FamilyMemberDropdownResponse } from "../interfaces/family-member.interface";
+import { FamilyMemberFilterParams, FamilyMemberResponse, FamilyMemberDropdownResponse, StatusUpdateRequest } from "../interfaces/family-member.interface";
 
 export const getFamilyMembersApi = async (params: FamilyMemberFilterParams): Promise<FamilyMemberResponse["data"]> => {
   const res = await api.get<FamilyMemberResponse>("/FamilyMember/filter", { params });
@@ -16,5 +16,24 @@ export const addFamilyMemberApi = async (data: FormData) => {
       "Content-Type": "multipart/form-data",
     },
   });
+  return res.data;
+};
+
+export const updateFamilyMemberApi = async (data: FormData) => {
+  const res = await api.put("/FamilyMember/Update", data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return res.data;
+};
+
+export const updateFamilyMemberStatusApi = async (data: StatusUpdateRequest) => {
+  const res = await api.put("/FamilyMember/update-status", data);
+  return res.data;
+};
+
+export const deleteFamilyMemberApi = async (id: string) => {
+  const res = await api.delete(`/FamilyMember/soft-delete/${id}`);
   return res.data;
 };

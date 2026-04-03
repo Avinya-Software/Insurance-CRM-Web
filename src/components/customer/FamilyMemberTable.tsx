@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { MoreVertical } from "lucide-react";
 import { IFamilyMember } from "../../interfaces/family-member.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { useUpdateFamilyStatus } from "../../hooks/family-member/useUpdateFamilyStatus";
 import TableSkeleton from "../common/TableSkeleton";
 
 /*   CONSTANTS   */
@@ -14,7 +15,7 @@ interface Props {
   onEdit?: (member: IFamilyMember) => void;
   onDelete?: (member: IFamilyMember) => void;
 }
-
+  
 const FamilyMemberTable = ({
   data = [],
   loading = false,
@@ -22,6 +23,7 @@ const FamilyMemberTable = ({
   onDelete,
 }: Props) => {
   const [openMember, setOpenMember] = useState<IFamilyMember | null>(null);
+  const { mutate: updateStatus, isPending: isUpdating } = useUpdateFamilyStatus();
   const [style, setStyle] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +68,7 @@ const FamilyMemberTable = ({
             <Th>DOB</Th>
             <Th>Aadhaar</Th>
             <Th>PAN</Th>
+            <Th>Status</Th>
             <Th>Marriage Status</Th>
             <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
@@ -104,6 +107,13 @@ const FamilyMemberTable = ({
                   </Td>
                   <Td className="whitespace-nowrap">{member.aadhaarCardNumber || "-"}</Td>
                   <Td className="whitespace-nowrap">{member.panCardNumber || "-"}</Td>
+                  <Td>
+                    <Toggle 
+                      active={member.status} 
+                      onChange={() => updateStatus({ familyMemberId: member.familyMemberId, status: !member.status })}
+                      loading={isUpdating}
+                    />
+                  </Td>
                   <Td className="whitespace-nowrap">{member.marriageStatus || "-"}</Td>
                   <Td className="whitespace-nowrap font-medium text-slate-600">
                     {member.createdAt ? member.createdAt.split("T")[0] : "-"}
@@ -182,5 +192,28 @@ const MenuItem = ({
   >
     {icon}
     {label}
+  </button>
+);
+const Toggle = ({ active = false, onChange, loading = false }: { active?: boolean; onChange: () => void; loading?: boolean }) => (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      if (!loading) onChange();
+    }}
+    disabled={loading}
+    type="button"
+    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 transition-all duration-200 ease-in-out focus:outline-none ${
+      active 
+        ? "bg-blue-600 border-blue-600 shadow-sm" 
+        : "bg-white border-blue-100 shadow-[0_0_8px_rgba(37,99,235,0.1)]"
+    } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+  >
+    <span
+      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full shadow-sm transition duration-200 ease-in-out ${
+        active 
+          ? "translate-x-5 bg-white" 
+          : "translate-x-0 bg-slate-300"
+      }`}
+    />
   </button>
 );
