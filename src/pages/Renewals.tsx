@@ -1,143 +1,136 @@
 import { useState } from "react";
+import { Filter, X } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 
 import { useRenewals } from "../hooks/renewal/useRenewals";
 import { useRenewalStatuses } from "../hooks/renewal/useRenewalStatuses";
 import RenewalTable from "../components/renewal/RenewalTable";
-import RenewalUpsertSheet from "../components/renewal/RenewalUpsertSheet";
 import Pagination from "../components/leads/Pagination";
+import RenewalFilterSheet from "../components/renewal/RenewalFilterSheet";
+
+const DEFAULT_FILTERS = {
+  pageNumber: 1,
+  pageSize: 10,
+  search: "",
+  renewalStatusId: null as number | null,
+  customerId: null as string | null,
+};
 
 const Renewals = () => {
-  const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize] = useState(10);
-  const [search, setSearch] = useState("");
-  const [renewalStatusId, setRenewalStatusId] =
-    useState<number | undefined>();
+  /*   STATE   */
 
-  const [openSheet, setOpenSheet] = useState(false);
-  const [selectedRenewal, setSelectedRenewal] =
-    useState<any>(null);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
   /*   API   */
 
-  const { data, isLoading, isFetching, refetch } =
-    useRenewals({
-      pageNumber,
-      pageSize,
-      search,
-      renewalStatusId,
-    });
+  const { data, isLoading, isFetching } = useRenewals(filters);
+  const { data: statuses = [] } = useRenewalStatuses();   
 
-    const { data: statuses = [] } = useRenewalStatuses();   
+  /*   HELPERS   */
 
-    const renewals = data?.data?.data || [];
-    const totalRecords = data?.data?.totalCount || 0;    
-    const totalPages = Math.ceil(totalRecords / pageSize);
+  const hasActiveFilters =
+    filters.search ||
+    filters.renewalStatusId ||
+    filters.customerId;
 
-  /*   HANDLERS   */
-
-  const handleAdd = () => {
-    setSelectedRenewal(null);
-    setOpenSheet(true);
-  };
-
-  const handleEdit = (renewal: any) => {
-    setSelectedRenewal(renewal);
-    setOpenSheet(true);
-  };
-
-  const handleSuccess = () => {
-    refetch();
-    setOpenSheet(false);
-    setSelectedRenewal(null);
+  const clearAllFilters = () => {
+    setFilters(DEFAULT_FILTERS);
   };
 
   /*   UI   */
 
   return (
     <>
-      <Toaster position="top-right" />
+      <Toaster position="top-right" reverseOrder={false} />
 
       <div className="bg-white rounded-lg border">
-        {/*   HEADER   */}
+        {/*  HEADER  */}
         <div className="px-4 py-5 border-b bg-gray-100">
           <div className="grid grid-cols-2 gap-y-4 items-start">
             <div>
-              <h1 className="text-4xl font-serif font-semibold">
+              <h1 className="text-4xl font-serif font-semibold text-slate-900">
                 Renewals
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-                {totalRecords} total renewals
+                {data?.data?.totalCount ?? 0} total renewals
               </p>
             </div>
 
             <div className="text-right">
-              <button
-                className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm"
-                onClick={handleAdd}
-              >
-                + Add Renewal
-              </button>
+              {/* Optional: Add button here if needed in future */}
             </div>
 
-            {/* SEARCH + FILTER */}
-            <div className="flex gap-4">
-              <input
-                type="text"
-                placeholder="Search Customer or policy..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPageNumber(1);
-                }}
-                className="h-10 w-[260px] border rounded px-3 text-sm"
-              />
-              <select
-                className="h-10 border rounded px-3 text-sm"
-                value={renewalStatusId ?? ""}
-                onChange={(e) => {
-                  const value = e.target.value;
+            {/* 🔍 SEARCH */}
+            <div>
+              <div className="relative w-[360px]">
+                <input
+                  type="text"
+                  placeholder="Search Customer or Policy..."
+                  value={filters.search}
+                  onChange={(e) =>
+                    setFilters({
+                      ...filters,
+                      search: e.target.value,
+                      pageNumber: 1,
+                    })
+                  }
+                  className="w-full h-10 pl-10 pr-3 border rounded text-sm outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400"
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  🔍
+                </span>
+              </div>
+            </div>
 
-                  setRenewalStatusId(
-                    value ? Number(value) : undefined
-                  );
+            {/* 🎯 FILTER + CLEAR */}
+            <div className="flex justify-end gap-2">
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="inline-flex items-center gap-2 border border-red-300 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-50 transition-all"
+                >
+                  <X size={14} />
+                  Clear Filters
+                </button>
+              )}
 
-                  setPageNumber(1);
-                }}
+              <button
+                onClick={() => setOpenFilterSheet(true)}
+                className="inline-flex items-center gap-2 border px-4 py-2 rounded-lg text-sm font-medium bg-white hover:bg-slate-50 transition-all border-slate-200"
               >
-                <option value="">All Status</option>
-
-                {statuses.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+                <Filter size={16} className="text-slate-600" />
+                Filters
+              </button>
             </div>
           </div>
         </div>
 
-        {/*   TABLE   */}
+        {/*   RENEWALS TABLE   */}
         <RenewalTable
-          data={renewals}
+          data={data?.data?.data ?? []}
           loading={isLoading || isFetching}
-          onEdit={handleEdit}
         />
 
         {/*   PAGINATION   */}
-        <Pagination
-          page={pageNumber}
-          totalPages={totalPages}
-          onChange={(page) => setPageNumber(page)}
-        />
+        <div className="border-t px-4 py-3">
+          <Pagination
+            page={filters.pageNumber}
+            totalPages={Math.ceil((data?.data?.totalCount || 1) / filters.pageSize)}
+            onChange={(page) =>
+              setFilters({ ...filters, pageNumber: page })
+            }
+          />
+        </div>
       </div>
 
-      {/*   UPSERT SHEET   */}
-      <RenewalUpsertSheet
-        open={openSheet}
-        renewal={selectedRenewal}
-        onClose={() => setOpenSheet(false)}
-        onSuccess={handleSuccess}
+      {/*   FILTER SHEET   */}
+      <RenewalFilterSheet
+        open={openFilterSheet}
+        onClose={() => setOpenFilterSheet(false)}
+        filters={filters}
+        onApply={(f) => setFilters({ ...f, pageNumber: 1 })}
+        onClear={clearAllFilters}
       />
     </>
   );

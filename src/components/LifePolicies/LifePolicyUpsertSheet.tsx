@@ -840,11 +840,11 @@ const PolicyUpsertSheet = ({
                             label="Premium Mode"
                             value={form.premiumMode}
                             options={[
-                              { id: "Y", name: "Y" },
-                              { id: "H", name: "H" },
-                              { id: "Q", name: "Q" },
-                              { id: "M", name: "M" },
-                              { id: "S", name: "S" },
+                              { id: "Y", name: "Yearly" },
+                              { id: "H", name: "Half Yearly" },
+                              { id: "Q", name: "Quarterly" },
+                              { id: "M", name: "Monthly" },
+                              { id: "S", name: "Single" },
                             ]}
                             onChange={(v: any) =>
                               setForm((prev: any) => ({
