@@ -6,8 +6,10 @@ export const getFamilyMembersApi = async (params: FamilyMemberFilterParams): Pro
   return res.data.data;
 };
 
-export const getFamilyMemberDropdownApi = async () => {
-  const res = await api.get<FamilyMemberDropdownResponse>("/FamilyMember/Dropdown");
+export const getFamilyMemberDropdownApi = async (customerId?: string) => {
+  const res = await api.get<FamilyMemberDropdownResponse>("/FamilyMember/Dropdown", {
+    params: { customerId }
+  });
   return res.data;
 };
 export const addFamilyMemberApi = async (data: FormData) => {

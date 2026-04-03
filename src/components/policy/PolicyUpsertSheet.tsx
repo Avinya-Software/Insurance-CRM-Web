@@ -6,6 +6,9 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import { useUpsertPolicy } from "../../hooks/policy/useUpsertPolicy";
 import { useUpdateGeneralPolicy } from "../../hooks/policy/useUpdateGeneralPolicy";
+import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
+import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemberDropdown";
+import SearchableComboBox from "../common/SearchableComboBox";
 
 type TabType = "customer" | "policy" | "premium";
 
@@ -144,6 +147,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
   const { mutateAsync: addPolicy, isPending: isAdding } = useUpsertPolicy();
   const { mutateAsync: updatePolicy, isPending: isUpdating } = useUpdateGeneralPolicy();
 
+  const { data: customerDropdown } = useCustomerDropdown();
+  const { data: memberDropdown } = useFamilyMemberDropdown(form.familyGroupId);
+
   const isPending = isAdding || isUpdating;
 
   const isHealth  = form.detail.divisionType === "Health";
@@ -152,13 +158,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
   /* ─── DYNAMIC OPTION LISTS (inject real API ids so selects can match) ─── */
   const dynamicFamilyGroups = mergeOption(
-    FAMILY_GROUP_OPTIONS,
+    customerDropdown?.map(c => ({ id: c.customerId, name: c.clientName })) || [],
     policy?.familyGroupId,
     policy?.familyGroupName
   );
 
   const dynamicHolders = mergeOption(
-    HOLDER_OPTIONS,
+    memberDropdown?.map(m => ({ id: m.familyMemberId, name: m.fullName })) || [],
     policy?.policyHolderId,
     policy?.policyHolderName ||
       `${policy?.firstName || ""} ${policy?.lastName || ""}`.trim() || undefined
@@ -778,24 +784,34 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
               <div className="grid grid-cols-12 gap-4 items-start">
                 <div className="col-span-5">
-                  <Select
+                   <SearchableComboBox
                     label="Family Group"
                     required
-                    options={dynamicFamilyGroups}
+                    items={dynamicFamilyGroups.map(g => ({ label: g.name, value: g.id }))}
                     value={form.familyGroupId}
                     error={errors.familyGroupId}
-                    onChange={(v:any) => setForm(f => ({ ...f, familyGroupId: v }))}
+                    placeholder="Search family group..."
+                    onSelect={(item: any) =>
+                      setForm(f => ({ 
+                        ...f, 
+                        familyGroupId: item?.value ?? "",
+                        policyHolderId: "" 
+                      }))
+                    }
                   />
                 </div>
                 <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                 <div className="col-span-5">
-                  <Select
+                   <SearchableComboBox
                     label="Policy Holder Name"
                     required
-                    options={dynamicHolders}
+                    items={dynamicHolders.map(h => ({ label: h.name, value: h.id }))}
                     value={form.policyHolderId}
                     error={errors.policyHolderId}
-                    onChange={(v:any) => setForm(f => ({ ...f, policyHolderId: v }))}
+                    placeholder={form.familyGroupId ? "Search policy holder..." : "Select family group first"}
+                    onSelect={(item: any) =>
+                      setForm(p => ({ ...p, policyHolderId: item?.value ?? "" }))
+                    }
                   />
                 </div>
                 <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
