@@ -6,6 +6,11 @@ import {
 import toast, { Toaster } from "react-hot-toast";
 import { useUpsertPolicy } from "../../hooks/policy/useUpsertPolicy";
 import { useUpdateGeneralPolicy } from "../../hooks/policy/useUpdateGeneralPolicy";
+import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
+import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemberDropdown";
+import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
+import { useSegmentDropdown } from "../../hooks/segment/useSegmentDropdown";
+import SearchableComboBox from "../common/SearchableComboBox";
 
 type TabType = "customer" | "policy" | "premium";
 
@@ -15,7 +20,6 @@ const HOLDER_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", na
 const GENDER_OPTIONS         = [{ id: "Male", name: "Male" }, { id: "Female", name: "Female" }, { id: "Other", name: "Other" }];
 const RELATION_OPTIONS       = [{ id: "Self", name: "Self" }, { id: "Spouse", name: "Spouse" }, { id: "Son", name: "Son" }, { id: "Daughter", name: "Daughter" }, { id: "Father", name: "Father" }, { id: "Mother", name: "Mother" }];
 const DIVISION_OPTIONS       = [{ id: "Health", name: "Health Insurance" }, { id: "OtherGeneral", name: "Other General Insurance" }, { id: "Vehicle", name: "Vehicle Insurance" }];
-const SEGMENT_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Critical Illness" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Individual" }];
 const POLICY_TYPE_OPTIONS    = [{ id: "FamilyFloter", name: "Family Floter" }, { id: "Package", name: "Package Policy" }];
 const COMPANY_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Acko General Insurance Limited" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Bajaj General" }];
 const BRANCH_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Althan" }];
@@ -144,6 +148,20 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
   const { mutateAsync: addPolicy, isPending: isAdding } = useUpsertPolicy();
   const { mutateAsync: updatePolicy, isPending: isUpdating } = useUpdateGeneralPolicy();
 
+  const { data: customerDropdown } = useCustomerDropdown();
+  const { data: memberDropdown } = useFamilyMemberDropdown(form.familyGroupId);
+  const { data: divisionData } = useDivisionDropdown(0);
+
+  const selectedDivision = divisionData?.find(d => {
+    const mappedVal = d.divisionName === "Health Insurance" ? "Health" : 
+                      d.divisionName === "Other General Insurance" ? "OtherGeneral" : 
+                      d.divisionName === "Vehicle Insurance" ? "Vehicle" : d.divisionName;
+    return mappedVal === form.detail.divisionType;
+  });
+  
+  const selectedDivisionId = selectedDivision?.divisionId;
+  const { data: segmentData } = useSegmentDropdown(selectedDivisionId);
+
   const isPending = isAdding || isUpdating;
 
   const isHealth  = form.detail.divisionType === "Health";
@@ -151,21 +169,32 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
   const isOther   = form.detail.divisionType === "OtherGeneral";
 
   /* ─── DYNAMIC OPTION LISTS (inject real API ids so selects can match) ─── */
+  const dynamicDivisions = mergeOption(
+    divisionData?.map(d => ({ 
+      id: d.divisionName === "Health Insurance" ? "Health" : 
+          d.divisionName === "Other General Insurance" ? "OtherGeneral" : 
+          d.divisionName === "Vehicle Insurance" ? "Vehicle" : d.divisionName, 
+      name: d.divisionName 
+    })) || [],
+    policy?.detail?.divisionType,
+    policy?.detail?.divisionType
+  );
+
   const dynamicFamilyGroups = mergeOption(
-    FAMILY_GROUP_OPTIONS,
+    customerDropdown?.map(c => ({ id: c.customerId, name: c.clientName })) || [],
     policy?.familyGroupId,
     policy?.familyGroupName
   );
 
   const dynamicHolders = mergeOption(
-    HOLDER_OPTIONS,
+    memberDropdown?.map(m => ({ id: m.familyMemberId, name: m.fullName })) || [],
     policy?.policyHolderId,
     policy?.policyHolderName ||
       `${policy?.firstName || ""} ${policy?.lastName || ""}`.trim() || undefined
   );
 
   const dynamicSegments = mergeOption(
-    SEGMENT_OPTIONS,
+    segmentData?.map(s => ({ id: s.segmentId.toString(), name: s.segmentName })) || [],
     policy?.detail?.segmentId,
     policy?.detail?.segmentName
   );
@@ -778,24 +807,34 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
               <div className="grid grid-cols-12 gap-4 items-start">
                 <div className="col-span-5">
-                  <Select
+                   <SearchableComboBox
                     label="Family Group"
                     required
-                    options={dynamicFamilyGroups}
+                    items={dynamicFamilyGroups.map(g => ({ label: g.name, value: g.id }))}
                     value={form.familyGroupId}
                     error={errors.familyGroupId}
-                    onChange={(v:any) => setForm(f => ({ ...f, familyGroupId: v }))}
+                    placeholder="Search family group..."
+                    onSelect={(item: any) =>
+                      setForm(f => ({ 
+                        ...f, 
+                        familyGroupId: item?.value ?? "",
+                        policyHolderId: "" 
+                      }))
+                    }
                   />
                 </div>
                 <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                 <div className="col-span-5">
-                  <Select
+                   <SearchableComboBox
                     label="Policy Holder Name"
                     required
-                    options={dynamicHolders}
+                    items={dynamicHolders.map(h => ({ label: h.name, value: h.id }))}
                     value={form.policyHolderId}
                     error={errors.policyHolderId}
-                    onChange={(v:any) => setForm(f => ({ ...f, policyHolderId: v }))}
+                    placeholder={form.familyGroupId ? "Search policy holder..." : "Select family group first"}
+                    onSelect={(item: any) =>
+                      setForm(p => ({ ...p, policyHolderId: item?.value ?? "" }))
+                    }
                   />
                 </div>
                 <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
@@ -834,13 +873,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-4">
-                    <Select
+                    <SearchableComboBox
                       label="Select Division"
                       required
-                      options={DIVISION_OPTIONS}
+                      items={dynamicDivisions.map(d => ({ label: d.name, value: d.id }))}
                       value={form.detail.divisionType}
                       error={errors.divisionType}
-                      onChange={(v:any) => patchDetail({ divisionType: v })}
+                      placeholder="Search division..."
+                      onSelect={(item: any) => patchDetail({ divisionType: item?.value ?? "", segmentId: "" })}
                     />
                   </div>
                 </div>
@@ -848,13 +888,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 {isHealth && (
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-6">
-                      <Select
+                      <SearchableComboBox
                         label="Select Segment"
                         required
-                        options={dynamicSegments}
+                        items={dynamicSegments.map((s: any) => ({ label: s.name, value: s.id }))}
                         value={form.detail.segmentId}
                         error={errors.segmentId}
-                        onChange={(v:any) => patchDetail({ segmentId: v })}
+                        placeholder="Search segment..."
+                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "" })}
                       />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
@@ -872,13 +913,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 {isOther && (
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-6">
-                      <Select
+                      <SearchableComboBox
                         label="Select Segment"
                         required
-                        options={dynamicSegments}
+                        items={dynamicSegments.map((s: any) => ({ label: s.name, value: s.id }))}
                         value={form.detail.segmentId}
                         error={errors.segmentId}
-                        onChange={(v:any) => patchDetail({ segmentId: v })}
+                        placeholder="Search segment..."
+                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "" })}
                       />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
@@ -914,13 +956,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                       />
                     </div>
                     <div className="col-span-5">
-                      <Select
+                      <SearchableComboBox
                         label="Select Segment"
                         required
-                        options={dynamicSegments}
+                        items={dynamicSegments.map(s => ({ label: s.name, value: s.id }))}
                         value={form.detail.segmentId}
                         error={errors.segmentId}
-                        onChange={(v:any) => patchDetail({ segmentId: v })}
+                        placeholder="Search segment..."
+                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "" })}
                       />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>

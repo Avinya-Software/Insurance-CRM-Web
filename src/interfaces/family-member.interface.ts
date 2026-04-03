@@ -26,6 +26,7 @@ export interface IFamilyMember {
   panCardNumber: string;
   gstNumber: string;
   marriageStatus: string;
+  status: boolean;
   createdAt: string;
   updatedAt: string;
   documents: FamilyMemberDocument[];
@@ -85,4 +86,8 @@ export interface FamilyMemberDropdownResponse {
   statusCode: number;
   statusMessage: string;
   data: FamilyMemberDropdownItem[];
+}
+export interface StatusUpdateRequest {
+  familyMemberId: string;
+  status: boolean;
 }

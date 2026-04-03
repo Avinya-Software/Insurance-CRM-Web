@@ -3,6 +3,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { Filter, X } from "lucide-react";
 
 import { useFamilyMembers } from "../hooks/family-member/useFamilyMembers";
+import { useDeleteFamilyMember } from "../hooks/family-member/useDeleteFamilyMember";
 import FamilyMemberTable from "../components/customer/FamilyMemberTable";
 import FamilyMemberFilterSheet from "../components/customer/FamilyMemberFilterSheet";
 import FamilyMemberUpsertSheet from "../components/customer/FamilyMemberUpsertSheet";
@@ -30,6 +31,7 @@ const FamilyMembers = () => {
   /*   API   */
 
   const { data, isLoading, isFetching, refetch } = useFamilyMembers(filters);
+  const { mutate: deleteMember, isPending: isDeleting } = useDeleteFamilyMember();
 
   /*   HELPERS   */
 
@@ -60,6 +62,10 @@ const FamilyMembers = () => {
     setOpenUpsertSheet(false);
     setSelectedMember(null);
     refetch();
+  };
+
+  const handleDeleteMember = (member: IFamilyMember) => {
+    deleteMember(member.familyMemberId);
   };
 
   /*   UI   */
@@ -137,8 +143,9 @@ const FamilyMembers = () => {
         <div className="min-h-[460px]">
           <FamilyMemberTable
             data={data?.data ?? []}
-            loading={isLoading || isFetching}
+            loading={isLoading || isDeleting}
             onEdit={handleEditMember}
+            onDelete={handleDeleteMember}
           />
         </div>
 

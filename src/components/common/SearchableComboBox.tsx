@@ -55,7 +55,7 @@ const SearchableComboBox = <T extends ComboBoxItem>({
   }, []);
 
   return (
-    <div className="w-full">
+    <div className="space-y-0.5 w-full">
       {label && (
         <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
           {label}
@@ -72,7 +72,7 @@ const SearchableComboBox = <T extends ComboBoxItem>({
         {/* INPUT */}
         <div className="relative">
           <input
-            className={`w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none mt-2
+            className={`w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none
             ${
               open
                 ? "border-blue-400 focus:ring-4 focus:ring-blue-50"
