@@ -126,7 +126,7 @@ const RenewalTable = ({ data = [], loading }: Props) => {
                 <Td>{r.policyStartDate ? r.policyStartDate.split("T")[0] : "-"}</Td>
                 <Td>
                     {r.nextPremiumDueDate ? r.nextPremiumDueDate.split("T")[0] : "-"}
-                    {isOverdue(r.dueDate) && (
+                    {getOverdueDays(r.dueDate) > 0 && (
                         <div className="text-[10px] text-red-600 font-medium">
                             {getOverdueDays(r.dueDate)} days due
                         </div>
