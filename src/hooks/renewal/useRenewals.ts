@@ -6,6 +6,7 @@ interface Params {
   pageSize: number;
   search?: string;
   renewalStatusId?: number;
+  customerId?: string;
 }
 
 export const useRenewals = (params: Params) => {
