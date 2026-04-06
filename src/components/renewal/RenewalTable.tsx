@@ -14,23 +14,21 @@ interface Props {
 /*   STATUS BADGES   */
 const statusStyles: Record<string, string> = {
   "Pending": "bg-amber-100 text-amber-700 border-amber-200",
-  "Renewed": "bg-green-100 text-green-700 border-green-200",
+  "Paid": "bg-green-100 text-green-700 border-green-200",
   "Overdue": "bg-red-100 text-red-700 border-red-200",
   "Cancelled": "bg-slate-100 text-slate-600 border-slate-200",
 };
 
-const DROPDOWN_HEIGHT = 220;
-const DROPDOWN_WIDTH = 200;
+const DROPDOWN_HEIGHT = 280;
+const DROPDOWN_WIDTH = 220;
 
 const RenewalTable = ({ data = [], loading }: Props) => {
   const [openRow, setOpenRow] = useState<Renewal | null>(null);
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => {
     setOpenRow(null);
-    setShowStatusMenu(false);
   });
 
   const { mutate: updateStatus, isPending } = useUpdateRenewalStatus();
@@ -44,7 +42,6 @@ const RenewalTable = ({ data = [], loading }: Props) => {
         onSuccess: (res) => {
           toast.success(res?.statusMessage || "Status updated successfully");
           setOpenRow(null);
-          setShowStatusMenu(false);
         },
         onError: (err: any) => {
           toast.error(err?.response?.data?.statusMessage || "Failed to update status");
@@ -77,12 +74,11 @@ const RenewalTable = ({ data = [], loading }: Props) => {
     const openUpwards = spaceBelow < DROPDOWN_HEIGHT;
 
     setStyle({
-      top: openUpwards ? rect.top - DROPDOWN_HEIGHT - 6 : rect.bottom + 6,
+      top: openUpwards ? rect.top - DROPDOWN_HEIGHT : rect.bottom + 6,
       left: rect.right - DROPDOWN_WIDTH,
     });
 
     setOpenRow(row);
-    setShowStatusMenu(false);
   };
 
   return (
@@ -184,34 +180,38 @@ const RenewalTable = ({ data = [], loading }: Props) => {
         <div
           ref={dropdownRef}
           onClick={(e) => e.stopPropagation()}
-          className="fixed z-50 w-[200px] bg-white border rounded-lg shadow-lg overflow-hidden"
-          style={style}
+          className="fixed z-50 w-[220px] bg-white border rounded-lg shadow-xl overflow-hidden py-2"
+          style={{ top: style.top, left: style.left }}
         >
-            <MenuItem label="Change Status" onClick={() => setShowStatusMenu(!showStatusMenu)} />
+          {/*   STATUS HEADER   */}
+          <div className="px-4 py-2 text-sm font-medium text-slate-700">
+            Change Status
+          </div>
 
-            {showStatusMenu && (
-              <div className="border-t bg-slate-50">
-                {statuses.map((status: any) => (
-                  <button
-                    key={status.renewalStatusId}
-                    disabled={isPending || status.renewalStatusId === openRow.renewalStatusId}
-                    onClick={() => handleStatusUpdate(openRow.renewalId, status.renewalStatusId)}
-                    className={`
-                      w-full px-4 py-2 text-sm text-left flex items-center gap-2 transition-colors
-                      ${status.renewalStatusId === openRow.renewalStatusId 
-                        ? 'text-slate-400 cursor-not-allowed bg-slate-100' 
-                        : 'text-slate-700 hover:bg-white'}
-                    `}
-                  >
-                    <Check 
-                      size={14} 
-                      className={status.renewalStatusId === openRow.renewalStatusId ? "opacity-100" : "opacity-0"} 
-                    />
-                    {status.statusName}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* 🔥 FLAT STATUS LIST */}
+          <div className="border-t my-1"></div>
+          {statuses.map((status: any) => {
+            const isActive = status.statusName === openRow.renewalStatus;
+            return (
+              <button
+                key={status.renewalStatusId}
+                disabled={isPending || isActive}
+                onClick={() => handleStatusUpdate(openRow.renewalId, status.renewalStatusId)}
+                className={`
+                  w-full px-4 py-2 text-sm text-left flex items-center gap-2 transition-colors
+                  ${isActive 
+                    ? 'text-slate-400 bg-slate-50 cursor-not-allowed' 
+                    : 'text-slate-600 hover:bg-slate-100'}
+                `}
+              >
+                <Check 
+                  size={14} 
+                  className={`${isActive ? "opacity-100" : "opacity-0"} text-slate-500`} 
+                />
+                {status.statusName}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -232,27 +232,4 @@ const Td = ({ children, className = "" }: any) => (
   <td className={`px-4 py-3 ${className}`}>
     {children}
   </td>
-);
-
-const MenuItem = ({
-  label,
-  onClick,
-  danger = false,
-}: {
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}) => (
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      onClick();
-    }}
-    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-100 ${
-      danger ? "text-red-600 hover:bg-red-50" : ""
-    }`}
-  >
-    {danger && <X size={14} />}
-    {label}
-  </button>
 );
