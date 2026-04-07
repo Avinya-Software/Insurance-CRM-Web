@@ -615,7 +615,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
         relationWithHead: form.relationWithHead || "",
 
         detail: {
-          divisionType: form.detail.divisionType || "",
+          divisionType: Number(form.detail.divisionId) || 0,
           divisionId: Number(form.detail.divisionId) || 0,
           vehicleUse: division === "Vehicle" ? form.detail.vehicleUse || "" : null,
           vehicleClass: division === "Vehicle" ? form.detail.vehicleClass || "" : null,
