@@ -1,10 +1,8 @@
-import { useState, useRef } from "react";
-import { Check, RefreshCw, MoreVertical, X } from "lucide-react";
-import { useUpdateRenewalStatus } from "../../hooks/renewal/useUpdateRenewalStatus";
+import { History, MoreVertical } from "lucide-react";
 import { Renewal } from "../../interfaces/renewal.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import { useRenewalStatuses } from "../../hooks/renewal/useRenewalStatuses";
-import toast from "react-hot-toast";
+import { RenewalHistoryDialog } from "./RenewalHistoryDialog";
+import { useState, useRef } from "react";
 
 interface Props {
   data: Renewal[];
@@ -21,34 +19,18 @@ const statusStyles: Record<string, string> = {
 
 const DROPDOWN_HEIGHT = 280;
 const DROPDOWN_WIDTH = 220;
-
 const RenewalTable = ({ data = [], loading }: Props) => {
   const [openRow, setOpenRow] = useState<Renewal | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedHistoryPolicy, setSelectedHistoryPolicy] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => {
     setOpenRow(null);
   });
 
-  const { mutate: updateStatus, isPending } = useUpdateRenewalStatus();
-  const { data: statuses = [] } = useRenewalStatuses();
 
-  /*   ACTIONS   */
-  const handleStatusUpdate = (id: string, statusId: number) => {
-    updateStatus(
-      { id, renewalStatusId: statusId },
-      {
-        onSuccess: (res) => {
-          toast.success(res?.statusMessage || "Status updated successfully");
-          setOpenRow(null);
-        },
-        onError: (err: any) => {
-          toast.error(err?.response?.data?.statusMessage || "Failed to update status");
-        }
-      }
-    );
-  };
 
   const isOverdue = (dueDate: string) => {
     return new Date(dueDate) < new Date();
@@ -87,18 +69,17 @@ const RenewalTable = ({ data = [], loading }: Props) => {
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
             <Th>Client Name</Th>
-            <Th>Policy Number</Th>
+            <Th>Doc Number</Th>
+            <Th>Division</Th>
+            <Th>Company</Th>
             <Th>Group Head</Th>
             <Th>Group Code</Th>
             <Th>Email</Th>
             <Th>Mobile</Th>
-            <Th>Mode</Th>
-            <Th>Term/PPT</Th>
             <Th>Start Date</Th>
             <Th>Next Due</Th>
+            <Th>Reminder Date</Th>
             <Th>Premium</Th>
-            <Th>Renewal No</Th>
-            <Th>Status</Th>
             <Th className="text-left font-semibold">Actions</Th>
           </tr>
         </thead>
@@ -116,50 +97,28 @@ const RenewalTable = ({ data = [], loading }: Props) => {
             data.map((r, index) => (
               <tr key={index} className="border-t h-[52px] hover:bg-slate-50 transition-colors cursor-default">
                 <Td>{showValue(r.title)} {showValue(r.clientName)}</Td>
-                <Td>{showValue(r.policyNumber)}</Td>
+                <Td>{r.renewalNo}</Td>
+                <Td>{showValue(r.divisionName)}</Td>
+                <Td>{showValue(r.companyName)}</Td>
                 <Td>{showValue(r.groupHeadName)}</Td>
                 <Td>{showValue(r.groupCode)}</Td>
                 <Td>{showValue(r.email)}</Td>
                 <Td>{showValue(r.primaryMobile)}</Td>
-                <Td>{showValue(r.premiumMode)}</Td>
-                <Td>{showValue(r.policyTerm)} / {showValue(r.ppt)}</Td>
                 <Td>{r.policyStartDate ? r.policyStartDate.split("T")[0] : "-"}</Td>
                 <Td>
                     {r.nextPremiumDueDate ? r.nextPremiumDueDate.split("T")[0] : "-"}
-                    {getOverdueDays(r.dueDate) > 0 && (
+                    {getOverdueDays(r.nextPremiumDueDate || r.dueDate) > 0 && (
                         <div className="text-[10px] text-red-600 font-medium">
-                            {getOverdueDays(r.dueDate)} days due
+                            {getOverdueDays(r.nextPremiumDueDate || r.dueDate)} days due
                         </div>
                     )}
                 </Td>
+                <Td>{r.reminderDate ? r.reminderDate.split("T")[0] : "-"}</Td>
                 <Td>
                     <div className="flex flex-col">
-                        <span>₹{r.installmentPremium}</span>
+                        <span>₹{r.basicPremium}</span>
                         <span className="text-[10px] text-slate-500">Final: ₹{r.finalInstallmentPremium}</span>
                     </div>
-                </Td>
-                <Td>{r.renewalNo}</Td>
-                <Td>
-                   <div className="flex items-center gap-2">
-                        <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                                statusStyles[r.renewalStatus] ?? "bg-gray-100 text-gray-700 border-gray-200"
-                            }`}
-                        >
-                            {r.renewalStatus}
-                        </span>
-                        {r.renewalStatusId === 1 && isOverdue(r.dueDate) && (
-                            <button
-                                onClick={() => handleStatusUpdate(r.renewalId, 2)}
-                                disabled={isPending}
-                                className="flex items-center gap-1 bg-amber-400 hover:bg-amber-500 text-amber-950 px-2.5 py-1 rounded text-[10px] font-bold shadow-sm transition-all transform hover:scale-105 active:scale-95 animate-pulse"
-                                title="Click to Renew"
-                            >
-                                <RefreshCw size={10} className={isPending ? "animate-spin" : ""} />
-                                RENEW
-                            </button>
-                        )}
-                   </div>
                 </Td>
                 <Td className="text-left">
                   <button
@@ -180,40 +139,29 @@ const RenewalTable = ({ data = [], loading }: Props) => {
         <div
           ref={dropdownRef}
           onClick={(e) => e.stopPropagation()}
-          className="fixed z-50 w-[220px] bg-white border rounded-lg shadow-xl overflow-hidden py-2"
+          className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-xl overflow-hidden py-1"
           style={{ top: style.top, left: style.left }}
         >
-          {/*   STATUS HEADER   */}
-          <div className="px-4 py-2 text-sm font-medium text-slate-700">
-            Change Status
-          </div>
-
-          {/* 🔥 FLAT STATUS LIST */}
-          <div className="border-t my-1"></div>
-          {statuses.map((status: any) => {
-            const isActive = status.statusName === openRow.renewalStatus;
-            return (
-              <button
-                key={status.renewalStatusId}
-                disabled={isPending || isActive}
-                onClick={() => handleStatusUpdate(openRow.renewalId, status.renewalStatusId)}
-                className={`
-                  w-full px-4 py-2 text-sm text-left flex items-center gap-2 transition-colors
-                  ${isActive 
-                    ? 'text-slate-400 bg-slate-50 cursor-not-allowed' 
-                    : 'text-slate-600 hover:bg-slate-100'}
-                `}
-              >
-                <Check 
-                  size={14} 
-                  className={`${isActive ? "opacity-100" : "opacity-0"} text-slate-500`} 
-                />
-                {status.statusName}
-              </button>
-            );
-          })}
+          <button
+            onClick={() => {
+              setSelectedHistoryPolicy(openRow.policyId);
+              setHistoryOpen(true);
+              setOpenRow(null);
+            }}
+            className="w-full px-4 py-2.5 text-sm text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700 transition-colors"
+          >
+            <History size={16} className="text-blue-500" />
+            <span className="font-medium">View History</span>
+          </button>
         </div>
       )}
+
+      {/*   HISTORY DIALOG   */}
+      <RenewalHistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        policyId={selectedHistoryPolicy}
+      />
     </div>
   );
 };

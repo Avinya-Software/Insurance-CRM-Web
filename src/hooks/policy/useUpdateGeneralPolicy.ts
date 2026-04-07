@@ -9,7 +9,8 @@ export const useUpdateGeneralPolicy = () => {
       updateGeneralPolicyApi(policyId, payload),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["general-policies"] });
-      // Optionally show toast here if preferred, but usually done in component
+      queryClient.invalidateQueries({ queryKey: ["policies"] });
+      queryClient.invalidateQueries({ queryKey: ["renewals"] });
     },
     onError: (error: any) => {
       console.error("Update Policy Error =>", error);

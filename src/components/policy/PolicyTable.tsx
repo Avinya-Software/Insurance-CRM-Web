@@ -136,6 +136,7 @@ const { data: statuses = [] } = useQuery({
             <Th>Relation</Th>
             <Th>Family Group</Th>
             <Th>Division</Th>
+            <Th>Segment</Th>
             <Th>Policy Type</Th>
             <Th>Premium</Th>
             <Th>Risk Start</Th>
@@ -146,7 +147,7 @@ const { data: statuses = [] } = useQuery({
         </thead>
 
         {loading ? (
-          <TableSkeleton rows={6} columns={13} />
+          <TableSkeleton rows={6} columns={15} />
         ) : (
           <tbody>
             {data.length === 0 ? (
@@ -184,7 +185,8 @@ const { data: statuses = [] } = useQuery({
                   <Td>{p.gender}</Td>
                   <Td>{p.relationWithHead}</Td>
                   <Td className="whitespace-nowrap">{p.familyGroupName || "-"}</Td>
-                  <Td className="whitespace-nowrap">{p.divisionType || p.detail?.divisionType}</Td>
+                  <Td className="whitespace-nowrap">{p.detail?.divisionTypeName || "-"}</Td>
+                  <Td className="whitespace-nowrap">{p.detail?.segmentName || "-"}</Td>
                   <Td className="whitespace-nowrap">{p.detail?.policyType}</Td>
 
                   <Td className="font-semibold text-green-700 text-right">
