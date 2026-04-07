@@ -1,8 +1,15 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { upsertPolicyApi } from "../../api/policy.api";
 
 export const useUpsertPolicy = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["policies"] });
+      queryClient.invalidateQueries({ queryKey: ["general-policies"] });
+      queryClient.invalidateQueries({ queryKey: ["renewals"] });
+    },
     mutationFn: async (data: any) => {
       const division = data.detail.divisionType;
 

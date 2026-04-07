@@ -312,8 +312,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
           currentPolicyNumber: currentPolicy.detail?.currentPolicyNumber || "",
           previousPolicyNumber: currentPolicy.detail?.previousPolicyNumber || "",
           policyModeId: currentPolicy.detail?.policyModeId || "",
-          riskStartDate: currentPolicy.detail?.riskStartDate?.split("T")[0] || "",
-          riskEndDate: currentPolicy.detail?.riskEndDate?.split("T")[0] || "",
+          riskStartDate: isRenewal 
+            ? currentPolicy.detail?.riskEndDate?.split("T")[0] || ""
+            : currentPolicy.detail?.riskStartDate?.split("T")[0] || "",
+          riskEndDate: isRenewal 
+            ? "" // Will be auto-calculated by the other useEffect
+            : currentPolicy.detail?.riskEndDate?.split("T")[0] || "",
           brokerId: currentPolicy.detail?.brokerId || "",
           agencyId: currentPolicy.detail?.agencyId || "",
           subAgentId: currentPolicy.detail?.subAgentId || "",
@@ -327,10 +331,17 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
           bankId: currentPolicy.detail?.bankId || "",
         },
         members:
-          currentPolicy.members?.map((m: any) => ({
-            memberId: m.memberId,
-            memberName: m.memberName,
-          })) || [],
+          currentPolicy.members?.map((m: any) => {
+            let dobStr = "-";
+            if (m.dob) {
+              const parts = m.dob.split("T")[0].split("-");
+              dobStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : m.dob.split("T")[0];
+            }
+            return {
+              memberId: m.memberId,
+              memberName: `${m.memberName} -> ${dobStr}`,
+            };
+          }) || [],
         riskLocations: currentPolicy.riskLocations || [],
         vehicle: currentPolicy.vehicle
           ? {
@@ -385,6 +396,35 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
       }
     }
   }, [divisionData, form.detail.divisionType, form.detail.divisionId]);
+  
+  useEffect(() => {
+    const { riskStartDate, policyModeId } = form.detail;
+    if (!riskStartDate || !policyModeId) return;
+
+    const selectedMode = dynamicPolicyModes.find(m => m.id === policyModeId);
+    if (!selectedMode) return;
+
+    const start = new Date(riskStartDate);
+    if (isNaN(start.getTime())) return;
+
+    let monthsToAdd = 0;
+    const modeName = selectedMode.name.toLowerCase();
+    
+    if (modeName.includes("yearly") && !modeName.includes("half")) monthsToAdd = 12;
+    else if (modeName.includes("half")) monthsToAdd = 6;
+    else if (modeName.includes("quarterly")) monthsToAdd = 3;
+    else if (modeName.includes("monthly")) monthsToAdd = 1;
+
+    if (monthsToAdd > 0) {
+      const end = new Date(start);
+      end.setMonth(end.getMonth() + monthsToAdd);
+      
+      const res = end.toISOString().split("T")[0];
+      if (res !== form.detail.riskEndDate) {
+        patchDetail({ riskEndDate: res });
+      }
+    }
+  }, [form.detail.riskStartDate, form.detail.policyModeId, dynamicPolicyModes]);
 
   const patchDetail  = (patch: any) => setForm(f => ({ ...f, detail:  { ...f.detail,  ...patch } }));
   const patchVehicle = (patch: any) => setForm(f => ({ ...f, vehicle: { ...f.vehicle, ...patch } }));
@@ -1250,10 +1290,11 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
                     error={errors.riskStartDate}
                     onChange={(v:any) => patchDetail({ riskStartDate: v })}
                   />
-                  <Input
+                   <Input
                     label="Risk End Date"
                     required
                     type="date"
+                    disabled
                     value={form.detail.riskEndDate}
                     error={errors.riskEndDate}
                     onChange={(v:any) => patchDetail({ riskEndDate: v })}
