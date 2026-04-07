@@ -419,15 +419,16 @@ export interface IGeneralPolicy {
   addressLine2: string;
   city: string;
   area: string;
-  divisionType: string;
+  divisionType: string | number;
   createdat: string
   detail: {
     id: string;
     policyId: string;
-    divisionType: string;
+    divisionType: string | number;
+    divisionTypeName: string;
     vehicleUse: string;
     vehicleClass: string;
-    segmentId: string;
+    segmentId: string | number;
     segmentName: string;
     policyType: string;
     insuranceCompanyId: string;

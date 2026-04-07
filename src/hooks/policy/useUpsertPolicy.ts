@@ -28,20 +28,20 @@ export const useUpsertPolicy = () => {
         email: data.email,
         dob: fmt(data.dob),
         relationWithHead: data.relationWithHead,
-        
+
         // Mapping Detail
         detail: {
-            ...data.detail,
-            riskStartDate: fmt(data.detail.riskStartDate),
-            riskEndDate: fmt(data.detail.riskEndDate),
-            tpDueDate: data.detail.tpDueDate ? fmt(data.detail.tpDueDate) : null,
+          ...data.detail,
+          riskStartDate: fmt(data.detail.riskStartDate),
+          riskEndDate: fmt(data.detail.riskEndDate),
+          tpDueDate: data.detail.tpDueDate ? fmt(data.detail.tpDueDate) : null,
         },
 
         // Mapping Premium
         premium: {
-            ...data.premium,
-            sumAssured: data.premium.sumAssured || 0,
-            idvValue: data.premium.idvValue || 0,
+          ...data.premium,
+          sumAssured: data.premium.sumAssured || 0,
+          idvValue: data.premium.idvValue || 0,
         },
 
         // Mapping Payment
@@ -51,9 +51,9 @@ export const useUpsertPolicy = () => {
         members: division === "Health" ? data.members : [],
         riskLocations: division === "OtherGeneral" ? data.riskLocations : [],
         vehicle: division === "Vehicle" ? {
-            ...data.vehicle,
-            registerDate: fmt(data.vehicle.registerDate),
-            manufactureYear: Number(data.vehicle.manufactureYear)
+          ...data.vehicle,
+          registerDate: fmt(data.vehicle.registerDate),
+          manufactureYear: Number(data.vehicle.manufactureYear)
         } : null
       };
 

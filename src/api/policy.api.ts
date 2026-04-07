@@ -1,5 +1,5 @@
 import { CustomerDropdown } from "../interfaces/customer.interface";
-import type { AgencyDropdown, GeneralPolicyFilters, GeneralPolicyResponse, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UserDropdown } from "../interfaces/policy.interface";
+import type { AgencyDropdown, GeneralPolicyFilters, GeneralPolicyResponse, IGeneralPolicy, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UserDropdown } from "../interfaces/policy.interface";
 import axios from "./axios";
 import api from "./axios";
 
@@ -221,5 +221,9 @@ export const updateGeneralPolicyApi = async (policyId: string, payload: any) => 
 
 export const deleteGeneralPolicyApi = async (policyId: string) => {
   const res = await api.delete(`/GeneralPolicy/delete/${policyId}`);
+  return res.data;
+};
+export const getGeneralPolicyByIdApi = async (policyId: string): Promise<{ data: IGeneralPolicy }> => {
+  const res = await api.get(`/GeneralPolicy/${policyId}`);
   return res.data;
 };
