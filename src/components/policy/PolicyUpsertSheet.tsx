@@ -9,6 +9,7 @@ import { useUpdateGeneralPolicy } from "../../hooks/policy/useUpdateGeneralPolic
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemberDropdown";
 import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
+import { useGeneralPolicyById } from "../../hooks/policy/usePolicies";
 import { useSegmentDropdown } from "../../hooks/segment/useSegmentDropdown";
 import SearchableComboBox from "../common/SearchableComboBox";
 
@@ -62,6 +63,7 @@ const makeInitial = () => ({
   relationWithHead: "Self",
   detail: {
     divisionType: "Health",
+    divisionId: "",
     segmentId: "",
     policyType: "",
     insuranceCompanyId: "",
@@ -139,7 +141,7 @@ const mergeOption = (
 };
 
 /* ─── COMPONENT ─────────────────────────────────────────────── */
-const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
+const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any) => {
   const [activeTab, setActiveTab]     = useState<TabType>("customer");
   const [form, setForm]               = useState(makeInitial());
   const [memberInput, setMemberInput] = useState("");
@@ -152,17 +154,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
   const { data: memberDropdown } = useFamilyMemberDropdown(form.familyGroupId);
   const { data: divisionData } = useDivisionDropdown(0);
 
-  const selectedDivision = divisionData?.find(d => {
-    const mappedVal = d.divisionName === "Health Insurance" ? "Health" : 
-                      d.divisionName === "Other General Insurance" ? "OtherGeneral" : 
-                      d.divisionName === "Vehicle Insurance" ? "Vehicle" : d.divisionName;
-    return mappedVal === form.detail.divisionType;
-  });
-  
-  const selectedDivisionId = selectedDivision?.divisionId;
+  const selectedDivisionId = Number(form.detail.divisionId) || 0;
   const { data: segmentData } = useSegmentDropdown(selectedDivisionId);
 
-  const isPending = isAdding || isUpdating;
+  const { data: fetchedPolicy, isLoading: isLoadingFetched } = useGeneralPolicyById(renewalId || null);
+  const isRenewal = !!renewalId;
+  const currentPolicy = isRenewal ? fetchedPolicy : policy;
+
+  const isPending = isAdding || isUpdating || isLoadingFetched;
 
   const isHealth  = form.detail.divisionType === "Health";
   const isVehicle = form.detail.divisionType === "Vehicle";
@@ -171,80 +170,78 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
   /* ─── DYNAMIC OPTION LISTS (inject real API ids so selects can match) ─── */
   const dynamicDivisions = mergeOption(
     divisionData?.map(d => ({ 
-      id: d.divisionName === "Health Insurance" ? "Health" : 
-          d.divisionName === "Other General Insurance" ? "OtherGeneral" : 
-          d.divisionName === "Vehicle Insurance" ? "Vehicle" : d.divisionName, 
+      id: d.divisionId.toString(), 
       name: d.divisionName 
     })) || [],
-    policy?.detail?.divisionType,
-    policy?.detail?.divisionType
+    currentPolicy?.detail?.divisionId?.toString(),
+    currentPolicy?.detail?.divisionName
   );
 
   const dynamicFamilyGroups = mergeOption(
     customerDropdown?.map(c => ({ id: c.customerId, name: c.clientName })) || [],
-    policy?.familyGroupId,
-    policy?.familyGroupName
+    currentPolicy?.familyGroupId,
+    currentPolicy?.familyGroupName
   );
 
   const dynamicHolders = mergeOption(
     memberDropdown?.map(m => ({ id: m.familyMemberId, name: m.fullName })) || [],
-    policy?.policyHolderId,
-    policy?.policyHolderName ||
-      `${policy?.firstName || ""} ${policy?.lastName || ""}`.trim() || undefined
+    currentPolicy?.policyHolderId,
+    currentPolicy?.policyHolderName ||
+      `${currentPolicy?.firstName || ""} ${currentPolicy?.lastName || ""}`.trim() || undefined
   );
 
   const dynamicSegments = mergeOption(
     segmentData?.map(s => ({ id: s.segmentId.toString(), name: s.segmentName })) || [],
-    policy?.detail?.segmentId,
-    policy?.detail?.segmentName
+    currentPolicy?.detail?.segmentId,
+    currentPolicy?.detail?.segmentName
   );
 
   const dynamicCompanies = mergeOption(
     COMPANY_OPTIONS,
-    policy?.detail?.insuranceCompanyId,
-    policy?.detail?.insuranceCompanyName
+    currentPolicy?.detail?.insuranceCompanyId,
+    currentPolicy?.detail?.insuranceCompanyName
   );
 
   const dynamicBranches = mergeOption(
     BRANCH_OPTIONS,
-    policy?.detail?.branchId,
-    policy?.detail?.branchName
+    currentPolicy?.detail?.branchId,
+    currentPolicy?.detail?.branchName
   );
 
   const dynamicProducts = mergeOption(
     PRODUCT_OPTIONS,
-    policy?.detail?.productId,
-    policy?.detail?.productName
+    currentPolicy?.detail?.productId,
+    currentPolicy?.detail?.productName
   );
 
   const dynamicPolicyModes = mergeOption(
     POLICY_MODE_OPTIONS,
-    policy?.detail?.policyModeId,
-    policy?.detail?.policyModeName
+    currentPolicy?.detail?.policyModeId,
+    currentPolicy?.detail?.policyModeName
   );
 
   const dynamicBrokers = mergeOption(
     BROKER_OPTIONS,
-    policy?.detail?.brokerId,
-    policy?.detail?.brokerName
+    currentPolicy?.detail?.brokerId,
+    currentPolicy?.detail?.brokerName
   );
 
   const dynamicAgencies = mergeOption(
     AGENCY_OPTIONS,
-    policy?.detail?.agencyId,
-    policy?.detail?.agencyName
+    currentPolicy?.detail?.agencyId,
+    currentPolicy?.detail?.agencyName
   );
 
   const dynamicSubAgents = mergeOption(
     SUB_AGENT_OPTIONS,
-    policy?.detail?.subAgentId,
-    policy?.detail?.subAgentName
+    currentPolicy?.detail?.subAgentId,
+    currentPolicy?.detail?.subAgentName
   );
 
   const dynamicBanks = mergeOption(
     BANK_OPTIONS,
-    policy?.detail?.bankId,
-    policy?.detail?.bankName
+    currentPolicy?.detail?.bankId,
+    currentPolicy?.detail?.bankName
   );
 
   /* ─── EFFECTS ───────────────────────────────────────────────── */
@@ -264,109 +261,130 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
   /* ─── PREFILL FORM WHEN EDITING ─────────────────────────────── */
   useEffect(() => {
-    if (policy && open) {
+    if (currentPolicy && open) {
       setForm({
-        type: policy.type || "Fresh",
-        transactionDate: policy.transactionDate?.split("T")[0] || "",
-        documentNumber: policy.documentNumber || "",
-        familyGroupId: policy.familyGroupId || "",
-        policyHolderId: policy.policyHolderId || "",
-        firstName: policy.firstName || "",
-        middleName: policy.middleName || "",
-        lastName: policy.lastName || "",
-        addressLine1: policy.addressLine1 || "",
-        addressLine2: policy.addressLine2 || "",
-        city: policy.city || "",
-        area: policy.area || "",
-        mobileNumber: policy.mobileNumber || "",
-        gender: policy.gender || "",
-        email: policy.email || "",
-        dob: policy.dob?.split("T")[0] || "",
-        relationWithHead: policy.relationWithHead || "Self",
+        type: isRenewal ? "Renewal" : (currentPolicy.type || "Fresh"),
+        transactionDate: currentPolicy.transactionDate?.split("T")[0] || "",
+        documentNumber: currentPolicy.documentNumber || "",
+        familyGroupId: currentPolicy.familyGroupId || "",
+        policyHolderId: currentPolicy.policyHolderId || "",
+        firstName: currentPolicy.firstName || "",
+        middleName: currentPolicy.middleName || "",
+        lastName: currentPolicy.lastName || "",
+        addressLine1: currentPolicy.addressLine1 || "",
+        addressLine2: currentPolicy.addressLine2 || "",
+        city: currentPolicy.city || "",
+        area: currentPolicy.area || "",
+        mobileNumber: currentPolicy.mobileNumber || "",
+        gender: currentPolicy.gender || "",
+        email: currentPolicy.email || "",
+        dob: currentPolicy.dob?.split("T")[0] || "",
+        relationWithHead: currentPolicy.relationWithHead || "Self",
         detail: {
-          divisionType:
-            policy.detail?.divisionType || policy.divisionType || "Health",
-          segmentId: policy.detail?.segmentId || "",
-          policyType: policy.detail?.policyType || "",
-          insuranceCompanyId: policy.detail?.insuranceCompanyId || "",
-          branchId: policy.detail?.branchId || "",
-          productId: policy.detail?.productId || "",
-          zone: policy.detail?.zone || "",
+          divisionType: (() => {
+            const dt = currentPolicy.detail?.divisionType || currentPolicy.divisionType;
+            const dtn = currentPolicy.detail?.divisionTypeName;
+            if (dtn === "Health Insurance" || dt === 1 || dt === "1") return "Health";
+            if (dtn === "Vehicle Insurance" || dt === 3 || dt === "3") return "Vehicle"; // IDs from usual mapping
+            if (dtn === "Other General Insurance" || dt === 2 || dt === "2") return "OtherGeneral";
+            return dt || "Health";
+          })(),
+          divisionId: currentPolicy.detail?.divisionId || "",
+          segmentId: currentPolicy.detail?.segmentId || "",
+          policyType: currentPolicy.detail?.policyType || "",
+          insuranceCompanyId: currentPolicy.detail?.insuranceCompanyId || "",
+          branchId: currentPolicy.detail?.branchId || "",
+          productId: currentPolicy.detail?.productId || "",
+          zone: currentPolicy.detail?.zone || "",
           optionalCover:
-            typeof policy.detail?.optionalCover === "string"
-              ? policy.detail.optionalCover.split(",").filter(Boolean)
-              : Array.isArray(policy.detail?.optionalCover)
-              ? policy.detail.optionalCover
+            typeof currentPolicy.detail?.optionalCover === "string"
+              ? currentPolicy.detail.optionalCover.split(",").filter(Boolean)
+              : Array.isArray(currentPolicy.detail?.optionalCover)
+              ? currentPolicy.detail.optionalCover
               : [],
           addOns:
-            typeof policy.detail?.addOns === "string"
-              ? policy.detail.addOns.split(",").filter(Boolean)
-              : Array.isArray(policy.detail?.addOns)
-              ? policy.detail.addOns
+            typeof currentPolicy.detail?.addOns === "string"
+              ? currentPolicy.detail.addOns.split(",").filter(Boolean)
+              : Array.isArray(currentPolicy.detail?.addOns)
+              ? currentPolicy.detail.addOns
               : [],
-          isPolicyReceived: Boolean(policy.detail?.isPolicyReceived),
-          currentPolicyNumber: policy.detail?.currentPolicyNumber || "",
-          previousPolicyNumber: policy.detail?.previousPolicyNumber || "",
-          policyModeId: policy.detail?.policyModeId || "",
-          riskStartDate: policy.detail?.riskStartDate?.split("T")[0] || "",
-          riskEndDate: policy.detail?.riskEndDate?.split("T")[0] || "",
-          brokerId: policy.detail?.brokerId || "",
-          agencyId: policy.detail?.agencyId || "",
-          subAgentId: policy.detail?.subAgentId || "",
-          nomineeName: policy.detail?.nomineeName || "",
-          nomineeContact: policy.detail?.nomineeContact || "",
-          remarks: policy.detail?.remarks || "",
-          vehicleUse: policy.detail?.vehicleUse || "",
-          vehicleClass: policy.detail?.vehicleClass || "",
-          tpPolicyMode: policy.detail?.tpPolicyMode || "",
-          tpDueDate: policy.detail?.tpDueDate?.split("T")[0] || "",
-          bankId: policy.detail?.bankId || "",
+          isPolicyReceived: Boolean(currentPolicy.detail?.isPolicyReceived),
+          currentPolicyNumber: currentPolicy.detail?.currentPolicyNumber || "",
+          previousPolicyNumber: currentPolicy.detail?.previousPolicyNumber || "",
+          policyModeId: currentPolicy.detail?.policyModeId || "",
+          riskStartDate: currentPolicy.detail?.riskStartDate?.split("T")[0] || "",
+          riskEndDate: currentPolicy.detail?.riskEndDate?.split("T")[0] || "",
+          brokerId: currentPolicy.detail?.brokerId || "",
+          agencyId: currentPolicy.detail?.agencyId || "",
+          subAgentId: currentPolicy.detail?.subAgentId || "",
+          nomineeName: currentPolicy.detail?.nomineeName || "",
+          nomineeContact: currentPolicy.detail?.nomineeContact || "",
+          remarks: currentPolicy.detail?.remarks || "",
+          vehicleUse: currentPolicy.detail?.vehicleUse || "",
+          vehicleClass: currentPolicy.detail?.vehicleClass || "",
+          tpPolicyMode: currentPolicy.detail?.tpPolicyMode || "",
+          tpDueDate: currentPolicy.detail?.tpDueDate?.split("T")[0] || "",
+          bankId: currentPolicy.detail?.bankId || "",
         },
         members:
-          policy.members?.map((m: any) => ({
+          currentPolicy.members?.map((m: any) => ({
             memberId: m.memberId,
             memberName: m.memberName,
           })) || [],
-        riskLocations: policy.riskLocations || [],
-        vehicle: policy.vehicle
+        riskLocations: currentPolicy.riskLocations || [],
+        vehicle: currentPolicy.vehicle
           ? {
-              vehicleNumber: policy.vehicle.vehicleNumber || "",
-              vehicleName: policy.vehicle.vehicleName || "",
-              engineNo: policy.vehicle.engineNo || "",
-              chassisNo: policy.vehicle.chassisNo || "",
-              brand: policy.vehicle.brand || "",
-              fuelType: policy.vehicle.fuelType || "",
-              registerDate: policy.vehicle.registerDate?.split("T")[0] || "",
-              manufactureYear: String(policy.vehicle.manufactureYear || ""),
-              rto: policy.vehicle.rto || "",
-              cc: policy.vehicle.cc || "",
-              gvw: policy.vehicle.gvw || "",
-              ncb: policy.vehicle.ncb || "",
-              fitnessCertificate: Boolean(policy.vehicle.fitnessCertificate),
-              bhSeries: Boolean(policy.vehicle.bhSeries),
+              vehicleNumber: currentPolicy.vehicle.vehicleNumber || "",
+              vehicleName: currentPolicy.vehicle.vehicleName || "",
+              engineNo: currentPolicy.vehicle.engineNo || "",
+              chassisNo: currentPolicy.vehicle.chassisNo || "",
+              brand: currentPolicy.vehicle.brand || "",
+              fuelType: currentPolicy.vehicle.fuelType || "",
+              registerDate: currentPolicy.vehicle.registerDate?.split("T")[0] || "",
+              manufactureYear: String(currentPolicy.vehicle.manufactureYear || ""),
+              rto: currentPolicy.vehicle.rto || "",
+              cc: currentPolicy.vehicle.cc || "",
+              gvw: currentPolicy.vehicle.gvw || "",
+              ncb: currentPolicy.vehicle.ncb || "",
+              fitnessCertificate: Boolean(currentPolicy.vehicle.fitnessCertificate),
+              bhSeries: Boolean(currentPolicy.vehicle.bhSeries),
             }
           : makeInitial().vehicle,
         premium: {
-          sumAssured: policy.premium?.sumAssured || 0,
-          idvValue: policy.premium?.idvValue || 0,
-          basicPremium: policy.premium?.basicPremium || 0,
-          tpaPremium: policy.premium?.tpaPremium || 0,
-          taxAmount: policy.premium?.taxAmount || 0,
-          totalPremium: policy.premium?.totalPremium || 0,
-          isCommission: Boolean(policy.premium?.isCommission),
-          commissionableAmount: policy.premium?.commissionableAmount || 0,
-          commissionEntry: policy.premium?.commissionEntry || 0,
-          commitmentAmount: policy.premium?.commitmentAmount || 0,
+          sumAssured: currentPolicy.premium?.sumAssured || 0,
+          idvValue: currentPolicy.premium?.idvValue || 0,
+          basicPremium: currentPolicy.premium?.basicPremium || 0,
+          tpaPremium: currentPolicy.premium?.tpaPremium || 0,
+          taxAmount: currentPolicy.premium?.taxAmount || 0,
+          totalPremium: currentPolicy.premium?.totalPremium || 0,
+          isCommission: Boolean(currentPolicy.premium?.isCommission),
+          commissionableAmount: currentPolicy.premium?.commissionableAmount || 0,
+          commissionEntry: currentPolicy.premium?.commissionEntry || 0,
+          commitmentAmount: currentPolicy.premium?.commitmentAmount || 0,
         },
         payment: {
-          paidByClient: policy.payment?.paidByClient || "",
-          clientAmount: policy.payment?.clientAmount || 0,
-          paidByAgent: policy.payment?.paidByAgent || "",
-          agentAmount: policy.payment?.agentAmount || 0,
+          paidByClient: currentPolicy.payment?.paidByClient || "",
+          clientAmount: currentPolicy.payment?.clientAmount || 0,
+          paidByAgent: currentPolicy.payment?.paidByAgent || "",
+          agentAmount: currentPolicy.payment?.agentAmount || 0,
         },
       });
     }
-  }, [policy, open]);
+  }, [currentPolicy, open, isRenewal]);
+  
+  useEffect(() => {
+    if (divisionData && form.detail.divisionType && !form.detail.divisionId) {
+      const division = divisionData.find(d => {
+        const mappedType = d.divisionName === "Health Insurance" ? "Health" : 
+                           d.divisionName === "Other General Insurance" ? "OtherGeneral" : 
+                           d.divisionName === "Vehicle Insurance" ? "Vehicle" : d.divisionName;
+        return mappedType === form.detail.divisionType;
+      });
+      if (division) {
+        patchDetail({ divisionId: division.divisionId.toString() });
+      }
+    }
+  }, [divisionData, form.detail.divisionType, form.detail.divisionId]);
 
   const patchDetail  = (patch: any) => setForm(f => ({ ...f, detail:  { ...f.detail,  ...patch } }));
   const patchVehicle = (patch: any) => setForm(f => ({ ...f, vehicle: { ...f.vehicle, ...patch } }));
@@ -381,8 +399,21 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
   };
 
   const addMember = () => {
-    if (!memberInput.trim()) return;
-    setForm(f => ({ ...f, members: [...f.members, { memberId: null, memberName: memberInput.trim() }] }));
+    if (!memberInput) return;
+    const selected = memberDropdown?.find((m: any) => m.familyMemberId === memberInput);
+    if (!selected) return;
+    
+    let dobStr = "-";
+    if (selected.dob) {
+      const parts = selected.dob.split("T")[0].split("-");
+      dobStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : selected.dob.split("T")[0];
+    }
+    const memberName = `${selected.fullName} -> ${dobStr}`;
+
+    setForm(f => {
+      if (f.members.some(m => m.memberId === selected.familyMemberId)) return f;
+      return { ...f, members: [...f.members, { memberId: selected.familyMemberId, memberName }] };
+    });
     setMemberInput("");
   };
 
@@ -585,6 +616,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
         detail: {
           divisionType: form.detail.divisionType || "",
+          divisionId: Number(form.detail.divisionId) || 0,
           vehicleUse: division === "Vehicle" ? form.detail.vehicleUse || "" : null,
           vehicleClass: division === "Vehicle" ? form.detail.vehicleClass || "" : null,
 
@@ -640,8 +672,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
         members:
           division === "Health"
             ? form.members.map((m: any) => ({
-                memberId: m.memberId || STATIC_GUID,
-                memberName: m.memberName || ""
+                memberId: m.memberId || STATIC_GUID
               }))
             : [],
 
@@ -709,7 +740,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
 
       console.log("Final Payload => ", payload);
 
-      if (policy?.policyId) {
+      if (policy?.policyId && !isRenewal) {
         const response = await updatePolicy({ policyId: policy.policyId, payload });
         toast.success(response?.statusMessage || "Policy updated successfully!");
       } else {
@@ -751,10 +782,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
             <div className="p-2 bg-blue-600 rounded-lg"><ShieldCheck size={20} className="text-white" /></div>
             <div>
               <h2 className="text-xl font-bold text-slate-900">
-                {policy ? "Edit General Policy" : "Add General Policy"}
+                {isRenewal ? "Create Renewal" : policy ? "Edit General Policy" : "Add General Policy"}
               </h2>
               <p className="text-slate-500 text-xs mt-0.5">
-                Fill in the details to {policy ? "update" : "create"} the insurance policy.
+                Fill in the details to {isRenewal ? "renew" : policy ? "update" : "create"} the insurance policy.
               </p>
             </div>
           </div>
@@ -774,7 +805,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-8 pb-56">
 
           {/* ══ TAB 1: CUSTOMER ══ */}
           {activeTab === "customer" && (
@@ -802,6 +833,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                 <Input label="Transaction Date" required type="date" value={form.transactionDate}
                   onChange={(v:any) => setForm(f => ({ ...f, transactionDate: v }))} />
                 <Input label="Document Number" value={form.documentNumber} placeholder="Document number"
+                  disabled={isRenewal}
                   onChange={(v:any) => setForm(f => ({ ...f, documentNumber: v }))} />
               </div>
 
@@ -813,6 +845,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                     items={dynamicFamilyGroups.map(g => ({ label: g.name, value: g.id }))}
                     value={form.familyGroupId}
                     error={errors.familyGroupId}
+                    disabled={isRenewal}
                     placeholder="Search family group..."
                     onSelect={(item: any) =>
                       setForm(f => ({ 
@@ -871,16 +904,23 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
             <div className="space-y-6">
               <Section icon={<ShieldCheck size={14} />} title="Policy Specifications">
 
-                <div className="grid grid-cols-12 gap-4 items-start">
+                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-4">
                     <SearchableComboBox
                       label="Select Division"
                       required
                       items={dynamicDivisions.map(d => ({ label: d.name, value: d.id }))}
-                      value={form.detail.divisionType}
+                      value={form.detail.divisionId?.toString()}
                       error={errors.divisionType}
+                      disabled={isRenewal}
                       placeholder="Search division..."
-                      onSelect={(item: any) => patchDetail({ divisionType: item?.value ?? "", segmentId: "" })}
+                      onSelect={(item: any) => {
+                        const division = divisionData?.find(d => d.divisionId.toString() === item?.value);
+                        const mappedType = division?.divisionName === "Health Insurance" ? "Health" : 
+                                           division?.divisionName === "Other General Insurance" ? "OtherGeneral" : 
+                                           division?.divisionName === "Vehicle Insurance" ? "Vehicle" : (division?.divisionName || "");
+                        patchDetail({ divisionId: item?.value ?? "", divisionType: mappedType, segmentId: "" });
+                      }}
                     />
                   </div>
                 </div>
@@ -1259,10 +1299,22 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
                   <div className="space-y-3">
                     <div className="grid grid-cols-12 gap-4 items-start">
                       <div className="col-span-10">
-                        <Input
+                        <SearchableComboBox
                           label="Select Family Member"
+                          items={memberDropdown?.map((m: any) => {
+                            let dobStr = "-";
+                            if (m.dob) {
+                              const parts = m.dob.split("T")[0].split("-");
+                              dobStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : m.dob.split("T")[0];
+                            }
+                            return {
+                              label: `${m.fullName} -> ${dobStr}`,
+                              value: m.familyMemberId
+                            };
+                          }) || []}
                           value={memberInput}
-                          onChange={(v:any) => setMemberInput(v)}
+                          placeholder={form.familyGroupId ? "Search Family Member..." : "Select Family Group first"}
+                          onSelect={(item: any) => setMemberInput(item?.value ?? "")}
                         />
                       </div>
                       <div className="col-span-2">
@@ -1605,7 +1657,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy }: any) => {
               onClick={handleSave}
               className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded disabled:opacity-50 transition-all"
             >
-              {isPending ? "Saving..." : "SAVE"}
+              {isAdding || isUpdating ? "Saving..." : isLoadingFetched ? "Loading..." : "SAVE"}
             </button>
             <button
               onClick={() => {
@@ -1647,8 +1699,8 @@ export default PolicyUpsertSheet;
 
 /* ─── SHARED HELPERS ─────────────────────────────────────────── */
 const Section = ({ icon, title, children }: any) => (
-  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-4">
-    <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 text-white">
+  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-visible mb-4">
+    <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 text-white overflow-hidden rounded-t-lg">
       <div className="p-1 bg-white/10 rounded">{icon}</div>
       <h3 className="font-bold uppercase tracking-wider text-[10px] leading-none">{title}</h3>
     </div>

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getGeneralPoliciesApi, getPoliciesApi } from "../../api/policy.api";
+import { getGeneralPoliciesApi, getPoliciesApi, getGeneralPolicyByIdApi } from "../../api/policy.api";
 import type { Policy, PoliciesResponse, GeneralPolicyFilters, GeneralPolicyResponse } from "../../interfaces/policy.interface";
 
 export interface PolicyFilters {
@@ -25,5 +25,16 @@ export const useGeneralPolicies = (filters: GeneralPolicyFilters) => {
       const res: GeneralPolicyResponse = await getGeneralPoliciesApi(filters);
       return res.data;
     },
+  });
+};
+export const useGeneralPolicyById = (policyId: string | null) => {
+  return useQuery({
+    queryKey: ["general-policy", policyId],
+    queryFn: async () => {
+      if (!policyId) return null;
+      const res = await getGeneralPolicyByIdApi(policyId);
+      return res.data;
+    },
+    enabled: !!policyId,
   });
 };

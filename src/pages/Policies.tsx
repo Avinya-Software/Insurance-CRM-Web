@@ -29,7 +29,7 @@ const Policies = () => {
 
   // 🔥 RENEWAL STATE
   const [openRenewalSheet, setOpenRenewalSheet] = useState(false);
-  const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
+  const [selectedRenewalId, setSelectedRenewalId] = useState<string | null>(null);
 
   const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
@@ -61,27 +61,21 @@ setSelectedPolicy(policy);
 setOpenPolicySheet(true);
 };
 
-const handleCreateRenewal = (policy: any) => {
-setSelectedRenewal({
-policyId: policy.policyId,
-customerId: policy.customerId,
-renewalDate: policy.renewalDate
-? policy.renewalDate.split("T")[0]
-: "",
-});
-setOpenRenewalSheet(true);
-};
+  const handleCreateRenewal = (policy: any) => {
+    setSelectedRenewalId(policy.policyId);
+    setOpenPolicySheet(true);
+  };
 
 const handlePolicySuccess = () => {
 setOpenPolicySheet(false);
 setSelectedPolicy(null);
 };
 
-const handleRenewalSuccess = () => {
-setOpenRenewalSheet(false);
-setSelectedRenewal(null);
-toast.success("Renewal saved successfully!");
-};
+  const handleRenewalSuccess = () => {
+    setOpenRenewalSheet(false);
+    setSelectedRenewalId(null);
+    toast.success("Renewal saved successfully!");
+  };
 
 return (
 <>
@@ -192,23 +186,15 @@ onClear={clearAllFilters}
       <PolicyUpsertSheet
         open={openPolicySheet}
         policy={selectedPolicy}
+        renewalId={selectedRenewalId}
         onClose={() => {
           setOpenPolicySheet(false);
           setSelectedPolicy(null);
+          setSelectedRenewalId(null);
         }}
         onSuccess={handlePolicySuccess}
       />
 
-{/*   RENEWAL UPSERT   */}
-<RenewalUpsertSheet
-open={openRenewalSheet}
-renewal={selectedRenewal}
-onClose={() => {
-setOpenRenewalSheet(false);
-setSelectedRenewal(null);
-}}
-onSuccess={handleRenewalSuccess}
-/>
 </>
 );
 };
