@@ -1,11 +1,9 @@
-export interface Renewal {
+export interface RenewalHistoryRecord {
   renewalId: string;
   policyId: string;
   customerId: string;
+  type: string;
   renewalNo: string;
-  dueDate: string;
-  paidDate: string | null;
-  amount: number;
   nextDueDate: string;
   reminderDate: string;
   isRenewed: boolean;
@@ -20,14 +18,10 @@ export interface Renewal {
   clientCategory: string;
   email: string;
   primaryMobile: string;
-  referenceName: string;
   policyNumber: string;
-  companyName: string | null;
+  companyName: string;
   divisionType: number;
   divisionName: string;
-  premiumMode: string;
-  policyTerm: number | null;
-  ppt: number | null;
   policyStartDate: string;
   nextPremiumDueDate: string;
   sumAssured: number;
@@ -38,27 +32,8 @@ export interface Renewal {
   annualPremium: number;
 }
 
-export interface RenewalApiResponse {
+export interface RenewalHistoryApiResponse {
   statusCode: number;
   statusMessage: string;
-  data: {
-    totalCount: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-    data: Renewal[];
-  };
-}
-
-export interface GetRenewalsParams {
-  pageNumber: number;
-  pageSize: number;
-  search?: string;
-  renewalStatusId?: number;
-  customerId?: string;
-}
-
-export interface UpdateRenewalStatusPayload {
-  id: string;
-  renewalStatusId: number;
+  data: RenewalHistoryRecord[];
 }
