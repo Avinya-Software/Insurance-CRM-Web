@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
   X, ChevronRight, ChevronDown, Plus, Trash2,
-  ShieldCheck, Car, Activity, CreditCard, Users
+  ShieldCheck, Car, Activity, CreditCard, Users,
+  UploadCloud, FileText, Eye, Download, AlertCircle
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
+import Spinner from "../common/Spinner";
 import { useUpsertPolicy } from "../../hooks/policy/useUpsertPolicy";
 import { useUpdateGeneralPolicy } from "../../hooks/policy/useUpdateGeneralPolicy";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
@@ -11,9 +13,11 @@ import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemb
 import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
 import { useGeneralPolicyById } from "../../hooks/policy/usePolicies";
 import { useSegmentDropdown } from "../../hooks/segment/useSegmentDropdown";
+import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
+import { usePolicyDocumentActions } from "../../hooks/LifePolicy/usePolicyDocumentActions";
 import SearchableComboBox from "../common/SearchableComboBox";
 
-type TabType = "customer" | "policy" | "premium";
+type TabType = "customer" | "policy" | "premium" | "documents";
 
 /* ─── OPTION LISTS ──────────────────────────────────────────── */
 const FAMILY_GROUP_OPTIONS   = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Family Group A" }];
@@ -41,6 +45,16 @@ const RTO_OPTIONS            = [{ id: "GJ05", name: "GJ-05 Surat" }];
 const NCB_OPTIONS            = [{ id: "0", name: "0%" }, { id: "20", name: "20%" }, { id: "25", name: "25%" }, { id: "35", name: "35%" }];
 const TP_MODE_OPTIONS        = [{ id: "Yearly", name: "Yearly" }, { id: "2Year", name: "2 Years" }, { id: "3Year", name: "3 Years" }];
 const BANK_OPTIONS           = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "SBI Bank" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "HDFC Bank" }];
+const DOCUMENT_OPTIONS = [
+  { id: "Policy Copy", name: "Policy Copy" },
+  { id: "Proposal Form", name: "Proposal Form" },
+  { id: "Aadhar Card", name: "Aadhar Card" },
+  { id: "PAN Card", name: "PAN Card" },
+  { id: "Previous Policy", name: "Previous Policy" },
+  { id: "RC Copy", name: "RC Copy" },
+  { id: "Driving License", name: "Driving License" },
+  { id: "Others", name: "Others" },
+];
 
 /* ─── INITIAL FORM ──────────────────────────────────────────── */
 const makeInitial = () => ({
@@ -144,11 +158,27 @@ const mergeOption = (
 const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any) => {
   const [activeTab, setActiveTab]     = useState<TabType>("customer");
   const [form, setForm]               = useState(makeInitial());
+  const [originalForm, setOriginalForm] = useState<any>(null);
   const [memberInput, setMemberInput] = useState("");
   const [errors, setErrors] = useState<any>({});
 
+  const [files, setFiles] = useState<{ file: File; type: string; label: string }[]>([]);
+  const [selectedDocName, setSelectedDocName] = useState("");
+  const [existingDocuments, setExistingDocuments] = useState<
+    { fileName: string; url: string; id: string; documentName: string; uploadedAt?: string }[]
+  >([]);
+
   const { mutateAsync: addPolicy, isPending: isAdding } = useUpsertPolicy();
   const { mutateAsync: updatePolicy, isPending: isUpdating } = useUpdateGeneralPolicy();
+  const { mutateAsync: uploadPolicyDocument, isPending: isUploading } = useUploadPolicyDocument();
+  
+  const { preview, download, remove } = usePolicyDocumentActions(
+    (deletedId: string) => {
+      setExistingDocuments((prev) =>
+        prev.filter((f) => f.id !== deletedId)
+      );
+    }
+  );
 
   const { data: customerDropdown } = useCustomerDropdown();
   const { data: memberDropdown } = useFamilyMemberDropdown(form.familyGroupId);
@@ -161,7 +191,24 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
   const isRenewal = !!renewalId;
   const currentPolicy = isRenewal ? fetchedPolicy : policy;
 
-  const isPending = isAdding || isUpdating || isLoadingFetched;
+  const checkPolicyChanges = (curr: any, orig: any) => {
+    if (!orig) return true;
+    const cleanOrig = { ...orig, files: undefined };
+    const cleanCurr = { ...curr, files: undefined };
+    
+    // Specifically exclude fields that might be auto-calculated on mount
+    // to avoid false positives in change detection
+    if (cleanOrig.detail) {
+      delete (cleanOrig as any).detail.riskEndDate;
+    }
+    if (cleanCurr.detail) {
+      delete (cleanCurr as any).detail.riskEndDate;
+    }
+
+    return JSON.stringify(cleanCurr) !== JSON.stringify(cleanOrig);
+  };
+
+  const isPending = isAdding || isUpdating || isLoadingFetched || isUploading;
 
   const isHealth  = form.detail.divisionType === "Health";
   const isVehicle = form.detail.divisionType === "Vehicle";
@@ -253,8 +300,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
   useEffect(() => {
     if (!open) {
       setForm(makeInitial());
+      setOriginalForm(null);
       setErrors({});
       setMemberInput("");
+      setFiles([]);
+      setSelectedDocName("");
+      setExistingDocuments([]);
       setActiveTab("customer");
     }
   }, [open]);
@@ -262,7 +313,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
   /* ─── PREFILL FORM WHEN EDITING ─────────────────────────────── */
   useEffect(() => {
     if (currentPolicy && open) {
-      setForm({
+      const newForm = {
         type: isRenewal ? "Renewal" : (currentPolicy.type || "Fresh"),
         transactionDate: currentPolicy.transactionDate?.split("T")[0] || "",
         documentNumber: currentPolicy.documentNumber || "",
@@ -338,6 +389,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
               dobStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : m.dob.split("T")[0];
             }
             return {
+              id: m.id,
               memberId: m.memberId,
               memberName: `${m.memberName} -> ${dobStr}`,
             };
@@ -379,7 +431,18 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
           paidByAgent: currentPolicy.payment?.paidByAgent || "",
           agentAmount: currentPolicy.payment?.agentAmount || 0,
         },
-      });
+      };
+      setForm(newForm);
+      setOriginalForm(JSON.parse(JSON.stringify(newForm)));
+
+      const mappedDocs = (currentPolicy.documents || []).map((d: any) => ({
+        id: d.id,
+        fileName: d.fileName,
+        url: d.url,
+        documentName: d.documentName || "Policy",
+        uploadedAt: d.uploadedAt
+      }));
+      setExistingDocuments(mappedDocs);
     }
   }, [currentPolicy, open, isRenewal]);
   
@@ -452,7 +515,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
 
     setForm(f => {
       if (f.members.some(m => m.memberId === selected.familyMemberId)) return f;
-      return { ...f, members: [...f.members, { memberId: selected.familyMemberId, memberName }] };
+      return { ...f, members: [...f.members, { id: null, memberId: selected.familyMemberId, memberName }] };
     });
     setMemberInput("");
   };
@@ -712,13 +775,16 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
         members:
           division === "Health"
             ? form.members.map((m: any) => ({
-                memberId: m.memberId || STATIC_GUID
+                id: m.id || null,
+                memberId: m.memberId || STATIC_GUID,
+                memberName: m.memberName
               }))
             : [],
 
         riskLocations:
           division === "OtherGeneral"
             ? form.riskLocations.map((loc: any, index: number) => ({
+                id: loc.id || null,
                 srNo: loc.srNo || index + 1,
                 sumAssured: Number(loc.sumAssured) || 0,
                 riskAddress: loc.riskAddress || ""
@@ -780,12 +846,39 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
 
       console.log("Final Payload => ", payload);
 
-      if (policy?.policyId && !isRenewal) {
-        const response = await updatePolicy({ policyId: policy.policyId, payload });
-        toast.success(response?.statusMessage || "Policy updated successfully!");
-      } else {
-        const response = await addPolicy(payload);
-        toast.success(response?.statusMessage || "Policy saved successfully!");
+      let policyId = policy?.policyId || undefined;
+      let policyUpdated = false;
+      const hasPolicyChanged = originalForm ? checkPolicyChanges(form, originalForm) : true;
+
+      // 🔥 FIX: For renewal, we should always create a new record if there are files or changes
+      if (hasPolicyChanged || isRenewal) {
+        if (policy?.policyId && !isRenewal) {
+          const response = await updatePolicy({ policyId: policy.policyId, payload });
+          toast.success(response?.statusMessage || "Policy updated successfully!");
+          policyUpdated = true;
+        } else {
+          const response = await addPolicy(payload);
+          policyId = response?.data?.policyId || response?.policyId;
+          toast.success(response?.statusMessage || "Policy saved successfully!");
+          policyUpdated = true;
+        }
+      }
+
+      if (files.length > 0 && policyId) {
+        await Promise.all(
+          files.map((f) => {
+            const formData = new FormData();
+            formData.append("Id", policyId);
+            formData.append("Type", "3");
+            formData.append("PolicyType", "0");
+            formData.append("DocumentType", f.label);
+            formData.append("Files", f.file);
+            return uploadPolicyDocument(formData);
+          })
+        );
+        if (!policyUpdated) {
+          toast.success("Documents uploaded successfully!");
+        }
       }
 
       onClose();
@@ -808,6 +901,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
     { id: "customer" as TabType, label: "Customer Information", icon: Users },
     { id: "policy"   as TabType, label: "Policy Details",       icon: ShieldCheck },
     { id: "premium"  as TabType, label: "Premium & Payment",    icon: CreditCard },
+    { id: "documents" as TabType, label: "Document Upload",     icon: UploadCloud },
   ];
 
   return (
@@ -1688,6 +1782,173 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
               </Section>
             </div>
           )}
+
+          {/* ══ TAB 4: DOCUMENTS ══ */}
+          {activeTab === "documents" && (
+            <div className="space-y-8">
+              {!policy && (
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
+                  <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    Documents will be uploaded automatically when you click <strong>SAVE</strong>.
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                  <div className="lg:col-span-1 space-y-6">
+                    <Select
+                      label="Document Name"
+                      required
+                      value={selectedDocName}
+                      options={DOCUMENT_OPTIONS}
+                      onChange={(v: string) => setSelectedDocName(v)}
+                    />
+                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertCircle size={14} className="text-blue-600" />
+                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Quick Tip</p>
+                      </div>
+                      <p className="text-xs text-blue-700 leading-relaxed">
+                        Select the document type first, then click or drag files to the upload area.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-2 space-y-3">
+                    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-xs">Select Document</label>
+                    <div className="relative">
+                      <input
+                        id="policy-upload"
+                        type="file"
+                        multiple
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        disabled={isPending}
+                        onChange={(e) => {
+                          if (!e.target.files) return;
+                          if (!selectedDocName) {
+                            toast.error("Please select a document name first");
+                            return;
+                          }
+                          const newFiles = Array.from(e.target.files).map(f => ({ 
+                            file: f, 
+                            type: "GeneralPolicy", 
+                            label: selectedDocName
+                          }));
+                          setFiles(prev => [...prev, ...newFiles]);
+                          setSelectedDocName(""); 
+                          e.target.value = ""; 
+                        }}                  
+                      />
+                      <label 
+                        htmlFor="policy-upload"
+                        className={`
+                          flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl transition-all cursor-pointer group
+                          ${!selectedDocName ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-50' : 'bg-white border-blue-200 hover:bg-blue-50/50 hover:border-blue-400 shadow-sm'}
+                        `}
+                      >
+                        <div className="flex items-center gap-6">
+                          <div className={`p-4 rounded-2xl shadow-sm transition-all ${selectedDocName ? 'bg-blue-600 text-white group-hover:scale-110 group-hover:shadow-blue-200 group-hover:shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
+                            <UploadCloud size={28} />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-base font-bold text-slate-800">
+                              {selectedDocName ? `Click to upload ${selectedDocName}` : "Select name to enable upload"}
+                            </p>
+                            <p className="text-xs text-slate-400 font-medium mt-1">Supports PDF, PNG, JPG (Max 10MB per file)</p>
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                {files.length > 0 && (
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
+                      <Plus size={18} className="text-blue-600" /> New Attachments
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {files.map((f, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="p-2 bg-white rounded-lg text-blue-600 shadow-sm">
+                              <FileText size={16} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-700 truncate">{f.label}</p>
+                              <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{f.file.name}</p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => setFiles(prev => prev.filter((_, i) => i !== idx))}
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {existingDocuments.length > 0 && (
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
+                      <ShieldCheck size={18} className="text-emerald-600" /> Existing Documents
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {existingDocuments.map((file) => (
+                        <div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
+                              <FileText size={16} />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-slate-700 truncate">{file.documentName}</p>
+                                {file.uploadedAt && (
+                                  <span className="text-[9px] px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded font-bold">
+                                    {new Date(file.uploadedAt).toLocaleDateString('en-GB')}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider truncate">{file.fileName}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <button onClick={() => preview(file.url)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                              <Eye size={16} />
+                            </button>
+                            <button onClick={() => download(file.url, file.fileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                              <Download size={16} />
+                            </button>
+                            <button 
+                              onClick={async () => {
+                                if (!confirm("Delete this document?")) return;
+                                try {
+                                  await remove(policy?.policyId || renewalId || "", file.id);
+                                } catch (e) {
+                                  console.error(e);
+                                }
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* FOOTER */}
@@ -1715,15 +1976,23 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
           <div className="flex gap-3">
             {activeTab !== "customer" && (
               <button
-                onClick={() => setActiveTab(activeTab === "premium" ? "policy" : "customer")}
+                onClick={() => {
+                  const tabs: TabType[] = ["customer", "policy", "premium", "documents"];
+                  const idx = tabs.indexOf(activeTab);
+                  if (idx > 0) setActiveTab(tabs[idx - 1]);
+                }}
                 className="px-6 py-2.5 text-sm font-bold text-white bg-red-400 rounded"
               >
                 Previous
               </button>
             )}
-            {activeTab !== "premium" && (
+            {activeTab !== "documents" && (
               <button
-                onClick={() => setActiveTab(activeTab === "customer" ? "policy" : "premium")}
+                onClick={() => {
+                  const tabs: TabType[] = ["customer", "policy", "premium", "documents"];
+                  const idx = tabs.indexOf(activeTab);
+                  if (idx < tabs.length - 1) setActiveTab(tabs[idx + 1]);
+                }}
                 className="px-6 py-2.5 text-sm font-bold text-white bg-blue-500 rounded flex items-center gap-1.5"
               >
                 Next <ChevronRight size={16} />
