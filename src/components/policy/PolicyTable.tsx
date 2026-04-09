@@ -128,7 +128,7 @@ const { data: statuses = [] } = useQuery({
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
-            <Th>Doc Number</Th>
+            <Th>Policy Number</Th>
             <Th>Type</Th>
             <Th>Policy Holder</Th>
             <Th>Mobile</Th>

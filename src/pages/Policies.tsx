@@ -63,6 +63,7 @@ setOpenPolicySheet(true);
 
   const handleCreateRenewal = (policy: any) => {
     setSelectedRenewalId(policy.policyId);
+    setSelectedPolicy(policy);
     setOpenPolicySheet(true);
   };
 
@@ -162,7 +163,7 @@ Filters
 <div className="border-t px-4 py-3">
 <Pagination
   page={filters.page}
-  totalPages={data?.totalPages || 1}
+  totalPages={data?.totalPages || Math.ceil((data?.totalCount || 0) / filters.pageSize) || 1}
   onChange={(page) =>
     setFilters({ ...filters, page: page })
   }

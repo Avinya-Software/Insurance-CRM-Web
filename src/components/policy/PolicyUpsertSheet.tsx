@@ -30,7 +30,12 @@ const COMPANY_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", na
 const BRANCH_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Althan" }];
 const PRODUCT_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Product X" }];
 const ZONE_OPTIONS           = [{ id: "Zone I", name: "Zone I" }, { id: "Zone II", name: "Zone II" }];
-const POLICY_MODE_OPTIONS    = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Yearly" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Half Yearly" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Quarterly" }, { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Monthly" }];
+const POLICY_MODE_OPTIONS    = [
+  { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Yearly" },
+  { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abd", name: "Half Yearly" },
+  { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abe", name: "Quarterly" },
+  { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abf", name: "Monthly" }
+];
 const OPT_COVER_OPTIONS      = [{ id: "NoClaim", name: "No Claim Bonus Protection" }, { id: "PA", name: "Personal Accident" }];
 const ADD_ON_OPTIONS         = [{ id: "ZeroDepreciation", name: "Zero Depreciation" }, { id: "RoadsideAssist", name: "Roadside Assistance" }];
 const BROKER_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Rajeshbhai" }];
@@ -189,7 +194,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
 
   const { data: fetchedPolicy, isLoading: isLoadingFetched } = useGeneralPolicyById(renewalId || null);
   const isRenewal = !!renewalId;
-  const currentPolicy = isRenewal ? fetchedPolicy : policy;
+  const currentPolicy = isRenewal ? (fetchedPolicy || policy) : policy;
 
   const checkPolicyChanges = (curr: any, orig: any) => {
     if (!orig) return true;
@@ -199,10 +204,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
     // Specifically exclude fields that might be auto-calculated on mount
     // to avoid false positives in change detection
     if (cleanOrig.detail) {
-      delete (cleanOrig as any).detail.riskEndDate;
+      // Add other fields to exclude if necessary
     }
     if (cleanCurr.detail) {
-      delete (cleanCurr as any).detail.riskEndDate;
+      // Add other fields to exclude if necessary
     }
 
     return JSON.stringify(cleanCurr) !== JSON.stringify(cleanOrig);
@@ -361,7 +366,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
               : [],
           isPolicyReceived: Boolean(currentPolicy.detail?.isPolicyReceived),
           currentPolicyNumber: currentPolicy.detail?.currentPolicyNumber || "",
-          previousPolicyNumber: currentPolicy.detail?.previousPolicyNumber || "",
+          previousPolicyNumber: isRenewal 
+            ? currentPolicy.documentNumber || ""
+            : currentPolicy.detail?.previousPolicyNumber || "",
           policyModeId: currentPolicy.detail?.policyModeId || "",
           riskStartDate: isRenewal 
             ? currentPolicy.detail?.riskEndDate?.split("T")[0] || ""
@@ -383,6 +390,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
         },
         members:
           currentPolicy.members?.map((m: any) => {
+            // Ensure we don't double-add the date part if it's already in memberName
+            const cleanName = m.memberName?.split(" -> ")[0] || "";
             let dobStr = "-";
             if (m.dob) {
               const parts = m.dob.split("T")[0].split("-");
@@ -391,7 +400,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
             return {
               id: m.id,
               memberId: m.memberId,
-              memberName: `${m.memberName} -> ${dobStr}`,
+              memberName: `${cleanName} -> ${dobStr}`,
             };
           }) || [],
         riskLocations: currentPolicy.riskLocations || [],
@@ -461,8 +470,15 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
   }, [divisionData, form.detail.divisionType, form.detail.divisionId]);
   
   useEffect(() => {
-    const { riskStartDate, policyModeId } = form.detail;
+    const { riskStartDate, policyModeId, riskEndDate } = form.detail;
     if (!riskStartDate || !policyModeId) return;
+    if (originalForm?.detail) {
+      const startChanged = riskStartDate !== originalForm.detail.riskStartDate;
+      const modeChanged = policyModeId !== originalForm.detail.policyModeId;
+      if (!startChanged && !modeChanged && riskEndDate) {
+        return;
+      }
+    }
 
     const selectedMode = dynamicPolicyModes.find(m => m.id === policyModeId);
     if (!selectedMode) return;
@@ -483,11 +499,11 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
       end.setMonth(end.getMonth() + monthsToAdd);
       
       const res = end.toISOString().split("T")[0];
-      if (res !== form.detail.riskEndDate) {
+      if (res !== riskEndDate) {
         patchDetail({ riskEndDate: res });
       }
     }
-  }, [form.detail.riskStartDate, form.detail.policyModeId, dynamicPolicyModes]);
+  }, [form.detail.riskStartDate, form.detail.policyModeId, dynamicPolicyModes, originalForm]);
 
   const patchDetail  = (patch: any) => setForm(f => ({ ...f, detail:  { ...f.detail,  ...patch } }));
   const patchVehicle = (patch: any) => setForm(f => ({ ...f, vehicle: { ...f.vehicle, ...patch } }));
@@ -528,6 +544,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
     const newErrors: any = {};
   
     // Common validations
+    if (!form.documentNumber) newErrors.documentNumber = "Policy Number is required";
     if (!form.familyGroupId) newErrors.familyGroupId = "Family Group is required";
     if (!form.policyHolderId) newErrors.policyHolderId = "Policy Holder Name is required";
   
@@ -696,7 +713,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
       const division = form.detail.divisionType;
 
       const payload: any = {
-        policyId: policy?.policyId || undefined,
+        policyId: (policy?.policyId && !isRenewal) ? policy.policyId : undefined,
         type: form.type,
         transactionDate: form.transactionDate || null,
         documentNumber: form.documentNumber || "",
@@ -777,7 +794,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
             ? form.members.map((m: any) => ({
                 id: m.id || null,
                 memberId: m.memberId || STATIC_GUID,
-                memberName: m.memberName
+                memberName: m.memberName?.split(" -> ")[0] || ""
               }))
             : [],
 
@@ -966,9 +983,18 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
               <div className="grid grid-cols-3 gap-4">
                 <Input label="Transaction Date" required type="date" value={form.transactionDate}
                   onChange={(v:any) => setForm(f => ({ ...f, transactionDate: v }))} />
-                <Input label="Document Number" value={form.documentNumber} placeholder="Document number"
+                <Input 
+                  label="Policy Number" 
+                  required
+                  value={form.documentNumber} 
+                  error={errors.documentNumber}
+                  placeholder="Policy number"
                   disabled={isRenewal}
-                  onChange={(v:any) => setForm(f => ({ ...f, documentNumber: v }))} />
+                  onChange={(v:any) => {
+                    setForm(f => ({ ...f, documentNumber: v }));
+                    patchDetail({ currentPolicyNumber: v });
+                  }} 
+                />
               </div>
 
               <div className="grid grid-cols-12 gap-4 items-start">
@@ -1388,7 +1414,6 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
                     label="Risk End Date"
                     required
                     type="date"
-                    disabled
                     value={form.detail.riskEndDate}
                     error={errors.riskEndDate}
                     onChange={(v:any) => patchDetail({ riskEndDate: v })}

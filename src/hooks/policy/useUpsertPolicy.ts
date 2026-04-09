@@ -12,11 +12,8 @@ export const useUpsertPolicy = () => {
     },
     mutationFn: async (data: any) => {
       const division = data.detail.divisionType;
-
-      // Helper to ensure dates are in ISO format (YYYY-MM-DD)
       const fmt = (d: string) => d || null;
 
-      // Prepare the JSON body based on Division logic
       const payload: any = {
         type: data.type,
         transactionDate: fmt(data.transactionDate),
@@ -55,9 +52,9 @@ export const useUpsertPolicy = () => {
         payment: data.payment,
 
         // Conditional Logic for Arrays/Objects
-        members: division === "Health" ? data.members : [],
-        riskLocations: division === "OtherGeneral" ? data.riskLocations : [],
-        vehicle: division === "Vehicle" ? {
+        members: (division === "Health" || division === 1 || division === "1") ? data.members : [],
+        riskLocations: (division === "OtherGeneral" || division === 2 || division === "2") ? data.riskLocations : [],
+        vehicle: (division === "Vehicle" || division === 3 || division === "3") ? {
           ...data.vehicle,
           registerDate: fmt(data.vehicle.registerDate),
           manufactureYear: Number(data.vehicle.manufactureYear)
