@@ -7,6 +7,7 @@ import { useRenewalStatuses } from "../hooks/renewal/useRenewalStatuses";
 import RenewalTable from "../components/renewal/RenewalTable";
 import Pagination from "../components/leads/Pagination";
 import RenewalFilterSheet from "../components/renewal/RenewalFilterSheet";
+import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
 
 const DEFAULT_FILTERS = {
   pageNumber: 1,
@@ -21,6 +22,9 @@ const Renewals = () => {
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [openFilterSheet, setOpenFilterSheet] = useState(false);
+  const [openPolicySheet, setOpenPolicySheet] = useState(false);
+  const [selectedRenewalId, setSelectedRenewalId] = useState<string | null>(null);
+  const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
 
   /*   API   */
 
@@ -36,6 +40,16 @@ const Renewals = () => {
 
   const clearAllFilters = () => {
     setFilters(DEFAULT_FILTERS);
+  };
+
+  const handleCreateRenewal = (renewal: any) => {
+    setSelectedRenewalId(renewal.policyId);
+    setSelectedPolicy(renewal);
+    setOpenPolicySheet(true);
+  };
+
+  const handlePolicySuccess = () => {
+    // Optionally refresh renewals if needed, but renewals page usually shows pending ones
   };
 
   /*   UI   */
@@ -149,6 +163,7 @@ const Renewals = () => {
           data={data?.data?.data ?? []}
           loading={isLoading || isFetching}
           statusId={filters.renewalStatusId}
+          onRenewal={handleCreateRenewal}
         />
 
         {/*   PAGINATION   */}
@@ -170,6 +185,18 @@ const Renewals = () => {
         filters={filters}
         onApply={(f) => setFilters({ ...f, pageNumber: 1 })}
         onClear={clearAllFilters}
+      />
+
+      <PolicyUpsertSheet
+        open={openPolicySheet}
+        onClose={() => {
+          setOpenPolicySheet(false);
+          setSelectedRenewalId(null);
+          setSelectedPolicy(null);
+        }}
+        policy={selectedPolicy}
+        renewalId={selectedRenewalId}
+        onSuccess={handlePolicySuccess}
       />
     </>
   );

@@ -1,4 +1,4 @@
-import { History, MoreVertical } from "lucide-react";
+import { History, MoreVertical, RefreshCcw } from "lucide-react";
 import { Renewal } from "../../interfaces/renewal.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { RenewalHistoryDialog } from "./RenewalHistoryDialog";
@@ -8,6 +8,7 @@ interface Props {
   data: Renewal[];
   loading?: boolean;
   statusId: number | null;
+  onRenewal: (renewal: Renewal) => void;
 }
 
 /*   STATUS BADGES   */
@@ -20,7 +21,7 @@ const statusStyles: Record<string, string> = {
 const DROPDOWN_HEIGHT = 280;
 const DROPDOWN_WIDTH = 220;
 
-const RenewalTable = ({ data = [], loading, statusId }: Props) => {
+const RenewalTable = ({ data = [], loading, statusId, onRenewal }: Props) => {
   const [openRow, setOpenRow] = useState<Renewal | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -59,11 +60,17 @@ const RenewalTable = ({ data = [], loading, statusId }: Props) => {
     setOpenRow(row);
   };
 
+  const handleAction = (cb: () => void) => {
+    setOpenRow(null);
+    setTimeout(cb, 0);
+  };
+
   const isAllTab = statusId === null;
 
   return (
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
+        {/* ... (table head remains same) ... */}
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
             <Th>Client Name</Th>
@@ -129,7 +136,7 @@ const RenewalTable = ({ data = [], loading, statusId }: Props) => {
                 <Td className="text-left">
                   <button
                     onClick={(e) => openDropdown(e, r)}
-                    className="p-2 rounded hover:bg-slate-200"
+                    className="p-2 rounded hover:bg-slate-200 transition-colors"
                   >
                     <MoreVertical size={16} />
                   </button>
@@ -140,25 +147,35 @@ const RenewalTable = ({ data = [], loading, statusId }: Props) => {
         </tbody>
       </table>
 
-      {/*   ACTION DROPDOWN   */}
+      {/* ACTION DROPDOWN */}
       {openRow && (
         <div
           ref={dropdownRef}
           onClick={(e) => e.stopPropagation()}
-          className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-xl overflow-hidden py-1"
-          style={{ top: style.top, left: style.left }}
+          className="fixed z-50 w-[220px] bg-white border rounded-lg shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+          style={style}
         >
-          <button
-            onClick={() => {
+          <MenuItem
+            label="View History"
+            onClick={() => handleAction(() => {
               setSelectedHistoryPolicy(openRow.policyId);
               setHistoryOpen(true);
-              setOpenRow(null);
+            })}
+          />
+
+          <MenuItem
+            label="Create Renewal"
+            icon={<RefreshCcw size={14} />}
+            onClick={() => handleAction(() => onRenewal(openRow))}
+          />
+
+          <MenuItem
+            label="Change Status"
+            onClick={() => {
+              // Placeholder for UI completeness
+              alert("Update Status triggered for renewal: " + openRow.renewalNo);
             }}
-            className="w-full px-4 py-2.5 text-sm text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700 transition-colors"
-          >
-            <History size={16} className="text-blue-500" />
-            <span className="font-medium">View History</span>
-          </button>
+          />
         </div>
       )}
 
@@ -174,7 +191,7 @@ const RenewalTable = ({ data = [], loading, statusId }: Props) => {
 
 export default RenewalTable;
 
-/* ================= HELPERS ================= */
+/*   HELPERS   */
 
 const Th = ({ children, className = "" }: any) => (
   <th className={`px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap ${className}`}>
@@ -186,4 +203,29 @@ const Td = ({ children, className = "" }: any) => (
   <td className={`px-4 py-3 text-slate-600 ${className}`}>
     {children}
   </td>
+);
+
+const MenuItem = ({
+  label,
+  onClick,
+  icon,
+  danger = false,
+}: {
+  label: string;
+  onClick: () => void;
+  icon?: React.ReactNode;
+  danger?: boolean;
+}) => (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-3 hover:bg-slate-100 transition-colors ${
+      danger ? "text-red-600 hover:bg-red-50" : "text-slate-700 hover:text-slate-900"
+    }`}
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
 );
