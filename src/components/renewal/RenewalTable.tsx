@@ -74,7 +74,7 @@ const RenewalTable = ({ data = [], loading, statusId, onRenewal }: Props) => {
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
             <Th>Client Name</Th>
-            <Th>Doc Number</Th>
+            <Th>Policy Number</Th>
             <Th>Division</Th>
             <Th>Company</Th>
             <Th>Group Head</Th>
@@ -103,7 +103,7 @@ const RenewalTable = ({ data = [], loading, statusId, onRenewal }: Props) => {
             data.map((r, index) => (
               <tr key={index} className="border-t h-[52px] hover:bg-slate-50 transition-colors cursor-default">
                 <Td className="whitespace-nowrap">{showValue(r.title)} {showValue(r.clientName)}</Td>
-                <Td>{r.renewalNo}</Td>
+                <Td>{r.policyNumber}</Td>
                 <Td>{showValue(r.divisionName)}</Td>
                 <Td>{showValue(r.companyName)}</Td>
                 <Td>{showValue(r.groupHeadName)}</Td>

@@ -544,7 +544,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
     const newErrors: any = {};
   
     // Common validations
-    if (!form.documentNumber) newErrors.documentNumber = "Document Number is required";
+    if (!form.documentNumber) newErrors.documentNumber = "Policy Number is required";
     if (!form.familyGroupId) newErrors.familyGroupId = "Family Group is required";
     if (!form.policyHolderId) newErrors.policyHolderId = "Policy Holder Name is required";
   
@@ -984,11 +984,11 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
                 <Input label="Transaction Date" required type="date" value={form.transactionDate}
                   onChange={(v:any) => setForm(f => ({ ...f, transactionDate: v }))} />
                 <Input 
-                  label="Document Number" 
+                  label="Policy Number" 
                   required
                   value={form.documentNumber} 
                   error={errors.documentNumber}
-                  placeholder="Document number"
+                  placeholder="Policy number"
                   disabled={isRenewal}
                   onChange={(v:any) => {
                     setForm(f => ({ ...f, documentNumber: v }));
