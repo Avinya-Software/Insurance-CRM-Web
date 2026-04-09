@@ -106,10 +106,49 @@ const Renewals = () => {
           </div>
         </div>
 
+        {/* 📑 TABS */}
+        <div className="px-4 border-b bg-white flex items-center gap-8 overflow-x-auto no-scrollbar">
+          {[
+            { id: null, name: "All", count: data?.data?.allCount ?? 0 },
+            ...(statuses || [])
+              .filter((s: any) => [1, 2, 3].includes(s.id))
+              .map((s: any) => ({
+                ...s,
+                count: s.id === 1 ? data?.data?.pendingCount ?? 0 
+                     : s.id === 2 ? data?.data?.renewalCount ?? 0
+                     : s.id === 3 ? data?.data?.overdueCount ?? 0 : 0
+              }))
+          ].map((tab) => (
+            <button
+              key={tab.name}
+              onClick={() => setFilters(f => ({ ...f, renewalStatusId: tab.id, pageNumber: 1 }))}
+              className={`
+                relative py-4 text-sm font-medium transition-all whitespace-nowrap
+                ${filters.renewalStatusId === tab.id
+                  ? "text-blue-600"
+                  : "text-slate-500 hover:text-slate-700"}
+              `}
+            >
+              {tab.name}
+              <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${
+                filters.renewalStatusId === tab.id 
+                  ? "bg-blue-100 text-blue-600" 
+                  : "bg-slate-100 text-slate-500"
+              }`}>
+                {tab.count}
+              </span>
+              {filters.renewalStatusId === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+
         {/*   RENEWALS TABLE   */}
         <RenewalTable
           data={data?.data?.data ?? []}
           loading={isLoading || isFetching}
+          statusId={filters.renewalStatusId}
         />
 
         {/*   PAGINATION   */}

@@ -7,6 +7,7 @@ import { useState, useRef } from "react";
 interface Props {
   data: Renewal[];
   loading?: boolean;
+  statusId: number | null;
 }
 
 /*   STATUS BADGES   */
@@ -14,12 +15,12 @@ const statusStyles: Record<string, string> = {
   "Pending": "bg-amber-100 text-amber-700 border-amber-200",
   "Paid": "bg-green-100 text-green-700 border-green-200",
   "Overdue": "bg-red-100 text-red-700 border-red-200",
-  "Cancelled": "bg-slate-100 text-slate-600 border-slate-200",
 };
 
 const DROPDOWN_HEIGHT = 280;
 const DROPDOWN_WIDTH = 220;
-const RenewalTable = ({ data = [], loading }: Props) => {
+
+const RenewalTable = ({ data = [], loading, statusId }: Props) => {
   const [openRow, setOpenRow] = useState<Renewal | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -30,13 +31,8 @@ const RenewalTable = ({ data = [], loading }: Props) => {
     setOpenRow(null);
   });
 
-
-
-  const isOverdue = (dueDate: string) => {
-    return new Date(dueDate) < new Date();
-  };
-
   const getOverdueDays = (dueDate: string) => {
+    if (!dueDate) return 0;
     const due = new Date(dueDate);
     const today = new Date();
     due.setHours(0, 0, 0, 0);
@@ -63,6 +59,8 @@ const RenewalTable = ({ data = [], loading }: Props) => {
     setOpenRow(row);
   };
 
+  const isAllTab = statusId === null;
+
   return (
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
@@ -80,6 +78,7 @@ const RenewalTable = ({ data = [], loading }: Props) => {
             <Th>Next Due</Th>
             <Th>Reminder Date</Th>
             <Th>Premium</Th>
+            {isAllTab && <Th>Status</Th>}
             <Th className="text-left font-semibold">Actions</Th>
           </tr>
         </thead>
@@ -87,16 +86,16 @@ const RenewalTable = ({ data = [], loading }: Props) => {
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={14} className="text-center py-12 text-slate-500">Loading...</td>
+              <td colSpan={isAllTab ? 15 : 14} className="text-center py-12 text-slate-500">Loading...</td>
             </tr>
           ) : data.length === 0 ? (
             <tr>
-              <td colSpan={14} className="text-center py-12 text-slate-500">No renewals found</td>
+              <td colSpan={isAllTab ? 15 : 14} className="text-center py-12 text-slate-500">No renewals found</td>
             </tr>
           ) : (
             data.map((r, index) => (
               <tr key={index} className="border-t h-[52px] hover:bg-slate-50 transition-colors cursor-default">
-                <Td>{showValue(r.title)} {showValue(r.clientName)}</Td>
+                <Td className="whitespace-nowrap">{showValue(r.title)} {showValue(r.clientName)}</Td>
                 <Td>{r.renewalNo}</Td>
                 <Td>{showValue(r.divisionName)}</Td>
                 <Td>{showValue(r.companyName)}</Td>
@@ -108,18 +107,25 @@ const RenewalTable = ({ data = [], loading }: Props) => {
                 <Td>
                     {r.nextPremiumDueDate ? r.nextPremiumDueDate.split("T")[0] : "-"}
                     {getOverdueDays(r.nextPremiumDueDate || r.dueDate) > 0 && (
-                        <div className="text-[10px] text-red-600 font-medium">
+                        <div className="text-[10px] text-red-600 font-medium whitespace-nowrap">
                             {getOverdueDays(r.nextPremiumDueDate || r.dueDate)} days due
                         </div>
                     )}
                 </Td>
                 <Td>{r.reminderDate ? r.reminderDate.split("T")[0] : "-"}</Td>
                 <Td>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col whitespace-nowrap">
                         <span>₹{r.basicPremium}</span>
                         <span className="text-[10px] text-slate-500">Final: ₹{r.finalInstallmentPremium}</span>
                     </div>
                 </Td>
+                {isAllTab && (
+                  <Td>
+                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusStyles[r.renewalStatus] || "bg-slate-100 text-slate-600 border-slate-200"}`}>
+                      {r.renewalStatus}
+                    </span>
+                  </Td>
+                )}
                 <Td className="text-left">
                   <button
                     onClick={(e) => openDropdown(e, r)}
@@ -171,13 +177,13 @@ export default RenewalTable;
 /* ================= HELPERS ================= */
 
 const Th = ({ children, className = "" }: any) => (
-  <th className={`px-4 py-3 text-left font-semibold ${className}`}>
+  <th className={`px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap ${className}`}>
     {children}
   </th>
 );
 
 const Td = ({ children, className = "" }: any) => (
-  <td className={`px-4 py-3 ${className}`}>
+  <td className={`px-4 py-3 text-slate-600 ${className}`}>
     {children}
   </td>
 );

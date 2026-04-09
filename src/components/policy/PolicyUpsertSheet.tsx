@@ -199,10 +199,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
     // Specifically exclude fields that might be auto-calculated on mount
     // to avoid false positives in change detection
     if (cleanOrig.detail) {
-      delete (cleanOrig as any).detail.riskEndDate;
+      // Add other fields to exclude if necessary
     }
     if (cleanCurr.detail) {
-      delete (cleanCurr as any).detail.riskEndDate;
+      // Add other fields to exclude if necessary
     }
 
     return JSON.stringify(cleanCurr) !== JSON.stringify(cleanOrig);
@@ -461,8 +461,15 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
   }, [divisionData, form.detail.divisionType, form.detail.divisionId]);
   
   useEffect(() => {
-    const { riskStartDate, policyModeId } = form.detail;
+    const { riskStartDate, policyModeId, riskEndDate } = form.detail;
     if (!riskStartDate || !policyModeId) return;
+    if (originalForm?.detail) {
+      const startChanged = riskStartDate !== originalForm.detail.riskStartDate;
+      const modeChanged = policyModeId !== originalForm.detail.policyModeId;
+      if (!startChanged && !modeChanged && riskEndDate) {
+        return;
+      }
+    }
 
     const selectedMode = dynamicPolicyModes.find(m => m.id === policyModeId);
     if (!selectedMode) return;
@@ -483,11 +490,11 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
       end.setMonth(end.getMonth() + monthsToAdd);
       
       const res = end.toISOString().split("T")[0];
-      if (res !== form.detail.riskEndDate) {
+      if (res !== riskEndDate) {
         patchDetail({ riskEndDate: res });
       }
     }
-  }, [form.detail.riskStartDate, form.detail.policyModeId, dynamicPolicyModes]);
+  }, [form.detail.riskStartDate, form.detail.policyModeId, dynamicPolicyModes, originalForm]);
 
   const patchDetail  = (patch: any) => setForm(f => ({ ...f, detail:  { ...f.detail,  ...patch } }));
   const patchVehicle = (patch: any) => setForm(f => ({ ...f, vehicle: { ...f.vehicle, ...patch } }));
@@ -1388,7 +1395,6 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
                     label="Risk End Date"
                     required
                     type="date"
-                    disabled
                     value={form.detail.riskEndDate}
                     error={errors.riskEndDate}
                     onChange={(v:any) => patchDetail({ riskEndDate: v })}

@@ -43,6 +43,10 @@ export interface RenewalApiResponse {
   statusMessage: string;
   data: {
     totalCount: number;
+    allCount: number;
+    pendingCount: number;
+    renewalCount: number;
+    overdueCount: number;
     page: number;
     pageSize: number;
     totalPages: number;
