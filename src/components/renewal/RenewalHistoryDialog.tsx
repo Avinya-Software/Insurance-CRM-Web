@@ -55,7 +55,7 @@ export const RenewalHistoryDialog = ({
                   <thead className="bg-slate-50 text-slate-700 sticky top-0 z-20 border-b shadow-sm">
                   <tr>
                     <th className="px-4 py-3 font-semibold first:rounded-tl-xl whitespace-nowrap">Type</th>
-                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Doc No.</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">Policy Number</th>
                     <th className="px-4 py-3 font-semibold whitespace-nowrap">Division</th>
                     <th className="px-4 py-3 font-semibold whitespace-nowrap">Company</th>
                     <th className="px-4 py-3 font-semibold whitespace-nowrap">Policy Start</th>
@@ -78,7 +78,7 @@ export const RenewalHistoryDialog = ({
                           {record.type}
                         </span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap font-medium text-slate-900">{record.renewalNo}</td>
+                      <td className="px-4 py-4 whitespace-nowrap font-medium text-slate-900">{record.policyNumber}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-slate-600 font-medium">{record.divisionName}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-slate-600">{record.companyName}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-slate-600">{formatDate(record.policyStartDate)}</td>
