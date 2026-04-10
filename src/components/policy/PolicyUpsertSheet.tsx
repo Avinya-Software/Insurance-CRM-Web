@@ -989,7 +989,6 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
                   value={form.documentNumber} 
                   error={errors.documentNumber}
                   placeholder="Policy number"
-                  disabled={isRenewal}
                   onChange={(v:any) => {
                     setForm(f => ({ ...f, documentNumber: v }));
                     patchDetail({ currentPolicyNumber: v });
