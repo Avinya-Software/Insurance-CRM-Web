@@ -9,6 +9,7 @@ interface Props {
   loading?: boolean;
   statusId: number | null;
   onRenewal: (renewal: Renewal) => void;
+  onEdit: (policyId: string) => void;
 }
 
 /*   STATUS BADGES   */
@@ -21,7 +22,7 @@ const statusStyles: Record<string, string> = {
 const DROPDOWN_HEIGHT = 280;
 const DROPDOWN_WIDTH = 220;
 
-const RenewalTable = ({ data = [], loading, statusId, onRenewal }: Props) => {
+const RenewalTable = ({ data = [], loading, statusId, onRenewal, onEdit }: Props) => {
   const [openRow, setOpenRow] = useState<Renewal | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -163,10 +164,17 @@ const RenewalTable = ({ data = [], loading, statusId, onRenewal }: Props) => {
             })}
           />
 
+          {openRow.renewalStatus !== "Renew" && (
+            <MenuItem
+              label="Create Renewal"
+              icon={<RefreshCcw size={14} />}
+              onClick={() => handleAction(() => onRenewal(openRow))}
+            />
+          )}
+
           <MenuItem
-            label="Create Renewal"
-            icon={<RefreshCcw size={14} />}
-            onClick={() => handleAction(() => onRenewal(openRow))}
+            label="Edit Renewal"
+            onClick={() => handleAction(() => onEdit(openRow.policyId))}
           />
 
           <MenuItem

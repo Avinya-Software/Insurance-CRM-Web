@@ -160,7 +160,7 @@ const mergeOption = (
 };
 
 /* ─── COMPONENT ─────────────────────────────────────────────── */
-const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any) => {
+const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit }: any) => {
   const [activeTab, setActiveTab]     = useState<TabType>("customer");
   const [form, setForm]               = useState(makeInitial());
   const [originalForm, setOriginalForm] = useState<any>(null);
@@ -193,8 +193,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
   const { data: segmentData } = useSegmentDropdown(selectedDivisionId);
 
   const { data: fetchedPolicy, isLoading: isLoadingFetched } = useGeneralPolicyById(renewalId || null);
-  const isRenewal = !!renewalId;
-  const currentPolicy = isRenewal ? (fetchedPolicy || policy) : policy;
+  const isRenewalMode = !!renewalId && !isEdit;
+  const currentPolicy = (isEdit || isRenewalMode) ? (fetchedPolicy || policy) : policy;
 
   const checkPolicyChanges = (curr: any, orig: any) => {
     if (!orig) return true;
@@ -319,7 +319,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
   useEffect(() => {
     if (currentPolicy && open) {
       const newForm = {
-        type: isRenewal ? "Renewal" : (currentPolicy.type || "Fresh"),
+        type: isRenewalMode ? "Renewal" : (currentPolicy.type || "Fresh"),
         transactionDate: currentPolicy.transactionDate?.split("T")[0] || "",
         documentNumber: currentPolicy.documentNumber || "",
         familyGroupId: currentPolicy.familyGroupId || "",
@@ -366,14 +366,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
               : [],
           isPolicyReceived: Boolean(currentPolicy.detail?.isPolicyReceived),
           currentPolicyNumber: currentPolicy.detail?.currentPolicyNumber || "",
-          previousPolicyNumber: isRenewal 
+          previousPolicyNumber: isRenewalMode 
             ? currentPolicy.documentNumber || ""
             : currentPolicy.detail?.previousPolicyNumber || "",
           policyModeId: currentPolicy.detail?.policyModeId || "",
-          riskStartDate: isRenewal 
+          riskStartDate: isRenewalMode 
             ? currentPolicy.detail?.riskEndDate?.split("T")[0] || ""
             : currentPolicy.detail?.riskStartDate?.split("T")[0] || "",
-          riskEndDate: isRenewal 
+          riskEndDate: isRenewalMode 
             ? "" // Will be auto-calculated by the other useEffect
             : currentPolicy.detail?.riskEndDate?.split("T")[0] || "",
           brokerId: currentPolicy.detail?.brokerId || "",
@@ -453,7 +453,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
       }));
       setExistingDocuments(mappedDocs);
     }
-  }, [currentPolicy, open, isRenewal]);
+  }, [currentPolicy, open, isRenewalMode]);
   
   useEffect(() => {
     if (divisionData && form.detail.divisionType && !form.detail.divisionId) {
@@ -713,7 +713,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
       const division = form.detail.divisionType;
 
       const payload: any = {
-        policyId: (policy?.policyId && !isRenewal) ? policy.policyId : undefined,
+        policyId: (isEdit || (policy?.policyId && !isRenewalMode)) ? (renewalId || policy.policyId) : undefined,
         type: form.type,
         transactionDate: form.transactionDate || null,
         documentNumber: form.documentNumber || "",
@@ -867,16 +867,20 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
       let policyUpdated = false;
       const hasPolicyChanged = originalForm ? checkPolicyChanges(form, originalForm) : true;
 
-      // 🔥 FIX: For renewal, we should always create a new record if there are files or changes
-      if (hasPolicyChanged || isRenewal) {
-        if (policy?.policyId && !isRenewal) {
-          const response = await updatePolicy({ policyId: policy.policyId, payload });
-          toast.success(response?.statusMessage || "Policy updated successfully!");
+      // 🔥 FIX: For renewal or edit, we should always handle changes
+      if (hasPolicyChanged || isRenewalMode || isEdit) {
+        if (isEdit || (policy?.policyId && !isRenewalMode)) {
+          const res = await updatePolicy({ 
+            policyId: renewalId || policy.policyId, 
+            payload: payload 
+          });
+          toast.success(res?.statusMessage || "Policy updated successfully!");
           policyUpdated = true;
+          policyId = renewalId || policy.policyId;
         } else {
-          const response = await addPolicy(payload);
-          policyId = response?.data?.policyId || response?.policyId;
-          toast.success(response?.statusMessage || "Policy saved successfully!");
+          const res = await addPolicy(payload);
+          policyId = res?.data?.policyId || res?.policyId;
+          toast.success(res?.statusMessage || (isRenewalMode ? "Renewal created successfully!" : "Policy saved successfully!"));
           policyUpdated = true;
         }
       }
@@ -933,10 +937,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
             <div className="p-2 bg-blue-600 rounded-lg"><ShieldCheck size={20} className="text-white" /></div>
             <div>
               <h2 className="text-xl font-bold text-slate-900">
-                {isRenewal ? "Create Renewal" : policy ? "Edit General Policy" : "Add General Policy"}
+                {isRenewalMode ? "Create Renewal" : isEdit ? "Edit General Policy" : "Add General Policy"}
               </h2>
               <p className="text-slate-500 text-xs mt-0.5">
-                Fill in the details to {isRenewal ? "renew" : policy ? "update" : "create"} the insurance policy.
+                Fill in the details to {isRenewalMode ? "renew" : isEdit ? "update" : "create"} the insurance policy.
               </p>
             </div>
           </div>
@@ -1004,7 +1008,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
                     items={dynamicFamilyGroups.map(g => ({ label: g.name, value: g.id }))}
                     value={form.familyGroupId}
                     error={errors.familyGroupId}
-                    disabled={isRenewal}
+                    disabled={isRenewalMode || isEdit}
                     placeholder="Search family group..."
                     onSelect={(item: any) =>
                       setForm(f => ({ 
@@ -1071,7 +1075,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
                       items={dynamicDivisions.map(d => ({ label: d.name, value: d.id }))}
                       value={form.detail.divisionId?.toString()}
                       error={errors.divisionType}
-                      disabled={isRenewal}
+                      disabled={isRenewalMode || isEdit}
                       placeholder="Search division..."
                       onSelect={(item: any) => {
                         const division = divisionData?.find(d => d.divisionId.toString() === item?.value);
@@ -1810,7 +1814,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId }: any)
           {/* ══ TAB 4: DOCUMENTS ══ */}
           {activeTab === "documents" && (
             <div className="space-y-8">
-              {!policy && (
+              {!isEdit && !isRenewalMode && !policy && (
                 <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
                   <AlertCircle size={16} className="text-amber-600 shrink-0" />
                   <p className="text-xs text-amber-700 leading-relaxed">
