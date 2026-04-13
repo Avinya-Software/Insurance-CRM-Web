@@ -15,7 +15,7 @@ import type { RootState } from "../store";
 import LeadDetailSheet from "../components/leads/LeadDetailsModal";
 
 const DEFAULT_FILTERS = {
-  pageNumber: 1,
+  page: 1,
   pageSize: 10,
   search: "",
   fullName: "",
@@ -125,7 +125,7 @@ const Leads = () => {
                 Leads
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-                {data?.totalRecords ?? 0} total leads
+                {data?.totalCount ?? 0} total leads
               </p>
             </div>
 
@@ -150,7 +150,7 @@ const Leads = () => {
                     setFilters({
                       ...filters,
                       search: e.target.value,
-                      pageNumber: 1,
+                      page: 1,
                     })
                   }
                   className="w-full h-10 pl-10 pr-3 border rounded text-sm"
@@ -206,10 +206,10 @@ const Leads = () => {
         {/*   PAGINATION   */}
         <div className="border-t px-4 py-3">
           <Pagination
-            page={filters.pageNumber}
+            page={filters.page}
             totalPages={data?.totalPages || 1}
             onChange={(page) =>
-              setFilters({ ...filters, pageNumber: page })
+              setFilters({ ...filters, page })
             }
           />
         </div>
@@ -220,7 +220,7 @@ const Leads = () => {
         open={openFilterSheet}
         onClose={() => setOpenFilterSheet(false)}
         filters={filters}
-        onApply={(f) => setFilters({ ...f, pageNumber: 1 })}
+        onApply={(f) => setFilters({ ...f, page: 1 })}
         onClear={clearAllFilters}
       />
 
@@ -231,6 +231,7 @@ const Leads = () => {
           setOpenLeadSheet(false);
           setSelectedLead(null);
         }}
+        onSuccess={() => refetch()}
         lead={selectedLead}
         advisorId={advisorId}
       />
