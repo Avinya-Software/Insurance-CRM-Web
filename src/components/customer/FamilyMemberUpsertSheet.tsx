@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { X, Save, User, FileText, ShieldCheck, Landmark, Eye, Trash2 } from "lucide-react";
+import { X, Save, User, FileText, ShieldCheck, Landmark, Eye, Trash2, Download, AlertCircle } from "lucide-react";
 import { useAddFamilyMember } from "../../hooks/family-member/useAddFamilyMember";
 import { useUpdateFamilyMember } from "../../hooks/family-member/useUpdateFamilyMember";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { IFamilyMember, FamilyMemberDocument } from "../../interfaces/family-member.interface";
+import { useFamilyMemberDocumentActions } from "../../hooks/family-member/useFamilyMemberDocumentActions";
 
 interface Props {
   open: boolean;
@@ -42,11 +43,25 @@ const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
     GSTDocument: null,
     ProfilePhoto: null,
   });
-  const [existingDocs, setExistingDocs] = useState<Record<string, { path: string, name: string, updatedAt: string }>>({
-    AadhaarCardDocument: { path: "", name: "", updatedAt: "" },
-    PanCardDocument: { path: "", name: "", updatedAt: "" },
-    GSTDocument: { path: "", name: "", updatedAt: "" },
-    ProfilePhoto: { path: "", name: "", updatedAt: "" },
+  const [existingDocs, setExistingDocs] = useState<Record<string, { path: string, name: string, updatedAt: string, id: string }>>({
+    AadhaarCardDocument: { path: "", name: "", updatedAt: "", id: "" },
+    PanCardDocument: { path: "", name: "", updatedAt: "", id: "" },
+    GSTDocument: { path: "", name: "", updatedAt: "", id: "" },
+    ProfilePhoto: { path: "", name: "", updatedAt: "", id: "" },
+  });
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<any>(null);
+  
+  const { preview, download, remove } = useFamilyMemberDocumentActions((deletedId) => {
+      // Clear from state
+      setExistingDocs(prev => {
+          const next = { ...prev };
+          Object.keys(next).forEach(key => {
+              if (next[key].id === deletedId) {
+                  next[key] = { path: "", name: "", updatedAt: "", id: "" };
+              }
+          });
+          return next;
+      });
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -79,28 +94,28 @@ const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
       });
 
       // Handle Existing Documents
-      const docs: Record<string, { path: string, name: string, updatedAt: string }> = {
-        AadhaarCardDocument: { path: "", name: "", updatedAt: "" },
-        PanCardDocument: { path: "", name: "", updatedAt: "" },
-        GSTDocument: { path: "", name: "", updatedAt: "" },
-        ProfilePhoto: { path: "", name: "", updatedAt: "" },
+      const docs: Record<string, { path: string, name: string, updatedAt: string, id: string }> = {
+        AadhaarCardDocument: { path: "", name: "", updatedAt: "", id: "" },
+        PanCardDocument: { path: "", name: "", updatedAt: "", id: "" },
+        GSTDocument: { path: "", name: "", updatedAt: "", id: "" },
+        ProfilePhoto: { path: "", name: "", updatedAt: "", id: "" },
       };
       
       item.documents?.forEach((doc: FamilyMemberDocument) => {
         const time = doc.updatedAt || doc.createdAt;
-        if (doc.documentType === "Aadhaar") docs.AadhaarCardDocument = { path: doc.filePath, name: doc.originalFileName, updatedAt: time };
-        if (doc.documentType === "PAN") docs.PanCardDocument = { path: doc.filePath, name: doc.originalFileName, updatedAt: time };
-        if (doc.documentType === "GST") docs.GSTDocument = { path: doc.filePath, name: doc.originalFileName, updatedAt: time };
-        if (doc.documentType === "ProfilePhoto") docs.ProfilePhoto = { path: doc.filePath, name: doc.originalFileName, updatedAt: time };
+        if (doc.documentType === "Aadhaar") docs.AadhaarCardDocument = { path: doc.filePath, name: doc.originalFileName, updatedAt: time, id: doc.familyMemberDocumentId };
+        if (doc.documentType === "PAN") docs.PanCardDocument = { path: doc.filePath, name: doc.originalFileName, updatedAt: time, id: doc.familyMemberDocumentId };
+        if (doc.documentType === "GST") docs.GSTDocument = { path: doc.filePath, name: doc.originalFileName, updatedAt: time, id: doc.familyMemberDocumentId };
+        if (doc.documentType === "ProfilePhoto") docs.ProfilePhoto = { path: doc.filePath, name: doc.originalFileName, updatedAt: time, id: doc.familyMemberDocumentId };
       });
       setExistingDocs(docs);
     } else {
       setFormData(initialForm);
       setExistingDocs({
-        AadhaarCardDocument: { path: "", name: "", updatedAt: "" },
-        PanCardDocument: { path: "", name: "", updatedAt: "" },
-        GSTDocument: { path: "", name: "", updatedAt: "" },
-        ProfilePhoto: { path: "", name: "", updatedAt: "" },
+        AadhaarCardDocument: { path: "", name: "", updatedAt: "", id: "" },
+        PanCardDocument: { path: "", name: "", updatedAt: "", id: "" },
+        GSTDocument: { path: "", name: "", updatedAt: "", id: "" },
+        ProfilePhoto: { path: "", name: "", updatedAt: "", id: "" },
       });
     }
     setFiles({
@@ -425,6 +440,59 @@ const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
                     </div>
                   </div>
                 </section>
+
+                {/* EXISTING DOCUMENTS LIST */}
+                {item && Object.values(existingDocs).some(d => d.path) && (
+                  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
+                      <div className="p-1.5 bg-white/10 text-white rounded">
+                        <ShieldCheck size={16} />
+                      </div>
+                      <h3 className="font-bold uppercase tracking-wider text-[10px]">Existing Documents</h3>
+                    </div>
+                    <div className="p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Object.entries(existingDocs).filter(([_, d]) => d.path).map(([key, d]) => (
+                          <div key={key} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
+                                <FileText size={16} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-bold text-slate-700 truncate">{d.name}</p>
+                                  {d.updatedAt && (
+                                    <span className="text-[9px] px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded font-bold">
+                                      {new Date(d.updatedAt).toLocaleDateString('en-GB')}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider truncate">
+                                  {key.replace("Document", "").replace("Card", " Card")}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button onClick={() => preview(d.path)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="View">
+                                <Eye size={16} />
+                              </button>
+                              <button onClick={() => download(d.path, d.name)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Download">
+                                <Download size={16} />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDeleteDoc({ id: d.id, name: d.name })}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                )}
               </div>
             )}
           </div>
@@ -452,6 +520,67 @@ const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
           </button>
         </div>
       </div>
+
+      {/* CONFIRM DELETE DOCUMENT MODAL */}
+      {confirmDeleteDoc && (
+        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-50 text-red-600 rounded-xl">
+                    <Trash2 size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">Delete Document</h3>
+                </div>
+                <button 
+                  onClick={() => setConfirmDeleteDoc(null)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-slate-600 leading-relaxed">
+                  Are you sure you want to delete <span className="font-bold text-slate-800">"{confirmDeleteDoc.name}"</span>? 
+                  This action will permanently remove the file from this family member.
+                </p>
+                
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
+                  <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 font-medium">
+                    This file will be deleted immediately and cannot be recovered.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeleteDoc(null)}
+                className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await remove(formData.FamilyMemberId, confirmDeleteDoc.id);
+                    setConfirmDeleteDoc(null);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center gap-2"
+              >
+                <Trash2 size={16} />
+                Delete Document
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

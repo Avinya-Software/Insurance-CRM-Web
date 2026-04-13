@@ -28,7 +28,7 @@ const Renewals = () => {
 
   /*   API   */
 
-  const { data, isLoading, isFetching } = useRenewals(filters);
+  const { data, isLoading, isFetching, refetch } = useRenewals(filters);
   const { data: statuses = [] } = useRenewalStatuses();   
 
   /*   HELPERS   */
@@ -48,8 +48,16 @@ const Renewals = () => {
     setOpenPolicySheet(true);
   };
 
+  const handleEditRenewal = (policyId: string) => {
+    setSelectedRenewalId(policyId);
+    // When editing, we don't pass the initial 'policy' object from the table
+    // but let the sheet fetch the full data via useGeneralPolicyById
+    setSelectedPolicy(null); 
+    setOpenPolicySheet(true);
+  };
+
   const handlePolicySuccess = () => {
-    // Optionally refresh renewals if needed, but renewals page usually shows pending ones
+    refetch();
   };
 
   /*   UI   */
@@ -157,14 +165,17 @@ const Renewals = () => {
             </button>
           ))}
         </div>
-
+        
         {/*   RENEWALS TABLE   */}
-        <RenewalTable
-          data={data?.data?.data ?? []}
-          loading={isLoading || isFetching}
-          statusId={filters.renewalStatusId}
-          onRenewal={handleCreateRenewal}
-        />
+        <div className="px-0">
+          <RenewalTable
+            data={data?.data?.data ?? []}
+            loading={isLoading || isFetching}
+            statusId={filters.renewalStatusId}
+            onRenewal={handleCreateRenewal}
+            onEdit={handleEditRenewal}
+          />
+        </div>
 
         {/*   PAGINATION   */}
         <div className="border-t px-4 py-3">
@@ -196,6 +207,7 @@ const Renewals = () => {
         }}
         policy={selectedPolicy}
         renewalId={selectedRenewalId}
+        isEdit={!selectedPolicy && !!selectedRenewalId}
         onSuccess={handlePolicySuccess}
       />
     </>

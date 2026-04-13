@@ -35,7 +35,7 @@ export interface Lead {
 }
 
 export interface LeadFilters {
-  pageNumber: number;
+  page: number;
   pageSize: number;
   search?: string;
   fullName?: string;
@@ -46,8 +46,8 @@ export interface LeadFilters {
 }
 
 export interface LeadListResponse {
-  totalRecords: number;
-  pageNumber: number;
+  totalCount: number;
+  page: number;
   pageSize: number;
   totalPages: number;
   data: Lead[];

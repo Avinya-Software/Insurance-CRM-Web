@@ -71,6 +71,18 @@ export const deletePolicyDocumentApi = async (
   return res.data;
 };
 
+/*   GENERAL POLICY DOCUMENT DELETE   */
+
+export const deleteGeneralPolicyDocumentApi = async (
+  policyId: string,
+  documentId: string
+) => {
+  const res = await api.delete(
+    `/GeneralPolicy/${policyId}/documents/${documentId}`
+  );
+  return res.data;
+};
+
 /*   DELETE POLICY (BY ID)   */
 
 export const deletePolicyApi = async (

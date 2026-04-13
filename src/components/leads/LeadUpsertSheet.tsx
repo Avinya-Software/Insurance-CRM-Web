@@ -13,11 +13,12 @@ import { useCities } from "../../hooks/city/useCities";
 interface Props {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   lead?: any;
   advisorId: string | null;
 }
 
-const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
+const LeadUpsertSheet = ({ open, onClose, onSuccess, lead, advisorId }: Props) => {
   const { mutate: createLead, isPending: isCreating } = useCreateLead();
   const { mutate: updateLead, isPending: isUpdating } = useUpdateLead();
 
@@ -64,33 +65,38 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
 
   /* ── CUSTOMER LIST ── */
   useEffect(() => {
-    getCustomerDropdownApi().then((res) => setCustomers(res?.data ?? []));
-  }, []);
+    if (open) {
+      getCustomerDropdownApi().then((res) => setCustomers(res?.data ?? []));
+    }
+  }, [open]);
 
   /* ── PREFILL ON EDIT ── */
   useEffect(() => {
     if (!open || !lead) return;
   
-    const stateId = lead.stateid?.toString() ?? "";
+    const stateId = (lead.stateID ?? lead.stateid)?.toString() ?? "";
+    const cityId = (lead.cityID ?? lead.cityid)?.toString() ?? "";
+    const customerId = (lead.clientID ?? lead.clientID ?? lead.customerId ?? lead.clientId ?? lead.clientID ?? "")?.toString() ?? "";
+  
     setSelectedStateId(stateId);
-    setSelectedCustomerId(lead.customerId ?? "");
+    setSelectedCustomerId(customerId);
   
     setForm({
-      customerId: lead.customerId ?? null,
-      fullName: lead.clientName ?? "",
+      customerId: customerId || null,
+      fullName: lead.contactPerson ?? lead.clientName ?? "",
       email: lead.email ?? "",
       mobile: lead.mobile ?? "",
-      address: lead.address ?? "",
+      address: lead.billingAddress ?? lead.address ?? "",
       assignedTo: lead.assignedTo ?? "",
       requirementDetails: lead.requirementDetails ?? "",
       links: lead.links ?? "",
       nextFollowupDate: lead.nextFollowupDate
         ? lead.nextFollowupDate.slice(0, 16)
         : "",
-      leadSourceId: lead.leadSourceID?.toString() ?? "",
-      leadStatusId: lead.leadStatusID?.toString() ?? "",
+      leadSourceId: (lead.leadSourceID ?? lead.leadSourceId)?.toString() ?? "",
+      leadStatusId: (lead.status ?? lead.leadStatusID ?? lead.leadStatusId)?.toString() ?? "",
       notes: lead.notes ?? "",
-      cityId: lead.cityid?.toString() ?? "",
+      cityId: cityId,
     });
   
     setErrors({});
@@ -106,36 +112,6 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open || !lead) return;
-  
-    const stateId = lead.stateID?.toString() ?? "";
-    const cityId = lead.cityID?.toString() ?? "";
-    const customerId = lead.clientID ?? "";
-  
-    setSelectedStateId(stateId);
-    setSelectedCustomerId(customerId);
-  
-    setForm({
-      customerId: customerId,
-      fullName: lead.contactPerson ?? "",
-      email: lead.email ?? "",
-      mobile: lead.mobile ?? "",
-      address: lead.billingAddress ?? "",
-      assignedTo: lead.assignedTo ?? "",
-      requirementDetails: lead.requirementDetails ?? "",
-      links: lead.links ?? "",
-      nextFollowupDate: lead.nextFollowupDate
-        ? lead.nextFollowupDate.slice(0, 16)
-        : "",
-      leadSourceId: lead.leadSourceID ?? "",
-      leadStatusId: lead.status ?? "",
-      notes: lead.notes ?? "",
-      cityId: cityId,
-    });
-  
-    setErrors({});
-  }, [lead, open]);
 
   /* ── CUSTOMER AUTO-FILL ── */
   const onCustomerSelect = (customerId: string | null) => {
@@ -225,7 +201,29 @@ const LeadUpsertSheet = ({ open, onClose, lead, advisorId }: Props) => {
     if (isEdit) {
       updateLead({ id: lead.leadID, payload }, { onSuccess: onClose });
     } else {
-      createLead(payload, { onSuccess: onClose });
+      createLead(payload, { 
+        onSuccess: (res) => {
+          // If a new customer was created, add it to the local list
+          // so that if this same lead is edited later, the dropdown has it.
+          const createdLead = res?.data;
+          if (createdLead?.clientID || createdLead?.ClientID) {
+            const cid = createdLead.clientID ?? createdLead.ClientID;
+            const name = createdLead.contactPerson ?? createdLead.ContactPerson ?? createdLead.clientName ?? createdLead.ClientName;
+            
+            const newCustomer = {
+              clientID: cid,
+              customerId: cid,
+              contactPerson: name,
+              clientName: name,
+              email: createdLead.email ?? createdLead.Email,
+              mobile: createdLead.mobile ?? createdLead.Mobile,
+            };
+            setCustomers(prev => [newCustomer, ...prev]);
+          }
+          if (onSuccess) onSuccess();
+          onClose();
+        } 
+      });
     }
   };
 
