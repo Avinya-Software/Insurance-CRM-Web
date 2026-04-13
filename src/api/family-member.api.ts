@@ -39,3 +39,8 @@ export const deleteFamilyMemberApi = async (id: string) => {
   const res = await api.delete(`/FamilyMember/soft-delete/${id}`);
   return res.data;
 };
+
+export const deleteFamilyMemberDocumentApi = async (familyMemberId: string, documentId: string) => {
+  const res = await api.delete(`/FamilyMember/${familyMemberId}/documents/${documentId}`);
+  return res.data;
+};
