@@ -13,6 +13,7 @@ import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemb
 import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
 import { useGeneralPolicyById } from "../../hooks/policy/usePolicies";
 import { useSegmentDropdown } from "../../hooks/segment/useSegmentDropdown";
+import { usePolicyTypeDropdown } from "../../hooks/PolicyType/usePolicyTypeDropdown";
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 import { useGeneralPolicyDocumentActions } from "../../hooks/policy/useGeneralPolicyDocumentActions";
 import SearchableComboBox from "../common/SearchableComboBox";
@@ -192,6 +193,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
   const selectedDivisionId = Number(form.detail.divisionId) || 0;
   const { data: segmentData } = useSegmentDropdown(selectedDivisionId);
+  const selectedSegmentId = Number(form.detail.segmentId) || 0;
+  const { data: policyTypeData } = usePolicyTypeDropdown(selectedDivisionId, selectedSegmentId);
 
   const { data: fetchedPolicy, isLoading: isLoadingFetched } = useGeneralPolicyById(renewalId || null);
   const isRenewalMode = !!renewalId && !isEdit;
@@ -247,6 +250,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     segmentData?.map(s => ({ id: s.segmentId.toString(), name: s.segmentName })) || [],
     currentPolicy?.detail?.segmentId,
     currentPolicy?.detail?.segmentName
+  );
+
+  const dynamicPolicyTypes = mergeOption(
+    policyTypeData?.map(pt => ({ id: pt.id, name: pt.name })) || [],
+    currentPolicy?.detail?.policyType,
+    currentPolicy?.detail?.policyTypeName
   );
 
   const dynamicCompanies = mergeOption(
@@ -1083,7 +1092,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         const mappedType = division?.divisionName === "Health Insurance" ? "Health" : 
                                            division?.divisionName === "Other General Insurance" ? "OtherGeneral" : 
                                            division?.divisionName === "Vehicle Insurance" ? "Vehicle" : (division?.divisionName || "");
-                        patchDetail({ divisionId: item?.value ?? "", divisionType: mappedType, segmentId: "" });
+                        patchDetail({ divisionId: item?.value ?? "", divisionType: mappedType, segmentId: "", policyType: "" });
                       }}
                     />
                   </div>
@@ -1099,14 +1108,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         value={form.detail.segmentId}
                         error={errors.segmentId}
                         placeholder="Search segment..."
-                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "" })}
+                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "", policyType: "" })}
                       />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                     <div className="col-span-5">
                       <Select
                         label="Policy Type"
-                        options={POLICY_TYPE_OPTIONS}
+                        options={dynamicPolicyTypes}
                         value={form.detail.policyType}
                         onChange={(v:any) => patchDetail({ policyType: v })}
                       />
@@ -1124,15 +1133,16 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         value={form.detail.segmentId}
                         error={errors.segmentId}
                         placeholder="Search segment..."
-                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "" })}
+                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "", policyType: "" })}
                       />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                     <div className="col-span-5">
                       <Select
                         label="Policy Type"
-                        options={POLICY_TYPE_OPTIONS}
+                        options={dynamicPolicyTypes}
                         value={form.detail.policyType}
+                        error={errors.policyType}
                         onChange={(v:any) => patchDetail({ policyType: v })}
                       />
                     </div>
@@ -1167,7 +1177,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         value={form.detail.segmentId}
                         error={errors.segmentId}
                         placeholder="Search segment..."
-                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "" })}
+                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "", policyType: "" })}
                       />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>

@@ -15,3 +15,13 @@ export const updatePolicyTypeStatusApi = async (data: UpdatePolicyTypeStatusRequ
   const res = await api.patch("/PolicyType/update-status", data);
   return res.data;
 };
+
+export const getPolicyTypeDropdownApi = async (divisionId: number, segmentId: number): Promise<{ id: string; name: string }[]> => {
+  const res = await api.get(`/PolicyType/dropdown`, {
+    params: { divisionId, segmentId },
+  });
+  return res.data.data.map((item: any) => ({
+    id: item.id.toString(),
+    name: item.policyTypeName,
+  }));
+};
