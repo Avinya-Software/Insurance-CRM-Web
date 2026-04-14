@@ -31,7 +31,7 @@ const FamilyMembers = () => {
   /*   API   */
 
   const { data, isLoading, isFetching, refetch } = useFamilyMembers(filters);
-  const { mutate: deleteMember, isPending: isDeleting } = useDeleteFamilyMember();
+  const { mutate: deleteMember, isPending: isDeleting } = useDeleteFamilyMember();  
 
   /*   HELPERS   */
 

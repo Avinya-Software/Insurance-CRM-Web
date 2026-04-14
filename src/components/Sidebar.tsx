@@ -318,6 +318,13 @@ const Sidebar = () => {
                   isCollapsed={false}
                 />
 
+                <NavItem
+                  to="/policy-type"
+                  label="Policy Type"
+                  icon={<Package size={16} />}
+                  isCollapsed={false}
+                />
+
               </div>
             )}
             </div>
