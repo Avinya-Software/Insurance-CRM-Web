@@ -35,3 +35,18 @@ export const deleteProductApi = async (productId: number) => {
   const res = await api.delete(`/products/${productId}`);
   return res.data;
 };
+
+/* GET PRODUCT DROPDOWN */
+export const getProductDropdownApi = async (
+  divisionId?: string | number,
+  companyId?: string,
+  segmentId?: string | number
+) => {
+  const params: any = {};
+  if (divisionId) params.divisionId = divisionId;
+  if (companyId) params.companyId = companyId;
+  if (segmentId) params.segmentId = segmentId;
+  
+  const res = await api.get("/products/Life-dropdown", { params });
+  return res.data?.data || [];
+};

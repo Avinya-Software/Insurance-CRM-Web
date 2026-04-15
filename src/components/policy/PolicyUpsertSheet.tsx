@@ -20,6 +20,7 @@ import SearchableComboBox from "../common/SearchableComboBox";
 import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
 import { useBankDropdown } from "../../hooks/bank/useBankDropdown";
+import { useProductDropdown } from "../../hooks/product/useProductDropdown";
 
 type TabType = "customer" | "policy" | "premium" | "documents";
 
@@ -195,6 +196,11 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const { data: companies } = useCompanyList(false);
   const { data: branchData } = useBranchDropdown();
   const { data: bankData } = useBankDropdown();
+  const { data: productsData } = useProductDropdown(
+    form.detail.divisionId,
+    form.detail.insuranceCompanyId,
+    form.detail.segmentId
+  );
   const { data: divisionData } = useDivisionDropdown(0);
 
   const selectedDivisionId = Number(form.detail.divisionId) || 0;
@@ -277,7 +283,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   );
 
   const dynamicProducts = mergeOption(
-    PRODUCT_OPTIONS,
+    productsData?.map((p: any) => ({ id: p.productId.toString(), name: p.productName })) || [],
     currentPolicy?.detail?.productId,
     currentPolicy?.detail?.productName
   );
@@ -1216,11 +1222,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-5">
-                    <Select
+                    <SearchableComboBox
                       label="Product Name"
-                      options={dynamicProducts}
+                      items={dynamicProducts.map((p: any) => ({ label: p.name, value: p.id }))}
                       value={form.detail.productId}
-                      onChange={(v:any) => patchDetail({ productId: v })}
+                      placeholder="Search product..."
+                      onSelect={(item: any) => patchDetail({ productId: item?.value ?? "" })}
                     />
                   </div>
                   <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
