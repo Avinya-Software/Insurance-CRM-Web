@@ -46,8 +46,6 @@ const POLICY_MODE_OPTIONS    = [
 const OPT_COVER_OPTIONS      = [{ id: "NoClaim", name: "No Claim Bonus Protection" }, { id: "PA", name: "Personal Accident" }];
 const ADD_ON_OPTIONS         = [{ id: "ZeroDepreciation", name: "Zero Depreciation" }, { id: "RoadsideAssist", name: "Roadside Assistance" }];
 const BROKER_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Rajeshbhai" }];
-const AGENCY_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Jk" }];
-const SUB_AGENT_OPTIONS      = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Seni" }];
 const NOMINEE_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Anant Jaiswal" }];
 const PAID_BY_OPTIONS        = [{ id: "Cash", name: "Cash" }, { id: "Online", name: "Online" }, { id: "Cheque", name: "Cheque" }];
 const VEHICLE_USE_OPTIONS    = [{ id: "Private", name: "Private" }, { id: "Commercial", name: "Commercial" }];
@@ -105,8 +103,6 @@ const makeInitial = () => ({
     riskStartDate: "",
     riskEndDate: "",
     brokerId: "",
-    agencyId: "",
-    subAgentId: "",
     nomineeName: "",
     nomineeContact: "",
     remarks: "",
@@ -309,18 +305,6 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     name: p.name,
   })) || [];
 
-  const dynamicAgencies = mergeOption(
-    AGENCY_OPTIONS,
-    currentPolicy?.detail?.agencyId,
-    currentPolicy?.detail?.agencyName
-  );
-
-  const dynamicSubAgents = mergeOption(
-    SUB_AGENT_OPTIONS,
-    currentPolicy?.detail?.subAgentId,
-    currentPolicy?.detail?.subAgentName
-  );
-
   const dynamicBanks = mergeOption(
     bankData?.map((b: any) => ({ id: b.id.toString(), name: b.name })) || [],
     currentPolicy?.detail?.bankId,
@@ -378,10 +362,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           })(),
           divisionId: currentPolicy.detail?.divisionId || "",
           segmentId: currentPolicy.detail?.segmentId || "",
-          policyType: currentPolicy.detail?.policyType || "",
+          policyType: currentPolicy.detail?.policyType ? currentPolicy.detail.policyType.toString() : "",
           insuranceCompanyId: currentPolicy.detail?.insuranceCompanyId || "",
-          branchId: currentPolicy.detail?.branchId || "",
-          productId: currentPolicy.detail?.productId || "",
+          branchId: currentPolicy.detail?.branchId ? currentPolicy.detail.branchId.toString() : "",
+          productId: currentPolicy.detail?.productId ? currentPolicy.detail.productId.toString() : "",
           zone: currentPolicy.detail?.zone || "",
           optionalCover:
             typeof currentPolicy.detail?.optionalCover === "string"
@@ -407,9 +391,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           riskEndDate: isRenewalMode 
             ? "" // Will be auto-calculated by the other useEffect
             : currentPolicy.detail?.riskEndDate?.split("T")[0] || "",
-          brokerId: currentPolicy.detail?.brokerId || "",
-          agencyId: currentPolicy.detail?.agencyId || "",
-          subAgentId: currentPolicy.detail?.subAgentId || "",
+          brokerId: currentPolicy.detail?.brokerId ? currentPolicy.detail.brokerId.toString() : "",
           nomineeName: currentPolicy.detail?.nomineeName || "",
           nomineeContact: currentPolicy.detail?.nomineeContact || "",
           remarks: currentPolicy.detail?.remarks || "",
@@ -417,7 +399,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           vehicleClass: currentPolicy.detail?.vehicleClass || "",
           tpPolicyMode: currentPolicy.detail?.tpPolicyMode || "",
           tpDueDate: currentPolicy.detail?.tpDueDate?.split("T")[0] || "",
-          bankId: currentPolicy.detail?.bankId || "",
+          bankId: currentPolicy.detail?.bankId ? currentPolicy.detail.bankId.toString() : "",
         },
         members:
           currentPolicy.members?.map((m: any) => {
@@ -466,9 +448,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           commitmentAmount: currentPolicy.premium?.commitmentAmount || 0,
         },
         payment: {
-          paidByClient: currentPolicy.payment?.paidByClient || "",
+          paidByClient: currentPolicy.payment?.paidByClient ? currentPolicy.payment.paidByClient.toString() : "",
           clientAmount: currentPolicy.payment?.clientAmount || 0,
-          paidByAgent: currentPolicy.payment?.paidByAgent || "",
+          paidByAgent: currentPolicy.payment?.paidByAgent ? currentPolicy.payment.paidByAgent.toString() : "",
           agentAmount: currentPolicy.payment?.agentAmount || 0,
         },
       };
@@ -606,13 +588,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     if (!form.detail.brokerId) {
       newErrors.brokerId = "Broker is required";
     }
-    
-    if (!form.detail.agencyId) {
-      newErrors.agencyId = "Agency is required";
-    }
 
     // Health Validation
     if (isHealth) {
+      if (!form.detail.policyType) {
+        newErrors.policyType = "Policy Type is required";
+      }
   
       if (form.members.length === 0) {
         newErrors.members = "At least one family member is required";
@@ -772,10 +753,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           vehicleClass: division === "Vehicle" ? form.detail.vehicleClass || "" : null,
 
           segmentId: form.detail.segmentId || STATIC_GUID,
-          policyType: form.detail.policyType || "",
+          policyType: Number(form.detail.policyType) || 0,
           insuranceCompanyId: form.detail.insuranceCompanyId || STATIC_GUID,
-          branchId: form.detail.branchId || STATIC_GUID,
-          productId: form.detail.productId || STATIC_GUID,
+          branchId: Number(form.detail.branchId) || 0,
+          productId: Number(form.detail.productId) || 0,
           zone: form.detail.zone || "",
 
           optionalCover:
@@ -808,12 +789,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
           bankId:
             division === "OtherGeneral" || division === "Vehicle"
-              ? form.detail.bankId || STATIC_GUID
-              : null,
+              ? Number(form.detail.bankId) || 0
+              : 0,
 
-          brokerId: form.detail.brokerId || STATIC_GUID,
-          agencyId: form.detail.agencyId || STATIC_GUID,
-          subAgentId: form.detail.subAgentId || STATIC_GUID,
+          brokerId: Number(form.detail.brokerId) || 0,
 
           nomineeName: form.detail.nomineeName || "",
           nomineeContact: form.detail.nomineeContact || "",
@@ -885,9 +864,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
         },
 
         payment: {
-          paidByClient: form.payment.paidByClient || "",
+          paidByClient: Number(form.payment.paidByClient) || 0,
           clientAmount: Number(form.payment.clientAmount) || 0,
-          paidByAgent: form.payment.paidByAgent || "",
+          paidByAgent: Number(form.payment.paidByAgent) || 0,
           agentAmount: Number(form.payment.agentAmount) || 0
         }
       };
@@ -1136,8 +1115,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     <div className="col-span-5">
                       <Select
                         label="Policy Type"
+                        required
                         options={dynamicPolicyTypes}
                         value={form.detail.policyType}
+                        error={errors.policyType}
                         onChange={(v:any) => patchDetail({ policyType: v })}
                       />
                     </div>
@@ -1161,6 +1142,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     <div className="col-span-5">
                       <Select
                         label="Policy Type"
+                        required
                         options={dynamicPolicyTypes}
                         value={form.detail.policyType}
                         error={errors.policyType}
@@ -1175,6 +1157,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     <div className="col-span-3">
                       <Select
                         label="Vehicle Uses"
+                        required
                         options={VEHICLE_USE_OPTIONS}
                         value={form.detail.vehicleUse}
                         error={errors.vehicleUse}
@@ -1184,6 +1167,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     <div className="col-span-3">
                       <Select
                         label="Vehicle Class"
+                        required
                         options={VEHICLE_CLASS_OPTIONS}
                         value={form.detail.vehicleClass}
                         error={errors.vehicleClass}
@@ -1744,6 +1728,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                   {isVehicle && (
                     <Input
                       label="Tpa Premium"
+                      required
                       type="number"
                       value={form.premium.tpaPremium}
                       error={errors.tpaPremium}

@@ -187,7 +187,7 @@ const { data: statuses = [] } = useQuery({
                   <Td className="whitespace-nowrap">{p.familyGroupName || "-"}</Td>
                   <Td className="whitespace-nowrap">{p.detail?.divisionTypeName || "-"}</Td>
                   <Td className="whitespace-nowrap">{p.detail?.segmentName || "-"}</Td>
-                  <Td className="whitespace-nowrap">{p.detail?.policyType}</Td>
+                  <Td className="whitespace-nowrap">{p.detail?.policyTypeName || "-"}</Td>
 
                   <Td className="font-semibold text-green-700 text-right">
                     ₹{p.premium?.totalPremium?.toLocaleString()}

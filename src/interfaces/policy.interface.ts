@@ -430,7 +430,8 @@ export interface IGeneralPolicy {
     vehicleClass: string;
     segmentId: string | number;
     segmentName: string;
-    policyType: string;
+    policyType: string | number;
+    policyTypeName: string;
     insuranceCompanyId: string;
     insuranceCompanyName: string;
     branchId: string;
