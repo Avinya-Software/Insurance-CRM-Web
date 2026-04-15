@@ -21,6 +21,7 @@ import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
 import { useBankDropdown } from "../../hooks/bank/useBankDropdown";
 import { useProductDropdown } from "../../hooks/product/useProductDropdown";
+import { useBrokerDropdown } from "../../hooks/broker/useBrokerDropdown";
 
 type TabType = "customer" | "policy" | "premium" | "documents";
 
@@ -196,6 +197,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const { data: companies } = useCompanyList(false);
   const { data: branchData } = useBranchDropdown();
   const { data: bankData } = useBankDropdown();
+  const { data: brokerData } = useBrokerDropdown();
   const { data: productsData } = useProductDropdown(
     form.detail.divisionId,
     form.detail.insuranceCompanyId,
@@ -295,7 +297,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   );
 
   const dynamicBrokers = mergeOption(
-    BROKER_OPTIONS,
+    brokerData?.map((b: any) => ({ id: b.id.toString(), name: b.name })) || [],
     currentPolicy?.detail?.brokerId,
     currentPolicy?.detail?.brokerName
   );
@@ -1242,36 +1244,15 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                 </div>
 
                 <div className="grid grid-cols-12 gap-4 items-start">
-                  <div className="col-span-3">
-                    <Select
+                  <div className="col-span-11">
+                    <SearchableComboBox
                       label="Select Broker"
                       required
-                      options={dynamicBrokers}
+                      items={dynamicBrokers.map(b => ({ label: b.name, value: b.id }))}
                       value={form.detail.brokerId}
                       error={errors.brokerId}
-                      onChange={(v: any) => patchDetail({ brokerId: v })}
-                    />
-                  </div>
-                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
-
-                  <div className="col-span-3">
-                    <Select
-                      label="Select Agency Name"
-                      required
-                      options={dynamicAgencies}
-                      value={form.detail.agencyId}
-                      error={errors.agencyId}
-                      onChange={(v: any) => patchDetail({ agencyId: v })}
-                    />
-                  </div>
-                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
-
-                  <div className="col-span-3">
-                    <Select
-                      label="Select Sub Agent Name"
-                      options={dynamicSubAgents}
-                      value={form.detail.subAgentId}
-                      onChange={(v: any) => patchDetail({ subAgentId: v })}
+                      placeholder="Search broker..."
+                      onSelect={(item: any) => patchDetail({ brokerId: item?.value ?? "" })}
                     />
                   </div>
                   <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
