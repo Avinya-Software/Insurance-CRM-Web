@@ -19,6 +19,7 @@ import { useGeneralPolicyDocumentActions } from "../../hooks/policy/useGeneralPo
 import SearchableComboBox from "../common/SearchableComboBox";
 import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
+import { useBankDropdown } from "../../hooks/bank/useBankDropdown";
 
 type TabType = "customer" | "policy" | "premium" | "documents";
 
@@ -193,6 +194,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const { data: memberDropdown } = useFamilyMemberDropdown(form.familyGroupId);
   const { data: companies } = useCompanyList(false);
   const { data: branchData } = useBranchDropdown();
+  const { data: bankData } = useBankDropdown();
   const { data: divisionData } = useDivisionDropdown(0);
 
   const selectedDivisionId = Number(form.detail.divisionId) || 0;
@@ -305,7 +307,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   );
 
   const dynamicBanks = mergeOption(
-    BANK_OPTIONS,
+    bankData?.map((b: any) => ({ id: b.id.toString(), name: b.name })) || [],
     currentPolicy?.detail?.bankId,
     currentPolicy?.detail?.bankName
   );
@@ -1464,11 +1466,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                 {(isOther || isVehicle) && (
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-10">
-                      <Select
+                      <SearchableComboBox
                         label="Select Bank Name"
-                        options={dynamicBanks}
+                        items={dynamicBanks.map(b => ({ label: b.name, value: b.id }))}
                         value={form.detail.bankId}
-                        onChange={(v:any) => patchDetail({ bankId: v })}
+                        placeholder="Search bank..."
+                        onSelect={(item: any) => patchDetail({ bankId: item?.value ?? "" })}
                       />
                     </div>
                     <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
