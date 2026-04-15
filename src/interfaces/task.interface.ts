@@ -12,6 +12,8 @@ export interface Task {
     listId?: number;
     tags?: string[];
     assignToId?: string;
+    assignedTo?: string;
+    assignedName?: string;
   }
   
   export type TaskScope = "Personal" | "Team";
