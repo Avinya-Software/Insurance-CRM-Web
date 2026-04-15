@@ -17,6 +17,7 @@ import { usePolicyTypeDropdown } from "../../hooks/PolicyType/usePolicyTypeDropd
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 import { useGeneralPolicyDocumentActions } from "../../hooks/policy/useGeneralPolicyDocumentActions";
 import SearchableComboBox from "../common/SearchableComboBox";
+import { useCompanyList } from "../../hooks/policy/useCompany";
 
 type TabType = "customer" | "policy" | "premium" | "documents";
 
@@ -189,6 +190,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
   const { data: customerDropdown } = useCustomerDropdown();
   const { data: memberDropdown } = useFamilyMemberDropdown(form.familyGroupId);
+  const { data: companies } = useCompanyList(false);
   const { data: divisionData } = useDivisionDropdown(0);
 
   const selectedDivisionId = Number(form.detail.divisionId) || 0;
@@ -259,7 +261,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   );
 
   const dynamicCompanies = mergeOption(
-    COMPANY_OPTIONS,
+    companies?.map((c: any) => ({ id: c.companyId, name: c.companyName })) || [],
     currentPolicy?.detail?.insuranceCompanyId,
     currentPolicy?.detail?.insuranceCompanyName
   );
@@ -1186,13 +1188,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-6">
-                    <Select
+                    <SearchableComboBox
                       label="Select Insurance Company"
                       required
-                      options={dynamicCompanies}
+                      items={dynamicCompanies.map(c => ({ label: c.name, value: c.id }))}
                       value={form.detail.insuranceCompanyId}
                       error={errors.insuranceCompanyId}
-                      onChange={(v:any) => patchDetail({ insuranceCompanyId: v })}
+                      placeholder="Search company..."
+                      onSelect={(item: any) => patchDetail({ insuranceCompanyId: item?.value ?? "" })}
                     />
                   </div>
                   <div className="col-span-4">
