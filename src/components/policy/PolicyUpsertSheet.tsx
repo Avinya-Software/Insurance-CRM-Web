@@ -13,9 +13,16 @@ import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemb
 import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
 import { useGeneralPolicyById } from "../../hooks/policy/usePolicies";
 import { useSegmentDropdown } from "../../hooks/segment/useSegmentDropdown";
+import { usePolicyTypeDropdown } from "../../hooks/PolicyType/usePolicyTypeDropdown";
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 import { useGeneralPolicyDocumentActions } from "../../hooks/policy/useGeneralPolicyDocumentActions";
 import SearchableComboBox from "../common/SearchableComboBox";
+import { useCompanyList } from "../../hooks/policy/useCompany";
+import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
+import { useBankDropdown } from "../../hooks/bank/useBankDropdown";
+import { useProductDropdown } from "../../hooks/product/useProductDropdown";
+import { useBrokerDropdown } from "../../hooks/broker/useBrokerDropdown";
+import { usePaymentMethodDropdown } from "../../hooks/payment/usePaymentMethodDropdown";
 
 type TabType = "customer" | "policy" | "premium" | "documents";
 
@@ -39,8 +46,6 @@ const POLICY_MODE_OPTIONS    = [
 const OPT_COVER_OPTIONS      = [{ id: "NoClaim", name: "No Claim Bonus Protection" }, { id: "PA", name: "Personal Accident" }];
 const ADD_ON_OPTIONS         = [{ id: "ZeroDepreciation", name: "Zero Depreciation" }, { id: "RoadsideAssist", name: "Roadside Assistance" }];
 const BROKER_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Rajeshbhai" }];
-const AGENCY_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Jk" }];
-const SUB_AGENT_OPTIONS      = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Seni" }];
 const NOMINEE_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Anant Jaiswal" }];
 const PAID_BY_OPTIONS        = [{ id: "Cash", name: "Cash" }, { id: "Online", name: "Online" }, { id: "Cheque", name: "Cheque" }];
 const VEHICLE_USE_OPTIONS    = [{ id: "Private", name: "Private" }, { id: "Commercial", name: "Commercial" }];
@@ -98,8 +103,6 @@ const makeInitial = () => ({
     riskStartDate: "",
     riskEndDate: "",
     brokerId: "",
-    agencyId: "",
-    subAgentId: "",
     nomineeName: "",
     nomineeContact: "",
     remarks: "",
@@ -188,10 +191,22 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
   const { data: customerDropdown } = useCustomerDropdown();
   const { data: memberDropdown } = useFamilyMemberDropdown(form.familyGroupId);
+  const { data: companies } = useCompanyList(false);
+  const { data: branchData } = useBranchDropdown();
+  const { data: bankData } = useBankDropdown();
+  const { data: brokerData } = useBrokerDropdown();
+  const { data: paymentMethods } = usePaymentMethodDropdown();
+  const { data: productsData } = useProductDropdown(
+    form.detail.divisionId,
+    form.detail.insuranceCompanyId,
+    form.detail.segmentId
+  );
   const { data: divisionData } = useDivisionDropdown(0);
 
   const selectedDivisionId = Number(form.detail.divisionId) || 0;
   const { data: segmentData } = useSegmentDropdown(selectedDivisionId);
+  const selectedSegmentId = Number(form.detail.segmentId) || 0;
+  const { data: policyTypeData } = usePolicyTypeDropdown(selectedDivisionId, selectedSegmentId);
 
   const { data: fetchedPolicy, isLoading: isLoadingFetched } = useGeneralPolicyById(renewalId || null);
   const isRenewalMode = !!renewalId && !isEdit;
@@ -249,20 +264,26 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     currentPolicy?.detail?.segmentName
   );
 
+  const dynamicPolicyTypes = mergeOption(
+    policyTypeData?.map(pt => ({ id: pt.id, name: pt.name })) || [],
+    currentPolicy?.detail?.policyType,
+    currentPolicy?.detail?.policyTypeName
+  );
+
   const dynamicCompanies = mergeOption(
-    COMPANY_OPTIONS,
+    companies?.map((c: any) => ({ id: c.companyId, name: c.companyName })) || [],
     currentPolicy?.detail?.insuranceCompanyId,
     currentPolicy?.detail?.insuranceCompanyName
   );
 
   const dynamicBranches = mergeOption(
-    BRANCH_OPTIONS,
+    branchData?.map((b: any) => ({ id: b.id.toString(), name: b.name })) || [],
     currentPolicy?.detail?.branchId,
     currentPolicy?.detail?.branchName
   );
 
   const dynamicProducts = mergeOption(
-    PRODUCT_OPTIONS,
+    productsData?.map((p: any) => ({ id: p.productId.toString(), name: p.productName })) || [],
     currentPolicy?.detail?.productId,
     currentPolicy?.detail?.productName
   );
@@ -274,25 +295,18 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   );
 
   const dynamicBrokers = mergeOption(
-    BROKER_OPTIONS,
+    brokerData?.map((b: any) => ({ id: b.id.toString(), name: b.name })) || [],
     currentPolicy?.detail?.brokerId,
     currentPolicy?.detail?.brokerName
   );
 
-  const dynamicAgencies = mergeOption(
-    AGENCY_OPTIONS,
-    currentPolicy?.detail?.agencyId,
-    currentPolicy?.detail?.agencyName
-  );
-
-  const dynamicSubAgents = mergeOption(
-    SUB_AGENT_OPTIONS,
-    currentPolicy?.detail?.subAgentId,
-    currentPolicy?.detail?.subAgentName
-  );
+  const dynamicPaymentMethods = paymentMethods?.map((p: any) => ({
+    id: p.id.toString(),
+    name: p.name,
+  })) || [];
 
   const dynamicBanks = mergeOption(
-    BANK_OPTIONS,
+    bankData?.map((b: any) => ({ id: b.id.toString(), name: b.name })) || [],
     currentPolicy?.detail?.bankId,
     currentPolicy?.detail?.bankName
   );
@@ -348,10 +362,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           })(),
           divisionId: currentPolicy.detail?.divisionId || "",
           segmentId: currentPolicy.detail?.segmentId || "",
-          policyType: currentPolicy.detail?.policyType || "",
+          policyType: currentPolicy.detail?.policyType ? currentPolicy.detail.policyType.toString() : "",
           insuranceCompanyId: currentPolicy.detail?.insuranceCompanyId || "",
-          branchId: currentPolicy.detail?.branchId || "",
-          productId: currentPolicy.detail?.productId || "",
+          branchId: currentPolicy.detail?.branchId ? currentPolicy.detail.branchId.toString() : "",
+          productId: currentPolicy.detail?.productId ? currentPolicy.detail.productId.toString() : "",
           zone: currentPolicy.detail?.zone || "",
           optionalCover:
             typeof currentPolicy.detail?.optionalCover === "string"
@@ -377,9 +391,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           riskEndDate: isRenewalMode 
             ? "" // Will be auto-calculated by the other useEffect
             : currentPolicy.detail?.riskEndDate?.split("T")[0] || "",
-          brokerId: currentPolicy.detail?.brokerId || "",
-          agencyId: currentPolicy.detail?.agencyId || "",
-          subAgentId: currentPolicy.detail?.subAgentId || "",
+          brokerId: currentPolicy.detail?.brokerId ? currentPolicy.detail.brokerId.toString() : "",
           nomineeName: currentPolicy.detail?.nomineeName || "",
           nomineeContact: currentPolicy.detail?.nomineeContact || "",
           remarks: currentPolicy.detail?.remarks || "",
@@ -387,7 +399,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           vehicleClass: currentPolicy.detail?.vehicleClass || "",
           tpPolicyMode: currentPolicy.detail?.tpPolicyMode || "",
           tpDueDate: currentPolicy.detail?.tpDueDate?.split("T")[0] || "",
-          bankId: currentPolicy.detail?.bankId || "",
+          bankId: currentPolicy.detail?.bankId ? currentPolicy.detail.bankId.toString() : "",
         },
         members:
           currentPolicy.members?.map((m: any) => {
@@ -436,9 +448,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           commitmentAmount: currentPolicy.premium?.commitmentAmount || 0,
         },
         payment: {
-          paidByClient: currentPolicy.payment?.paidByClient || "",
+          paidByClient: currentPolicy.payment?.paidByClient ? currentPolicy.payment.paidByClient.toString() : "",
           clientAmount: currentPolicy.payment?.clientAmount || 0,
-          paidByAgent: currentPolicy.payment?.paidByAgent || "",
+          paidByAgent: currentPolicy.payment?.paidByAgent ? currentPolicy.payment.paidByAgent.toString() : "",
           agentAmount: currentPolicy.payment?.agentAmount || 0,
         },
       };
@@ -576,13 +588,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     if (!form.detail.brokerId) {
       newErrors.brokerId = "Broker is required";
     }
-    
-    if (!form.detail.agencyId) {
-      newErrors.agencyId = "Agency is required";
-    }
 
     // Health Validation
     if (isHealth) {
+      if (!form.detail.policyType) {
+        newErrors.policyType = "Policy Type is required";
+      }
   
       if (form.members.length === 0) {
         newErrors.members = "At least one family member is required";
@@ -742,10 +753,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           vehicleClass: division === "Vehicle" ? form.detail.vehicleClass || "" : null,
 
           segmentId: form.detail.segmentId || STATIC_GUID,
-          policyType: form.detail.policyType || "",
+          policyType: Number(form.detail.policyType) || 0,
           insuranceCompanyId: form.detail.insuranceCompanyId || STATIC_GUID,
-          branchId: form.detail.branchId || STATIC_GUID,
-          productId: form.detail.productId || STATIC_GUID,
+          branchId: Number(form.detail.branchId) || 0,
+          productId: Number(form.detail.productId) || 0,
           zone: form.detail.zone || "",
 
           optionalCover:
@@ -778,12 +789,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
           bankId:
             division === "OtherGeneral" || division === "Vehicle"
-              ? form.detail.bankId || STATIC_GUID
-              : null,
+              ? Number(form.detail.bankId) || 0
+              : 0,
 
-          brokerId: form.detail.brokerId || STATIC_GUID,
-          agencyId: form.detail.agencyId || STATIC_GUID,
-          subAgentId: form.detail.subAgentId || STATIC_GUID,
+          brokerId: Number(form.detail.brokerId) || 0,
 
           nomineeName: form.detail.nomineeName || "",
           nomineeContact: form.detail.nomineeContact || "",
@@ -855,9 +864,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
         },
 
         payment: {
-          paidByClient: form.payment.paidByClient || "",
+          paidByClient: Number(form.payment.paidByClient) || 0,
           clientAmount: Number(form.payment.clientAmount) || 0,
-          paidByAgent: form.payment.paidByAgent || "",
+          paidByAgent: Number(form.payment.paidByAgent) || 0,
           agentAmount: Number(form.payment.agentAmount) || 0
         }
       };
@@ -1083,7 +1092,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         const mappedType = division?.divisionName === "Health Insurance" ? "Health" : 
                                            division?.divisionName === "Other General Insurance" ? "OtherGeneral" : 
                                            division?.divisionName === "Vehicle Insurance" ? "Vehicle" : (division?.divisionName || "");
-                        patchDetail({ divisionId: item?.value ?? "", divisionType: mappedType, segmentId: "" });
+                        patchDetail({ divisionId: item?.value ?? "", divisionType: mappedType, segmentId: "", policyType: "" });
                       }}
                     />
                   </div>
@@ -1099,15 +1108,17 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         value={form.detail.segmentId}
                         error={errors.segmentId}
                         placeholder="Search segment..."
-                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "" })}
+                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "", policyType: "" })}
                       />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                     <div className="col-span-5">
                       <Select
                         label="Policy Type"
-                        options={POLICY_TYPE_OPTIONS}
+                        required
+                        options={dynamicPolicyTypes}
                         value={form.detail.policyType}
+                        error={errors.policyType}
                         onChange={(v:any) => patchDetail({ policyType: v })}
                       />
                     </div>
@@ -1124,15 +1135,17 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         value={form.detail.segmentId}
                         error={errors.segmentId}
                         placeholder="Search segment..."
-                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "" })}
+                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "", policyType: "" })}
                       />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
                     <div className="col-span-5">
                       <Select
                         label="Policy Type"
-                        options={POLICY_TYPE_OPTIONS}
+                        required
+                        options={dynamicPolicyTypes}
                         value={form.detail.policyType}
+                        error={errors.policyType}
                         onChange={(v:any) => patchDetail({ policyType: v })}
                       />
                     </div>
@@ -1144,6 +1157,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     <div className="col-span-3">
                       <Select
                         label="Vehicle Uses"
+                        required
                         options={VEHICLE_USE_OPTIONS}
                         value={form.detail.vehicleUse}
                         error={errors.vehicleUse}
@@ -1153,6 +1167,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     <div className="col-span-3">
                       <Select
                         label="Vehicle Class"
+                        required
                         options={VEHICLE_CLASS_OPTIONS}
                         value={form.detail.vehicleClass}
                         error={errors.vehicleClass}
@@ -1167,7 +1182,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         value={form.detail.segmentId}
                         error={errors.segmentId}
                         placeholder="Search segment..."
-                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "" })}
+                        onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "", policyType: "" })}
                       />
                     </div>
                     <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
@@ -1176,21 +1191,23 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-6">
-                    <Select
+                    <SearchableComboBox
                       label="Select Insurance Company"
                       required
-                      options={dynamicCompanies}
+                      items={dynamicCompanies.map(c => ({ label: c.name, value: c.id }))}
                       value={form.detail.insuranceCompanyId}
                       error={errors.insuranceCompanyId}
-                      onChange={(v:any) => patchDetail({ insuranceCompanyId: v })}
+                      placeholder="Search company..."
+                      onSelect={(item: any) => patchDetail({ insuranceCompanyId: item?.value ?? "" })}
                     />
                   </div>
                   <div className="col-span-4">
-                    <Select
+                    <SearchableComboBox
                       label="Select Branch"
-                      options={dynamicBranches}
+                      items={dynamicBranches.map(b => ({ label: b.name, value: b.id }))}
                       value={form.detail.branchId}
-                      onChange={(v:any) => patchDetail({ branchId: v })}
+                      placeholder="Search branch..."
+                      onSelect={(item: any) => patchDetail({ branchId: item?.value ?? "" })}
                     />
                   </div>
                   <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
@@ -1198,11 +1215,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
                 <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-5">
-                    <Select
+                    <SearchableComboBox
                       label="Product Name"
-                      options={dynamicProducts}
+                      items={dynamicProducts.map((p: any) => ({ label: p.name, value: p.id }))}
                       value={form.detail.productId}
-                      onChange={(v:any) => patchDetail({ productId: v })}
+                      placeholder="Search product..."
+                      onSelect={(item: any) => patchDetail({ productId: item?.value ?? "" })}
                     />
                   </div>
                   <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
@@ -1217,36 +1235,15 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                 </div>
 
                 <div className="grid grid-cols-12 gap-4 items-start">
-                  <div className="col-span-3">
-                    <Select
+                  <div className="col-span-11">
+                    <SearchableComboBox
                       label="Select Broker"
                       required
-                      options={dynamicBrokers}
+                      items={dynamicBrokers.map(b => ({ label: b.name, value: b.id }))}
                       value={form.detail.brokerId}
                       error={errors.brokerId}
-                      onChange={(v: any) => patchDetail({ brokerId: v })}
-                    />
-                  </div>
-                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
-
-                  <div className="col-span-3">
-                    <Select
-                      label="Select Agency Name"
-                      required
-                      options={dynamicAgencies}
-                      value={form.detail.agencyId}
-                      error={errors.agencyId}
-                      onChange={(v: any) => patchDetail({ agencyId: v })}
-                    />
-                  </div>
-                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
-
-                  <div className="col-span-3">
-                    <Select
-                      label="Select Sub Agent Name"
-                      options={dynamicSubAgents}
-                      value={form.detail.subAgentId}
-                      onChange={(v: any) => patchDetail({ subAgentId: v })}
+                      placeholder="Search broker..."
+                      onSelect={(item: any) => patchDetail({ brokerId: item?.value ?? "" })}
                     />
                   </div>
                   <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
@@ -1448,11 +1445,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                 {(isOther || isVehicle) && (
                   <div className="grid grid-cols-12 gap-4 items-start">
                     <div className="col-span-10">
-                      <Select
+                      <SearchableComboBox
                         label="Select Bank Name"
-                        options={dynamicBanks}
+                        items={dynamicBanks.map(b => ({ label: b.name, value: b.id }))}
                         value={form.detail.bankId}
-                        onChange={(v:any) => patchDetail({ bankId: v })}
+                        placeholder="Search bank..."
+                        onSelect={(item: any) => patchDetail({ bankId: item?.value ?? "" })}
                       />
                     </div>
                     <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
@@ -1730,6 +1728,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                   {isVehicle && (
                     <Input
                       label="Tpa Premium"
+                      required
                       type="number"
                       value={form.premium.tpaPremium}
                       error={errors.tpaPremium}
@@ -1778,12 +1777,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                   <div className="col-span-3">
                     <Select
                       label="Paid By Client"
-                      options={PAID_BY_OPTIONS}
+                      options={dynamicPaymentMethods}
                       value={form.payment.paidByClient}
                       onChange={(v:any) => patchPayment({ paidByClient: v })}
                     />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                  <div className="col-span-2">
                     <Input
                       label="Client Amount"
                       type="number"
@@ -1794,12 +1794,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                   <div className="col-span-3">
                     <Select
                       label="Paid By Agent"
-                      options={PAID_BY_OPTIONS}
+                      options={dynamicPaymentMethods}
                       value={form.payment.paidByAgent}
                       onChange={(v:any) => patchPayment({ paidByAgent: v })}
                     />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                  <div className="col-span-2">
                     <Input
                       label="Agent Amount"
                       type="number"

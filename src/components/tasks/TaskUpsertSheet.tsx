@@ -64,8 +64,13 @@ const TaskUpsertSheet = ({
   }, [teamResponse]);
 
   const userOptions: ComboboxOption[] = (usersResponse ?? []).map(
-    (u: any) => ({ value: u.id, label: u.fullName })
+    (u: any) => ({ value: u.id, label: u.name || u.fullName })
   );
+
+  // If editing and the assigned user isn't in the dropdown list, add them so their name shows
+  if (isEdit && task?.assignedTo && task?.assignedName && !userOptions.find(o => o.value === task.assignedTo)) {
+    userOptions.push({ value: task.assignedTo, label: task.assignedName });
+  }
 
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
@@ -87,10 +92,7 @@ const TaskUpsertSheet = ({
         status: task.status,
         scope: (task as any).scope || parentScope,
         teamId: (task as any).teamId || task.teamId || "",
-        assignToId:
-          (task as any).assignedTo
-            ? String((task as any).assignedTo)
-            : "",
+        assignToId: task.assignedTo || task.assignToId || "",
 
       });
     } else {
@@ -286,7 +288,7 @@ const TaskUpsertSheet = ({
             )}
 
             {/* ASSIGN TO */}
-            {formData.scope === "Personal" && (
+            {(formData.scope === "Personal" || formData.scope === "Team") && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   Assign To
@@ -437,7 +439,6 @@ const TaskUpsertSheet = ({
 
             {/* SUBMIT */}
             <div className="flex gap-3 pt-4">
-            <div className="flex gap-3 pt-4">
               <button
                 type="button"
                 onClick={onClose}
@@ -464,7 +465,6 @@ const TaskUpsertSheet = ({
                   </>
                 )}
               </button>
-            </div>
             </div>
           </form>
         </div>

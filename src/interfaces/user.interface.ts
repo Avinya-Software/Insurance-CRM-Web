@@ -58,8 +58,9 @@ export interface CompanyDropdownOption {
 
 export interface UserDropdownOption {
   id: string;
-  fullName: string;
-  email: string;
+  name: string;
+  fullName?: string;
+  email?: string;
 }
 
 export interface PermissionAction {
