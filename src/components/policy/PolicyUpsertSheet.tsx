@@ -18,6 +18,7 @@ import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyD
 import { useGeneralPolicyDocumentActions } from "../../hooks/policy/useGeneralPolicyDocumentActions";
 import SearchableComboBox from "../common/SearchableComboBox";
 import { useCompanyList } from "../../hooks/policy/useCompany";
+import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
 
 type TabType = "customer" | "policy" | "premium" | "documents";
 
@@ -191,6 +192,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const { data: customerDropdown } = useCustomerDropdown();
   const { data: memberDropdown } = useFamilyMemberDropdown(form.familyGroupId);
   const { data: companies } = useCompanyList(false);
+  const { data: branchData } = useBranchDropdown();
   const { data: divisionData } = useDivisionDropdown(0);
 
   const selectedDivisionId = Number(form.detail.divisionId) || 0;
@@ -267,7 +269,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   );
 
   const dynamicBranches = mergeOption(
-    BRANCH_OPTIONS,
+    branchData?.map((b: any) => ({ id: b.id.toString(), name: b.name })) || [],
     currentPolicy?.detail?.branchId,
     currentPolicy?.detail?.branchName
   );
@@ -1199,11 +1201,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     />
                   </div>
                   <div className="col-span-4">
-                    <Select
+                    <SearchableComboBox
                       label="Select Branch"
-                      options={dynamicBranches}
+                      items={dynamicBranches.map(b => ({ label: b.name, value: b.id }))}
                       value={form.detail.branchId}
-                      onChange={(v:any) => patchDetail({ branchId: v })}
+                      placeholder="Search branch..."
+                      onSelect={(item: any) => patchDetail({ branchId: item?.value ?? "" })}
                     />
                   </div>
                   <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
