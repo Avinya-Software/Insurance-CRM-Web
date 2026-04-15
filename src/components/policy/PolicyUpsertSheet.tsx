@@ -22,6 +22,7 @@ import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
 import { useBankDropdown } from "../../hooks/bank/useBankDropdown";
 import { useProductDropdown } from "../../hooks/product/useProductDropdown";
 import { useBrokerDropdown } from "../../hooks/broker/useBrokerDropdown";
+import { usePaymentMethodDropdown } from "../../hooks/payment/usePaymentMethodDropdown";
 
 type TabType = "customer" | "policy" | "premium" | "documents";
 
@@ -198,6 +199,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const { data: branchData } = useBranchDropdown();
   const { data: bankData } = useBankDropdown();
   const { data: brokerData } = useBrokerDropdown();
+  const { data: paymentMethods } = usePaymentMethodDropdown();
   const { data: productsData } = useProductDropdown(
     form.detail.divisionId,
     form.detail.insuranceCompanyId,
@@ -301,6 +303,11 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     currentPolicy?.detail?.brokerId,
     currentPolicy?.detail?.brokerName
   );
+
+  const dynamicPaymentMethods = paymentMethods?.map((p: any) => ({
+    id: p.id.toString(),
+    name: p.name,
+  })) || [];
 
   const dynamicAgencies = mergeOption(
     AGENCY_OPTIONS,
@@ -1785,12 +1792,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                   <div className="col-span-3">
                     <Select
                       label="Paid By Client"
-                      options={PAID_BY_OPTIONS}
+                      options={dynamicPaymentMethods}
                       value={form.payment.paidByClient}
                       onChange={(v:any) => patchPayment({ paidByClient: v })}
                     />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                  <div className="col-span-2">
                     <Input
                       label="Client Amount"
                       type="number"
@@ -1801,12 +1809,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                   <div className="col-span-3">
                     <Select
                       label="Paid By Agent"
-                      options={PAID_BY_OPTIONS}
+                      options={dynamicPaymentMethods}
                       value={form.payment.paidByAgent}
                       onChange={(v:any) => patchPayment({ paidByAgent: v })}
                     />
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                  <div className="col-span-2">
                     <Input
                       label="Agent Amount"
                       type="number"
