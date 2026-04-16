@@ -23,7 +23,9 @@ const PaymentMethodUpsertModal = ({ open, onClose, onSuccess }: Props) => {
 
     upsertPaymentMethod({ name }, {
       onSuccess: (res: any) => {
-        onSuccess(res.data || res);
+        const result = res.data || res;
+        const methodData = typeof result === 'object' ? result : { id: result };
+        onSuccess({ ...methodData, name: methodData.name || methodData.paymentMethodName || name });
         onClose();
       },
     });

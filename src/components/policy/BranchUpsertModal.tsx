@@ -23,7 +23,9 @@ const BranchUpsertModal = ({ open, onClose, onSuccess }: Props) => {
 
     upsertBranch({ branchName }, {
       onSuccess: (res: any) => {
-        onSuccess(res.data);
+        const result = res.data;
+        const branchData = typeof result === 'object' ? result : { id: result };
+        onSuccess({ ...branchData, name: branchData.name || branchData.branchName || branchName });
         onClose();
       },
     });

@@ -7,7 +7,7 @@ export const useUpsertBank = () => {
   return useMutation({
     mutationFn: upsertBankApi,
     onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["paymentMethodDropdown"] });
+      queryClient.invalidateQueries({ queryKey: ["bankDropdown"] });
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || "Failed to add bank");

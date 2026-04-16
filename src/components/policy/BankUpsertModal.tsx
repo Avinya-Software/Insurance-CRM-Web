@@ -23,7 +23,9 @@ const BankUpsertModal = ({ open, onClose, onSuccess }: Props) => {
 
     upsertBank({ name }, {
       onSuccess: (res: any) => {
-        onSuccess(res.data || res);
+        const result = res.data || res;
+        const bankData = typeof result === 'object' ? result : { id: result };
+        onSuccess({ ...bankData, name: bankData.name || bankData.bankName || name });
         onClose();
       },
     });

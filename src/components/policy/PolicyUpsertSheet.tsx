@@ -2131,8 +2131,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
         initialDivisionId={form.detail.divisionId}
         initialDivisionName={dynamicDivisions.find(d => d.id === form.detail.divisionId)?.name}
         onSuccess={(newItem: any) => {
-          const id = (newItem?.segmentId || newItem?.id || newItem?.segmentID)?.toString();
-          const name = newItem?.segmentName || newItem?.name;
+          const id = (newItem?.segmentId || newItem?.id || newItem?.segmentID || newItem?.data?.segmentId || newItem?.data?.id)?.toString();
+          const name = newItem?.segmentName || newItem?.name || newItem?.data?.segmentName || newItem?.data?.name;
           if (id) {
             if (name) setNewNames(prev => ({ ...prev, [id]: name }));
             patchDetail({ segmentId: id, policyType: "" });
@@ -2144,8 +2144,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
         open={showBranchModal}
         onClose={() => setShowBranchModal(false)}
         onSuccess={(newItem: any) => {
-          const id = (newItem?.branchId || newItem?.id || newItem?.branchID)?.toString();
-          const name = newItem?.branchName || newItem?.name;
+          const id = (newItem?.branchId || newItem?.id || newItem?.branchID || newItem?.data?.branchId || newItem?.data?.id)?.toString();
+          const name = newItem?.branchName || newItem?.name || newItem?.data?.branchName || newItem?.data?.name;
           if (id) {
             if (name) setNewNames(prev => ({ ...prev, [id]: name }));
             patchDetail({ branchId: id });
@@ -2157,8 +2157,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
         open={showBrokerModal}
         onClose={() => setShowBrokerModal(false)}
         onSuccess={(newItem: any) => {
-          const id = (newItem?.brokerId || newItem?.id || newItem?.brokerID)?.toString();
-          const name = newItem?.brokerName || newItem?.name;
+          const id = (newItem?.brokerId || newItem?.id || newItem?.brokerID || newItem?.data?.brokerId || newItem?.data?.id)?.toString();
+          const name = newItem?.brokerName || newItem?.name || newItem?.data?.brokerName || newItem?.data?.name;
           if (id) {
             if (name) setNewNames(prev => ({ ...prev, [id]: name }));
             patchDetail({ brokerId: id });
@@ -2170,8 +2170,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
         open={showBankModal}
         onClose={() => setShowBankModal(false)}
         onSuccess={(newItem: any) => {
-          const id = (newItem?.bankId || newItem?.id || newItem?.bankID)?.toString();
-          const name = newItem?.bankName || newItem?.name;
+          const id = (newItem?.bankId || newItem?.id || newItem?.bankID || newItem?.data?.bankId || newItem?.data?.id)?.toString();
+          const name = newItem?.bankName || newItem?.name || newItem?.data?.bankName || newItem?.data?.name;
           if (id) {
             if (name) setNewNames(prev => ({ ...prev, [id]: name }));
             patchDetail({ bankId: id });
@@ -2183,8 +2183,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
         open={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         onSuccess={(newItem: any) => {
-          const id = (newItem?.paymentMethodId || newItem?.id || newItem?.paymentId)?.toString();
-          const name = newItem?.name || newItem?.paymentMethodName;
+          const id = (newItem?.paymentMethodId || newItem?.id || newItem?.paymentId || newItem?.data?.paymentMethodId || newItem?.data?.id)?.toString();
+          const name = newItem?.name || newItem?.paymentMethodName || newItem?.data?.name || newItem?.data?.paymentMethodName;
           if (id && paymentField) {
             if (name) setNewNames(prev => ({ ...prev, [id]: name }));
             patchPayment({ [paymentField]: id });

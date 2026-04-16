@@ -7,7 +7,7 @@ export const useUpsertPaymentMethod = () => {
   return useMutation({
     mutationFn: upsertPaymentMethodApi,
     onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["payment-methods"] });
+      queryClient.invalidateQueries({ queryKey: ["paymentMethodDropdown"] });
       toast.success(res.statusMessage || "Payment method added successfully");
     },
     onError: (err: any) => {

@@ -23,7 +23,9 @@ const BrokerUpsertModal = ({ open, onClose, onSuccess }: Props) => {
 
     upsertBroker({ name }, {
       onSuccess: (res: any) => {
-        onSuccess(res.data);
+        const result = res.data;
+        const brokerData = typeof result === 'object' ? result : { id: result };
+        onSuccess({ ...brokerData, name: brokerData.name || brokerData.brokerName || name });
         onClose();
       },
     });
