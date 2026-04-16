@@ -11,3 +11,8 @@ export const getSegmentListApi = async (divisionid?: number) => {
   });
   return res.data;
 };
+
+export const upsertSegmentApi = async (data: any) => {
+  const res = await api.post("/Segment/CreateUpdate-Segment", data);
+  return res.data;
+};

@@ -14,6 +14,9 @@ import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
 import { useGeneralPolicyById } from "../../hooks/policy/usePolicies";
 import { useSegmentDropdown } from "../../hooks/segment/useSegmentDropdown";
 import { usePolicyTypeDropdown } from "../../hooks/PolicyType/usePolicyTypeDropdown";
+import SegmentUpsertModal from "./SegmentUpsertModal";
+import BranchUpsertModal from "./BranchUpsertModal";
+import BrokerUpsertModal from "./BrokerUpsertModal";
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 import { useGeneralPolicyDocumentActions } from "../../hooks/policy/useGeneralPolicyDocumentActions";
 import SearchableComboBox from "../common/SearchableComboBox";
@@ -169,6 +172,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const [form, setForm]               = useState(makeInitial());
   const [originalForm, setOriginalForm] = useState<any>(null);
   const [memberInput, setMemberInput] = useState("");
+  const [showSegmentModal, setShowSegmentModal] = useState(false);
+  const [showBranchModal, setShowBranchModal] = useState(false);
+  const [showBrokerModal, setShowBrokerModal] = useState(false);
   const [errors, setErrors] = useState<any>({});
 
   const [files, setFiles] = useState<{ file: File; type: string; label: string }[]>([]);
@@ -1112,7 +1118,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "", policyType: "" })}
                       />
                     </div>
-                    <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                    <div className="col-span-1"><AddBtn onClick={() => setShowSegmentModal(true)} /></div>
                     <div className="col-span-5">
                       <Select
                         label="Policy Type"
@@ -1139,7 +1145,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "", policyType: "" })}
                       />
                     </div>
-                    <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                    <div className="col-span-1"><AddBtn onClick={() => setShowSegmentModal(true)} /></div>
                     <div className="col-span-5">
                       <Select
                         label="Policy Type"
@@ -1186,7 +1192,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                         onSelect={(item: any) => patchDetail({ segmentId: item?.value ?? "", policyType: "" })}
                       />
                     </div>
-                    <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                    <div className="col-span-1"><AddBtn onClick={() => setShowSegmentModal(true)} /></div>
                   </div>
                 )}
 
@@ -1211,7 +1217,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                       onSelect={(item: any) => patchDetail({ branchId: item?.value ?? "" })}
                     />
                   </div>
-                  <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
+                  <div className="col-span-2"><AddBtn onClick={() => setShowBranchModal(true)} /></div>
                 </div>
 
                 <div className="grid grid-cols-12 gap-4 items-start">
@@ -1247,7 +1253,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                       onSelect={(item: any) => patchDetail({ brokerId: item?.value ?? "" })}
                     />
                   </div>
-                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                  <div className="col-span-1"><AddBtn onClick={() => setShowBrokerModal(true)} /></div>
                 </div>
 
                 {/* ── OPTIONAL COVER (OtherGeneral) ── */}
@@ -2087,6 +2093,39 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           </div>
         </div>
       )}
+      {/* SEGMENT MODAL */}
+      <SegmentUpsertModal
+        open={showSegmentModal}
+        onClose={() => setShowSegmentModal(false)}
+        initialDivisionId={form.detail.divisionId}
+        initialDivisionName={dynamicDivisions.find(d => d.id === form.detail.divisionId)?.name}
+        onSuccess={(newSegment: any) => {
+          // Auto select the new segment
+          if (newSegment && newSegment.segmentId) {
+            patchDetail({ segmentId: newSegment.segmentId.toString(), policyType: "" });
+          }
+        }}
+      />
+      {/* BRANCH MODAL */}
+      <BranchUpsertModal
+        open={showBranchModal}
+        onClose={() => setShowBranchModal(false)}
+        onSuccess={(newBranch: any) => {
+          if (newBranch && newBranch.id) {
+            patchDetail({ branchId: newBranch.id.toString() });
+          }
+        }}
+      />
+      {/* BROKER MODAL */}
+      <BrokerUpsertModal
+        open={showBrokerModal}
+        onClose={() => setShowBrokerModal(false)}
+        onSuccess={(newBroker: any) => {
+          if (newBroker && newBroker.id) {
+            patchDetail({ brokerId: newBroker.id.toString() });
+          }
+        }}
+      />
     </>
   );
 };
