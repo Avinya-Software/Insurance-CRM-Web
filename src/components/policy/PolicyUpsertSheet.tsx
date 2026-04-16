@@ -153,13 +153,14 @@ const makeInitial = () => ({
 /* ─── HELPER: merge real API id+name into a static option list ── */
 const mergeOption = (
   staticList: { id: string; name: string }[],
-  realId?: string,
+  realId?: any,
   realName?: string
 ) => {
   if (!realId || !realName) return staticList;
-  const already = staticList.some((o) => o.id === realId);
+  const stringId = realId.toString();
+  const already = staticList.some((o) => o.id.toString() === stringId);
   if (already) return staticList;
-  return [{ id: realId, name: realName }, ...staticList];
+  return [{ id: stringId, name: realName }, ...staticList];
 };
 
 /* ─── COMPONENT ─────────────────────────────────────────────── */
@@ -337,8 +338,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
         type: isRenewalMode ? "Renewal" : (currentPolicy.type || "Fresh"),
         transactionDate: currentPolicy.transactionDate?.split("T")[0] || "",
         documentNumber: currentPolicy.documentNumber || "",
-        familyGroupId: currentPolicy.familyGroupId || "",
-        policyHolderId: currentPolicy.policyHolderId || "",
+        familyGroupId: currentPolicy.familyGroupId ? currentPolicy.familyGroupId.toString() : "",
+        policyHolderId: currentPolicy.policyHolderId ? currentPolicy.policyHolderId.toString() : "",
         firstName: currentPolicy.firstName || "",
         middleName: currentPolicy.middleName || "",
         lastName: currentPolicy.lastName || "",
@@ -360,10 +361,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
             if (dtn === "Other General Insurance" || dt === 2 || dt === "2") return "OtherGeneral";
             return dt || "Health";
           })(),
-          divisionId: currentPolicy.detail?.divisionId || "",
-          segmentId: currentPolicy.detail?.segmentId || "",
+          divisionId: currentPolicy.detail?.divisionId ? currentPolicy.detail.divisionId.toString() : "",
+          segmentId: currentPolicy.detail?.segmentId ? currentPolicy.detail.segmentId.toString() : "",
           policyType: currentPolicy.detail?.policyType ? currentPolicy.detail.policyType.toString() : "",
-          insuranceCompanyId: currentPolicy.detail?.insuranceCompanyId || "",
+          insuranceCompanyId: currentPolicy.detail?.insuranceCompanyId ? currentPolicy.detail.insuranceCompanyId.toString() : "",
           branchId: currentPolicy.detail?.branchId ? currentPolicy.detail.branchId.toString() : "",
           productId: currentPolicy.detail?.productId ? currentPolicy.detail.productId.toString() : "",
           zone: currentPolicy.detail?.zone || "",
@@ -384,7 +385,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           previousPolicyNumber: isRenewalMode 
             ? currentPolicy.documentNumber || ""
             : currentPolicy.detail?.previousPolicyNumber || "",
-          policyModeId: currentPolicy.detail?.policyModeId || "",
+          policyModeId: currentPolicy.detail?.policyModeId ? currentPolicy.detail.policyModeId.toString() : "",
           riskStartDate: isRenewalMode 
             ? currentPolicy.detail?.riskEndDate?.split("T")[0] || ""
             : currentPolicy.detail?.riskStartDate?.split("T")[0] || "",

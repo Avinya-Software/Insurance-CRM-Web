@@ -5,6 +5,9 @@ import { useUserTypes } from "../../hooks/UserMaster/useUserTypes";
 import { useUpsertUser } from "../../hooks/UserMaster/useUpsertUser";
 import toast from "react-hot-toast";
 import { useUpdateUser } from "../../hooks/UserMaster/useUpdateUser";
+import { useStates } from "../../hooks/state/useStates";
+import { useCities } from "../../hooks/city/useCities";
+import SearchableComboBox from "../common/SearchableComboBox";
 
 interface Props {
   open: boolean;
@@ -52,6 +55,10 @@ const AddUserUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
   const { mutate: upsertUser, isPending: isCreating } = useUpsertUser();
   const { mutate: updateUser, isPending: isUpdating } = useUpdateUser();
   
+  const { data: states } = useStates();
+  const [selectedStateId, setSelectedStateId] = useState<number | null>(null);
+  const { data: cities } = useCities(selectedStateId);
+
   const isPending = isCreating || isUpdating;
   useEffect(() => {
     if (item) {
@@ -65,9 +72,9 @@ const AddUserUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
         panCard: item.panNo,
         addressLine1: item.addressLine1,
         addressLine2: item.addressLine2,
-        city: item.city,
+        city: item.cityId || "",
         pincode: item.pincode,
-        state: item.state,
+        state: item.stateId || "",
         country: item.country || "India",
         userCode: item.userCode,
         userName: item.userName,
@@ -81,12 +88,18 @@ const AddUserUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
         ifscCode: item.ifscCode,
         status: item.status,
       });
+
+      // Find stateId for the cities hook
+      if (item.stateId) {
+        setSelectedStateId(Number(item.stateId));
+      }
     } else {
       setFormData(initialForm);
+      setSelectedStateId(null);
     }
     setErrors({});
     setActiveTab("general");
-  }, [item, open]);
+  }, [item, open, states]);
 
   const handleChange = (name: string, value: any) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -106,6 +119,8 @@ const AddUserUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
     if (!formData.email?.trim()) e.email = "Email is required";
     if (!formData.mobileNumber?.trim()) e.mobileNumber = "Mobile is required";
     if (!formData.userName?.trim()) e.userName = "Username is required";
+    if (!formData.state) e.state = "State is required";
+    if (!formData.city) e.city = "City is required";
 
     setErrors(e);
     if (Object.keys(e).length > 0) {
@@ -272,7 +287,7 @@ const AddUserUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
 
             {activeTab === "address" && (
               <div className="space-y-6">
-                <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <section className="bg-white rounded-lg shadow-sm border border-slate-200">
                   <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
                     <div className="p-1.5 bg-white/10 text-white rounded">
                       <MapPin size={16} />
@@ -295,23 +310,39 @@ const AddUserUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <Input
+                      <SearchableComboBox
+                        label="State"
+                        items={states?.map(s => ({ label: s.stateName, value: s.stateID.toString() })) || []}
+                        value={formData.state?.toString()}
+                        placeholder="Select State"
+                        onSelect={(item: any) => {
+                          if (item) {
+                            const sId = Number(item.value);
+                            setSelectedStateId(sId);
+                            handleChange("state", sId);
+                            handleChange("city", ""); // Reset city when state changes
+                          } else {
+                            setSelectedStateId(null);
+                            handleChange("state", "");
+                            handleChange("city", "");
+                          }
+                        }}
+                      />
+                      <SearchableComboBox
                         label="City"
-                        value={formData.city  ?? "-"}
-                        placeholder="City"
-                        onChange={(v: string) => handleChange("city", v)}
+                        items={cities?.map(c => ({ label: c.cityName, value: c.cityID.toString() })) || []}
+                        value={formData.city?.toString()}
+                        placeholder="Select City"
+                        onSelect={(item: any) => {
+                          handleChange("city", item ? Number(item.value) : "");
+                        }}
+                        disabled={!selectedStateId}
                       />
                       <Input
                         label="Pincode"
                         value={formData.pincode ?? "-"}
                         placeholder="Pincode"
                         onChange={(v: string) => handleChange("pincode", v)}
-                      />
-                      <Input
-                        label="State"
-                        value={formData.state ?? "-"}
-                        placeholder="State"
-                        onChange={(v: string) => handleChange("state", v)}
                       />
                       <Input
                         label="Country"

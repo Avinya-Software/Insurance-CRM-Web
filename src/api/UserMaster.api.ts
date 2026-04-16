@@ -27,12 +27,12 @@ import {
   
   export const upsertUserApi = async (data: UserPayload) => {
     const endpoint = data.id ? `/UserMaster` : `/auth/register-UserMaster`;
-    const res = await api.post(endpoint, data);
+    const res = await api.post(endpoint, { request: data });
     return res.data;
   };
 
   export const updateUserApi = async (data: UpdateUserRequest) => {
-    const res = await api.put("/UserMaster/UserMasterUpdate", data);
+    const res = await api.put("/UserMaster/UserMasterUpdate", { request: data });
     return res.data;
   };
   
