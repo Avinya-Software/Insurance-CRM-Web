@@ -19,6 +19,7 @@ import BranchUpsertModal from "./BranchUpsertModal";
 import BrokerUpsertModal from "./BrokerUpsertModal";
 import BankUpsertModal from "./BankUpsertModal";
 import PaymentMethodUpsertModal from "./PaymentMethodUpsertModal";
+import ProductUpsertModal from "./ProductUpsertModal";
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 import { useGeneralPolicyDocumentActions } from "../../hooks/policy/useGeneralPolicyDocumentActions";
 import SearchableComboBox from "../common/SearchableComboBox";
@@ -179,6 +180,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const [showBrokerModal, setShowBrokerModal] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
   const [paymentField, setPaymentField] = useState<"paidByClient" | "paidByAgent" | null>(null);
   const [newNames, setNewNames] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<any>({});
@@ -302,6 +304,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     currentPolicy?.detail?.productId,
     currentPolicy?.detail?.productName
   );
+
+  const dynamicProductsWithNew = mergeOption(dynamicProducts, form.detail.productId, newNames[form.detail.productId]);
 
   const dynamicPolicyModes = mergeOption(
     POLICY_MODE_OPTIONS,
@@ -1241,13 +1245,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                   <div className="col-span-5">
                     <SearchableComboBox
                       label="Product Name"
-                      items={dynamicProducts.map((p: any) => ({ label: p.name, value: p.id }))}
+                      items={dynamicProductsWithNew.map((p: any) => ({ label: p.name, value: p.id }))}
                       value={form.detail.productId}
                       placeholder="Search product..."
                       onSelect={(item: any) => patchDetail({ productId: item?.value ?? "" })}
                     />
                   </div>
-                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                  <div className="col-span-1"><AddBtn onClick={() => setShowProductModal(true)} /></div>
                   <div className="col-span-6">
                     <Select
                       label="Zone"
@@ -2188,6 +2192,22 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           if (id && paymentField) {
             if (name) setNewNames(prev => ({ ...prev, [id]: name }));
             patchPayment({ [paymentField]: id });
+          }
+        }}
+      />
+      {/* PRODUCT MODAL */}
+      <ProductUpsertModal
+        open={showProductModal}
+        onClose={() => setShowProductModal(false)}
+        initialDivisionId={form.detail.divisionId}
+        initialCompanyId={form.detail.insuranceCompanyId}
+        initialSegmentId={form.detail.segmentId}
+        onSuccess={(newItem: any) => {
+          const id = (newItem?.productId || newItem?.id || newItem?.productID || newItem?.data?.productId || newItem?.data?.id)?.toString();
+          const name = newItem?.productName || newItem?.name || newItem?.data?.productName || newItem?.data?.name;
+          if (id) {
+            if (name) setNewNames(prev => ({ ...prev, [id]: name }));
+            patchDetail({ productId: id });
           }
         }}
       />
