@@ -30,6 +30,16 @@ export const upsertProductApi = async (payload: {
   return res.data;
 };
 
+export const addGeneralProductApi = async (payload: {
+  companyId: string;
+  productName: string;
+  divisionId: number;
+  segmentId: string | number;
+}) => {
+  const res = await api.post("/products/add-General-product", payload);
+  return res.data;
+};
+
 /* DELETE PRODUCT (BY ID) */
 export const deleteProductApi = async (productId: number) => {
   const res = await api.delete(`/products/${productId}`);

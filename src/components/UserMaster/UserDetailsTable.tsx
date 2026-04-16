@@ -86,7 +86,7 @@ const UserDetailsTable = ({ data = [], loading = false, onEdit }: Props) => {
                   <Td>{item.mobile}</Td>
                   <Td>{item.gstNumber}</Td>
                   <Td>{item.panNo}</Td>
-                  <Td>{item.city}</Td>
+                  <Td>{item.cityName || item.city}</Td>
                   <Td>{item.userName}</Td>
                   <Td>{item.password}</Td>
                   <Td>
