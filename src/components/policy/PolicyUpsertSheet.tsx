@@ -17,6 +17,8 @@ import { usePolicyTypeDropdown } from "../../hooks/PolicyType/usePolicyTypeDropd
 import SegmentUpsertModal from "./SegmentUpsertModal";
 import BranchUpsertModal from "./BranchUpsertModal";
 import BrokerUpsertModal from "./BrokerUpsertModal";
+import BankUpsertModal from "./BankUpsertModal";
+import PaymentMethodUpsertModal from "./PaymentMethodUpsertModal";
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 import { useGeneralPolicyDocumentActions } from "../../hooks/policy/useGeneralPolicyDocumentActions";
 import SearchableComboBox from "../common/SearchableComboBox";
@@ -175,6 +177,10 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const [showSegmentModal, setShowSegmentModal] = useState(false);
   const [showBranchModal, setShowBranchModal] = useState(false);
   const [showBrokerModal, setShowBrokerModal] = useState(false);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentField, setPaymentField] = useState<"paidByClient" | "paidByAgent" | null>(null);
+  const [newNames, setNewNames] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<any>({});
 
   const [files, setFiles] = useState<{ file: File; type: string; label: string }[]>([]);
@@ -289,6 +295,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     currentPolicy?.detail?.branchName
   );
 
+  const dynamicBranchesWithNew = mergeOption(dynamicBranches, form.detail.branchId, newNames[form.detail.branchId]);
+
   const dynamicProducts = mergeOption(
     productsData?.map((p: any) => ({ id: p.productId.toString(), name: p.productName })) || [],
     currentPolicy?.detail?.productId,
@@ -307,16 +315,25 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     currentPolicy?.detail?.brokerName
   );
 
-  const dynamicPaymentMethods = paymentMethods?.map((p: any) => ({
+  const dynamicBrokersWithNew = mergeOption(dynamicBrokers, form.detail.brokerId, newNames[form.detail.brokerId]);
+
+  let dynamicPaymentMethods = paymentMethods?.map((p: any) => ({
     id: p.id.toString(),
     name: p.name,
   })) || [];
+
+  // Merge newly added payment methods
+  dynamicPaymentMethods = mergeOption(dynamicPaymentMethods, form.payment.paidByClient, newNames[form.payment.paidByClient]);
+  dynamicPaymentMethods = mergeOption(dynamicPaymentMethods, form.payment.paidByAgent, newNames[form.payment.paidByAgent]);
 
   const dynamicBanks = mergeOption(
     bankData?.map((b: any) => ({ id: b.id.toString(), name: b.name })) || [],
     currentPolicy?.detail?.bankId,
     currentPolicy?.detail?.bankName
   );
+
+  // Merge newly added bank
+  const dynamicBanksWithNew = mergeOption(dynamicBanks, form.detail.bankId, newNames[form.detail.bankId]);
 
   /* ─── EFFECTS ───────────────────────────────────────────────── */
   useEffect(() => {
@@ -1211,7 +1228,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                   <div className="col-span-4">
                     <SearchableComboBox
                       label="Select Branch"
-                      items={dynamicBranches.map(b => ({ label: b.name, value: b.id }))}
+                      items={dynamicBranchesWithNew.map(b => ({ label: b.name, value: b.id }))}
                       value={form.detail.branchId}
                       placeholder="Search branch..."
                       onSelect={(item: any) => patchDetail({ branchId: item?.value ?? "" })}
@@ -1246,7 +1263,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     <SearchableComboBox
                       label="Select Broker"
                       required
-                      items={dynamicBrokers.map(b => ({ label: b.name, value: b.id }))}
+                      items={dynamicBrokersWithNew.map(b => ({ label: b.name, value: b.id }))}
                       value={form.detail.brokerId}
                       error={errors.brokerId}
                       placeholder="Search broker..."
@@ -1454,13 +1471,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     <div className="col-span-10">
                       <SearchableComboBox
                         label="Select Bank Name"
-                        items={dynamicBanks.map(b => ({ label: b.name, value: b.id }))}
+                        items={dynamicBanksWithNew.map(b => ({ label: b.name, value: b.id }))}
                         value={form.detail.bankId}
                         placeholder="Search bank..."
                         onSelect={(item: any) => patchDetail({ bankId: item?.value ?? "" })}
                       />
                     </div>
-                    <div className="col-span-2"><AddBtn onClick={() => {}} /></div>
+                    <div className="col-span-2"><AddBtn onClick={() => setShowBankModal(true)} /></div>
                   </div>
                 )}
 
@@ -1789,7 +1806,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                       onChange={(v:any) => patchPayment({ paidByClient: v })}
                     />
                   </div>
-                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                  <div className="col-span-1">
+                    <AddBtn 
+                      onClick={() => {
+                        setPaymentField("paidByClient");
+                        setShowPaymentModal(true);
+                      }} 
+                    />
+                  </div>
                   <div className="col-span-2">
                     <Input
                       label="Client Amount"
@@ -1806,7 +1830,14 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                       onChange={(v:any) => patchPayment({ paidByAgent: v })}
                     />
                   </div>
-                  <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                  <div className="col-span-1">
+                    <AddBtn 
+                      onClick={() => {
+                        setPaymentField("paidByAgent");
+                        setShowPaymentModal(true);
+                      }} 
+                    />
+                  </div>
                   <div className="col-span-2">
                     <Input
                       label="Agent Amount"
@@ -2099,10 +2130,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
         onClose={() => setShowSegmentModal(false)}
         initialDivisionId={form.detail.divisionId}
         initialDivisionName={dynamicDivisions.find(d => d.id === form.detail.divisionId)?.name}
-        onSuccess={(newSegment: any) => {
-          // Auto select the new segment
-          if (newSegment && newSegment.segmentId) {
-            patchDetail({ segmentId: newSegment.segmentId.toString(), policyType: "" });
+        onSuccess={(newItem: any) => {
+          const id = (newItem?.segmentId || newItem?.id || newItem?.segmentID)?.toString();
+          const name = newItem?.segmentName || newItem?.name;
+          if (id) {
+            if (name) setNewNames(prev => ({ ...prev, [id]: name }));
+            patchDetail({ segmentId: id, policyType: "" });
           }
         }}
       />
@@ -2110,9 +2143,12 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
       <BranchUpsertModal
         open={showBranchModal}
         onClose={() => setShowBranchModal(false)}
-        onSuccess={(newBranch: any) => {
-          if (newBranch && newBranch.id) {
-            patchDetail({ branchId: newBranch.id.toString() });
+        onSuccess={(newItem: any) => {
+          const id = (newItem?.branchId || newItem?.id || newItem?.branchID)?.toString();
+          const name = newItem?.branchName || newItem?.name;
+          if (id) {
+            if (name) setNewNames(prev => ({ ...prev, [id]: name }));
+            patchDetail({ branchId: id });
           }
         }}
       />
@@ -2120,9 +2156,38 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
       <BrokerUpsertModal
         open={showBrokerModal}
         onClose={() => setShowBrokerModal(false)}
-        onSuccess={(newBroker: any) => {
-          if (newBroker && newBroker.id) {
-            patchDetail({ brokerId: newBroker.id.toString() });
+        onSuccess={(newItem: any) => {
+          const id = (newItem?.brokerId || newItem?.id || newItem?.brokerID)?.toString();
+          const name = newItem?.brokerName || newItem?.name;
+          if (id) {
+            if (name) setNewNames(prev => ({ ...prev, [id]: name }));
+            patchDetail({ brokerId: id });
+          }
+        }}
+      />
+      {/* BANK MODAL */}
+      <BankUpsertModal
+        open={showBankModal}
+        onClose={() => setShowBankModal(false)}
+        onSuccess={(newItem: any) => {
+          const id = (newItem?.bankId || newItem?.id || newItem?.bankID)?.toString();
+          const name = newItem?.bankName || newItem?.name;
+          if (id) {
+            if (name) setNewNames(prev => ({ ...prev, [id]: name }));
+            patchDetail({ bankId: id });
+          }
+        }}
+      />
+      {/* PAYMENT MODAL */}
+      <PaymentMethodUpsertModal
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onSuccess={(newItem: any) => {
+          const id = (newItem?.paymentMethodId || newItem?.id || newItem?.paymentId)?.toString();
+          const name = newItem?.name || newItem?.paymentMethodName;
+          if (id && paymentField) {
+            if (name) setNewNames(prev => ({ ...prev, [id]: name }));
+            patchPayment({ [paymentField]: id });
           }
         }}
       />
