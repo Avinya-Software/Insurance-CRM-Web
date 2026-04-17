@@ -565,9 +565,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     });
   };
 
-  const addMember = () => {
-    if (!memberInput) return;
-    const selected = memberDropdown?.find((m: any) => m.familyMemberId === memberInput);
+  const addMember = (memberId: string) => {
+    if (!memberId) return;
+    const selected = memberDropdown?.find((m: any) => m.familyMemberId === memberId);
     if (!selected) return;
     
     let dobStr = "-";
@@ -581,7 +581,6 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
       if (f.members.some(m => m.memberId === selected.familyMemberId)) return f;
       return { ...f, members: [...f.members, { id: null, memberId: selected.familyMemberId, memberName }] };
     });
-    setMemberInput("");
   };
 
   const addRiskRow = () => {
@@ -1508,11 +1507,39 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                 )}
 
                 {isHealth && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-12 gap-4 items-start">
-                      <div className="col-span-9">
+                  <div className="space-y-1.5 w-full">
+                    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      Select Family Member
+                    </label>
+                    <div
+                      className={`
+                        border rounded bg-white px-3 py-2 min-h-[42px]
+                        flex flex-wrap gap-2 items-center
+                        ${errors.members
+                          ? "border-red-500 ring-2 ring-red-50"
+                          : "border-slate-200 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50"}
+                      `}
+                    >
+                      {form.members.map((m, i) => (
+                        <div
+                          key={i}
+                          className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 text-[11px] font-bold px-3 py-1.5 rounded border border-blue-100 shadow-sm"
+                        >
+                          {m.memberName}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setForm(f => ({ ...f, members: f.members.filter((_, idx) => idx !== i) }));
+                            }}
+                            className="text-blue-300 hover:text-red-500 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+
+                      <div className="flex-1 min-w-[200px] flex items-center gap-2">
                         <SearchableComboBox
-                          label="Select Family Member"
                           items={memberDropdown?.map((m: any) => {
                             let dobStr = "-";
                             if (m.dob) {
@@ -1524,50 +1551,28 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                               value: m.familyMemberId
                             };
                           }) || []}
-                          value={memberInput}
-                          placeholder={form.familyGroupId ? "Search Family Member..." : "Select Family Group first"}
-                          onSelect={(item: any) => setMemberInput(item?.value ?? "")}
+                          value=""
+                          placeholder={form.familyGroupId ? "Search member to add..." : "Select Family Group first"}
+                          onSelect={(item: any) => {
+                            if (item?.value) addMember(item.value);
+                          }}
                         />
-                      </div>
-                      <div className="col-span-1">
-                        <AddBtn onClick={() => {
-                          if (!form.familyGroupId) toast.error("Please select a family group first");
-                          else {
-                            setMemberSheetTarget("healthMember");
-                            setShowMemberSheet(true);
-                          }
-                        }} />
-                      </div>
-                      <div className="col-span-2">
-                        <div className="space-y-0.5 w-full">
-                          <label className="text-sm font-bold uppercase tracking-wider text-[10px] invisible block">Spacer</label>
-                          <button
-                            onClick={addMember}
-                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded transition-all h-[42px] flex items-center justify-center shadow-sm"
-                          >
-                            + Add
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!form.familyGroupId) toast.error("Please select a family group first");
+                            else {
+                              setMemberSheetTarget("healthMember");
+                              setShowMemberSheet(true);
+                            }
+                          }}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-all shrink-0"
+                          title="Create New Member"
+                        >
+                          <Plus size={18} />
+                        </button>
                       </div>
                     </div>
-                    {form.members.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {form.members.map((m, i) => (
-                          <span
-                            key={i}
-                            className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-200"
-                          >
-                            {m.memberName}
-                            <button
-                              onClick={() => setForm(f => ({ ...f, members: f.members.filter((_, idx) => idx !== i) }))}
-                              className="hover:text-red-500"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -2269,7 +2274,21 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           onSuccess={async (id?: string) => {
             if (id) {
               if (memberSheetTarget === "healthMember") {
-                setMemberInput(id);
+                // We need to wait for refetch to have the new member in dropdown
+                const updatedMembers = await refetchMembers();
+                const selected = updatedMembers.data?.find((m: any) => m.familyMemberId === id);
+                if (selected) {
+                  let dobStr = "-";
+                  if (selected.dob) {
+                    const parts = selected.dob.split("T")[0].split("-");
+                    dobStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : selected.dob.split("T")[0];
+                  }
+                  const memberName = `${selected.fullName} -> ${dobStr}`;
+                  setForm(f => ({ 
+                    ...f, 
+                    members: [...f.members, { id: null, memberId: id, memberName }] 
+                  }));
+                }
               } else {
                 setForm(f => ({ ...f, policyHolderId: id }));
               }
