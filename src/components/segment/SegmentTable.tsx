@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Pencil } from "lucide-react";
 import TableSkeleton from "../common/TableSkeleton";
 import Toggle from "../common/Toggle";
 import { Segment } from "../../interfaces/segment.interface";
@@ -9,11 +9,12 @@ interface Props {
   loading?: boolean;
   page: number;
   pageSize: number;
+  onEdit: (item: Segment) => void;
 }
 
 const DROPDOWN_WIDTH = 120;
 
-const SegmentTable = ({ data = [], loading = false, page, pageSize }: Props) => {
+const SegmentTable = ({ data = [], loading = false, page, pageSize, onEdit }: Props) => {
   const [openId, setOpenId] = useState<number | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
@@ -31,13 +32,13 @@ const SegmentTable = ({ data = [], loading = false, page, pageSize }: Props) => 
       <table className="w-full text-sm border-collapse">
         <thead className="bg-gray-100 sticky top-0 z-10">
           <tr>
-            <Th>Sr No</Th>
-            <Th>Segment Name</Th>
-            <Th>Division</Th>
-            <Th>Type</Th>
-            <Th>Status</Th>
-            <Th>Created Date</Th>
-            <Th className="text-center">Actions</Th>
+            <Th className="text-left">Sr No</Th>
+            <Th className="text-left">Segment Name</Th>
+            <Th className="text-left">Division</Th>
+            <Th className="text-left">Type</Th>
+            <Th className="text-left">Status</Th>
+            <Th className="text-left">Created Date</Th>
+            <Th className="text-center">Action</Th>
           </tr>
         </thead>
 
@@ -76,10 +77,11 @@ const SegmentTable = ({ data = [], loading = false, page, pageSize }: Props) => 
                   <Td>{new Date(item.createdDate).toLocaleDateString()}</Td>
                   <Td className="text-center">
                     <button
-                      onClick={(e) => openDropdown(e, item)}
-                      className="p-2 rounded hover:bg-gray-200"
+                      onClick={() => onEdit(item)}
+                      className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                      title="Edit Segment"
                     >
-                      <MoreVertical size={16} />
+                      <Pencil size={18} />
                     </button>
                   </Td>
                 </tr>
@@ -88,32 +90,7 @@ const SegmentTable = ({ data = [], loading = false, page, pageSize }: Props) => 
           </tbody>
         )}
       </table>
-
-      {/* DROPDOWN */}
-      {openId && (
-        <div
-          ref={dropdownRef}
-          className="fixed z-50 w-[120px] bg-white border rounded-lg shadow-lg"
-          style={style}
-          onMouseLeave={() => setOpenId(null)}
-        >
-          <MenuItem
-            label="Edit"
-            onClick={() => {
-              // Edit logic here if needed
-              setOpenId(null);
-            }}
-          />
-          <MenuItem
-            label="Delete"
-            danger
-            onClick={() => {
-              // Delete logic here if needed
-              setOpenId(null);
-            }}
-          />
-        </div>
-      )}
+      
     </div>
   );
 };
@@ -122,7 +99,7 @@ export default SegmentTable;
 
 /* Helper Components */
 const Th = ({ children, className = "" }: any) => (
-  <th className={`px-4 py-3 text-left font-semibold text-slate-700 ${className}`}>
+  <th className={`px-4 py-3 font-semibold text-slate-700 ${className}`}>
     {children}
   </th>
 );

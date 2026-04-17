@@ -11,6 +11,7 @@ interface Props {
   initialDivisionId?: string | number;
   initialDivisionName?: string;
   divisionDropdownId?: number | null;
+  editingSegment?: any;
 }
 
 const SegmentTypeEnum = {
@@ -21,7 +22,7 @@ const SegmentTypeEnum = {
   NonWC: 5,
 };
 
-const SegmentUpsertModal = ({ open, onClose, onSuccess, initialDivisionId, initialDivisionName, divisionDropdownId }: Props) => {
+const SegmentUpsertModal = ({ open, onClose, onSuccess, initialDivisionId, initialDivisionName, divisionDropdownId, editingSegment }: Props) => {
   const [formData, setFormData] = useState({
     segmentId: 0,
     segmentName: "",
@@ -35,15 +36,25 @@ const SegmentUpsertModal = ({ open, onClose, onSuccess, initialDivisionId, initi
 
   useEffect(() => {
     if (open) {
-      setFormData({
-        segmentId: 0,
-        segmentName: "",
-        divisionId: initialDivisionId?.toString() || "",
-        segmentType: null,
-        isActive: true,
-      });
+      if (editingSegment) {
+        setFormData({
+          segmentId: editingSegment.segmentId || 0,
+          segmentName: editingSegment.segmentName || "",
+          divisionId: editingSegment.divisionId?.toString() || "",
+          segmentType: editingSegment.segmentType || null,
+          isActive: editingSegment.isActive !== undefined ? editingSegment.isActive : true,
+        });
+      } else {
+        setFormData({
+          segmentId: 0,
+          segmentName: "",
+          divisionId: initialDivisionId?.toString() || "",
+          segmentType: null,
+          isActive: true,
+        });
+      }
     }
-  }, [open, initialDivisionId]);
+  }, [open, initialDivisionId, editingSegment]);
 
   const selectedDivisionName = divisions?.find(d => d.divisionId.toString() === formData.divisionId)?.divisionName || initialDivisionName;
 
@@ -83,7 +94,9 @@ const SegmentUpsertModal = ({ open, onClose, onSuccess, initialDivisionId, initi
       <div className="bg-white rounded-xl shadow-2xl w-[600px] animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="bg-slate-800 px-6 py-4 flex items-center justify-between text-white rounded-t-xl">
-          <h3 className="font-bold uppercase tracking-wider text-xs">Add New Segment</h3>
+          <h3 className="font-bold uppercase tracking-wider text-xs">
+            {formData.segmentId ? "Edit Segment" : "Add New Segment"}
+          </h3>
           <button onClick={onClose} className="hover:bg-white/10 p-1 rounded transition-colors">
             <X size={18} />
           </button>
@@ -204,7 +217,7 @@ const SegmentUpsertModal = ({ open, onClose, onSuccess, initialDivisionId, initi
             {isPending ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             ) : (
-              "Add Segment"
+              formData.segmentId ? "Update Segment" : "Add Segment"
             )}
           </button>
         </div>

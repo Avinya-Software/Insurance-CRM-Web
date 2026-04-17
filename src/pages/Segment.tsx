@@ -13,6 +13,7 @@ const Segment = () => {
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSegment, setEditingSegment] = useState<any>(null);
 
   const { data, isLoading, refetch } = useSegments(filters);
 
@@ -30,9 +31,20 @@ const Segment = () => {
     data?.data?.totalRecords || data?.totalRecords || segments.length || 0;
 
   const handleSuccess = (resData: any) => {
-    toast.success(resData?.message || "Segment added successfully!");
+    toast.success(resData?.message || (editingSegment ? "Segment updated successfully!" : "Segment added successfully!"));
     setIsModalOpen(false);
+    setEditingSegment(null);
     refetch();
+  };
+
+  const handleEdit = (segment: any) => {
+    setEditingSegment(segment);
+    setIsModalOpen(true);
+  };
+
+  const handleAdd = () => {
+    setEditingSegment(null);
+    setIsModalOpen(true);
   };
 
   return (
@@ -53,7 +65,7 @@ const Segment = () => {
             <div className="text-right">
               <button
                 className="inline-flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded text-sm font-medium"
-                onClick={() => setIsModalOpen(true)}
+                onClick={handleAdd}
               >
                 <span className="text-lg leading-none">+</span>
                 Add Segment
@@ -68,6 +80,7 @@ const Segment = () => {
             loading={isLoading} 
             page={filters.pageNumber}
             pageSize={filters.pageSize}
+            onEdit={handleEdit}
           />
         </div>
 
@@ -84,7 +97,11 @@ const Segment = () => {
 
         <SegmentUpsertModal 
           open={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          editingSegment={editingSegment}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingSegment(null);
+          }}
           onSuccess={handleSuccess}
           divisionDropdownId={null}
         />
