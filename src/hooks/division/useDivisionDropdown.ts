@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getDivisionDropdownApi } from "../../api/division.api";
 import { Division } from "../../interfaces/division.interface";
 
-export const useDivisionDropdown = (id: number = 0) => {
+export const useDivisionDropdown = (id: number | null = 0) => {
   return useQuery<Division[]>({
     queryKey: ["division-dropdown", id],
     queryFn: async () => {

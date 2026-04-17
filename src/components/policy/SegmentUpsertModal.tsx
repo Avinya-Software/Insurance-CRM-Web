@@ -10,6 +10,7 @@ interface Props {
   onSuccess: (newSegment: any) => void;
   initialDivisionId?: string | number;
   initialDivisionName?: string;
+  divisionDropdownId?: number | null;
 }
 
 const SegmentTypeEnum = {
@@ -20,7 +21,7 @@ const SegmentTypeEnum = {
   NonWC: 5,
 };
 
-const SegmentUpsertModal = ({ open, onClose, onSuccess, initialDivisionId, initialDivisionName }: Props) => {
+const SegmentUpsertModal = ({ open, onClose, onSuccess, initialDivisionId, initialDivisionName, divisionDropdownId }: Props) => {
   const [formData, setFormData] = useState({
     segmentId: 0,
     segmentName: "",
@@ -29,7 +30,7 @@ const SegmentUpsertModal = ({ open, onClose, onSuccess, initialDivisionId, initi
     isActive: true,
   });
 
-  const { data: divisions } = useDivisionDropdown();
+  const { data: divisions } = useDivisionDropdown(divisionDropdownId);
   const { mutate: upsertSegment, isPending } = useUpsertSegment();
 
   useEffect(() => {
