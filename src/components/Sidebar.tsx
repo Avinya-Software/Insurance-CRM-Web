@@ -325,6 +325,13 @@ const Sidebar = () => {
                   isCollapsed={false}
                 />
 
+                <NavItem
+                  to="/segment"
+                  label="Segment"
+                  icon={<Layers size={16} />}
+                  isCollapsed={false}
+                />
+
               </div>
             )}
             </div>

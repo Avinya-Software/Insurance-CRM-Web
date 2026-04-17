@@ -18,11 +18,9 @@ const DEFAULT_FILTERS = {
   page: 1,
   pageSize: 10,
   search: "",
-  fullName: "",
-  email: "",
-  mobile: "",
-  leadStatusId: null as number | null,
-  leadSourceId: null as number | null,
+  status: "",
+  startDate: "",
+  endDate: "",
 };
 
 const Leads = () => {
@@ -67,11 +65,9 @@ const Leads = () => {
 
   const hasActiveFilters =
     filters.search ||
-    filters.fullName ||
-    filters.email ||
-    filters.mobile ||
-    filters.leadStatusId ||
-    filters.leadSourceId;
+    filters.status ||
+    filters.startDate ||
+    filters.endDate;
 
   const clearAllFilters = () => {
     setFilters(DEFAULT_FILTERS);

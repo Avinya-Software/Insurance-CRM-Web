@@ -29,6 +29,8 @@ import { useBankDropdown } from "../../hooks/bank/useBankDropdown";
 import { useProductDropdown } from "../../hooks/product/useProductDropdown";
 import { useBrokerDropdown } from "../../hooks/broker/useBrokerDropdown";
 import { usePaymentMethodDropdown } from "../../hooks/payment/usePaymentMethodDropdown";
+import CustomerUpsertSheet from "../customer/CustomerUpsertSheet";
+import FamilyMemberUpsertSheet from "../customer/FamilyMemberUpsertSheet";
 
 type TabType = "customer" | "policy" | "premium" | "documents";
 
@@ -178,6 +180,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const [showSegmentModal, setShowSegmentModal] = useState(false);
   const [showBranchModal, setShowBranchModal] = useState(false);
   const [showBrokerModal, setShowBrokerModal] = useState(false);
+  const [showCustomerSheet, setShowCustomerSheet] = useState(false);
+  const [showMemberSheet, setShowMemberSheet] = useState(false);
+  const [memberSheetTarget, setMemberSheetTarget] = useState<"policyHolder" | "healthMember">("policyHolder");
   const [showBankModal, setShowBankModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
@@ -204,8 +209,8 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     }
   );
 
-  const { data: customerDropdown } = useCustomerDropdown();
-  const { data: memberDropdown } = useFamilyMemberDropdown(form.familyGroupId);
+  const { data: customerDropdown, refetch: refetchCustomers } = useCustomerDropdown();
+  const { data: memberDropdown, refetch: refetchMembers } = useFamilyMemberDropdown(form.familyGroupId);
   const { data: companies } = useCompanyList(false);
   const { data: branchData } = useBranchDropdown();
   const { data: bankData } = useBankDropdown();
@@ -260,18 +265,20 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     currentPolicy?.detail?.divisionName
   );
 
-  const dynamicFamilyGroups = mergeOption(
+  let dynamicFamilyGroups = mergeOption(
     customerDropdown?.map(c => ({ id: c.customerId, name: c.clientName })) || [],
     currentPolicy?.familyGroupId,
     currentPolicy?.familyGroupName
   );
+  dynamicFamilyGroups = mergeOption(dynamicFamilyGroups, form.familyGroupId, newNames[form.familyGroupId]);
 
-  const dynamicHolders = mergeOption(
+  let dynamicHolders = mergeOption(
     memberDropdown?.map(m => ({ id: m.familyMemberId, name: m.fullName })) || [],
     currentPolicy?.policyHolderId,
     currentPolicy?.policyHolderName ||
       `${currentPolicy?.firstName || ""} ${currentPolicy?.lastName || ""}`.trim() || undefined
   );
+  dynamicHolders = mergeOption(dynamicHolders, form.policyHolderId, newNames[form.policyHolderId]);
 
   const dynamicSegments = mergeOption(
     segmentData?.map(s => ({ id: s.segmentId.toString(), name: s.segmentName })) || [],
@@ -558,9 +565,9 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
     });
   };
 
-  const addMember = () => {
-    if (!memberInput) return;
-    const selected = memberDropdown?.find((m: any) => m.familyMemberId === memberInput);
+  const addMember = (memberId: string) => {
+    if (!memberId) return;
+    const selected = memberDropdown?.find((m: any) => m.familyMemberId === memberId);
     if (!selected) return;
     
     let dobStr = "-";
@@ -574,7 +581,6 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
       if (f.members.some(m => m.memberId === selected.familyMemberId)) return f;
       return { ...f, members: [...f.members, { id: null, memberId: selected.familyMemberId, memberName }] };
     });
-    setMemberInput("");
   };
 
   const addRiskRow = () => {
@@ -965,9 +971,18 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
   return (
     <>
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={onClose} />
+      <div 
+        className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] transition-opacity duration-300 ${
+          showCustomerSheet || showMemberSheet ? "opacity-0 pointer-events-none" : "opacity-100"
+        }`} 
+        onClick={onClose} 
+      />
 
-      <div className="fixed top-0 right-0 w-full max-w-[82vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right">
+      <div 
+        className={`fixed top-0 right-0 w-full max-w-[82vw] h-screen bg-slate-50 z-[70] shadow-2xl flex flex-col transition-all duration-300 ${
+          showCustomerSheet || showMemberSheet ? "opacity-0 translate-x-12 pointer-events-none" : "animate-slide-in-right opacity-100 translate-x-0"
+        }`}
+      >
 
         {/* HEADER */}
         <div className="px-8 py-5 bg-white border-b flex justify-between items-center shrink-0">
@@ -1057,7 +1072,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     }
                   />
                 </div>
-                <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                <div className="col-span-1"><AddBtn onClick={() => setShowCustomerSheet(true)} /></div>
                 <div className="col-span-5">
                    <SearchableComboBox
                     label="Policy Holder Name"
@@ -1071,7 +1086,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     }
                   />
                 </div>
-                <div className="col-span-1"><AddBtn onClick={() => {}} /></div>
+                <div className="col-span-1"><AddBtn onClick={() => {
+                  if (!form.familyGroupId) toast.error("Please select a family group first");
+                  else {
+                    setMemberSheetTarget("policyHolder");
+                    setShowMemberSheet(true);
+                  }
+                }} /></div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
@@ -1486,11 +1507,39 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                 )}
 
                 {isHealth && (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-12 gap-4 items-start">
-                      <div className="col-span-10">
+                  <div className="space-y-1.5 w-full">
+                    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      Select Family Member
+                    </label>
+                    <div
+                      className={`
+                        border rounded bg-white px-3 py-2 min-h-[42px]
+                        flex flex-wrap gap-2 items-center
+                        ${errors.members
+                          ? "border-red-500 ring-2 ring-red-50"
+                          : "border-slate-200 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-50"}
+                      `}
+                    >
+                      {form.members.map((m, i) => (
+                        <div
+                          key={i}
+                          className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 text-[11px] font-bold px-3 py-1.5 rounded border border-blue-100 shadow-sm"
+                        >
+                          {m.memberName}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setForm(f => ({ ...f, members: f.members.filter((_, idx) => idx !== i) }));
+                            }}
+                            className="text-blue-300 hover:text-red-500 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+
+                      <div className="flex-1 min-w-[200px] flex items-center gap-2">
                         <SearchableComboBox
-                          label="Select Family Member"
                           items={memberDropdown?.map((m: any) => {
                             let dobStr = "-";
                             if (m.dob) {
@@ -1502,41 +1551,28 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                               value: m.familyMemberId
                             };
                           }) || []}
-                          value={memberInput}
-                          placeholder={form.familyGroupId ? "Search Family Member..." : "Select Family Group first"}
-                          onSelect={(item: any) => setMemberInput(item?.value ?? "")}
+                          value=""
+                          placeholder={form.familyGroupId ? "Search member to add..." : "Select Family Group first"}
+                          onSelect={(item: any) => {
+                            if (item?.value) addMember(item.value);
+                          }}
                         />
-                      </div>
-                      <div className="col-span-2">
-                        <div className="space-y-0.5 w-full">
-                          <label className="text-sm font-bold uppercase tracking-wider text-[10px] invisible block">Spacer</label>
-                          <button
-                            onClick={addMember}
-                            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded transition-all h-[42px] flex items-center justify-center shadow-sm"
-                          >
-                            + Add
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!form.familyGroupId) toast.error("Please select a family group first");
+                            else {
+                              setMemberSheetTarget("healthMember");
+                              setShowMemberSheet(true);
+                            }
+                          }}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-all shrink-0"
+                          title="Create New Member"
+                        >
+                          <Plus size={18} />
+                        </button>
                       </div>
                     </div>
-                    {form.members.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {form.members.map((m, i) => (
-                          <span
-                            key={i}
-                            className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full border border-blue-200"
-                          >
-                            {m.memberName}
-                            <button
-                              onClick={() => setForm(f => ({ ...f, members: f.members.filter((_, idx) => idx !== i) }))}
-                              className="hover:text-red-500"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -2211,6 +2247,56 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
           }
         }}
       />
+
+      {showCustomerSheet && (
+        <CustomerUpsertSheet
+          open={showCustomerSheet}
+          onClose={() => setShowCustomerSheet(false)}
+          onSuccess={async (customerId?: string, customerName?: string) => {
+            if (customerId) {
+              if (customerName) {
+                setNewNames(prev => ({ ...prev, [customerId]: customerName }));
+              }
+              setForm(f => ({ ...f, familyGroupId: customerId, policyHolderId: "" }));
+            }
+            await refetchCustomers();
+          }}
+        />
+      )}
+
+      {showMemberSheet && (
+        <FamilyMemberUpsertSheet
+          open={showMemberSheet}
+          item={null}
+          initialFamilyHeadId={form.familyGroupId}
+          disableFamilyHead={true}
+          onClose={() => setShowMemberSheet(false)}
+          onSuccess={async (id?: string) => {
+            if (id) {
+              if (memberSheetTarget === "healthMember") {
+                // We need to wait for refetch to have the new member in dropdown
+                const updatedMembers = await refetchMembers();
+                const selected = updatedMembers.data?.find((m: any) => m.familyMemberId === id);
+                if (selected) {
+                  let dobStr = "-";
+                  if (selected.dob) {
+                    const parts = selected.dob.split("T")[0].split("-");
+                    dobStr = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : selected.dob.split("T")[0];
+                  }
+                  const memberName = `${selected.fullName} -> ${dobStr}`;
+                  setForm(f => ({ 
+                    ...f, 
+                    members: [...f.members, { id: null, memberId: id, memberName }] 
+                  }));
+                }
+              } else {
+                setForm(f => ({ ...f, policyHolderId: id }));
+              }
+            }
+            await refetchMembers();
+          }}
+        />
+      )}
     </>
   );
 };

@@ -10,7 +10,9 @@ interface Props {
   open: boolean;
   item: IFamilyMember | null;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (id?: string) => void;
+  initialFamilyHeadId?: string;
+  disableFamilyHead?: boolean;
 }
 
 type TabType = "personal" | "additional";
@@ -34,7 +36,7 @@ const initialForm = {
   MarriageStatus: "Unmarried",
 };
 
-const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
+const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess, initialFamilyHeadId, disableFamilyHead }: Props) => {
   const [activeTab, setActiveTab] = useState<TabType>("personal");
   const [formData, setFormData] = useState<any>(initialForm);
   const [files, setFiles] = useState<Record<string, File | null>>({
@@ -110,7 +112,7 @@ const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
       });
       setExistingDocs(docs);
     } else {
-      setFormData(initialForm);
+      setFormData({ ...initialForm, FamilyHeadId: initialFamilyHeadId || "" });
       setExistingDocs({
         AadhaarCardDocument: { path: "", name: "", updatedAt: "", id: "" },
         PanCardDocument: { path: "", name: "", updatedAt: "", id: "" },
@@ -126,7 +128,7 @@ const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
     });
     setErrors({});
     setActiveTab("personal");
-  }, [item, open]);
+  }, [item, open, initialFamilyHeadId]);
 
   const handleChange = (name: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [name]: value }));
@@ -178,15 +180,15 @@ const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
 
     if (item) {
       updateMember(data, {
-        onSuccess: () => {
-          onSuccess();
+        onSuccess: (res: any) => {
+          onSuccess(item.familyMemberId || res?.data?.familyMemberId || res?.data?.memberId || res?.memberId);
           onClose();
         },
       });
     } else {
       addMember(data, {
-        onSuccess: () => {
-          onSuccess();
+        onSuccess: (res: any) => {
+          onSuccess(res?.data?.familyMemberId || res?.data?.memberId || res?.memberId);
           onClose();
         },
       });
@@ -257,6 +259,7 @@ const FamilyMemberUpsertSheet = ({ open, item, onClose, onSuccess }: Props) => {
                       labelKey="clientName"
                       onChange={(v: string) => handleChange("FamilyHeadId", v)}
                       error={errors.FamilyHeadId}
+                      disabled={disableFamilyHead}
                     />
                     <Select
                       label="Relation With Head"
@@ -606,14 +609,17 @@ const Input = ({ label, required, value, onChange, type = "text", error }: any) 
   </div>
 );
 
-const Select = ({ label, required, value, options, onChange, valueKey = "id", labelKey = "name", error }: any) => (
+const Select = ({ label, required, value, options, onChange, valueKey = "id", labelKey = "name", error, disabled }: any) => (
   <div className="space-y-1.5 w-full">
     <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <div className="relative">
       <select
-        className={`w-full px-4 py-2.5 bg-white border rounded text-sm outline-none appearance-none transition-all ${
+        disabled={disabled}
+        className={`w-full px-4 py-2.5 border rounded text-sm outline-none appearance-none transition-all ${
+            disabled ? "bg-slate-100/50 cursor-not-allowed opacity-80" : "bg-white"
+        } ${
             error ? "border-red-500 focus:ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
         }`}
         value={value}

@@ -20,8 +20,15 @@ export interface SegmentPayload {
   modifiedDate: string;
 }
 
+export interface SegmentListResponse {
+  totalRecords: number;
+  pageNumber: number;
+  pageSize: number;
+  data: Segment[];
+}
+
 export interface SegmentResponse {
   statusCode: number;
   statusMessage: string;
-  data: Segment[];
+  data: SegmentListResponse;
 }

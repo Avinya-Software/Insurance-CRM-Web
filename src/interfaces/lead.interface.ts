@@ -38,11 +38,9 @@ export interface LeadFilters {
   page: number;
   pageSize: number;
   search?: string;
-  fullName?: string;
-  email?: string;
-  mobile?: string;
-  leadStatusId?: number;
-  leadSourceId?: number;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface LeadListResponse {

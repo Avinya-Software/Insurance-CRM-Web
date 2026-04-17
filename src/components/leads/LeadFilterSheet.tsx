@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
 import { useLeadStatuses } from "../../hooks/lead/useLeadStatuses";
-import { useLeadSources } from "../../hooks/lead/useLeadSources";
 import Spinner from "../common/Spinner";
 
 interface Props {
@@ -14,9 +13,7 @@ interface Props {
 
 const LeadFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) => {
   const { data: statuses, isLoading: statusLoading } = useLeadStatuses();
-  const { data: sources, isLoading: sourceLoading } = useLeadSources();
-
-  const loading = statusLoading || sourceLoading;
+  const loading = statusLoading;
   const [local, setLocal] = useState(filters);
 
   useEffect(() => {
@@ -57,38 +54,30 @@ const LeadFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) =>
           ) : (
             <div className="space-y-4">
               <Input
-                label="Full Name"
-                value={local.fullName || ""}
-                onChange={(v) => setLocal({ ...local, fullName: v })}
-                placeholder="Search by name"
-              />
-              <Input
-                label="Email"
-                value={local.email || ""}
-                onChange={(v) => setLocal({ ...local, email: v })}
-                placeholder="Search by email..."
-              />
-              <Input
-                label="Mobile"
-                value={local.mobile || ""}
-                onChange={(v) => setLocal({ ...local, mobile: v })}
-                placeholder="Search by mobile..."
+                label="Search"
+                value={local.search || ""}
+                onChange={(v) => setLocal({ ...local, search: v })}
+                placeholder="Search by name, email, or phone..."
               />
               <Select
                 label="Lead Status"
-                value={local.leadStatusId}
+                value={local.status}
                 options={statuses}
                 valueKey="id"
                 labelKey="name"
-                onChange={(v) => setLocal({ ...local, leadStatusId: v || null })}
+                onChange={(v) => setLocal({ ...local, status: v || "" })}
               />
-              <Select
-                label="Lead Source"
-                value={local.leadSourceId}
-                options={sources}
-                valueKey="id"
-                labelKey="name"
-                onChange={(v) => setLocal({ ...local, leadSourceId: v || null })}
+              <Input
+                label="Start Date"
+                type="date"
+                value={local.startDate || ""}
+                onChange={(v) => setLocal({ ...local, startDate: v })}
+              />
+              <Input
+                label="End Date"
+                type="date"
+                value={local.endDate || ""}
+                onChange={(v) => setLocal({ ...local, endDate: v })}
               />
               <Select
                 label="Page Size"
@@ -135,10 +124,11 @@ const LeadFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) =>
 export default LeadFilterSheet;
 
 /* Helper Components */
-const Input = ({ label, value, onChange, placeholder }: any) => (
+const Input = ({ label, value, onChange, placeholder, type = "text" }: any) => (
   <div className="space-y-1">
     <label className="text-sm font-medium">{label}</label>
     <input
+      type={type}
       className="input w-full px-4 py-2 border rounded outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400"
       value={value}
       onChange={(e) => onChange(e.target.value)}
