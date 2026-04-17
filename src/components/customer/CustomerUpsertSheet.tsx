@@ -15,7 +15,7 @@ interface Props {
   onClose: () => void;
   customer?: any;
   leadId?: string;
-  onSuccess: () => void;
+  onSuccess: (customerId?: string, customerName?: string) => void;
 }
 
 type TabType = "basic" | "residential" | "documents";
@@ -466,7 +466,7 @@ const CustomerUpsertSheet = ({
         }
       }
   
-      onSuccess();
+      onSuccess(customerId, form.fullName);
       onClose();
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Something went wrong");
