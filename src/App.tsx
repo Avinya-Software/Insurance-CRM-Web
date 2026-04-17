@@ -32,6 +32,7 @@ import RoleRedirect from "./RoleRedirect";
 import Tasks from "./pages/Tasks";
 import FamilyMembers from "./pages/FamilyMembers";
 import PolicyType from "./pages/PolicyType";
+import Segment from "./pages/Segment";
 
 function App() {
   return (  
@@ -82,6 +83,7 @@ function App() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/familymembers" element={<FamilyMembers />} />
           <Route path="/policy-type" element={<PolicyType />} />
+          <Route path="/segment" element={<Segment />} />
 
           {/* ADMIN */}
           <Route path="/company" element={<Company />} />

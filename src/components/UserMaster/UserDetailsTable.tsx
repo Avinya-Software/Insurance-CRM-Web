@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { MoreVertical, X } from "lucide-react";
 import TableSkeleton from "../common/TableSkeleton";
+import Toggle from "../common/Toggle";
 import { useDeleteUser } from "../../hooks/UserMaster/useDeleteUser";
 import { UserDetail } from "../../interfaces/UserMaster.interface";
 
@@ -90,11 +91,13 @@ const UserDetailsTable = ({ data = [], loading = false, onEdit }: Props) => {
                   <Td>{item.userName}</Td>
                   <Td>{item.password}</Td>
                   <Td>
-                    {item.status ? (
-                      <span className="text-green-600 font-semibold">Active</span>
-                    ) : (
-                      <span className="text-red-600 font-semibold">Inactive</span>
-                    )}
+                    <Toggle 
+                      active={item.status} 
+                      onChange={() => {
+                        // TODO: Implement status update if API available
+                        console.log("Toggle status for", item.id);
+                      }}
+                    />
                   </Td>
                   <Td className="text-center">
                     <button

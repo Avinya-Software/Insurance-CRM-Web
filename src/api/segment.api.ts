@@ -1,15 +1,31 @@
 import api from "./axios";
 import { SegmentResponse } from "../interfaces/segment.interface";
 
+export const getSegmentsApi = async (params: {
+  pageNumber: number;
+  pageSize: number;
+  getAll: boolean;
+}) => {
+  const res = await api.get<any>("/Segment/Get-SegmentList", {
+    params,
+  });
+  return res.data;
+};
+
 export const getSegmentListApi = async (divisionid?: number) => {
-  const params: any = {};
+  const params: any = {}; // no getall parameter
   if (divisionid !== undefined && divisionid !== null) {
     params.divisionid = divisionid;
   }
-  const res = await api.get<SegmentResponse>("/Segment/Get-SegmentList", {
+  const res = await api.get<any>("/Segment/Get-SegmentList", {
     params
   });
-  return res.data;
+  
+  // Defensive unwrapping
+  if (Array.isArray(res.data)) return res.data;
+  if (Array.isArray(res.data?.data)) return res.data.data;
+  if (Array.isArray(res.data?.data?.data)) return res.data.data.data;
+  return [];
 };
 
 export const upsertSegmentApi = async (data: any) => {

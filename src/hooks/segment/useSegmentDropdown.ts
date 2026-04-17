@@ -7,7 +7,7 @@ export const useSegmentDropdown = (divisionid?: number) => {
     queryKey: ["segment-dropdown", divisionid],
     queryFn: async () => {
       const res = await getSegmentListApi(divisionid);
-      return res.data;
+      return res;
     },
     enabled: divisionid !== undefined && divisionid !== null && divisionid !== 0,
   });

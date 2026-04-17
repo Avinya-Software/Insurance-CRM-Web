@@ -23,7 +23,7 @@ const PolicyType = () => {
       <div className="px-4 py-3 border-b bg-gray-100">
         <div className="grid grid-cols-2 gap-y-4 items-start">
           <div>
-            <h1 className="text-3xl font-serif font-semibold text-slate-900">
+            <h1 className="text-4xl font-serif font-semibold text-slate-900">
               Policy Type
             </h1>
             <p className="mt-1 text-sm text-slate-600">
