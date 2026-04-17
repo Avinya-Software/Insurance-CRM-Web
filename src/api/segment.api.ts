@@ -20,7 +20,7 @@ export const getSegmentListApi = async (divisionid?: number) => {
   const res = await api.get<any>("/Segment/Get-SegmentList", {
     params
   });
-  
+
   // Defensive unwrapping
   if (Array.isArray(res.data)) return res.data;
   if (Array.isArray(res.data?.data)) return res.data.data;
@@ -30,5 +30,9 @@ export const getSegmentListApi = async (divisionid?: number) => {
 
 export const upsertSegmentApi = async (data: any) => {
   const res = await api.post("/Segment/CreateUpdate-Segment", data);
+  return res.data;
+};
+export const updateSegmentStatusApi = async (data: { segmentId: number; isActive: boolean }) => {
+  const res = await api.patch("/Segment/Update-Segment-Isactive", data);
   return res.data;
 };

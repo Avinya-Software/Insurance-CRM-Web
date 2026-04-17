@@ -4,6 +4,7 @@ import SegmentTable from "../components/segment/SegmentTable";
 import Pagination from "../components/leads/Pagination";
 import SegmentUpsertModal from "../components/policy/SegmentUpsertModal";
 import toast, { Toaster } from "react-hot-toast";
+import { useUpdateSegmentStatus } from "../hooks/segment/useUpsertSegment";
 
 const Segment = () => {
   const [filters, setFilters] = useState({
@@ -16,6 +17,7 @@ const Segment = () => {
   const [editingSegment, setEditingSegment] = useState<any>(null);
 
   const { data, isLoading, refetch } = useSegments(filters);
+  const { mutate: updateStatus } = useUpdateSegmentStatus();
 
   // Defensive unwrapping of the segments array based on the provided JSON structure
   const segments = Array.isArray(data?.data?.data)
@@ -45,6 +47,21 @@ const Segment = () => {
   const handleAdd = () => {
     setEditingSegment(null);
     setIsModalOpen(true);
+  };
+
+  const handleStatusChange = (segment: any) => {
+    updateStatus(
+      { segmentId: segment.segmentId, isActive: !segment.isActive },
+      {
+        onSuccess: (res: any) => {
+          toast.success(res?.message || "Status updated successfully!");
+          refetch();
+        },
+        onError: () => {
+          toast.error("Failed to update status");
+        },
+      }
+    );
   };
 
   return (
@@ -81,6 +98,7 @@ const Segment = () => {
             page={filters.pageNumber}
             pageSize={filters.pageSize}
             onEdit={handleEdit}
+            onStatusChange={handleStatusChange}
           />
         </div>
 

@@ -10,11 +10,12 @@ interface Props {
   page: number;
   pageSize: number;
   onEdit: (item: Segment) => void;
+  onStatusChange: (item: Segment) => void;
 }
 
 const DROPDOWN_WIDTH = 120;
 
-const SegmentTable = ({ data = [], loading = false, page, pageSize, onEdit }: Props) => {
+const SegmentTable = ({ data = [], loading = false, page, pageSize, onEdit, onStatusChange }: Props) => {
   const [openId, setOpenId] = useState<number | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
@@ -68,10 +69,7 @@ const SegmentTable = ({ data = [], loading = false, page, pageSize, onEdit }: Pr
                   <Td>
                     <Toggle 
                       active={item.isActive} 
-                      onChange={() => {
-                        // TODO: Implement status update if API available
-                        console.log("Toggle status for", item.segmentId);
-                      }}
+                      onChange={() => onStatusChange(item)}
                     />
                   </Td>
                   <Td>{new Date(item.createdDate).toLocaleDateString()}</Td>
