@@ -338,6 +338,13 @@ const Sidebar = () => {
                   icon={<Building2 size={16} />}
                   isCollapsed={false}
                 />
+
+                <NavItem
+                  to="/bank"
+                  label="Bank"
+                  icon={<Building2 size={16} />}
+                  isCollapsed={false}
+                />
               </div>
             )}
             </div>

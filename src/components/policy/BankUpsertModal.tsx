@@ -1,31 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useUpsertBank } from "../../hooks/bank/useUpsertBank";
+import { Bank } from "../../interfaces/bank.interface";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSuccess: (newBank: any) => void;
+  onSuccess: (res: any) => void;
+  editingBank?: Bank | null;
 }
 
-const BankUpsertModal = ({ open, onClose, onSuccess }: Props) => {
+const BankUpsertModal = ({ open, onClose, onSuccess, editingBank }: Props) => {
   const [name, setName] = useState("");
   const { mutate: upsertBank, isPending } = useUpsertBank();
 
   useEffect(() => {
     if (open) {
-      setName("");
+      if (editingBank) {
+        setName(editingBank.name);
+      } else {
+        setName("");
+      }
     }
-  }, [open]);
+  }, [open, editingBank]);
 
   const handleSubmit = () => {
     if (!name.trim()) return;
 
-    upsertBank({ name }, {
+    const payload: any = {
+      name: name.trim()
+    };
+
+    if (editingBank) {
+      payload.id = editingBank.id;
+    }
+
+    upsertBank(payload, {
       onSuccess: (res: any) => {
-        const result = res.data || res;
-        const bankData = typeof result === 'object' ? result : { id: result };
-        onSuccess({ ...bankData, name: bankData.name || bankData.bankName || name });
+        onSuccess(res);
         onClose();
       },
     });
@@ -38,7 +50,9 @@ const BankUpsertModal = ({ open, onClose, onSuccess }: Props) => {
       <div className="bg-white rounded-xl shadow-2xl w-[600px] animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="bg-slate-800 px-6 py-4 flex items-center justify-between text-white rounded-t-xl">
-          <h3 className="font-bold uppercase tracking-wider text-xs">Add New Bank</h3>
+          <h3 className="font-bold uppercase tracking-wider text-xs">
+            {editingBank ? "Edit Bank" : "Add New Bank"}
+          </h3>
           <button onClick={onClose} className="hover:bg-white/10 p-1 rounded transition-colors">
             <X size={18} />
           </button>
@@ -80,7 +94,7 @@ const BankUpsertModal = ({ open, onClose, onSuccess }: Props) => {
             {isPending ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             ) : (
-              "Add Bank"
+              editingBank ? "Update Bank" : "Add Bank"
             )}
           </button>
         </div>
