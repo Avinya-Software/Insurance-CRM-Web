@@ -21,9 +21,6 @@ import { Toaster } from "react-hot-toast";
 /* -------- ADMIN PAGES -------- */
 import LifePolicies from "./pages/LifePolicies";
 import Agency from "./pages/Agency";
-import AddOnDetails from "./pages/AddOnDetails";
-import HPADetails from "./pages/HPADetails";
-import MakeModelPage from "./pages/MakeModelPage";
 import Campaign from "./pages/Campaign";
 import LeadFollowUpPage from "./pages/LeadFollowUpPage";
 import UserTeamMaster from "./pages/UserTeamMaster";
@@ -72,16 +69,13 @@ function App() {
           {/* <Route path="/insurer" element={<Insurer />} /> */}
           <Route path="/agency" element={<Agency type={0} title="General Agency" />} />
           <Route path="/usertermmaster" element={<UserTeamMaster/>}/>
-          <Route path="/hpadetails" element={<HPADetails />} />
           <Route path="/lifeagency" element={<Agency type={1} title="Life Agency" />} />
-          <Route path="/makedetails" element={<MakeModelPage type={1} title="Make Details" />} />
-          <Route path="/modeldetails" element={<MakeModelPage type={2} title="Model Details" />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/campaign" element={<Campaign />} />
           {/* <Route path="/products" element={<Product />} /> */}
-          <Route path="/addondetails" element={<AddOnDetails />} />
+          {/* <Route path="/products" element={<Product />} /> */}
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/familymembers" element={<FamilyMembers />} />
           <Route path="/policy-type" element={<PolicyType />} />
