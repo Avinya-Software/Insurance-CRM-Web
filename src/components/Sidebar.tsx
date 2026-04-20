@@ -291,34 +291,6 @@ const Sidebar = () => {
                 />
 
                 <NavItem
-                  to="/addondetails"
-                  label="Add On Details"
-                  icon={<ListTodo size={16} />}
-                  isCollapsed={false}
-                />
-
-                <NavItem
-                  to="/hpadetails"
-                  label="HPA Details"
-                  icon={<Shield size={16} />}
-                  isCollapsed={false}
-                />
-
-                <NavItem
-                  to="/makedetails"
-                  label="Make Details"
-                  icon={<Car size={16} />}
-                  isCollapsed={false}
-                />
-
-                <NavItem
-                  to="/modeldetails"
-                  label="Model Details"
-                  icon={<CarFront size={16} />}
-                  isCollapsed={false}
-                />
-
-                <NavItem
                   to="/policy-type"
                   label="Policy Type"
                   icon={<Package size={16} />}
@@ -332,6 +304,19 @@ const Sidebar = () => {
                   isCollapsed={false}
                 />
 
+                <NavItem
+                  to="/branch"
+                  label="Branch"
+                  icon={<Building2 size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/bank"
+                  label="Bank"
+                  icon={<Building2 size={16} />}
+                  isCollapsed={false}
+                />
               </div>
             )}
             </div>

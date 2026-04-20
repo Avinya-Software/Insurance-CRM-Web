@@ -1,31 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useUpsertBranch } from "../../hooks/branch/useUpsertBranch";
+import { Branch } from "../../interfaces/branch.interface";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSuccess: (newBranch: any) => void;
+  onSuccess: (res: any) => void;
+  editingBranch?: Branch | null;
 }
 
-const BranchUpsertModal = ({ open, onClose, onSuccess }: Props) => {
+const BranchUpsertModal = ({ open, onClose, onSuccess, editingBranch }: Props) => {
   const [branchName, setBranchName] = useState("");
   const { mutate: upsertBranch, isPending } = useUpsertBranch();
 
   useEffect(() => {
     if (open) {
-      setBranchName("");
+      if (editingBranch) {
+        setBranchName(editingBranch.name);
+      } else {
+        setBranchName("");
+      }
     }
-  }, [open]);
+  }, [open, editingBranch]);
 
   const handleSubmit = () => {
     if (!branchName.trim()) return;
 
-    upsertBranch({ branchName }, {
+    const payload: any = {
+      branchName: branchName.trim()
+    };
+
+    if (editingBranch) {
+      payload.id = editingBranch.id;
+    }
+
+    upsertBranch(payload, {
       onSuccess: (res: any) => {
-        const result = res.data;
-        const branchData = typeof result === 'object' ? result : { id: result };
-        onSuccess({ ...branchData, name: branchData.name || branchData.branchName || branchName });
+        onSuccess(res);
         onClose();
       },
     });
@@ -38,7 +50,9 @@ const BranchUpsertModal = ({ open, onClose, onSuccess }: Props) => {
       <div className="bg-white rounded-xl shadow-2xl w-[600px] animate-in fade-in zoom-in duration-200">
         {/* Header */}
         <div className="bg-slate-800 px-6 py-4 flex items-center justify-between text-white rounded-t-xl">
-          <h3 className="font-bold uppercase tracking-wider text-xs">Add New Branch</h3>
+          <h3 className="font-bold uppercase tracking-wider text-xs">
+            {editingBranch ? "Edit Branch" : "Add New Branch"}
+          </h3>
           <button onClick={onClose} className="hover:bg-white/10 p-1 rounded transition-colors">
             <X size={18} />
           </button>
@@ -80,7 +94,7 @@ const BranchUpsertModal = ({ open, onClose, onSuccess }: Props) => {
             {isPending ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             ) : (
-              "Add Branch"
+              editingBranch ? "Update Branch" : "Add Branch"
             )}
           </button>
         </div>
