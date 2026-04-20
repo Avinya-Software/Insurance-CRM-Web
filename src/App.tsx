@@ -33,6 +33,7 @@ import Tasks from "./pages/Tasks";
 import FamilyMembers from "./pages/FamilyMembers";
 import PolicyType from "./pages/PolicyType";
 import Segment from "./pages/Segment";
+import BranchPage from "./pages/Branch";
 
 function App() {
   return (  
@@ -84,6 +85,7 @@ function App() {
           <Route path="/familymembers" element={<FamilyMembers />} />
           <Route path="/policy-type" element={<PolicyType />} />
           <Route path="/segment" element={<Segment />} />
+          <Route path="/branch" element={<BranchPage />} />
 
           {/* ADMIN */}
           <Route path="/company" element={<Company />} />

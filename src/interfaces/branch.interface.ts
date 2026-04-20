@@ -1,17 +1,23 @@
 export interface Branch {
   id: number;
   name: string;
-  isActive: boolean;
-  createdDate?: string;
-  modifiedDate?: string;
+  status: boolean;
+  createdAt: string;
+  updatedAt: string | null;
 }
 
 export interface BranchPayload {
+  id?: number;
   branchName: string;
 }
 
-export interface BranchResponse {
+export interface BranchListResponse {
   statusCode: number;
   statusMessage: string;
-  data: Branch[];
+  data: {
+    totalRecords: number;
+    pageNumber: number;
+    pageSize: number;
+    data: Branch[];
+  };
 }

@@ -332,6 +332,12 @@ const Sidebar = () => {
                   isCollapsed={false}
                 />
 
+                <NavItem
+                  to="/branch"
+                  label="Branch"
+                  icon={<Building2 size={16} />}
+                  isCollapsed={false}
+                />
               </div>
             )}
             </div>
