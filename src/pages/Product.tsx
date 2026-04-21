@@ -5,6 +5,7 @@ import { Product } from "../interfaces/product.interface";
 import { useProducts } from "../hooks/product/useProducts";
 import ProductTable from "../components/product/ProductTable";
 import ProductUpsertSheet from "../components/product/ProductUpsertSheet";
+import { useUpdateProductStatus } from "../hooks/product/useUpdateProductStatus";
 
 const ProductPage = () => {
 
@@ -23,6 +24,8 @@ const ProductPage = () => {
     policyType,
     search
   );
+
+  const { mutate: updateStatus } = useUpdateProductStatus();
 
   const allData = data?.products ?? [];
   const totalPages = data?.totalPages ?? 1;
@@ -43,6 +46,10 @@ const ProductPage = () => {
   const handleSuccess = () => {
     setOpenSheet(false);
     refetch();
+  };
+
+  const handleStatusChange = (item: Product) => {
+    updateStatus({ id: item.id, status: !item.status });
   };
 
   const handlePolicyChange = (e: any) => {
@@ -133,7 +140,10 @@ const ProductPage = () => {
         <ProductTable
           data={allData}
           loading={isLoading}
+          page={pageNumber}
+          pageSize={pageSize}
           onEdit={handleEditItem}
+          onStatusChange={handleStatusChange}
         />
 
         {/* PAGINATION */}

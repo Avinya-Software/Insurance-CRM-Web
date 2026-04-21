@@ -7,11 +7,12 @@ export const useAddGeneralProduct = () => {
   return useMutation({
     mutationFn: addGeneralProductApi,
     onSuccess: (res) => {
+      toast.success(res.statusMessage || "General product added successfully");
       queryClient.invalidateQueries({ queryKey: ["productDropdown"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Failed to add product");
+      toast.error(err.response?.data?.statusMessage || "Failed to add product");
     },
   });
 };

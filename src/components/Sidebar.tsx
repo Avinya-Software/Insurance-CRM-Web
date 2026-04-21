@@ -317,6 +317,13 @@ const Sidebar = () => {
                   icon={<Building2 size={16} />}
                   isCollapsed={false}
                 />
+
+                <NavItem
+                  to="/product"
+                  label="Product"
+                  icon={<Package size={16} />}
+                  isCollapsed={false}
+                />
               </div>
             )}
             </div>
@@ -337,12 +344,6 @@ const Sidebar = () => {
               to="/company"
               icon={<History size={18} />}
               label="Company"
-              isCollapsed={isCollapsed}
-            />
-            <NavItem
-              to="/product"
-              icon={<History size={18} />}
-              label="Product"
               isCollapsed={isCollapsed}
             />
           </>
