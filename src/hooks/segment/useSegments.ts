@@ -5,8 +5,10 @@ export const useSegments = (filters: {
   pageNumber: number;
   pageSize: number;
   getAll: boolean;
+  search?: string;
 }) =>
   useQuery({
-    queryKey: ["segments", filters],
+    queryKey: ["segments", filters.pageNumber, filters.pageSize, filters.getAll, filters.search],
     queryFn: () => getSegmentsApi(filters),
   });
+

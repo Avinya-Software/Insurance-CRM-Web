@@ -32,6 +32,8 @@ import PolicyType from "./pages/PolicyType";
 import Segment from "./pages/Segment";
 import BranchPage from "./pages/Branch";
 import BankPage from "./pages/Bank";
+import BrokerPage from "./pages/Broker";
+import PaymentMethodPage from "./pages/PaymentMethod";
 
 function App() {
   return (  
@@ -82,6 +84,8 @@ function App() {
           <Route path="/segment" element={<Segment />} />
           <Route path="/branch" element={<BranchPage />} />
           <Route path="/bank" element={<BankPage />} />
+          <Route path="/broker" element={<BrokerPage />} />
+          <Route path="/payment-method" element={<PaymentMethodPage />} />
 
           {/* ADMIN */}
           <Route path="/company" element={<Company />} />

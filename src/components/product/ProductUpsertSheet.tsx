@@ -3,7 +3,10 @@ import { X } from "lucide-react";
 import toast from "react-hot-toast";
 import Spinner from "../common/Spinner";
 import { Product } from "../../interfaces/product.interface";
-import { useUpsertProduct } from "../../hooks/product/useUpsertProduct";
+import { useAddGeneralProduct } from "../../hooks/product/useAddGeneralProduct";
+import { useAddLifeProduct } from "../../hooks/product/useAddLifeProduct";
+import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
+import { useSegmentDropdown } from "../../hooks/segment/useSegmentDropdown";
 import { useCompanyDropdown } from "../../hooks/product/useCompanyDropdown";
 import SearchableComboBox from "../common/SearchableComboBox";
 import { useInsuranceTypes } from "../../hooks/policy/useInsuranceTypes";
@@ -24,14 +27,22 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
     companyId: "",
     policyType: false,
     insurance: 0,
+    divisionId: "",
+    segmentId: "",
   };
 
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState<any>({});
 
-  const { mutate: upsert, isPending: saving } = useUpsertProduct();
+  const { mutate: addGeneral, isPending: addingGeneral } = useAddGeneralProduct();
+  const { mutate: addLife, isPending: addingLife } = useAddLifeProduct();
+
   const { data: companies = [] } = useCompanyDropdown();
   const { data: insuranceTypes = [] } = useInsuranceTypes();
+  const { data: divisions = [] } = useDivisionDropdown();
+  const { data: segments = [] } = useSegmentDropdown(form.divisionId);
+
+  const saving = addingGeneral || addingLife;
 
   const insuranceOptions = insuranceTypes.map((item: any) => ({
     value: item.id,
@@ -45,12 +56,15 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
 
     if (isEdit && item) {
       setForm({
-        productId: item.productId,
+        id: item.id,
+        productId: item.productId || item.id,
         productName: item.productName,
         companyId: item.companyId,
         companyName: item.companyName,
         policyType: item.policyType,
-        insurance: item.insuranceTypeId,
+        insurance: item.insuranceTypeId || item.insurance,
+        divisionId: item.divisionId || "",
+        segmentId: item.segmentId || "",
       });
     } else {
       setForm(initialForm);
@@ -85,27 +99,45 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
   const handleSave = () => {
     if (!validate()) return;
 
-    const payload: any = {
-      productName: form.productName,
-      companyId: form.companyId,
-      policyType: form.policyType,
-      insurance: form.insurance,
-    };
+    if (form.policyType) {
+      // LIFE PRODUCT
+      const payload: any = {
+        companyId: form.companyId,
+        policyType: true,
+        insurance: Number(form.insurance),
+        productName: form.productName,
+      };
 
-    if (isEdit && form.productId) {
-      payload.productId = form.productId;
+      if (isEdit && form.productId) {
+        payload.productId = form.productId;
+      }
+
+      addLife(payload, {
+        onSuccess: () => {
+          onSuccess();
+          onClose();
+        },
+      });
+    } else {
+      // GENERAL PRODUCT
+      const payload: any = {
+        companyId: form.companyId,
+        productName: form.productName,
+        divisionId: Number(form.divisionId),
+        segmentId: Number(form.segmentId),
+      };
+
+      if (isEdit && form.id) {
+        payload.id = form.id;
+      }
+
+      addGeneral(payload, {
+        onSuccess: () => {
+          onSuccess();
+          onClose();
+        },
+      });
     }
-
-    upsert(payload, {
-      onSuccess: () => {
-        toast.success(
-          `Product ${isEdit ? "updated" : "created"} successfully`
-        );
-        onSuccess();
-        onClose();
-      },
-      onError: () => toast.error("Something went wrong"),
-    });
   };
 
   if (!open) return null;
@@ -220,6 +252,20 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
                       }))
                     }
                   />
+
+                  <SearchableComboBox
+                    label="Insurance Type"
+                    required
+                    items={insuranceOptions}
+                    value={form.insurance}
+                    onSelect={(item: any) =>
+                      setForm((p: any) => ({
+                        ...p,
+                        insurance: item?.value || null,
+                        insuranceName: item?.label || "",
+                      }))
+                    }
+                  />
                 </>
               )}
 
@@ -253,14 +299,34 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
                   />
 
                   <SearchableComboBox
-                    label="Insurance Type"
-                    items={insuranceOptions}
-                    value={form.insurance}
+                    label="Division"
+                    required
+                    items={divisions.map((d: any) => ({
+                      value: d.divisionId,
+                      label: d.divisionName,
+                    }))}
+                    value={form.divisionId}
                     onSelect={(item: any) =>
                       setForm((p: any) => ({
                         ...p,
-                        insurance: item?.value || null,
-                        insuranceName: item?.label || "",
+                        divisionId: item?.value || "",
+                        segmentId: "", // reset segment
+                      }))
+                    }
+                  />
+
+                  <SearchableComboBox
+                    label="Segment"
+                    required
+                    items={segments.map((s: any) => ({
+                      value: s.segmentId,
+                      label: s.segmentName,
+                    }))}
+                    value={form.segmentId}
+                    onSelect={(item: any) =>
+                      setForm((p: any) => ({
+                        ...p,
+                        segmentId: item?.value || "",
                       }))
                     }
                   />

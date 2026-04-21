@@ -1,8 +1,7 @@
 import api from "./axios";
 
-export const getBranchFilterApi = async (filters: any) => {
-  const { pageNumber = 1, pageSize = 10 } = filters;
-  const res = await api.get(`/Branch/filter?pageNumber=${pageNumber}&pageSize=${pageSize}`);
+export const getBranchFilterApi = async (params: { pageNumber: number, pageSize: number, search?: string }) => {
+  const res = await api.get("/Branch/filter", { params });
   return res.data;
 };
 
