@@ -25,7 +25,7 @@ export const addGeneralProductApi = async (payload: {
   companyId: string;
   productName: string;
   divisionId: number;
-  segmentId: number;
+  segmentId: string;
 }) => {
   const res = await api.post("/products/add-General-product", payload);
   return res.data;
