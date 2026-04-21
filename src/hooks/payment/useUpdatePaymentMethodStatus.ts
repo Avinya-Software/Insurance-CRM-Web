@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { upsertPaymentMethodApi } from "../../api/payment.api";
+import { updatePaymentMethodStatusApi } from "../../api/payment.api";
 
-export const useUpsertPaymentMethod = () => {
+export const useUpdatePaymentMethodStatus = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: upsertPaymentMethodApi,
+    mutationFn: (data: { id: number; status: boolean }) =>
+      updatePaymentMethodStatusApi(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["paymentMethodDropdown"] });
       queryClient.invalidateQueries({ queryKey: ["payment-methods"] });
     },
   });

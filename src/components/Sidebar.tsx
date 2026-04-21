@@ -331,6 +331,13 @@ const Sidebar = () => {
                   icon={<Building2 size={16} />}
                   isCollapsed={false}
                 />
+
+                <NavItem
+                  to="/payment-method"
+                  label="Payment Method"
+                  icon={<Shield size={16} />}
+                  isCollapsed={false}
+                />
               </div>
             )}
             </div>
