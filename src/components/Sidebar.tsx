@@ -324,6 +324,13 @@ const Sidebar = () => {
                   icon={<Package size={16} />}
                   isCollapsed={false}
                 />
+
+                <NavItem
+                  to="/broker"
+                  label="Broker"
+                  icon={<Building2 size={16} />}
+                  isCollapsed={false}
+                />
               </div>
             )}
             </div>
