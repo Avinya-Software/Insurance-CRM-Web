@@ -8,9 +8,10 @@ import toast, { Toaster } from "react-hot-toast";
 import { Bank } from "../interfaces/bank.interface";
 
 const BankPage = () => {
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<any>({
     pageNumber: 1,
     pageSize: 10,
+    search: "",
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,6 +78,21 @@ const BankPage = () => {
                 <span className="text-lg leading-none">+</span>
                 Add Bank
               </button>
+            </div>
+          </div>
+
+          <div className="mt-8 flex items-center gap-4">
+            <div className="relative w-full max-w-md">
+              <input
+                type="text"
+                placeholder="Search by bank name..."
+                value={filters.search || ""}
+                onChange={(e) =>
+                  setFilters({ ...filters, search: e.target.value, pageNumber: 1 })
+                }
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all outline-none"
+              />
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ export const getSegmentsApi = async (params: {
   pageNumber: number;
   pageSize: number;
   getAll: boolean;
+  search?: string;
 }) => {
   const res = await api.get<any>("/Segment/Get-SegmentList", {
     params,

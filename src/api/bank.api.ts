@@ -1,8 +1,7 @@
 import api from "./axios";
 
-export const getBankFilterApi = async (filters: any) => {
-  const { pageNumber = 1, pageSize = 10 } = filters;
-  const res = await api.get(`/Bank/list?pageNumber=${pageNumber}&pageSize=${pageSize}`);
+export const getBankFilterApi = async (params: { pageNumber: number, pageSize: number, search?: string }) => {
+  const res = await api.get("/Bank/list", { params });
   return res.data;
 };
 
