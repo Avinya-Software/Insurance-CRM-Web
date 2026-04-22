@@ -16,6 +16,7 @@ import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyD
 import { usePolicyDocumentActions } from "../../hooks/LifePolicy/usePolicyDocumentActions";
 import { usePaymentMethodDropdown } from "../../hooks/payment/usePaymentMethodDropdown";
 import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
+import { usePolicyModeDropdown } from "../../hooks/policy/usePolicyModeDropdown";
 
 
 interface Props {
@@ -125,13 +126,18 @@ const PolicyUpsertSheet = ({
     1
   );
 
-  const getMultiplier = (mode: string) => {
-    switch (mode) {
-      case "Y": return 1;
-      case "H": return 2;
-      case "Q": return 4;
-      case "M": return 12;
-      case "S": return 1;
+  const { data: premiumModes } = usePolicyModeDropdown(1);
+
+  const getMultiplier = (modeId: string) => {
+    const mode = (premiumModes || []).find((m: any) => m.id === modeId);
+    if (!mode) return 1;
+    
+    switch (mode.name) {
+      case "Yearly": return 1;
+      case "Half Yearly": return 2;
+      case "Quarterly": return 4;
+      case "Monthly": return 12;
+      case "Single": return 1;
       default: return 1;
     }
   };
@@ -309,22 +315,29 @@ const PolicyUpsertSheet = ({
   };
 
   useEffect(() => {
-    if (!form.startDate || !form.premiumMode) return;
+    if (!form.startDate || !form.premiumMode || !premiumModes) return;
     const nextMonths = getMultiplier(form.premiumMode);
+    const mode = premiumModes.find((m: any) => m.id === form.premiumMode);
+    if (!mode) return;
+
     let next = "";
     let grace = "";
-    if (form.premiumMode !== "S") {
+    if (mode.name !== "Single") {
       next = addMonths(form.startDate, nextMonths);
-      if (form.premiumMode === "Q") {
+      if (mode.name === "Quarterly") {
         grace = next;
       } else {
         grace = addMonths(next, 1);
       }
     }
+
     const maturity =
-      form.policyTerm && form.startDate
-        ? addYears(form.startDate, Number(form.policyTerm))
-        : "";
+      mode.name === "Single"
+        ? form.startDate
+        : (form.policyTerm && form.startDate
+            ? addYears(form.startDate, Number(form.policyTerm))
+            : "");
+
     setForm((prev: any) => ({
       ...prev,
       completionDate: prev.completionDate || form.startDate,
@@ -332,24 +345,29 @@ const PolicyUpsertSheet = ({
       graceDate: grace,
       maturityDate: maturity,
     }));
-  }, [form.startDate, form.premiumMode, form.policyTerm]);
+  }, [form.startDate, form.premiumMode, form.policyTerm, premiumModes]);
 
   useEffect(() => {
-    if (!form.nextPremiumDueDate || form.premiumMode === "S") return;
+    if (!form.nextPremiumDueDate || !premiumModes) return;
+    const mode = premiumModes.find((m: any) => m.id === form.premiumMode);
+    if (!mode || mode.name === "Single") return;
+
     let grace = "";
-    if (form.premiumMode === "Q") {
+    if (mode.name === "Quarterly") {
       grace = form.nextPremiumDueDate;
     } else {
       grace = addMonths(form.nextPremiumDueDate, 1);
     }
     setForm((prev: any) => ({ ...prev, graceDate: grace }));
-  }, [form.nextPremiumDueDate]);
+  }, [form.nextPremiumDueDate, form.premiumMode, premiumModes]);
 
   useEffect(() => {
-    if (form.premiumMode === "S" && form.completionDate) {
+    if (!premiumModes) return;
+    const mode = premiumModes.find((m: any) => m.id === form.premiumMode);
+    if (mode?.name === "Single" && form.completionDate) {
       setForm((prev: any) => ({ ...prev, maturityDate: prev.completionDate }));
     }
-  }, [form.completionDate]);
+  }, [form.completionDate, form.premiumMode, premiumModes]);
 
   useEffect(() => {
     const installment = Number(form.installmentPremium) || 0;
@@ -385,12 +403,13 @@ const PolicyUpsertSheet = ({
       finalInstallmentPremium: Math.round(finalInstallment),
       annualPremium: Math.round(annual)
     }));
-  }, [form.installmentPremium, form.gstPerc, form.premiumIncludingGst, form.premiumMode]);
+  }, [form.installmentPremium, form.gstPerc, form.premiumIncludingGst, form.premiumMode, premiumModes]);
   
   useEffect(() => {
-    if (!form.policyTerm) return;
+    if (!form.policyTerm || !premiumModes) return;
+    const mode = premiumModes.find((m: any) => m.id === form.premiumMode);
     setForm((prev: any) => {
-      if (form.premiumMode === "S") {
+      if (mode?.name === "Single") {
         if (prev.ppt === "1") return prev;
         return { ...prev, ppt: "1" };
       }
@@ -399,7 +418,7 @@ const PolicyUpsertSheet = ({
       }
       return prev;
     });
-  }, [form.policyTerm, form.premiumMode]);
+  }, [form.policyTerm, form.premiumMode, premiumModes]);
 
   const mapCashflows = (cashflows: any[]) =>
     (cashflows || []).map((c) => {
@@ -534,12 +553,11 @@ const PolicyUpsertSheet = ({
         }
       }
   
-      // ── FIX: no manual setIsUploading — isUploading comes from hook isPending ──
       if (files.length > 0 && policyId) {
         await Promise.all(
           files.map((f) => {
             const formData = new FormData();
-            formData.append("Id", policyId);
+            formData.append("Id", policyId!);
             formData.append("Type", "2");
             formData.append("PolicyType", "1");
             formData.append("DocumentType", f.label);
@@ -844,25 +862,23 @@ const PolicyUpsertSheet = ({
                       {/* ROW 5 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                          <Select
+                          <SearchableComboBox
                             label="Premium Mode"
                             required
                             error={errors.premiumMode}
+                            items={(premiumModes || []).map((m: any) => ({
+                              value: m.id,
+                              label: m.name
+                            }))}
                             value={form.premiumMode}
-                            options={[
-                              { id: "Y", name: "Yearly" },
-                              { id: "H", name: "Half Yearly" },
-                              { id: "Q", name: "Quarterly" },
-                              { id: "M", name: "Monthly" },
-                              { id: "S", name: "Single" },
-                            ]}
-                            onChange={(v: any) =>
+                            onSelect={(item: any) => {
+                              const isSingle = item?.label === "Single";
                               setForm((prev: any) => ({
                                 ...prev,
-                                premiumMode: v,
-                                ppt: v === "S" ? "1" : prev.policyTerm
-                              }))
-                            }
+                                premiumMode: item?.value || "",
+                                ppt: isSingle ? "1" : prev.policyTerm
+                              }));
+                            }}
                           />
                         </div>
                         <div className="md:col-span-2">
@@ -875,11 +891,15 @@ const PolicyUpsertSheet = ({
                             max={999}
                             onChange={(v: any) => {
                               const value = v.slice(0, 3);
-                              setForm((p: any) => ({
-                                ...p,
-                                policyTerm: value,
-                                ppt: p.premiumMode === "S" ? "1" : value
-                              }));
+                              setForm((p: any) => {
+                                const mode = (premiumModes || []).find((m: any) => m.id === p.premiumMode);
+                                const isSingleMode = mode?.name === "Single";
+                                return {
+                                  ...p,
+                                  policyTerm: value,
+                                  ppt: isSingleMode ? "1" : value
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -888,9 +908,10 @@ const PolicyUpsertSheet = ({
                             label="PPT"
                             value={form.ppt}
                             placeholder="PPT"
-                            disabled={form.premiumMode === "S"}
+                            disabled={(premiumModes || []).find((m: any) => m.id === form.premiumMode)?.name === "Single"}
                             onChange={(v: any) => {
-                              if (form.premiumMode === "S") return;
+                              const mode = (premiumModes || []).find((m: any) => m.id === form.premiumMode);
+                              if (mode?.name === "Single") return;
                               const value = v.slice(0, 3);
                               if (Number(value) > Number(form.policyTerm)) {
                                 toast.error("Term should be greater than or equal to PPT.");
@@ -927,7 +948,7 @@ const PolicyUpsertSheet = ({
                             type="date"
                             label="Next Premium Due Date"
                             value={form.nextPremiumDueDate}
-                            disabled={form.premiumMode === "S"}
+                            disabled={(premiumModes || []).find((m: any) => m.id === form.premiumMode)?.name === "Single"}
                             onChange={(v: any) => setForm((p: any) => ({ ...p, nextPremiumDueDate: v }))}
                           />
                         </div>
@@ -936,7 +957,7 @@ const PolicyUpsertSheet = ({
                             type="date"
                             label="Grace Date"
                             value={form.graceDate}
-                            disabled={form.premiumMode === "S"}
+                            disabled={(premiumModes || []).find((m: any) => m.id === form.premiumMode)?.name === "Single"}
                             onChange={(v: any) => setForm(p => ({ ...p, graceDate: v }))}
                           />
                         </div>

@@ -178,7 +178,7 @@ const { data: statuses = [] } = useQuery({
                   </Td>
 
                   <Td className="whitespace-nowrap font-medium text-slate-900">
-                    {p.firstName} {p.middleName} {p.lastName}
+                    {p.policyHolderName || "-"}
                   </Td>
 
                   <Td>{p.mobileNumber}</Td>

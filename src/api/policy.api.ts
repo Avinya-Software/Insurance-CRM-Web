@@ -187,6 +187,13 @@ export const getUserDropdownApi = async (): Promise<UserDropdown[]> => {
   return res.data?.data || [];
 }
 
+export const getPolicyModeDropdownApi = async (policyType: number) => {
+  const res = await api.get("/policy/policy-mode-dropdown", {
+    params: { policyType }
+  });
+  return res.data?.data || [];
+}
+
 export const getLifePoliciesApi = async (params: {
   pageNumber?: number;
   pageSize?: number;

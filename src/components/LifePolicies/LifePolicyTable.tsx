@@ -181,7 +181,7 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
                   </Td>
 
                   <Td>{showValue(p.statusName)}</Td>
-                  <Td>{showValue(p.premiumMode)}</Td>
+                  <Td>{showValue(p.premiumModeName || p.premiumMode)}</Td>
                   <Td>{showValue(p.policyTerm)}</Td>
                   <Td>{p.policyStartDate ? p.policyStartDate.split("T")[0] : "-"}</Td>
                   <Td>{p.nextPremiumDueDate ? p.nextPremiumDueDate.split("T")[0] : "-"}</Td>

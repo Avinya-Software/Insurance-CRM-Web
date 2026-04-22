@@ -29,6 +29,7 @@ import { useBankDropdown } from "../../hooks/bank/useBankDropdown";
 import { useProductDropdown } from "../../hooks/product/useProductDropdown";
 import { useBrokerDropdown } from "../../hooks/broker/useBrokerDropdown";
 import { usePaymentMethodDropdown } from "../../hooks/payment/usePaymentMethodDropdown";
+import { usePolicyModeDropdown } from "../../hooks/policy/usePolicyModeDropdown";
 import CustomerUpsertSheet from "../customer/CustomerUpsertSheet";
 import FamilyMemberUpsertSheet from "../customer/FamilyMemberUpsertSheet";
 
@@ -45,12 +46,7 @@ const COMPANY_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", na
 const BRANCH_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Althan" }];
 const PRODUCT_OPTIONS        = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Product X" }];
 const ZONE_OPTIONS           = [{ id: "Zone I", name: "Zone I" }, { id: "Zone II", name: "Zone II" }];
-const POLICY_MODE_OPTIONS    = [
-  { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Yearly" },
-  { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abd", name: "Half Yearly" },
-  { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abe", name: "Quarterly" },
-  { id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abf", name: "Monthly" }
-];
+/* Removed static POLICY_MODE_OPTIONS */
 const OPT_COVER_OPTIONS      = [{ id: "NoClaim", name: "No Claim Bonus Protection" }, { id: "PA", name: "Personal Accident" }];
 const ADD_ON_OPTIONS         = [{ id: "ZeroDepreciation", name: "Zero Depreciation" }, { id: "RoadsideAssist", name: "Roadside Assistance" }];
 const BROKER_OPTIONS         = [{ id: "7b5f1c5d-92b3-4a0d-9f5f-123456789abc", name: "Rajeshbhai" }];
@@ -227,6 +223,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const { data: segmentData } = useSegmentDropdown(selectedDivisionId);
   const selectedSegmentId = Number(form.detail.segmentId) || 0;
   const { data: policyTypeData } = usePolicyTypeDropdown(selectedDivisionId, selectedSegmentId);
+  const { data: policyModes } = usePolicyModeDropdown(0);
 
   const { data: fetchedPolicy, isLoading: isLoadingFetched } = useGeneralPolicyById(renewalId || null);
   const isRenewalMode = !!renewalId && !isEdit;
@@ -315,7 +312,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
   const dynamicProductsWithNew = mergeOption(dynamicProducts, form.detail.productId, newNames[form.detail.productId]);
 
   const dynamicPolicyModes = mergeOption(
-    POLICY_MODE_OPTIONS,
+    policyModes || [],
     currentPolicy?.detail?.policyModeId,
     currentPolicy?.detail?.policyModeName
   );
@@ -528,30 +525,33 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
       }
     }
 
-    const selectedMode = dynamicPolicyModes.find(m => m.id === policyModeId);
+    const selectedMode = (policyModes || []).find(m => m.id === policyModeId);
     if (!selectedMode) return;
 
     const start = new Date(riskStartDate);
     if (isNaN(start.getTime())) return;
 
-    let monthsToAdd = 0;
+    let monthsToAdd = -1;
     const modeName = selectedMode.name.toLowerCase();
     
     if (modeName.includes("yearly") && !modeName.includes("half")) monthsToAdd = 12;
     else if (modeName.includes("half")) monthsToAdd = 6;
     else if (modeName.includes("quarterly")) monthsToAdd = 3;
     else if (modeName.includes("monthly")) monthsToAdd = 1;
+    else if (modeName.includes("single")) monthsToAdd = 0;
 
-    if (monthsToAdd > 0) {
+    if (monthsToAdd >= 0) {
       const end = new Date(start);
-      end.setMonth(end.getMonth() + monthsToAdd);
+      if (monthsToAdd > 0) {
+        end.setMonth(end.getMonth() + monthsToAdd);
+      }
       
       const res = end.toISOString().split("T")[0];
       if (res !== riskEndDate) {
         patchDetail({ riskEndDate: res });
       }
     }
-  }, [form.detail.riskStartDate, form.detail.policyModeId, dynamicPolicyModes, originalForm]);
+  }, [form.detail.riskStartDate, form.detail.policyModeId, policyModes, originalForm]);
 
   const patchDetail  = (patch: any) => setForm(f => ({ ...f, detail:  { ...f.detail,  ...patch } }));
   const patchVehicle = (patch: any) => setForm(f => ({ ...f, vehicle: { ...f.vehicle, ...patch } }));
@@ -1081,9 +1081,32 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                     value={form.policyHolderId}
                     error={errors.policyHolderId}
                     placeholder={form.familyGroupId ? "Search policy holder..." : "Select family group first"}
-                    onSelect={(item: any) =>
-                      setForm(p => ({ ...p, policyHolderId: item?.value ?? "" }))
+                    onSelect={(item: any) => {
+                      const nameParts = (item?.label || "").split(" ").filter(Boolean);
+                      let fName = "";
+                      let mName = "";
+                      let lName = "";
+
+                      if (nameParts.length === 1) {
+                        fName = nameParts[0];
+                      } else if (nameParts.length === 2) {
+                        fName = nameParts[0];
+                        lName = nameParts[1];
+                      } else if (nameParts.length >= 3) {
+                        fName = nameParts[0];
+                        lName = nameParts[nameParts.length - 1];
+                        mName = nameParts.slice(1, -1).join(" ");
+                      }
+
+                      setForm(p => ({ 
+                        ...p, 
+                        policyHolderId: item?.value ?? "",
+                        firstName: fName,
+                        middleName: mName,
+                        lastName: lName
+                      }));
                     }
+                  }
                   />
                 </div>
                 <div className="col-span-1"><AddBtn onClick={() => {
@@ -1444,13 +1467,13 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  <Select
+                  <SearchableComboBox
                     label="Policy Mode"
                     required
-                    options={dynamicPolicyModes}
+                    items={dynamicPolicyModes.map(m => ({ label: m.name, value: m.id }))}
                     value={form.detail.policyModeId}
                     error={errors.policyModeId}
-                    onChange={(v:any) => patchDetail({ policyModeId: v })}
+                    onSelect={(item: any) => patchDetail({ policyModeId: item?.value ?? "" })}
                   />
                   <Input
                     label="Risk Start Date"
