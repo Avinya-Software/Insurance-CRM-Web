@@ -65,7 +65,6 @@ export interface IPolicyDetail {
   riskStartDate: string;
   riskEndDate: string;
   brokerId: string;
-  agencyId: string;
   subAgentId: string;
   nomineeName: string;
   nomineeContact: string;
@@ -188,11 +187,6 @@ export interface CustomerDropdown {
   groupHeadName: string | null;
 }
 
-export interface AgencyDropdown {
-  id: string;
-  agencyName: string;
-}
-
 export interface UserDropdown {
   id: string;
   name: string;
@@ -257,8 +251,8 @@ export interface LifePolicy {
   baId: string
   baName: string
 
-  agencyId: string
-  agencyName: string
+  brokerId: number
+  brokerName: string
 
   companyId: string
   companyName: string
@@ -319,11 +313,13 @@ export interface PremiumDetails {
 
 export interface PaymentDetails {
   ecs: string;
-  paymentBy: string;
+  paymentBy: number;
+  paymentMethod?: string;
   paymentRefNo: string;
   paymentDate?: string;
   mandateExpDate?: string;
   accountNo: string;
+  bank?: number;
   bankName: string;
   branchName: string;
   remarks: string;
@@ -373,7 +369,7 @@ export interface UpsertLifePolicyPayload {
   policyNumber: string;
 
   baId?: string;
-  agencyId?: string;
+  brokerId?: number;
   companyId?: string;
   productId?: number;
 
@@ -452,8 +448,6 @@ export interface IGeneralPolicy {
     bankName: string;
     brokerId: string;
     brokerName: string;
-    agencyId: string;
-    agencyName: string;
     subAgentId: string;
     subAgentName: string;
     nomineeName: string;

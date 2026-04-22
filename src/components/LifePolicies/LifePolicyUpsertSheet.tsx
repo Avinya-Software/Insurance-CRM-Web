@@ -8,12 +8,14 @@ import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
 import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
-import { useAgencyDropdown } from "../../hooks/LifePolicy/useAgencyDropdown";
+import { useBrokerDropdown } from "../../hooks/broker/useBrokerDropdown";
 import { useUserDropdown } from "../../hooks/LifePolicy/useUserDropdown";
 import PolicyFundInfo from "./PolicyFundInfo";
 import { useUpsertLifePolicy } from "../../hooks/LifePolicy/useUpsertLifePolicy";
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 import { usePolicyDocumentActions } from "../../hooks/LifePolicy/usePolicyDocumentActions";
+import { usePaymentMethodDropdown } from "../../hooks/payment/usePaymentMethodDropdown";
+import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
 
 
 interface Props {
@@ -78,7 +80,7 @@ const PolicyUpsertSheet = ({
     relationWithLa: "",
     policyNumber: "",
     baName: "",
-    agencyName: "",
+    brokerId: undefined as number | undefined,
     insurerId: "",
     productId: "",
     premiumMode: "",
@@ -100,11 +102,12 @@ const PolicyUpsertSheet = ({
     annualPremium: 0,
     sumAssured: "",
     ecs: "",
-    paymentBy: "",
+    paymentBy: undefined as number | undefined,
     payReferenceNo: "",
     paymentDate: "",
     mandateExpDate: "",
     accountNo: "",
+    bank: undefined as number | undefined,
     bankName: "",
     branchName: "",
     remarks: ""
@@ -164,16 +167,16 @@ const PolicyUpsertSheet = ({
   const { data: statusTypes, isLoading: stLoading } = usePolicyStatusesDropdown(1);
   const loadingDropdowns = sLoading || stLoading;
 
-  // ── FIX: use isPending from the upload hook directly (same pattern as CustomerSheet) ──
   const { mutateAsync: uploadPolicyDocument, isPending: isUploading } = useUploadPolicyDocument();
 
-  // ── FIX: combined loading flag — spinner shows during policy save OR document upload ──
   const isLoading = isPending || isUploading;
 
   const isEditMode = !!policy;
   const { data: customers } = useCustomerDropdown();
-  const { data: agencies } = useAgencyDropdown();
+  const { data: brokers } = useBrokerDropdown();
   const { data: users } = useUserDropdown();
+  const { data: paymentMethods } = usePaymentMethodDropdown();
+  const { data: branches } = useBranchDropdown();
 
   /*   PREFILL   */
   useEffect(() => {
@@ -203,7 +206,7 @@ const PolicyUpsertSheet = ({
         relationWithLa: policy.relationWithLA || "",
         policyNumber: policy.policyNumber || "",
         baName: policy.baId || "",
-        agencyName: policy.agencyId || "",
+        brokerId: policy.brokerId || undefined,
         insurerId: policy.companyId || "",
         productId: policy.productId || "",
         premiumMode: policy.premiumMode || "",
@@ -224,11 +227,12 @@ const PolicyUpsertSheet = ({
         finalInstallmentPremium: policy.premiumDetails?.finalInstallmentPremium || 0,
         annualPremium: policy.premiumDetails?.annualPremium || 0,
         ecs: policy.paymentDetails?.ecs || "",
-        paymentBy: policy.paymentDetails?.paymentBy || "",
+        paymentBy: policy.paymentDetails?.paymentBy || undefined,
         payReferenceNo: policy.paymentDetails?.paymentRefNo || "",
         paymentDate: policy.paymentDetails?.paymentDate?.split("T")[0] || "",
         mandateExpDate: policy.paymentDetails?.mandateExpDate?.split("T")[0] || "",
         accountNo: policy.paymentDetails?.accountNo || "",
+        bank: policy.paymentDetails?.bank || undefined,
         bankName: policy.paymentDetails?.bankName || "",
         branchName: policy.paymentDetails?.branchName || "",
         remarks: policy.paymentDetails?.remarks || "",
@@ -288,10 +292,12 @@ const PolicyUpsertSheet = ({
     const e: Record<string, string> = {};
     if (!form.insuredName?.trim()) e.insuredName = "Life Assured is required";
     if (!form.policyNumber?.trim()) e.policyNumber = "Policy number is required";
-    if (!form.agencyName?.trim()) e.agencyName = "Agency name is required";
+    if (!form.brokerId) e.brokerId = "Broker is required";
     if (!form.insurerId) e.insurerId = "Company name is required";
     if (!form.productId) e.productId = "Product name is required";
     if (!form.startDate) e.startDate = "Policy start date is required";
+    if (!form.premiumMode) e.premiumMode = "Premium mode is required";
+    if (!form.policyTerm) e.policyTerm = "Policy term is required";
     if (!form.sumAssured) e.sumAssured = "Sum Assured is required";
 
     setErrors(e);
@@ -444,7 +450,7 @@ const PolicyUpsertSheet = ({
     const fieldsToCheck = [
       "customerId", "policyStatusId", "policyTypeId", "dobOfLa", "age",
       "proposerName", "nomineeName", "nomineeType", "relationWithLa",
-      "policyNumber", "baName", "agencyName", "insurerId", "productId",
+      "policyNumber", "baName", "brokerId", "insurerId", "productId",
       "premiumMode", "policyTerm", "ppt", "startDate", "completionDate",
       "nextPremiumDueDate", "graceDate", "maturityDate", "objective",
       "sumAssured", "installmentPremium", "premiumIncludingGst", "basicPremium",
@@ -480,7 +486,7 @@ const PolicyUpsertSheet = ({
           relationWithLA: form.relationWithLa || "",
           policyNumber: form.policyNumber,
           baId: form.baName || null,
-          agencyId: form.agencyName || null,
+          brokerId: Number(form.brokerId) || 0,
           companyId: form.insurerId || null,
           productId: Number(form.productId) || 0,
           premiumMode: form.premiumMode || "",
@@ -504,11 +510,12 @@ const PolicyUpsertSheet = ({
           },
           payment: {
             ecs: form.ecs || "",
-            paymentBy: form.paymentBy || "",
+            paymentBy: Number(form.paymentBy) || 0,
             paymentRefNo: form.payReferenceNo || "",
             paymentDate: toIso(form.paymentDate),
             mandateExpDate: toIso(form.mandateExpDate),
             accountNo: form.accountNo || "",
+            bank: Number(form.bank) || 0,
             bankName: form.bankName || "",
             branchName: form.branchName || "",
             remarks: form.remarks || "",
@@ -781,18 +788,18 @@ const PolicyUpsertSheet = ({
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
                           <SearchableComboBox
-                            label="Agency Name"
+                            label="Broker"
                             required
-                            error={errors.agencyName}
-                            items={(agencies || []).map((a: any) => ({
-                              value: a.id,
-                              label: a.agencyName
+                            error={errors.brokerId}
+                            items={(brokers || []).map((b: any) => ({
+                              value: String(b.id),
+                              label: b.name
                             }))}
-                            value={form.agencyName}
+                            value={form.brokerId ? String(form.brokerId) : undefined}
                             onSelect={(item: any) =>
                               setForm((p: any) => ({
                                 ...p,
-                                agencyName: item?.value || ""
+                                brokerId: item?.value ? Number(item?.value) : undefined
                               }))
                             }
                           />
@@ -839,6 +846,8 @@ const PolicyUpsertSheet = ({
                         <div className="md:col-span-4">
                           <Select
                             label="Premium Mode"
+                            required
+                            error={errors.premiumMode}
                             value={form.premiumMode}
                             options={[
                               { id: "Y", name: "Yearly" },
@@ -859,6 +868,8 @@ const PolicyUpsertSheet = ({
                         <div className="md:col-span-2">
                           <Input
                             label="Policy Term"
+                            required
+                            error={errors.policyTerm}
                             value={form.policyTerm}
                             placeholder="Policy Term"
                             max={999}
@@ -1035,17 +1046,13 @@ const PolicyUpsertSheet = ({
                         <div className="md:col-span-3">
                           <SearchableComboBox
                             label="PAYMENT BY"
-                            value={form.paymentBy}
-                            items={[
-                              { label: "Cash", value: "Cash" },
-                              { label: "Cheque", value: "Cheque" },
-                              { label: "Credit Card", value: "Credit Card" },
-                              { label: "Demand Draft", value: "Demand Draft" },
-                              { label: "ECS", value: "ECS" },
-                              { label: "Online", value: "Online" },
-                            ]}
+                            value={form.paymentBy ? String(form.paymentBy) : undefined}
+                            items={(paymentMethods || []).map((pm: any) => ({
+                              value: String(pm.id),
+                              label: pm.name
+                            }))}
                             onSelect={(item: any) =>
-                              setForm((prev: any) => ({ ...prev, paymentBy: item?.value || "" }))
+                              setForm((prev: any) => ({ ...prev, paymentBy: item?.value ? Number(item.value) : undefined }))
                             }
                           />
                         </div>
@@ -1064,7 +1071,17 @@ const PolicyUpsertSheet = ({
                           <Input label="Account No" value={form.accountNo} placeholder="Account No" onChange={(v: any) => setForm(p => ({ ...p, accountNo: v }))} />
                         </div>
                         <div className="md:col-span-3">
-                          <Input label="Bank Name" value={form.bankName} placeholder="Bank Name" onChange={(v: any) => setForm(p => ({ ...p, bankName: v }))} />
+                          <SearchableComboBox
+                            label="Bank Name"
+                            value={form.bank ? String(form.bank) : undefined}
+                            items={(branches || []).map((b: any) => ({
+                              value: String(b.id),
+                              label: b.name
+                            }))}
+                            onSelect={(item: any) =>
+                              setForm((p: any) => ({ ...p, bank: item?.value ? Number(item.value) : undefined, bankName: item?.label || "" }))
+                            }
+                          />
                         </div>
                         <div className="md:col-span-3">
                           <Input label="Branch Name" value={form.branchName} placeholder="Branch Name" onChange={(v: any) => setForm(p => ({ ...p, branchName: v }))} />

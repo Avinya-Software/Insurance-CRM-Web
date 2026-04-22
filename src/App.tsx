@@ -20,7 +20,6 @@ import { Toaster } from "react-hot-toast";
 
 /* -------- ADMIN PAGES -------- */
 import LifePolicies from "./pages/LifePolicies";
-import Agency from "./pages/Agency";
 import Campaign from "./pages/Campaign";
 import LeadFollowUpPage from "./pages/LeadFollowUpPage";
 import UserTeamMaster from "./pages/UserTeamMaster";
@@ -69,9 +68,7 @@ function App() {
           <Route path="/policies" element={<Policies />} />
           <Route path="/lifepolicies" element={<LifePolicies />} />
           {/* <Route path="/insurer" element={<Insurer />} /> */}
-          <Route path="/agency" element={<Agency type={0} title="General Agency" />} />
           <Route path="/usertermmaster" element={<UserTeamMaster/>}/>
-          <Route path="/lifeagency" element={<Agency type={1} title="Life Agency" />} />
           <Route path="/renewals" element={<Renewals />} />
           <Route path="/claims" element={<Claims />} />
           <Route path="/settings" element={<Settings />} />
