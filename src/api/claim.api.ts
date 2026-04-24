@@ -48,7 +48,7 @@ export const getClaimsApi = async (
     statusCode: number;
     statusMessage: string;
     data: PaginatedClaims;
-  }>("/claim", { params });
+  }>("/Claim/filter", { params });
 
   return res.data.data; 
 };

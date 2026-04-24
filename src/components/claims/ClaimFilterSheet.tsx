@@ -1,210 +1,139 @@
-import { useEffect, useState } from "react";
-import { X } from "lucide-react";
-
-import {
-  useClaimTypes,
-  useClaimStages,
-  useClaimHandlers,
-} from "../../hooks/claim/useClaimMasters";
-
+import { useState, useEffect } from "react";
+import { X, ChevronDown } from "lucide-react";
+import Spinner from "../common/Spinner";
+import SearchableComboBox from "../common/SearchableComboBox";
+import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
-import { usePolicies } from "../../hooks/policy/usePolicies";
+import { useClaimStatus, useClaimType } from "../../hooks/claim/useClaimMasters";
 
 interface Props {
   open: boolean;
   filters: any;
-  onApply: (filters: any) => void;
+  onApply: (f: any) => void;
+  onClear: () => void;
   onClose: () => void;
 }
 
-const ClaimFilterSheet = ({
-  open,
-  filters,
-  onApply,
-  onClose,
-}: Props) => {
-  /*   DROPDOWNS   */
-
-  const { data: customers } = useCustomerDropdown();
-  const { data: claimTypes } = useClaimTypes();
-  const { data: claimStages } = useClaimStages();
-  const { data: claimHandlers } = useClaimHandlers();
-
-  /*   LOCAL STATE   */
-
-  const [localFilters, setLocalFilters] = useState(filters);
-
-  /*   DEPENDENT POLICY   */
-
-  const { data: policies } = usePolicies(
-    localFilters.customerId
-      ? {
-          pageNumber: 1,
-          pageSize: 100,
-          search: localFilters.customerId,
-        }
-      : { pageNumber: 1, pageSize: 100 }
-  );
+const ClaimFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) => {
+  const { data: divisions, isLoading: divisionLoading } = useDivisionDropdown();
+  const { data: customers, isLoading: customerLoading } = useCustomerDropdown();
+  const { data: statuses, isLoading: statusLoading } = useClaimStatus();
+  const { data: types, isLoading: typeLoading } = useClaimType();
+  
+  const loading = divisionLoading || customerLoading || statusLoading || typeLoading;
+  const [local, setLocal] = useState(filters);
 
   useEffect(() => {
-    setLocalFilters(filters);
+    setLocal(filters);
   }, [filters]);
 
   if (!open) return null;
 
-  /*   ACTIONS   */
-
   const handleApply = () => {
-    onApply({ ...localFilters });
+    onApply(local);
     onClose();
   };
 
   const handleClear = () => {
-    onApply({
-      pageNumber: 1,
-      pageSize: filters.pageSize || 10,
-      search: "",
-      customerId: null,
-      policyId: null,
-      claimTypeId: null,
-      claimStageId: null,
-      claimHandlerId: null,
-      status: null,
-    });
+    onClear();
     onClose();
   };
 
-  /*   UI   */
-
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div
-        className="flex-1 bg-black/30"
-        onClick={onClose}
-      />
-
+      <div className="flex-1 bg-black/30" onClick={onClose} />
       <div className="w-96 bg-white h-full shadow-xl flex flex-col">
-        {/*   HEADER   */}
+        {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="font-semibold text-lg">
-            Filter Claims
-          </h2>
-          <button onClick={onClose}>
+          <h2 className="font-semibold text-lg">Filter Claims</h2>
+          <button onClick={onClose} className="hover:bg-gray-100 p-1 rounded">
             <X />
           </button>
         </div>
 
-        {/*   BODY   */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* CUSTOMER */}
-          <Select
-            label="Customer"
-            options={customers}
-            value={localFilters.customerId}
-            onChange={(v) =>
-              setLocalFilters({
-                ...localFilters,
-                customerId: v || null,
-                policyId: null, // reset policy
-              })
-            }
-            idKey="customerId"
-            labelKey="fullName"
-          />
+        {/* BODY */}
+        <div className="flex-1 px-6 py-4 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <Spinner />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <SearchableComboBox
+                label="Customer"
+                items={(customers || []).map((c: any) => ({
+                  value: c.customerId,
+                  label: c.clientName,
+                }))}
+                value={local.customerId}
+                placeholder="Select customer"
+                onSelect={(item) =>
+                  setLocal({ ...local, customerId: item?.value || undefined })
+                }
+              />
 
-          {/* POLICY */}
-          <Select
-            label="Policy"
-            options={policies?.data || []}
-            value={localFilters.policyId}
-            onChange={(v) =>
-              setLocalFilters({
-                ...localFilters,
-                policyId: v || null,
-              })
-            }
-            idKey="policyId"
-            labelKey="policyNumber"
-            disabled={!localFilters.customerId}
-          />
+              <Select
+                label="Division"
+                value={local.divisionType}
+                options={divisions}
+                valueKey="divisionId"
+                labelKey="divisionName"
+                onChange={(v) => setLocal({ ...local, divisionType: v ? Number(v) : undefined })}
+              />
 
-          {/* CLAIM TYPE */}
-          <Select
-            label="Claim Type"
-            options={claimTypes}
-            value={localFilters.claimTypeId}
-            onChange={(v) =>
-              setLocalFilters({
-                ...localFilters,
-                claimTypeId: v ? Number(v) : null,
-              })
-            }
-            idKey="claimTypeId"
-            labelKey="typeName"
-          />
+              <Select
+                label="Claim Type"
+                value={local.claimType}
+                options={types}
+                valueKey="id"
+                labelKey="name"
+                onChange={(v) => setLocal({ ...local, claimType: v ? Number(v) : undefined })}
+              />
 
-          {/* CLAIM STAGE */}
-          <Select
-            label="Claim Stage"
-            options={claimStages}
-            value={localFilters.claimStageId}
-            onChange={(v) =>
-              setLocalFilters({
-                ...localFilters,
-                claimStageId: v ? Number(v) : null,
-              })
-            }
-            idKey="claimStageId"
-            labelKey="stageName"
-          />
+              <Select
+                label="Claim Status"
+                value={local.claimStatus}
+                options={statuses}
+                valueKey="id"
+                labelKey="name"
+                onChange={(v) => setLocal({ ...local, claimStatus: v ? Number(v) : undefined })}
+              />
 
-          {/* HANDLER */}
-          <Select
-            label="Claim Handler"
-            options={claimHandlers}
-            value={localFilters.claimHandlerId}
-            onChange={(v) =>
-              setLocalFilters({
-                ...localFilters,
-                claimHandlerId: v ? Number(v) : null,
-              })
-            }
-            idKey="claimHandlerId"
-            labelKey="handlerName"
-          />
-
-          {/* STATUS */}
-          <Select
-            label="Status"
-            options={[
-              { id: "Open", name: "Open" },
-              { id: "Approved", name: "Approved" },
-              { id: "Rejected", name: "Rejected" },
-              { id: "Closed", name: "Closed" },
-            ]}
-            value={localFilters.status}
-            onChange={(v) =>
-              setLocalFilters({
-                ...localFilters,
-                status: v || null,
-              })
-            }
-          />
+              <Select
+                label="Page Size"
+                value={local.pageSize || 10}
+                options={[
+                  { id: 10, name: "10 per page" },
+                  { id: 25, name: "25 per page" },
+                  { id: 50, name: "50 per page" },
+                  { id: 100, name: "100 per page" },
+                ]}
+                onChange={(v) => setLocal({ ...local, pageSize: Number(v) })}
+              />
+            </div>
+          )}
         </div>
 
-        {/*   FOOTER   */}
-        <div className="px-6 py-4 border-t flex gap-3">
+        {/* FOOTER */}
+        <div className="px-8 py-6 bg-white border-t flex gap-4 justify-end">
           <button
-            className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
-            onClick={handleClear}
+            onClick={handleApply}
+            disabled={loading}
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center gap-2 transition-colors duration-200"
           >
-            Clear All
+            {loading ? <Spinner className="text-white w-4 h-4" /> : "APPLY"}
           </button>
           <button
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700"
-            onClick={handleApply}
+            onClick={handleClear}
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors duration-200"
           >
-            Apply Filters
+            CLEAR
+          </button>
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded transition-colors duration-200"
+          >
+            CANCEL
           </button>
         </div>
       </div>
@@ -214,35 +143,24 @@ const ClaimFilterSheet = ({
 
 export default ClaimFilterSheet;
 
-/*   HELPERS   */
-
-const Select = ({
-  label,
-  options,
-  value,
-  onChange,
-  idKey = "id",
-  labelKey = "name",
-  disabled = false,
-}: any) => (
-  <div className="space-y-1">
-    <label className="text-sm font-medium">
-      {label}
-    </label>
-    <select
-      className="input w-full"
-      value={value || ""}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">
-        {disabled ? "Select customer first" : "All"}
-      </option>
-      {options?.map((o: any) => (
-        <option key={o[idKey]} value={String(o[idKey])}>
-          {o[labelKey] || "—"}
-        </option>
-      ))}
-    </select>
+/* Helper Components */
+const Select = ({ label, value, options, onChange, valueKey = "id", labelKey = "name" }: any) => (
+  <div className="space-y-1.5 relative">
+    <label className="text-sm font-medium">{label}</label>
+    <div className="relative">
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-4 py-2 border rounded appearance-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400"
+      >
+        <option value="">Select</option>
+        {options?.map((o: any) => (
+          <option key={o[valueKey]} value={o[valueKey]}>
+            {o[labelKey]}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+    </div>
   </div>
 );

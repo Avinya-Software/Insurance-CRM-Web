@@ -4,9 +4,7 @@ import toast from "react-hot-toast";
 
 import { useCreateClaim } from "../../hooks/claim/useCreateClaim";
 import {
-  useClaimTypes,
-  useClaimStages,
-  useClaimHandlers,
+  useClaimStatus,
 } from "../../hooks/claim/useClaimMasters";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { usePolicies } from "../../hooks/policy/usePolicies";
@@ -50,18 +48,14 @@ const { preview, download, remove } = useClaimFileActions((deletedId) => {
 
   /*   DROPDOWNS   */
   const { data: customers, isLoading: customersLoading } = useCustomerDropdown();
-  const { data: claimTypes, isLoading: typesLoading } = useClaimTypes();
-  const { data: claimStages, isLoading: stagesLoading } = useClaimStages();
-  const { data: claimHandlers, isLoading: handlersLoading } = useClaimHandlers();
+  const { data: claimStatuses, isLoading: statusLoading } = useClaimStatus();
 
   /*   FORM STATE   */
   const initialForm = {
     claimId: null as string | null,
     customerId: "",
     policyId: "",
-    claimTypeId: "",
-    claimStageId: "",
-    claimHandlerId: "",
+    claimStatusId: "",
     incidentDate: "",
     claimAmount: "",
     approvedAmount: "",
@@ -80,7 +74,7 @@ const { preview, download, remove } = useClaimFileActions((deletedId) => {
   );
 
   const loadingDropdowns =
-    customersLoading || typesLoading || stagesLoading || handlersLoading;
+    customersLoading || statusLoading;
 
   /*   PREFILL   */
   useEffect(() => {
@@ -98,9 +92,7 @@ const { preview, download, remove } = useClaimFileActions((deletedId) => {
       claimId: claim.claimId ?? null,
       customerId: claim.customerId || "",
       policyId: claim.policyId || "",
-      claimTypeId: claim.claimTypeId?.toString() || "",
-      claimStageId: claim.claimStageId?.toString() || "",
-      claimHandlerId: claim.claimHandlerId?.toString() || "",
+      claimStatusId: claim.claimStatus?.toString() || "",
       incidentDate: claim.incidentDate
         ? claim.incidentDate.split("T")[0]
         : "",
@@ -130,16 +122,8 @@ const { preview, download, remove } = useClaimFileActions((deletedId) => {
       e.policyId = "Policy is required";
     }
 
-    if (!form.claimTypeId) {
-      e.claimTypeId = "Claim type is required";
-    }
-
-    if (!form.claimStageId) {
-      e.claimStageId = "Claim stage is required";
-    }
-
-    if (!form.claimHandlerId) {
-      e.claimHandlerId = "Handler is required";
+    if (!form.claimStatusId) {
+      e.claimStatusId = "Claim status is required";
     }
 
     if (!form.incidentDate) {
@@ -294,58 +278,20 @@ const { preview, download, remove } = useClaimFileActions((deletedId) => {
               </div>
 
               <Select
-                label="Claim Type"
+                label="Claim Status"
                 required
-                value={form.claimTypeId}
-                error={errors.claimTypeId}
-                options={claimTypes}
-                idKey="claimTypeId"
-                labelKey="typeName"
+                value={form.claimStatusId}
+                error={errors.claimStatusId}
+                options={claimStatuses}
+                idKey="id"
+                labelKey="name"
                 onChange={(v) => {
                   setForm({
                     ...form,
-                    claimTypeId: v,
+                    claimStatusId: v,
                   });
-                  if (errors.claimTypeId) {
-                    setErrors({ ...errors, claimTypeId: "" });
-                  }
-                }}
-              />
-
-              <Select
-                label="Claim Stage"
-                required
-                value={form.claimStageId}
-                error={errors.claimStageId}
-                options={claimStages}
-                idKey="claimStageId"
-                labelKey="stageName"
-                onChange={(v) => {
-                  setForm({
-                    ...form,
-                    claimStageId: v,
-                  });
-                  if (errors.claimStageId) {
-                    setErrors({ ...errors, claimStageId: "" });
-                  }
-                }}
-              />
-
-              <Select
-                label="Claim Handler"
-                required
-                value={form.claimHandlerId}
-                error={errors.claimHandlerId}
-                options={claimHandlers}
-                idKey="claimHandlerId"
-                labelKey="handlerName"
-                onChange={(v) => {
-                  setForm({
-                    ...form,
-                    claimHandlerId: v,
-                  });
-                  if (errors.claimHandlerId) {
-                    setErrors({ ...errors, claimHandlerId: "" });
+                  if (errors.claimStatusId) {
+                    setErrors({ ...errors, claimStatusId: "" });
                   }
                 }}
               />

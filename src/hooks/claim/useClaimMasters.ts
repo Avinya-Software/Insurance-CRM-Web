@@ -1,28 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import {
-  getClaimTypesApi,
-  getClaimStagesApi,
-  getClaimHandlersApi,
+  getClaimStatusApi,
+  getClaimTypeApi,
 } from "../../api/claim-master.api";
 
-export const useClaimTypes = () =>
+export const useClaimStatus = () =>
   useQuery({
-    queryKey: ["claim-types"],
-    queryFn: getClaimTypesApi,
+    queryKey: ["claim-status-dropdown"],
+    queryFn: getClaimStatusApi,
     initialData: [],
   });
 
-export const useClaimStages = () =>
+export const useClaimType = () =>
   useQuery({
-    queryKey: ["claim-stages"],
-    queryFn: getClaimStagesApi,
-    initialData: [],
-  });
-
-export const useClaimHandlers = () =>
-  useQuery({
-    queryKey: ["claim-handlers"],
-    queryFn: getClaimHandlersApi,
+    queryKey: ["claim-type-dropdown"],
+    queryFn: getClaimTypeApi,
     initialData: [],
   });
 
