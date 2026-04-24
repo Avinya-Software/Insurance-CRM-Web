@@ -11,3 +11,9 @@ export const getClaimTypeApi = async () => {
   const res = await api.get("/Claim/claim-type");
   return res.data.data;
 };
+
+/*   CLAIM EVENT TYPE DROPDOWN   */
+export const getClaimEventTypeApi = async () => {
+  const res = await api.get("/Claim/claim-event-type");
+  return res.data.data;
+};

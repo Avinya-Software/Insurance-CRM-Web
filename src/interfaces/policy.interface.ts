@@ -167,6 +167,8 @@ export interface PolicyStatus {
 export interface PolicyByCustomerDropdownDto {
   policyId: string;
   policyNumber: string;
+  divisionId: number;
+  divisionName: string;
 }
 
 export interface InsuranceTypeDto {

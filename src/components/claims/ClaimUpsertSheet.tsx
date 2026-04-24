@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
-import { X, Eye, Download, Trash2 } from "lucide-react";
+import { X, ShieldCheck, Activity, Car, FileText, UploadCloud, UserPlus, Plus, AlertCircle, Trash2, ChevronRight, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { useCreateClaim } from "../../hooks/claim/useCreateClaim";
-import {
-  useClaimStatus,
-} from "../../hooks/claim/useClaimMasters";
+import { useClaimStatus, useClaimType, useClaimEventType } from "../../hooks/claim/useClaimMasters";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
-import { usePolicies } from "../../hooks/policy/usePolicies";
-import { useClaimFileActions } from "../../hooks/claim/useClaimFileActions";
+import { usePoliciesByCustomer } from "../../hooks/policy/usePoliciesByCustomer";
+import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
+import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemberDropdown";
 import Spinner from "../common/Spinner";
 import SearchableComboBox from "../common/SearchableComboBox";
-import { usePoliciesByCustomer } from "../../hooks/policy/usePoliciesByCustomer";
 
 interface Props {
   open: boolean;
@@ -20,7 +18,11 @@ interface Props {
   onSuccess: () => void;
 }
 
+type TabType = "basic" | "additional" | "documents";
+
 const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
+  const [activeTab, setActiveTab] = useState<TabType>("basic");
+
   /*   LOCK BODY SCROLL   */
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "unset";
@@ -29,517 +31,649 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     };
   }, [open]);
 
-  /*   CLAIM DOCUMENT ACTIONS   */
-  const [existingDocuments, setExistingDocuments] = useState<
-  { fileName: string; url: string }[]
->([]);
-
-const { preview, download, remove } = useClaimFileActions((deletedId) => {
-  setExistingDocuments((prev) =>
-    prev.filter(
-      (f) => f.url.split("/").pop() !== deletedId
-    )
-  );
-});
-
-
   /*   API HOOKS   */
-  const { mutateAsync, isPending } = useCreateClaim();
-
-  /*   DROPDOWNS   */
+  const { mutateAsync: saveClaim, isPending: isSaving } = useCreateClaim();
   const { data: customers, isLoading: customersLoading } = useCustomerDropdown();
+  const { data: divisions, isLoading: divisionLoading } = useDivisionDropdown(0);
   const { data: claimStatuses, isLoading: statusLoading } = useClaimStatus();
+  const { data: claimTypes, isLoading: typeLoading } = useClaimType();
+  const { data: eventTypes, isLoading: eventLoading } = useClaimEventType();
 
   /*   FORM STATE   */
   const initialForm = {
-    claimId: null as string | null,
-    customerId: "",
+    id: null as string | null,
     policyId: "",
-    claimStatusId: "",
+    customerId: "",
+    memberId: "",
+    divisionType: 0,
+    claimNumber: "",
+    claimDate: new Date().toISOString().split("T")[0],
     incidentDate: "",
-    claimAmount: "",
-    approvedAmount: "",
-    tatDays: 0,
-    status: "Open",
-    notes: "",
+    claimEventType: 0,
+    claimType: 0,
+    claimStatus: 0,
+    claimAmount: 0,
+    approvedAmount: 0,
+    description: "",
+
+    motorDetail: {
+      vehicleNumber: "",
+      garageName: "",
+      garageAddress: "",
+      accidentDescription: "",
+      isFIRFiled: false,
+      survey: {
+        surveyorName: "",
+        surveyorContact: "",
+        surveyDate: "",
+        remarks: "",
+      },
+    },
+    healthDetail: {
+      hospitalName: "",
+      hospitalAddress: "",
+      admissionDate: "",
+      dischargeDate: "",
+      illnessType: "",
+      remarks: "",
+    },
+    riskDetail: {
+      riskAddress: "",
+      lossAmount: 0,
+      damageDescription: "",
+      survey: {
+        surveyorName: "",
+        surveyorContact: "",
+        surveyDate: "",
+        remarks: "",
+      },
+    },
+    deathDetail: {
+      dateOfDeath: "",
+      deathType: 0,
+      causeOfDeath: "",
+      placeOfDeath: "",
+      isPoliceCase: false,
+      remarks: "",
+    },
   };
 
   const [form, setForm] = useState(initialForm);
-  const [documents, setDocuments] = useState<File[]>([]);
+  const [files, setFiles] = useState<{ file: File; label: string }[]>([]);
+  const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  /*   POLICIES (DEPENDENT)   */
-  const { data: policies, isLoading: policiesLoading } = usePoliciesByCustomer(
-    form.customerId
-  );
+  const documentOptions = [
+    { id: "Invoices", name: "Invoices" },
+    { id: "Medical Reports", name: "Medical Reports" },
+    { id: "FIR Copy", name: "FIR Copy" },
+    { id: "Death Certificate", name: "Death Certificate" },
+    { id: "Photographs", name: "Photographs" },
+    { id: "Others", name: "Others" },
+  ];
 
-  const loadingDropdowns =
-    customersLoading || statusLoading;
+  /*   DEPENDENT DATA   */
+  const { data: policies, isLoading: policiesLoading } = usePoliciesByCustomer(form.customerId);
+  const { data: members, isLoading: membersLoading } = useFamilyMemberDropdown(form.customerId);
+
+  /*   AUTO-SELECT REGISTERED STATUS   */
+  useEffect(() => {
+    if (!open) return;
+    if (claimStatuses?.length && !claim && form.claimStatus === 0) {
+      const registered = claimStatuses.find((s: any) => s.name?.toLowerCase() === "registered");
+      if (registered) {
+        setForm(prev => ({ ...prev, claimStatus: registered.id }));
+      }
+    }
+  }, [open, claimStatuses, claim]);
 
   /*   PREFILL   */
   useEffect(() => {
     if (!open) {
       setForm(initialForm);
-      setExistingDocuments([]);
-      setDocuments([]);
+      setFiles([]);
       setErrors({});
+      setActiveTab("basic");
       return;
     }
-  
-    if (!claim) return;
-  
-    setForm({
-      claimId: claim.claimId ?? null,
-      customerId: claim.customerId || "",
-      policyId: claim.policyId || "",
-      claimStatusId: claim.claimStatus?.toString() || "",
-      incidentDate: claim.incidentDate
-        ? claim.incidentDate.split("T")[0]
-        : "",
-      claimAmount: claim.claimAmount?.toString() || "",
-      approvedAmount: claim.approvedAmount?.toString() || "",
-      tatDays: claim.tatDays ?? 0,
-      status: claim.status || "Open",
-      notes: claim.notes ?? "",
-    });
-  
-    // ✅ Correct existing file mapping
-    setExistingDocuments(claim.claimFiles || []);
-  
-    setErrors({});
+
+    if (claim) {
+      setForm({
+        ...initialForm,
+        id: claim.id || claim.claimId || null,
+        policyId: claim.policyId || "",
+        customerId: claim.customerId || "",
+        memberId: claim.memberId || "",
+        divisionType: claim.divisionType || 0,
+        claimNumber: claim.claimNumber || "",
+        claimDate: claim.claimDate ? claim.claimDate.split("T")[0] : "",
+        incidentDate: claim.incidentDate ? claim.incidentDate.split("T")[0] : "",
+        claimEventType: claim.claimEventType || 0,
+        claimType: claim.claimType || 0,
+        claimStatus: claim.claimStatus || 0,
+        claimAmount: claim.claimAmount || 0,
+        approvedAmount: claim.approvedAmount || 0,
+        description: claim.description || "",
+        motorDetail: claim.motorDetail || initialForm.motorDetail,
+        healthDetail: claim.healthDetail || initialForm.healthDetail,
+        riskDetail: claim.riskDetail || initialForm.riskDetail,
+        deathDetail: claim.deathDetail || initialForm.deathDetail,
+      });
+    }
   }, [open, claim]);
-  
 
   /*   VALIDATION   */
   const validate = () => {
     const e: Record<string, string> = {};
+    if (!form.customerId) e.customerId = "Customer is required";
+    if (!form.policyId) e.policyId = "Policy is required";
+    if (!form.divisionType) e.divisionType = "Division is required";
+    if (!form.claimNumber) e.claimNumber = "Claim number is required";
+    if (!form.incidentDate) e.incidentDate = "Incident date is required";
+    if (!form.memberId) e.memberId = "Claiming member is required";
+    if (!form.claimType) e.claimType = "Claim type is required";
+    if (!form.claimEventType) e.claimEventType = "Claim event type is required";
+    if (form.claimAmount <= 0) e.claimAmount = "Claimed amount must be > 0";
 
-    if (!form.customerId) {
-      e.customerId = "Customer is required";
+    // DIVISION SPECIFIC VALIDATION
+    if (form.divisionType === 1) { // Health
+      if (!form.healthDetail.hospitalName) e.hospitalName = "Hospital name is required";
+      if (!form.healthDetail.illnessType) e.illnessType = "Illness type is required";
+      if (!form.healthDetail.admissionDate) e.admissionDate = "Admission date is required";
     }
 
-    if (!form.policyId) {
-      e.policyId = "Policy is required";
+    if (form.divisionType === 5) { // Motor
+      if (!form.motorDetail.vehicleNumber) e.vehicleNumber = "Vehicle number is required";
+      if (!form.motorDetail.garageName) e.garageName = "Garage name is required";
+      if (!form.motorDetail.garageAddress) e.garageAddress = "Garage address is required";
     }
 
-    if (!form.claimStatusId) {
-      e.claimStatusId = "Claim status is required";
+    if (form.divisionType === 2) { // Other/Risk
+      if (!form.riskDetail.riskAddress) e.riskAddress = "Risk address is required";
+      if (form.riskDetail.lossAmount <= 0) e.lossAmount = "Estimated loss amount is required";
     }
 
-    if (!form.incidentDate) {
-      e.incidentDate = "Incident date is required";
-    } else {
-      // Check if incident date is not in the future
-      const incidentDate = new Date(form.incidentDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (incidentDate > today) {
-        e.incidentDate = "Incident date cannot be in the future";
-      }
-    }
-
-    if (!form.claimAmount || form.claimAmount === "") {
-      e.claimAmount = "Claim amount is required";
-    } else if (Number(form.claimAmount) <= 0) {
-      e.claimAmount = "Claim amount must be greater than 0";
-    }
-
-    if (form.approvedAmount && form.approvedAmount !== "") {
-      const approved = Number(form.approvedAmount);
-      const claimed = Number(form.claimAmount);
-
-      if (approved < 0) {
-        e.approvedAmount = "Approved amount cannot be negative";
-      } else if (approved > claimed) {
-        e.approvedAmount = "Approved amount cannot exceed claim amount";
-      }
-    }
-
-    if (form.tatDays !== null && form.tatDays !== undefined) {
-      if (Number(form.tatDays) < 0) {
-        e.tatDays = "TAT must be 0 or greater";
-      }
-    }
+    // Death Validation
+    if (!form.deathDetail.dateOfDeath) e.dateOfDeath = "Date of death is required";
+    if (!form.deathDetail.causeOfDeath) e.causeOfDeath = "Cause of death is required";
+    if (!form.deathDetail.placeOfDeath) e.placeOfDeath = "Place of death is required";
 
     setErrors(e);
-
     if (Object.keys(e).length) {
-      toast.error("Please fix validation errors");
+      toast.error("Please fill all required fields");
       return false;
     }
-
     return true;
   };
 
-  /*  SAVE  */
+  /*   SAVE   */
   const handleSave = async () => {
     if (!validate()) return;
-
     try {
-      await mutateAsync({ ...form, documents });
+      await saveClaim(form);
       toast.success("Claim saved successfully");
-      onClose();
       onSuccess();
+      onClose();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !selectedDocName) return;
+    const newFiles = Array.from(e.target.files).map(file => ({
+      file,
+      label: selectedDocName
+    }));
+    setFiles(prev => [...prev, ...newFiles]);
+    setSelectedDocName("");
+    e.target.value = "";
+  };
+
   if (!open) return null;
 
-  /*   UI   */
+  const isHealth = form.divisionType === 1;
+  const isOther = form.divisionType === 2;
+  const isMotor = form.divisionType === 5;
+  const isLoading = isSaving;
 
   return (
     <>
       {/* OVERLAY */}
-      <div
-        className="fixed inset-0 bg-black/40 z-[60]"
-        onClick={isPending ? undefined : onClose}
-      />
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60]" onClick={isLoading ? undefined : onClose} />
 
       {/* SHEET */}
-      <div className="fixed top-0 right-0 h-screen w-[480px] bg-white z-[70] shadow-2xl flex flex-col animate-slideInRight">
+      <div className="fixed top-0 right-0 h-screen w-full max-w-[70vw] bg-slate-50 z-[70] shadow-2xl flex flex-col animate-slide-in-right">
         {/* HEADER */}
-        <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="font-semibold text-lg">
-            {claim ? "Edit Claim" : "Add Claim"}
-          </h2>
-          <button onClick={onClose} disabled={isPending}>
-            <X />
+        <div className="px-8 py-6 bg-white border-b flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">{claim ? "Edit Claim" : "Add New Claim"}</h2>
+            <p className="text-slate-500 text-sm mt-1">Manage claim records and division-specific information.</p>
+          </div>
+          <button onClick={onClose} disabled={isLoading} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <X size={24} className="text-slate-400" />
           </button>
         </div>
 
+        {/* TABS */}
+        <div className="px-8 bg-white border-b flex gap-8">
+          {[
+            { id: "basic", label: "Basic Claim Information", icon: UserPlus },
+            { id: "additional", label: "Additional Field Details", icon: Activity },
+            { id: "documents", label: "Claim Documents", icon: FileText },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              className={`flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-all ${
+                activeTab === tab.id
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-200"
+              }`}
+            >
+              <tab.icon size={18} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {loadingDropdowns ? (
-            <div className="flex items-center justify-center h-full">
-              <Spinner />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <SearchableComboBox
-                  label="Customer"
-                  items={(customers || []).map((c) => ({
-                    value: c.customerId,
-                    label: c.clientName,
-                  }))}
-                  value={form.customerId}
-                  placeholder="Select customer"
-                  onSelect={(item) => {
-                    setForm({
-                      ...form,
-                      customerId: item?.value || "",
-                      policyId: "", // reset policy on customer change
-                    });
-                    if (errors.customerId) {
-                      setErrors({ ...errors, customerId: "" });
-                    }
-                  }}
-                />
-                {errors.customerId && (
-                  <p className="text-sm text-red-500 mt-1">{errors.customerId}</p>
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-full mx-auto space-y-6">
+            {activeTab === "basic" && (
+              <Section icon={<ShieldCheck size={16} />} title="Basic Claim Information">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <SearchableComboBox
+                    label="Customer"
+                    required
+                    items={(customers || []).map((c: any) => ({ value: c.customerId, label: c.clientName }))}
+                    value={form.customerId}
+                    placeholder="Search customer..."
+                    error={errors.customerId}
+                    onSelect={(item) => setForm({ ...form, customerId: item?.value || "", policyId: "", memberId: "" })}
+                  />
+
+                  <SearchableComboBox
+                    label="Policy"
+                    required
+                    items={(policies || []).map((p: any) => ({ value: p.policyId, label: p.policyNumber, divisionId: p.divisionId }))}
+                    value={form.policyId}
+                    placeholder={policiesLoading ? "Loading..." : "Search policy..."}
+                    error={errors.policyId}
+                    onSelect={(item: any) => setForm({ ...form, policyId: item?.value || "", divisionType: item?.divisionId ? Number(item.divisionId) : form.divisionType })}
+                  />
+
+                  <SearchableComboBox
+                    label="Claiming Member"
+                    required
+                    items={(members || []).map((m: any) => ({ value: m.familyMemberId, label: m.fullName }))}
+                    value={form.memberId}
+                    placeholder={membersLoading ? "Loading..." : "Search member..."}
+                    error={errors.memberId}
+                    onSelect={(item) => setForm({ ...form, memberId: item?.value || "" })}
+                  />
+
+                  <Select
+                    label="Division"
+                    required
+                    value={form.divisionType}
+                    options={divisions}
+                    valueKey="divisionId"
+                    labelKey="divisionName"
+                    onChange={(v: any) => setForm({ ...form, divisionType: Number(v) })}
+                    error={errors.divisionType}
+                  />
+
+                  <Input label="Claim Number" required value={form.claimNumber} onChange={(v: any) => setForm({ ...form, claimNumber: v })} error={errors.claimNumber} placeholder="Enter claim number" />
+                  <Input label="Incident Date" required type="date" value={form.incidentDate} onChange={(v: any) => setForm({ ...form, incidentDate: v })} error={errors.incidentDate} />
+                  <Input label="Claim Date" type="date" value={form.claimDate} onChange={(v: any) => setForm({ ...form, claimDate: v })} />
+                  <Select label="Claim Type" required value={form.claimType} options={claimTypes} onChange={(v: any) => setForm({ ...form, claimType: Number(v) })} error={errors.claimType} />
+                  <Select label="Claim Status" value={form.claimStatus} options={claimStatuses} onChange={(v: any) => setForm({ ...form, claimStatus: Number(v) })} />
+                  <Select label="Claim Event Type" required value={form.claimEventType} options={eventTypes} onChange={(v: any) => setForm({ ...form, claimEventType: Number(v) })} error={errors.claimEventType} />
+                  <Input label="Claimed Amount" required type="number" value={form.claimAmount} onChange={(v: any) => setForm({ ...form, claimAmount: Number(v) })} error={errors.claimAmount} placeholder="0.00" />
+                  <Input label="Approved Amount" type="number" value={form.approvedAmount} onChange={(v: any) => setForm({ ...form, approvedAmount: Number(v) })} placeholder="0.00" />
+
+                  <div className="lg:col-span-3">
+                    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Description</label>
+                    <textarea 
+                      value={form.description} 
+                      onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))}
+                      placeholder="Description"
+                      className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all h-24"
+                    />
+                  </div>
+                </div>
+              </Section>
+            )}
+
+            {activeTab === "additional" && (
+              <div className="space-y-6">
+                {!form.divisionType && (
+                  <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-sm">
+                    <Activity className="mx-auto text-slate-300 mb-4" size={48} />
+                    <h3 className="text-slate-900 font-semibold text-lg">Select a Division First</h3>
+                    <p className="text-slate-500 text-sm max-w-sm mx-auto">Please select a division in the basic information tab to see category-specific fields.</p>
+                  </div>
+                )}
+                {isMotor && (
+                   <Section icon={<Car size={16} />} title="Motor claim details">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <Input label="Vehicle Number" required value={form.motorDetail.vehicleNumber} placeholder="GJ-01-XX-0000" onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, vehicleNumber: v } })} error={errors.vehicleNumber} />
+                      <Input label="Garage Name" required value={form.motorDetail.garageName} placeholder="Garage name" onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, garageName: v } })} error={errors.garageName} />
+                      <Input label="Garage Address" required value={form.motorDetail.garageAddress} placeholder="Address" onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, garageAddress: v } })} error={errors.garageAddress} />
+                      <div className="lg:col-span-2">
+                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Accident Description</label>
+                        <textarea 
+                          value={form.motorDetail.accidentDescription} 
+                          onChange={(e) => setForm(p => ({ ...p, motorDetail: { ...p.motorDetail, accidentDescription: e.target.value } }))}
+                          placeholder="Describe the incident..."
+                          className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all h-20"
+                        />
+                      </div>
+                      <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 self-center">
+                        <input type="checkbox" id="fir" checked={form.motorDetail.isFIRFiled} onChange={(e) => setForm({ ...form, motorDetail: { ...form.motorDetail, isFIRFiled: e.target.checked } })} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+                        <label htmlFor="fir" className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Is FIR Filed?</label>
+                      </div>
+                    </div>
+                    <div className="border-t bg-slate-50 -mx-4 -mb-4 px-4 py-4 space-y-4">
+                      <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Surveyor Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <Input label="Surveyor Name" value={form.motorDetail.survey.surveyorName} onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, survey: { ...form.motorDetail.survey, surveyorName: v } } })} />
+                        <Input label="Contact" value={form.motorDetail.survey.surveyorContact} onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, survey: { ...form.motorDetail.survey, surveyorContact: v } } })} />
+                        <Input label="Survey Date" type="date" value={form.motorDetail.survey.surveyDate} onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, survey: { ...form.motorDetail.survey, surveyDate: v } } })} />
+                        <Input label="Remarks" value={form.motorDetail.survey.remarks} onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, survey: { ...form.motorDetail.survey, remarks: v } } })} />
+                      </div>
+                    </div>
+                  </Section>
+                )}
+                {isHealth && (
+                  <>
+                    <Section icon={<Activity size={16} />} title="Hospitalization Details">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <Input label="Hospital Name" required value={form.healthDetail.hospitalName} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalName: v } })} error={errors.hospitalName} />
+                        <Input label="Illness Type" required value={form.healthDetail.illnessType} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, illnessType: v } })} error={errors.illnessType} />
+                        <Input label="Hospital Address" value={form.healthDetail.hospitalAddress} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalAddress: v } })} />
+                        <Input label="Admission Date" required type="date" value={form.healthDetail.admissionDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, admissionDate: v } })} error={errors.admissionDate} />
+                        <Input label="Discharge Date" type="date" value={form.healthDetail.dischargeDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, dischargeDate: v } })} />
+                        <Input label="Medical Remarks" value={form.healthDetail.remarks} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, remarks: v } })} />
+                      </div>
+                    </Section>
+                    <DeathSection form={form} setForm={setForm} errors={errors} />
+                  </>
+                )}
+                {isOther && (
+                  <>
+                    <Section icon={<ShieldCheck size={16} />} title="Asset / risk loss details">
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2"><Input label="Risk Address" required value={form.riskDetail.riskAddress} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, riskAddress: v } })} error={errors.riskAddress} /></div>
+                        <Input label="Estimated Loss Amount" required type="number" value={form.riskDetail.lossAmount} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, lossAmount: Number(v) } })} error={errors.lossAmount} />
+                        <div className="lg:col-span-3">
+                          <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Damage Description</label>
+                          <textarea 
+                            value={form.riskDetail.damageDescription} 
+                            onChange={(e) => setForm(p => ({ ...p, riskDetail: { ...p.riskDetail, damageDescription: e.target.value } }))}
+                            placeholder="Describe damage..."
+                            className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm h-20 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="border-t bg-slate-50 -mx-4 -mb-4 px-4 py-4 space-y-4">
+                        <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Surveyor Information</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                          <Input label="Surveyor Name" value={form.riskDetail.survey.surveyorName} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorName: v } } })} />
+                          <Input label="Contact" value={form.riskDetail.survey.surveyorContact} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorContact: v } } })} />
+                          <Input label="Survey Date" type="date" value={form.riskDetail.survey.surveyDate} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyDate: v } } })} />
+                          <Input label="Survey Remarks" value={form.riskDetail.survey.remarks} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, remarks: v } } })} />
+                        </div>
+                      </div>
+                    </Section>
+                    <DeathSection form={form} setForm={setForm} errors={errors} />
+                  </>
                 )}
               </div>
+            )}
 
-              <div
-                className={
-                  !form.customerId || policiesLoading
-                    ? "opacity-50 pointer-events-none"
-                    : ""
-                }
-              >
-                <SearchableComboBox
-                  label="Policy"
-                  items={(policies || []).map((p) => ({
-                    value: p.policyId,
-                    label: p.policyNumber,
-                  }))}
-                  value={form.policyId}
-                  placeholder={
-                    policiesLoading
-                      ? "Loading policies..."
-                      : "Select policy"
-                  }
-                  onSelect={(item) => {
-                    setForm({
-                      ...form,
-                      policyId: item?.value || "",
-                    });
-                    if (errors.policyId) {
-                      setErrors({ ...errors, policyId: "" });
-                    }
-                  }}
-                />
-                {errors.policyId && (
-                  <p className="text-sm text-red-500 mt-1">{errors.policyId}</p>
-                )}
-              </div>
+            {activeTab === "documents" && (
+              <div className="space-y-8">
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
+                  <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                  <p className="text-xs text-amber-700 leading-relaxed font-medium">Please note that document upload is currently handled separately.</p>
+                </div>
 
-              <Select
-                label="Claim Status"
-                required
-                value={form.claimStatusId}
-                error={errors.claimStatusId}
-                options={claimStatuses}
-                idKey="id"
-                labelKey="name"
-                onChange={(v) => {
-                  setForm({
-                    ...form,
-                    claimStatusId: v,
-                  });
-                  if (errors.claimStatusId) {
-                    setErrors({ ...errors, claimStatusId: "" });
-                  }
-                }}
-              />
+                {/* UPLOAD SECTION UI ONLY */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    <div className="lg:col-span-1 space-y-6">
+                      <Select
+                        label="Select Document"
+                        required
+                        value={selectedDocName}
+                        options={documentOptions}
+                        onChange={(v: string) => setSelectedDocName(v)}
+                      />
+                      <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                        <div className="flex items-center gap-2 mb-1">
+                          <AlertCircle size={14} className="text-blue-600" />
+                          <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Settlement Verification</p>
+                        </div>
+                        <p className="text-xs text-blue-700 leading-relaxed">
+                          Upload all necessary evidence and loss documentation to facilitate accurate verification and expedite your policy claim settlement.
+                        </p>
+                      </div>
+                    </div>
 
-              <Input
-                label="Incident Date"
-                required
-                type="date"
-                value={form.incidentDate}
-                error={errors.incidentDate}
-                onChange={(v) => {
-                  setForm({ ...form, incidentDate: v });
-                  if (errors.incidentDate) {
-                    setErrors({ ...errors, incidentDate: "" });
-                  }
-                }}
-              />
-
-              <Input
-                label="Claim Amount"
-                required
-                value={form.claimAmount}
-                error={errors.claimAmount}
-                min={0}
-                onChange={(v) => {
-                  setForm({ ...form, claimAmount: v.replace(/[^0-9]/g, "") });
-                  if (errors.claimAmount || errors.approvedAmount) {
-                    setErrors({ ...errors, claimAmount: "", approvedAmount: "" });
-                  }
-                }}
-              />
-
-              <Input
-                label="Approved Amount"
-                value={form.approvedAmount}
-                error={errors.approvedAmount}
-                min={form.claimAmount}
-                onChange={(v) => {
-                  setForm({
-                    ...form,
-                    approvedAmount: v.replace(/[^0-9]/g, ""),
-                  });
-                  if (errors.approvedAmount) {
-                    setErrors({ ...errors, approvedAmount: "" });
-                  }
-                }}
-              />
-
-              <Input
-                label="TAT (Days)"
-                value={form.tatDays}
-                error={errors.tatDays}
-                min={0}
-                onChange={(v) => {
-                  setForm({
-                    ...form,
-                    tatDays: v === "" ? 0 : Number(v.replace(/[^0-9]/g, "")),
-                  });
-                  if (errors.tatDays) {
-                    setErrors({ ...errors, tatDays: "" });
-                  }
-                }}
-              />
-
-              <Textarea
-                label="Notes"
-                value={form.notes}
-                onChange={(v) => setForm({ ...form, notes: v })}
-              />
-
-              {/* ===== EXISTING CLAIM DOCUMENTS ===== */}
-              {claim?.claimId && existingDocuments.length > 0 && (
-                <div>
-                  <label className="text-sm font-medium">
-                    Uploaded Claim Documents
-                  </label>
-
-                  <div className="space-y-2 mt-2">
-                    {existingDocuments.map((file) => {
-                      const documentId = file.url.split("/").pop();
-
-                      return (
-                        <div
-                          key={file.url}
-                          className="flex justify-between items-center border rounded px-3 py-2 text-sm"
+                    <div className="lg:col-span-2 space-y-3">
+                      <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-xs">Upload Files</label>
+                      <div className="relative">
+                        <input
+                          id="kyc-upload"
+                          type="file"
+                          multiple
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          className="hidden"
+                          disabled={!selectedDocName}
+                          onChange={handleFileChange}     
+                        />
+                        <label 
+                          htmlFor="kyc-upload"
+                          className={`
+                            flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl transition-all group
+                            ${!selectedDocName
+                              ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-50'
+                              : 'bg-white border-blue-200 hover:bg-blue-50/50 hover:border-blue-400 shadow-sm cursor-pointer'
+                            }
+                          `}
                         >
-                          <span className="truncate flex-1">
-                            {file.fileName}
-                          </span>
+                          <div className="flex items-center gap-6">
+                            <div className={`p-4 rounded-2xl shadow-sm transition-all ${selectedDocName ? 'bg-blue-600 text-white group-hover:scale-110 group-hover:shadow-blue-200 group-hover:shadow-lg' : 'bg-slate-100 text-slate-400'}`}>
+                              <UploadCloud size={28} />
+                            </div>
+                            <div className="text-left">
+                              <p className="text-base font-bold text-slate-800">
+                                {selectedDocName ? `Choose files for ${selectedDocName}` : "Select document type to enable"}
+                              </p>
+                              <p className="text-xs text-slate-400 font-medium mt-1">PDF, PNG, JPG (Max 10MB)</p>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                          <div className="flex gap-2 ml-2">
-                            {/* PREVIEW */}
+                {/* FILE LISTS UI ONLY */}
+                <div className="space-y-8">
+                  {files.length > 0 && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                      <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
+                        <Plus size={18} className="text-blue-600" /> 
+                        Selected Files
+                      </h4>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {files.map((f, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="p-2 bg-white rounded-lg text-blue-600 shadow-sm">
+                                <FileText size={16} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-slate-700 truncate">
+                                  {f.label}
+                                </p>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                                  {f.file.name}
+                                </p>
+                              </div>
+                            </div>
+
                             <button
                               onClick={() =>
-                                preview(claim.claimId, documentId!)
+                                setFiles(prev => prev.filter((_, i) => i !== idx))
                               }
-                              className="p-1 hover:bg-gray-100 rounded"
-                            >
-                              <Eye size={16} />
-                            </button>
-
-                            {/* DOWNLOAD */}
-                            <button
-                              onClick={() =>
-                                download(claim.claimId, documentId!)
-                              }
-                              className="p-1 hover:bg-gray-100 rounded"
-                            >
-                              <Download size={16} />
-                            </button>
-                            
-                            {/* DELETE */}
-                            <button
-                              onClick={async () => {
-                                if (!confirm("Delete this document?")) return;
-                                if (!documentId) return;
-
-                                try {
-                                  await remove(claim.claimId, documentId);
-
-                                  setExistingDocuments((prev) =>
-                                    prev.filter(
-                                      (f) =>
-                                        f.url.split("/").pop() !== documentId
-                                    )
-                                  );
-                                } catch {
-                                  toast.error("Failed to delete document");
-                                }
-                              }}
-                              className="p-1 hover:bg-red-100 text-red-600 rounded"
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                             >
                               <Trash2 size={16} />
                             </button>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {/* ===== CLAIM DOCUMENT UPLOAD ===== */}
-              <div className="mt-4">
-                <label className="text-sm font-medium mb-1 block">
-                  Add Claim Documents
-                </label>
-
-                <div className="flex items-center gap-3">
-                  <label
-                    htmlFor="claim-upload"
-                    className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm"
-                  >
-                    Choose Files
-                  </label>
-
-                  <span className="text-sm text-gray-500">
-                    {documents.length > 0
-                      ? documents.map((f) => f.name).join(", ")
-                      : "No file chosen"}
-                  </span>
-                </div>
-
-                <input
-                  id="claim-upload"
-                  type="file"
-                  multiple
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  className="hidden"
-                  disabled={isPending}
-                  onChange={(e) => {
-                    if (!e.target.files) return;
-
-                    const newFiles = Array.from(e.target.files);
-
-                    setDocuments((prev) => {
-                      const combined = [...prev, ...newFiles];
-
-                      return combined.filter(
-                        (file, index, self) =>
-                          index === self.findIndex((f) => f.name === file.name)
-                      );
-                    });
-                  }}
-                />
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* FOOTER */}
-        <div className="px-6 py-4 border-t flex gap-3">
-          <button
-            className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
-            onClick={onClose}
-            disabled={isPending}
-          >
-            Cancel
-          </button>
+        <div className="px-8 py-6 bg-white border-t flex justify-between items-center">
+          <div className="flex gap-4">
+            <button
+              disabled={isLoading}
+              className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              onClick={handleSave}
+            >
+              {isLoading ? <Spinner className="text-white" /> : "SAVE"}
+            </button>
+            <button
+              className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded flex items-center justify-center gap-2 shadow-lg transition-all"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              CANCEL
+            </button>
+          </div>
 
-          <button
-            disabled={isPending || loadingDropdowns}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 flex items-center justify-center gap-2 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleSave}
-          >
-            {isPending && <Spinner />}
-            {isPending ? "Saving..." : "Save Claim"}
-          </button>
+          <div className="flex gap-4">
+            {activeTab !== "basic" && (
+              <button
+                onClick={() => {
+                  if (activeTab === "documents") {
+                    setActiveTab("additional");
+                  } else if (activeTab === "additional") {
+                    setActiveTab("basic");
+                  }
+                }}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-red-400 hover:bg-red-500 rounded flex items-center gap-2 transition-all shadow"
+              >
+                Previous
+              </button>
+            )}
+            {activeTab !== "documents" && (
+              <button
+                onClick={() => {
+                  if (activeTab === "basic") {
+                    setActiveTab("additional");
+                  } else if (activeTab === "additional") {
+                    setActiveTab("documents");
+                  }
+                }}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-blue-400 hover:bg-blue-500 rounded flex items-center gap-2 transition-all shadow"
+              >
+                Next <ChevronRight size={18} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </>
   );
 };
 
-export default ClaimUpsertSheet;
-
 /*   HELPERS   */
+
+const Section = ({ icon, title, children }: any) => (
+  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-visible mb-4">
+    <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 text-white overflow-hidden rounded-t-lg">
+      <div className="p-1 bg-white/10 rounded">{icon}</div>
+      <h3 className="font-bold uppercase tracking-wider text-[10px] leading-none">{title}</h3>
+    </div>
+    <div className="p-4 space-y-3">{children}</div>
+  </section>
+);
+
+const DeathSection = ({ form, setForm, errors }: any) => (
+  <Section icon={<Activity size={16} />} title="Death information">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <Input label="Date of Death" required type="date" value={form.deathDetail.dateOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, dateOfDeath: v } })} error={errors.dateOfDeath} />
+      <Input label="Cause of Death" required placeholder="Enter cause" value={form.deathDetail.causeOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, causeOfDeath: v } })} error={errors.causeOfDeath} />
+      <Input label="Place of Death" required placeholder="Hospital/Residence" value={form.deathDetail.placeOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, placeOfDeath: v } })} error={errors.placeOfDeath} />
+      <div className="flex flex-col justify-center">
+        <div className="flex items-center gap-3 bg-red-50 p-3 rounded-lg border border-red-100">
+          <input type="checkbox" id="police" checked={form.deathDetail.isPoliceCase} onChange={(e) => setForm({ ...form, deathDetail: { ...form.deathDetail, isPoliceCase: e.target.checked } })} className="w-5 h-5 rounded border-red-200 text-red-600 focus:ring-red-500 cursor-pointer" />
+          <label htmlFor="police" className="text-[10px] font-bold text-red-900 uppercase tracking-wider">Is Police Case?</label>
+        </div>
+      </div>
+      <div className="lg:col-span-2">
+        <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Death Remarks</label>
+        <textarea 
+          value={form.deathDetail.remarks} 
+          onChange={(e) => setForm(p => ({ ...p, deathDetail: { ...p.deathDetail, remarks: e.target.value } }))}
+          placeholder="Additional notes"
+          className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all h-20"
+        />
+      </div>
+    </div>
+  </Section>
+);
 
 const Input = ({
   label,
   required,
   value,
-  onChange,
-  type = "text",
   error,
+  type = "text",
+  onChange,
+  placeholder,
+  min,
+  max,
+  disabled,
+  className = ""
 }: any) => (
-  <div>
-    <label className="text-sm font-medium">
+  <div className="space-y-1.5">
+    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <input
       type={type}
-      className={`input w-full ${error ? "border-red-500" : ""}`}
-      value={value || ""}
+      disabled={disabled}
+      min={min}
+      max={max}
+      placeholder={placeholder}
+      className={`
+        w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none
+        ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
+        ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
+        ${className}
+      `}
+      value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
     />
-    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
-  </div>
-);
-
-const Textarea = ({ label, value, onChange }: any) => (
-  <div>
-    <label className="text-sm font-medium">{label}</label>
-    <textarea
-      className="input w-full h-24 resize-none"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
+    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
   </div>
 );
 
@@ -549,45 +683,37 @@ const Select = ({
   options,
   value,
   onChange,
-  idKey = "id",
+  disabled = false,
+  valueKey = "id",
   labelKey = "name",
   error,
-  disabled = false,
-  loading = false,
 }: any) => (
-  <div>
-    <label className="text-sm font-medium">
+  <div className="space-y-1.5">
+    <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
-
-    <select
-      disabled={disabled || loading}
-      className={`input w-full ${
-        error ? "border-red-500" : ""
-      } disabled:bg-gray-100 disabled:cursor-not-allowed`}
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">
-        {loading
-          ? "Loading..."
-          : disabled
-          ? "Select customer first"
-          : `Select ${label}`}
-      </option>
-
-      {Array.isArray(options) &&
-        options.map((o: any) => (
-          <option
-            key={o[idKey]}
-            value={String(o[idKey])} 
-          >
-            {o[labelKey] || "—"}
+    <div className="relative">
+      <select
+        disabled={disabled}
+        className={`
+          w-full px-4 py-2.5 bg-white border rounded text-sm transition-all outline-none appearance-none
+          ${error ? "border-red-500 ring-2 ring-red-50" : "border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50"}
+          ${disabled ? "bg-slate-50 cursor-not-allowed opacity-60" : ""}
+        `}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">Select</option>
+        {options?.map((o: any) => (
+          <option key={o[valueKey]} value={o[valueKey]}>
+            {o[labelKey]}
           </option>
         ))}
-    </select>
-
-    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      </select>
+      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+    </div>
+    {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
   </div>
 );
 
+export default ClaimUpsertSheet;

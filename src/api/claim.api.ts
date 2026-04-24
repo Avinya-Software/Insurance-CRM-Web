@@ -7,35 +7,19 @@ import type {
 } from "../interfaces/claim.interface";
 
 /*   CREATE / UPDATE CLAIM   */
+export const upsertClaimApi = async (data: CreateClaimRequest) => {
+  const { documents, ...payload } = data;
+  const res = await api.post("/claim", payload);
+  return res.data;
+};
 
-export const upsertClaimApi = async (
-  data: CreateClaimRequest
-) => {
-  const formData = new FormData();
-
-  Object.entries(data).forEach(([key, value]) => {
-    if (value === undefined || value === null) return;
-
-    if (key === "documents" && Array.isArray(value)) {
-      value.forEach((file) =>
-        formData.append("Documents", file)
-      );
-    }
-    else {
-      formData.append(key, String(value));
-    }
+/*   UPLOAD CLAIM DOCUMENT   */
+export const uploadClaimDocumentApi = async (data: FormData) => {
+  const res = await api.post("/claim/documents", data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
   });
-
-  const res = await api.post<ClaimResponse>(
-    "/claim",
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-
   return res.data;
 };
 
