@@ -274,8 +274,8 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     }
 
     try {
-      await saveClaim(payload);
-      toast.success("Claim saved successfully");
+      const res = await saveClaim(payload);
+      toast.success(res.statusMessage || "Claim saved successfully");
       onSuccess();
       onClose();
     } catch (error: any) {

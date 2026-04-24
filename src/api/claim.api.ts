@@ -9,8 +9,13 @@ import type {
 /*   CREATE / UPDATE CLAIM   */
 export const upsertClaimApi = async (data: CreateClaimRequest) => {
   const { documents, ...payload } = data;
-  const res = await api.post("/Claim/create", payload);
-  return res.data;
+  if (payload.id) {
+    const res = await api.put("/Claim/update", payload);
+    return res.data;
+  } else {
+    const res = await api.post("/Claim/create", payload);
+    return res.data;
+  }
 };
 
 /*   UPLOAD CLAIM DOCUMENT   */
