@@ -190,10 +190,14 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
       {/*   CONFIRM DELETE   */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg w-[400px] p-6 shadow-lg">
+          <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Delete Claim</h3>
-              <button onClick={() => setConfirmDelete(null)}>
+              <h3 className="text-lg font-semibold">
+                Delete Claim
+              </h3>
+              <button
+                onClick={() => setConfirmDelete(null)}
+              >
                 <X size={18} />
               </button>
             </div>
@@ -201,7 +205,9 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
             <p className="text-sm text-gray-600 mb-6">
               Are you sure you want to delete this claim?
               <br />
-              <span className="text-red-600 font-medium">This action cannot be undone.</span>
+              <span className="text-red-600 font-medium">
+                This action cannot be undone.
+              </span>
             </p>
 
             <div className="flex justify-end gap-3">
@@ -211,6 +217,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
               >
                 Cancel
               </button>
+
               <button
                 onClick={handleDelete}
                 disabled={isPending}
