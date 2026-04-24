@@ -3,6 +3,7 @@ import {
   getClaimStatusApi,
   getClaimTypeApi,
   getClaimEventTypeApi,
+  getDeathTypeApi,
 } from "../../api/claim-master.api";
 
 export const useClaimStatus = () =>
@@ -23,6 +24,13 @@ export const useClaimEventType = () =>
   useQuery({
     queryKey: ["claim-event-type-dropdown"],
     queryFn: getClaimEventTypeApi,
+    initialData: [],
+  });
+
+export const useDeathType = () =>
+  useQuery({
+    queryKey: ["death-type-dropdown"],
+    queryFn: getDeathTypeApi,
     initialData: [],
   });
 

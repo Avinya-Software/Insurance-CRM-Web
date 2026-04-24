@@ -3,7 +3,7 @@ import { X, ShieldCheck, Activity, Car, FileText, UploadCloud, UserPlus, Plus, A
 import toast from "react-hot-toast";
 
 import { useCreateClaim } from "../../hooks/claim/useCreateClaim";
-import { useClaimStatus, useClaimType, useClaimEventType } from "../../hooks/claim/useClaimMasters";
+import { useClaimStatus, useClaimType, useClaimEventType, useDeathType } from "../../hooks/claim/useClaimMasters";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { usePoliciesByCustomer } from "../../hooks/policy/usePoliciesByCustomer";
 import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
@@ -38,6 +38,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const { data: claimStatuses, isLoading: statusLoading } = useClaimStatus();
   const { data: claimTypes, isLoading: typeLoading } = useClaimType();
   const { data: eventTypes, isLoading: eventLoading } = useClaimEventType();
+  const { data: deathTypes } = useDeathType();
 
   /*   FORM STATE   */
   const initialForm = {
@@ -89,6 +90,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
       },
     },
     deathDetail: {
+      id: null as string | null,
       dateOfDeath: "",
       deathType: 0,
       causeOfDeath: "",
@@ -473,7 +475,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                         <Input label="Medical Remarks" value={form.healthDetail.remarks} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, remarks: v } })} />
                       </div>
                     </Section>
-                    <DeathSection form={form} setForm={setForm} errors={errors} />
+                    <DeathSection form={form} setForm={setForm} errors={errors} deathTypes={deathTypes} />
                   </>
                 )}
                 {isOther && (
@@ -502,7 +504,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                         </div>
                       </div>
                     </Section>
-                    <DeathSection form={form} setForm={setForm} errors={errors} />
+                    <DeathSection form={form} setForm={setForm} errors={errors} deathTypes={deathTypes} />
                   </>
                 )}
               </div>
@@ -707,7 +709,7 @@ const Section = ({ icon, title, children }: any) => (
   </section>
 );
 
-const DeathSection = ({ form, setForm, errors }: any) => (
+const DeathSection = ({ form, setForm, errors, deathTypes }: any) => (
   <Section icon={<Activity size={16} />} title="Death information">
     <div className="flex flex-wrap items-start gap-6">
       <div className="flex-1 min-w-[180px]">
@@ -718,6 +720,14 @@ const DeathSection = ({ form, setForm, errors }: any) => (
       </div>
       <div className="flex-1 min-w-[180px]">
         <Input label="Place of Death" required placeholder="Place" value={form.deathDetail.placeOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, placeOfDeath: v } })} error={errors.placeOfDeath} />
+      </div>
+      <div className="flex-1 min-w-[180px]">
+        <Select 
+          label="Death Type" 
+          value={form.deathDetail.deathType} 
+          options={deathTypes} 
+          onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, deathType: Number(v) } })} 
+        />
       </div>
       <div className="flex-shrink-0 pt-7">
         <Toggle 
