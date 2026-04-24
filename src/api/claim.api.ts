@@ -9,7 +9,7 @@ import type {
 /*   CREATE / UPDATE CLAIM   */
 export const upsertClaimApi = async (data: CreateClaimRequest) => {
   const { documents, ...payload } = data;
-  const res = await api.post("/claim", payload);
+  const res = await api.post("/Claim/create", payload);
   return res.data;
 };
 

@@ -154,10 +154,39 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
         claimAmount: claim.claimAmount || 0,
         approvedAmount: claim.approvedAmount || 0,
         description: claim.description || "",
-        motorDetail: claim.motorDetail || initialForm.motorDetail,
-        healthDetail: claim.healthDetail || initialForm.healthDetail,
-        riskDetail: claim.riskDetail || initialForm.riskDetail,
-        deathDetail: claim.deathDetail || initialForm.deathDetail,
+        
+        motorDetail: claim.motor ? {
+          ...initialForm.motorDetail,
+          ...claim.motor,
+          survey: (claim.survey || claim.motor.survey) ? {
+            ...initialForm.motorDetail.survey,
+            ...(claim.survey || claim.motor.survey),
+            surveyDate: (claim.survey?.surveyDate || claim.motor.survey?.surveyDate) ? (claim.survey?.surveyDate || claim.motor.survey?.surveyDate).split("T")[0] : ""
+          } : initialForm.motorDetail.survey
+        } : initialForm.motorDetail,
+
+        healthDetail: claim.health ? {
+          ...initialForm.healthDetail,
+          ...claim.health,
+          admissionDate: claim.health.admissionDate ? claim.health.admissionDate.split("T")[0] : "",
+          dischargeDate: claim.health.dischargeDate ? claim.health.dischargeDate.split("T")[0] : ""
+        } : initialForm.healthDetail,
+
+        riskDetail: claim.risk ? {
+          ...initialForm.riskDetail,
+          ...claim.risk,
+          survey: (claim.survey || claim.risk.survey) ? {
+            ...initialForm.riskDetail.survey,
+            ...(claim.survey || claim.risk.survey),
+            surveyDate: (claim.survey?.surveyDate || claim.risk.survey?.surveyDate) ? (claim.survey?.surveyDate || claim.risk.survey?.surveyDate).split("T")[0] : ""
+          } : initialForm.riskDetail.survey
+        } : initialForm.riskDetail,
+
+        deathDetail: claim.death ? {
+          ...initialForm.deathDetail,
+          ...claim.death,
+          dateOfDeath: claim.death.dateOfDeath ? claim.death.dateOfDeath.split("T")[0] : ""
+        } : initialForm.deathDetail,
       });
     }
   }, [open, claim]);
@@ -193,10 +222,15 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
       if (form.riskDetail.lossAmount <= 0) e.lossAmount = "Estimated loss amount is required";
     }
 
-    // Death Validation
-    if (!form.deathDetail.dateOfDeath) e.dateOfDeath = "Date of death is required";
-    if (!form.deathDetail.causeOfDeath) e.causeOfDeath = "Cause of death is required";
-    if (!form.deathDetail.placeOfDeath) e.placeOfDeath = "Place of death is required";
+    // Death Validation (Only if "Death" event type is selected or any death field is partially filled)
+    const isDeathEvent = eventTypes?.find((t: any) => t.id === form.claimEventType)?.name?.toLowerCase() === "death";
+    const hasDeathInput = !!(form.deathDetail.dateOfDeath || form.deathDetail.causeOfDeath || form.deathDetail.placeOfDeath);
+
+    if (isDeathEvent || hasDeathInput) {
+      if (!form.deathDetail.dateOfDeath) e.dateOfDeath = "Date of death is required";
+      if (!form.deathDetail.causeOfDeath) e.causeOfDeath = "Cause of death is required";
+      if (!form.deathDetail.placeOfDeath) e.placeOfDeath = "Place of death is required";
+    }
 
     setErrors(e);
     if (Object.keys(e).length) {
@@ -209,13 +243,50 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   /*   SAVE   */
   const handleSave = async () => {
     if (!validate()) return;
+    
+    const payload = JSON.parse(JSON.stringify(form));
+    
+    const cleanDate = (d: any) => (d === "" ? null : d);
+    
+    payload.claimDate = cleanDate(payload.claimDate);
+    payload.incidentDate = cleanDate(payload.incidentDate);
+
+    if (form.divisionType === 1) {
+      payload.healthDetail.admissionDate = cleanDate(payload.healthDetail.admissionDate);
+      payload.healthDetail.dischargeDate = cleanDate(payload.healthDetail.dischargeDate);
+      payload.motorDetail = null;
+      payload.riskDetail = null;
+    } else if (form.divisionType === 5) {
+      payload.motorDetail.survey.surveyDate = cleanDate(payload.motorDetail.survey.surveyDate);
+      payload.healthDetail = null;
+      payload.riskDetail = null;
+    } else if (form.divisionType === 2) {
+      payload.riskDetail.survey.surveyDate = cleanDate(payload.riskDetail.survey.surveyDate);
+      payload.healthDetail = null;
+      payload.motorDetail = null;
+    }
+
+    const isDeathEvent = eventTypes?.find((t: any) => t.id === form.claimEventType)?.name?.toLowerCase() === "death";
+    if (isDeathEvent || payload.deathDetail.dateOfDeath) {
+      payload.deathDetail.dateOfDeath = cleanDate(payload.deathDetail.dateOfDeath);
+    } else {
+      payload.deathDetail = null;
+    }
+
     try {
-      await saveClaim(form);
+      await saveClaim(payload);
       toast.success("Claim saved successfully");
       onSuccess();
       onClose();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Something went wrong");
+      console.error("Save error:", error.response?.data);
+      const apiErrors = error.response?.data?.errors;
+      if (apiErrors) {
+        const firstError = Object.values(apiErrors)[0] as string[];
+        toast.error(firstError[0] || "Validation failed");
+      } else {
+        toast.error(error.response?.data?.title || "Something went wrong");
+      }
     }
   };
 
@@ -370,9 +441,13 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                           className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all h-20"
                         />
                       </div>
-                      <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 self-center">
-                        <input type="checkbox" id="fir" checked={form.motorDetail.isFIRFiled} onChange={(e) => setForm({ ...form, motorDetail: { ...form.motorDetail, isFIRFiled: e.target.checked } })} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
-                        <label htmlFor="fir" className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Is FIR Filed?</label>
+                      <div className="flex flex-col justify-center">
+                        <Toggle 
+                          label="Is FIR Filed?" 
+                          checked={form.motorDetail.isFIRFiled} 
+                          onChange={(v: boolean) => setForm({ ...form, motorDetail: { ...form.motorDetail, isFIRFiled: v } })} 
+                          activeColor="bg-blue-600"
+                        />
                       </div>
                     </div>
                     <div className="border-t bg-slate-50 -mx-4 -mb-4 px-4 py-4 space-y-4">
@@ -606,6 +681,22 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
 /*   HELPERS   */
 
+const Toggle = ({ label, checked, onChange, activeColor = "bg-blue-600" }: any) => (
+  <div 
+    className="flex items-center gap-4 py-2 cursor-pointer select-none group" 
+    onClick={() => onChange(!checked)}
+  >
+    <span className="text-[10px] font-bold text-slate-600 tracking-wider group-hover:text-blue-600 transition-colors uppercase">{label}</span>
+    <div
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ease-in-out ${checked ? activeColor : "bg-slate-200"}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-all duration-300 ease-in-out ${checked ? "translate-x-6" : "translate-x-1"}`}
+      />
+    </div>
+  </div>
+);
+
 const Section = ({ icon, title, children }: any) => (
   <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-visible mb-4">
     <div className="flex items-center gap-2 bg-slate-800 px-4 py-2 text-white overflow-hidden rounded-t-lg">
@@ -618,17 +709,25 @@ const Section = ({ icon, title, children }: any) => (
 
 const DeathSection = ({ form, setForm, errors }: any) => (
   <Section icon={<Activity size={16} />} title="Death information">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <Input label="Date of Death" required type="date" value={form.deathDetail.dateOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, dateOfDeath: v } })} error={errors.dateOfDeath} />
-      <Input label="Cause of Death" required placeholder="Enter cause" value={form.deathDetail.causeOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, causeOfDeath: v } })} error={errors.causeOfDeath} />
-      <Input label="Place of Death" required placeholder="Hospital/Residence" value={form.deathDetail.placeOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, placeOfDeath: v } })} error={errors.placeOfDeath} />
-      <div className="flex flex-col justify-center">
-        <div className="flex items-center gap-3 bg-red-50 p-3 rounded-lg border border-red-100">
-          <input type="checkbox" id="police" checked={form.deathDetail.isPoliceCase} onChange={(e) => setForm({ ...form, deathDetail: { ...form.deathDetail, isPoliceCase: e.target.checked } })} className="w-5 h-5 rounded border-red-200 text-red-600 focus:ring-red-500 cursor-pointer" />
-          <label htmlFor="police" className="text-[10px] font-bold text-red-900 uppercase tracking-wider">Is Police Case?</label>
-        </div>
+    <div className="flex flex-wrap items-start gap-6">
+      <div className="flex-1 min-w-[180px]">
+        <Input label="Date of Death" required type="date" value={form.deathDetail.dateOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, dateOfDeath: v } })} error={errors.dateOfDeath} />
       </div>
-      <div className="lg:col-span-2">
+      <div className="flex-1 min-w-[180px]">
+        <Input label="Cause of Death" required placeholder="Cause" value={form.deathDetail.causeOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, causeOfDeath: v } })} error={errors.causeOfDeath} />
+      </div>
+      <div className="flex-1 min-w-[180px]">
+        <Input label="Place of Death" required placeholder="Place" value={form.deathDetail.placeOfDeath} onChange={(v: any) => setForm({ ...form, deathDetail: { ...form.deathDetail, placeOfDeath: v } })} error={errors.placeOfDeath} />
+      </div>
+      <div className="flex-shrink-0 pt-7">
+        <Toggle 
+          label="Is Police Case?" 
+          checked={form.deathDetail.isPoliceCase} 
+          onChange={(v: boolean) => setForm({ ...form, deathDetail: { ...form.deathDetail, isPoliceCase: v } })} 
+          activeColor="bg-slate-700"
+        />
+      </div>
+      <div className="w-full">
         <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Death Remarks</label>
         <textarea 
           value={form.deathDetail.remarks} 
