@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, ShieldCheck, Activity, Car, FileText, UploadCloud, UserPlus, Plus, AlertCircle, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import { X, ShieldCheck, Activity, Car, FileText, UploadCloud, UserPlus, Plus, AlertCircle, Trash2, ChevronRight, ChevronDown, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { useCreateClaim } from "../../hooks/claim/useCreateClaim";
@@ -8,6 +8,8 @@ import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { usePoliciesByCustomer } from "../../hooks/policy/usePoliciesByCustomer";
 import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
 import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemberDropdown";
+import { useUploadCustomerDocument } from "../../hooks/customer/useUploadCustomerDocument";
+import { useKycFileActions } from "../../hooks/customer/useKycFileActions";
 import Spinner from "../common/Spinner";
 import SearchableComboBox from "../common/SearchableComboBox";
 
@@ -39,6 +41,18 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const { data: claimTypes, isLoading: typeLoading } = useClaimType();
   const { data: eventTypes, isLoading: eventLoading } = useClaimEventType();
   const { data: deathTypes } = useDeathType();
+
+  const { mutateAsync: uploadDocument, isPending: isUploading } = useUploadCustomerDocument();
+  const [existingDocuments, setExistingDocuments] = useState<any[]>([]);
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<any>(null);
+
+  const { preview, download, remove } = useKycFileActions(
+    (deletedId: string) => {
+      setExistingDocuments((prev) =>
+        prev.filter((f) => f.id !== deletedId)
+      );
+    }
+  );
 
   /*   FORM STATE   */
   const initialForm = {
@@ -101,6 +115,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   };
 
   const [form, setForm] = useState(initialForm);
+  const [originalForm, setOriginalForm] = useState<any>(null);
   const [files, setFiles] = useState<{ file: File; label: string }[]>([]);
   const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -133,6 +148,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   useEffect(() => {
     if (!open) {
       setForm(initialForm);
+      setOriginalForm(null);
       setFiles([]);
       setErrors({});
       setActiveTab("basic");
@@ -140,7 +156,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     }
 
     if (claim) {
-      setForm({
+      const mappedForm = {
         ...initialForm,
         id: claim.id || claim.claimId || null,
         policyId: claim.policyId || "",
@@ -183,13 +199,22 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
             surveyDate: (claim.survey?.surveyDate || claim.risk.survey?.surveyDate) ? (claim.survey?.surveyDate || claim.risk.survey?.surveyDate).split("T")[0] : ""
           } : initialForm.riskDetail.survey
         } : initialForm.riskDetail,
-
         deathDetail: claim.death ? {
           ...initialForm.deathDetail,
           ...claim.death,
-          dateOfDeath: claim.death.dateOfDeath ? claim.death.dateOfDeath.split("T")[0] : ""
+          dateOfDeath: claim.death.dateOfDeath ? claim.death.dateOfDeath.split("T")[0] : "",
+          isPoliceCase: claim.death.isPoliceCase || false,
+          remarks: claim.death.remarks || ""
         } : initialForm.deathDetail,
-      });
+      };
+      setForm(mappedForm);
+      setOriginalForm(mappedForm);
+      setExistingDocuments(claim.claimFiles || []);
+    } else {
+      setForm(initialForm);
+      setOriginalForm(null);
+      setFiles([]);
+      setExistingDocuments([]);
     }
   }, [open, claim]);
 
@@ -243,41 +268,101 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   };
 
   /*   SAVE   */
+  const checkClaimChanges = (current: any, original: any) => {
+    if (!original) return true;
+    
+    // Check top level first
+    const mainFields = [
+      "policyId", "customerId", "memberId", "divisionType", "claimNumber",
+      "claimDate", "incidentDate", "claimEventType", "claimType",
+      "claimStatus", "claimAmount", "approvedAmount", "description"
+    ];
+    
+    for (const field of mainFields) {
+      if (current[field] !== original[field]) return true;
+    }
+
+    // Check nested details if applicable
+    if (JSON.stringify(current.motorDetail) !== JSON.stringify(original.motorDetail)) return true;
+    if (JSON.stringify(current.healthDetail) !== JSON.stringify(original.healthDetail)) return true;
+    if (JSON.stringify(current.riskDetail) !== JSON.stringify(original.riskDetail)) return true;
+    if (JSON.stringify(current.deathDetail) !== JSON.stringify(original.deathDetail)) return true;
+
+    return false;
+  };
+
   const handleSave = async () => {
     if (!validate()) return;
     
-    const payload = JSON.parse(JSON.stringify(form));
-    
-    const cleanDate = (d: any) => (d === "" ? null : d);
-    
-    payload.claimDate = cleanDate(payload.claimDate);
-    payload.incidentDate = cleanDate(payload.incidentDate);
-
-    if (form.divisionType === 1) {
-      payload.healthDetail.admissionDate = cleanDate(payload.healthDetail.admissionDate);
-      payload.healthDetail.dischargeDate = cleanDate(payload.healthDetail.dischargeDate);
-      payload.motorDetail = null;
-      payload.riskDetail = null;
-    } else if (form.divisionType === 5) {
-      payload.motorDetail.survey.surveyDate = cleanDate(payload.motorDetail.survey.surveyDate);
-      payload.healthDetail = null;
-      payload.riskDetail = null;
-    } else if (form.divisionType === 2) {
-      payload.riskDetail.survey.surveyDate = cleanDate(payload.riskDetail.survey.surveyDate);
-      payload.healthDetail = null;
-      payload.motorDetail = null;
-    }
-
-    const isDeathEvent = eventTypes?.find((t: any) => t.id === form.claimEventType)?.name?.toLowerCase() === "death";
-    if (isDeathEvent || payload.deathDetail.dateOfDeath) {
-      payload.deathDetail.dateOfDeath = cleanDate(payload.deathDetail.dateOfDeath);
-    } else {
-      payload.deathDetail = null;
-    }
-
     try {
-      const res = await saveClaim(payload);
-      toast.success(res.statusMessage || "Claim saved successfully");
+      let claimId = form.id;
+      let claimUpdated = false;
+
+      const hasClaimChanged = originalForm
+        ? checkClaimChanges(form, originalForm)
+        : true;
+
+      if (hasClaimChanged) {
+        const payload = JSON.parse(JSON.stringify(form));
+        
+        const cleanDate = (d: any) => (d === "" ? null : d);
+        
+        payload.claimDate = cleanDate(payload.claimDate);
+        payload.incidentDate = cleanDate(payload.incidentDate);
+
+        if (form.divisionType === 1) {
+          payload.healthDetail.admissionDate = cleanDate(payload.healthDetail.admissionDate);
+          payload.healthDetail.dischargeDate = cleanDate(payload.healthDetail.dischargeDate);
+          payload.motorDetail = null;
+          payload.riskDetail = null;
+        } else if (form.divisionType === 5) {
+          payload.motorDetail.survey.surveyDate = cleanDate(payload.motorDetail.survey.surveyDate);
+          payload.healthDetail = null;
+          payload.riskDetail = null;
+        } else if (form.divisionType === 2) {
+          payload.riskDetail.survey.surveyDate = cleanDate(payload.riskDetail.survey.surveyDate);
+          payload.healthDetail = null;
+          payload.motorDetail = null;
+        }
+
+        const isDeathEvent = eventTypes?.find((t: any) => t.id === form.claimEventType)?.name?.toLowerCase() === "death";
+        if (isDeathEvent || payload.deathDetail.dateOfDeath) {
+          payload.deathDetail.dateOfDeath = cleanDate(payload.deathDetail.dateOfDeath);
+        } else {
+          payload.deathDetail = null;
+        }
+
+        const res = await saveClaim(payload);
+        claimId = res?.claimId || res?.data?.claimId || form.id;
+        claimUpdated = true;
+
+        if (res?.statusMessage) {
+          toast.success(res.statusMessage);
+        } else {
+          toast.success(form.id ? "Claim updated successfully" : "Claim created successfully");
+        }
+      }
+
+      if (files.length > 0 && claimId) {
+        await Promise.all(
+          files.map((item) => {
+            const formData = new FormData();
+            formData.append("Id", claimId); 
+            formData.append("Type", "4");  
+            formData.append("DocumentType", item.label);
+            formData.append("PolicyType", "0"); 
+            formData.append("Files", item.file);
+            return uploadDocument(formData).then((docRes: any) => {
+              // Only show document success toast if the claim details weren't updated
+              if (!claimUpdated && docRes?.statusMessage) {
+                toast.success(docRes.statusMessage);
+              }
+              return docRes;
+            });
+          })
+        );
+      }
+
       onSuccess();
       onClose();
     } catch (error: any) {
@@ -512,18 +597,19 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
             {activeTab === "documents" && (
               <div className="space-y-8">
-                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
-                  <AlertCircle size={16} className="text-amber-600 shrink-0" />
-                  <p className="text-xs text-amber-700 leading-relaxed font-medium">Please note that document upload is currently handled separately.</p>
-                </div>
+                {!claim && (
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
+                    <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                    <p className="text-xs text-amber-700 leading-relaxed font-medium">Documents will be uploaded automatically when you click <strong>SAVE</strong>.</p>
+                  </div>
+                )}
 
-                {/* UPLOAD SECTION UI ONLY */}
+                {/* UPLOAD SECTION */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     <div className="lg:col-span-1 space-y-6">
                       <Select
                         label="Select Document"
-                        required
                         value={selectedDocName}
                         options={documentOptions}
                         onChange={(v: string) => setSelectedDocName(v)}
@@ -548,14 +634,14 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                           multiple
                           accept=".pdf,.jpg,.jpeg,.png"
                           className="hidden"
-                          disabled={!selectedDocName}
+                          disabled={!selectedDocName || isUploading}
                           onChange={handleFileChange}     
                         />
                         <label 
                           htmlFor="kyc-upload"
                           className={`
                             flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl transition-all group
-                            ${!selectedDocName
+                            ${!selectedDocName || isUploading
                               ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-50'
                               : 'bg-white border-blue-200 hover:bg-blue-50/50 hover:border-blue-400 shadow-sm cursor-pointer'
                             }
@@ -578,7 +664,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                   </div>
                 </div>
 
-                {/* FILE LISTS UI ONLY */}
+                {/* FILE LISTS */}
                 <div className="space-y-8">
                   {files.length > 0 && (
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -620,6 +706,40 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                       </div>
                     </div>
                   )}
+
+                  {existingDocuments.length > 0 && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                      <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
+                        <ShieldCheck size={18} className="text-emerald-600" /> Existing Documents
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {existingDocuments.map((file) => (
+                          <div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
+                                <FileText size={16} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.type}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button onClick={() => preview(file.url)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                <Eye size={16} />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDeleteDoc(file)}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -630,16 +750,16 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
         <div className="px-8 py-6 bg-white border-t flex justify-between items-center">
           <div className="flex gap-4">
             <button
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
               className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               onClick={handleSave}
             >
-              {isLoading ? <Spinner className="text-white" /> : "SAVE"}
+              {isLoading || isUploading ? <Spinner className="text-white" /> : "SAVE"}
             </button>
             <button
               className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded flex items-center justify-center gap-2 shadow-lg transition-all"
               onClick={onClose}
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
             >
               CANCEL
             </button>
@@ -677,6 +797,73 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
           </div>
         </div>
       </div>
+
+      {/* CONFIRM DELETE DOCUMENT MODAL */}
+      {confirmDeleteDoc && (
+        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-50 text-red-600 rounded-xl">
+                    <Trash2 size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">Delete Document</h3>
+                </div>
+                <button 
+                  onClick={() => setConfirmDeleteDoc(null)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-slate-600 leading-relaxed">
+                  Are you sure you want to delete <span className="font-bold text-slate-800">"{confirmDeleteDoc.fileName}"</span>? 
+                  This action will permanently remove the file from this claim record.
+                </p>
+                
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
+                  <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 font-medium">
+                    This file will be deleted immediately and cannot be recovered.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeleteDoc(null)}
+                className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    // Adapt based on user's instruction to use all document references from CustomerUpsertSheet
+                    // But for Claims, we might need a claimId?
+                    // CustomerUpsertSheet uses (customer.customerId, docId)
+                    // If the backend is unified, maybe it's (form.customerId, docId)?
+                    // Actually, the user said "use all document refrence in CustomerUpsertSheet.tsx file only"
+                   
+                    await remove(form.customerId, confirmDeleteDoc.id);
+                    setConfirmDeleteDoc(null);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center gap-2"
+              >
+                <Trash2 size={16} />
+                Delete Document
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

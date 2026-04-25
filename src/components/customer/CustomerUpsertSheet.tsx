@@ -455,7 +455,13 @@ const CustomerUpsertSheet = ({
             formData.append("Type", "1");
             formData.append("DocumentType", item.label);
             formData.append("Files", item.file);
-            return uploadDocument(formData); 
+            return uploadDocument(formData).then((res: any) => {
+              // Only show document success toast if the customer details weren't updated
+              if (!customerUpdated && res?.statusMessage) {
+                toast.success(res.statusMessage);
+              }
+              return res;
+            }); 
           })
         );
   
@@ -872,7 +878,6 @@ const CustomerUpsertSheet = ({
                     <div className="lg:col-span-1 space-y-6">
                       <Select
                         label="Select Document"
-                        required
                         value={selectedDocName}
                         options={documentOptions}
                         onChange={(v: string) => setSelectedDocName(v)}
@@ -994,9 +999,6 @@ const CustomerUpsertSheet = ({
                             <div className="flex gap-1">
                               <button onClick={() => preview(file.url)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
                                 <Eye size={16} />
-                              </button>
-                              <button onClick={() => download(file.url, file.fileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                                <Download size={16} />
                               </button>
                                <button 
                                 onClick={() => setConfirmDeleteDoc(file)}
