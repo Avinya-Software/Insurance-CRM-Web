@@ -8,12 +8,15 @@ import { useCompanyList } from "../../hooks/policy/useCompany";
 import { useCompanyWiseProduct } from "../../hooks/policy/useProducts";
 import { usePolicyStatusesDropdown } from "../../hooks/policy/usePolicyStatusesDropdown";
 import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
-import { useAgencyDropdown } from "../../hooks/LifePolicy/useAgencyDropdown";
+import { useBrokerDropdown } from "../../hooks/broker/useBrokerDropdown";
 import { useUserDropdown } from "../../hooks/LifePolicy/useUserDropdown";
 import PolicyFundInfo from "./PolicyFundInfo";
 import { useUpsertLifePolicy } from "../../hooks/LifePolicy/useUpsertLifePolicy";
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 import { usePolicyDocumentActions } from "../../hooks/LifePolicy/usePolicyDocumentActions";
+import { usePaymentMethodDropdown } from "../../hooks/payment/usePaymentMethodDropdown";
+import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
+import { usePolicyModeDropdown } from "../../hooks/policy/usePolicyModeDropdown";
 
 
 interface Props {
@@ -78,7 +81,7 @@ const PolicyUpsertSheet = ({
     relationWithLa: "",
     policyNumber: "",
     baName: "",
-    agencyName: "",
+    brokerId: undefined as number | undefined,
     insurerId: "",
     productId: "",
     premiumMode: "",
@@ -100,11 +103,12 @@ const PolicyUpsertSheet = ({
     annualPremium: 0,
     sumAssured: "",
     ecs: "",
-    paymentBy: "",
+    paymentBy: undefined as number | undefined,
     payReferenceNo: "",
     paymentDate: "",
     mandateExpDate: "",
     accountNo: "",
+    bank: undefined as number | undefined,
     bankName: "",
     branchName: "",
     remarks: ""
@@ -122,13 +126,18 @@ const PolicyUpsertSheet = ({
     1
   );
 
-  const getMultiplier = (mode: string) => {
-    switch (mode) {
-      case "Y": return 1;
-      case "H": return 2;
-      case "Q": return 4;
-      case "M": return 12;
-      case "S": return 1;
+  const { data: premiumModes } = usePolicyModeDropdown(1);
+
+  const getMultiplier = (modeId: string) => {
+    const mode = (premiumModes || []).find((m: any) => m.id === modeId);
+    if (!mode) return 1;
+    
+    switch (mode.name) {
+      case "Yearly": return 1;
+      case "Half Yearly": return 2;
+      case "Quarterly": return 4;
+      case "Monthly": return 12;
+      case "Single": return 1;
       default: return 1;
     }
   };
@@ -164,16 +173,16 @@ const PolicyUpsertSheet = ({
   const { data: statusTypes, isLoading: stLoading } = usePolicyStatusesDropdown(1);
   const loadingDropdowns = sLoading || stLoading;
 
-  // ── FIX: use isPending from the upload hook directly (same pattern as CustomerSheet) ──
   const { mutateAsync: uploadPolicyDocument, isPending: isUploading } = useUploadPolicyDocument();
 
-  // ── FIX: combined loading flag — spinner shows during policy save OR document upload ──
   const isLoading = isPending || isUploading;
 
   const isEditMode = !!policy;
   const { data: customers } = useCustomerDropdown();
-  const { data: agencies } = useAgencyDropdown();
+  const { data: brokers } = useBrokerDropdown();
   const { data: users } = useUserDropdown();
+  const { data: paymentMethods } = usePaymentMethodDropdown();
+  const { data: branches } = useBranchDropdown();
 
   /*   PREFILL   */
   useEffect(() => {
@@ -203,7 +212,7 @@ const PolicyUpsertSheet = ({
         relationWithLa: policy.relationWithLA || "",
         policyNumber: policy.policyNumber || "",
         baName: policy.baId || "",
-        agencyName: policy.agencyId || "",
+        brokerId: policy.brokerId || undefined,
         insurerId: policy.companyId || "",
         productId: policy.productId || "",
         premiumMode: policy.premiumMode || "",
@@ -224,11 +233,12 @@ const PolicyUpsertSheet = ({
         finalInstallmentPremium: policy.premiumDetails?.finalInstallmentPremium || 0,
         annualPremium: policy.premiumDetails?.annualPremium || 0,
         ecs: policy.paymentDetails?.ecs || "",
-        paymentBy: policy.paymentDetails?.paymentBy || "",
+        paymentBy: policy.paymentDetails?.paymentBy || undefined,
         payReferenceNo: policy.paymentDetails?.paymentRefNo || "",
         paymentDate: policy.paymentDetails?.paymentDate?.split("T")[0] || "",
         mandateExpDate: policy.paymentDetails?.mandateExpDate?.split("T")[0] || "",
         accountNo: policy.paymentDetails?.accountNo || "",
+        bank: policy.paymentDetails?.bank || undefined,
         bankName: policy.paymentDetails?.bankName || "",
         branchName: policy.paymentDetails?.branchName || "",
         remarks: policy.paymentDetails?.remarks || "",
@@ -288,10 +298,12 @@ const PolicyUpsertSheet = ({
     const e: Record<string, string> = {};
     if (!form.insuredName?.trim()) e.insuredName = "Life Assured is required";
     if (!form.policyNumber?.trim()) e.policyNumber = "Policy number is required";
-    if (!form.agencyName?.trim()) e.agencyName = "Agency name is required";
+    if (!form.brokerId) e.brokerId = "Broker is required";
     if (!form.insurerId) e.insurerId = "Company name is required";
     if (!form.productId) e.productId = "Product name is required";
     if (!form.startDate) e.startDate = "Policy start date is required";
+    if (!form.premiumMode) e.premiumMode = "Premium mode is required";
+    if (!form.policyTerm) e.policyTerm = "Policy term is required";
     if (!form.sumAssured) e.sumAssured = "Sum Assured is required";
 
     setErrors(e);
@@ -303,22 +315,29 @@ const PolicyUpsertSheet = ({
   };
 
   useEffect(() => {
-    if (!form.startDate || !form.premiumMode) return;
+    if (!form.startDate || !form.premiumMode || !premiumModes) return;
     const nextMonths = getMultiplier(form.premiumMode);
+    const mode = premiumModes.find((m: any) => m.id === form.premiumMode);
+    if (!mode) return;
+
     let next = "";
     let grace = "";
-    if (form.premiumMode !== "S") {
+    if (mode.name !== "Single") {
       next = addMonths(form.startDate, nextMonths);
-      if (form.premiumMode === "Q") {
+      if (mode.name === "Quarterly") {
         grace = next;
       } else {
         grace = addMonths(next, 1);
       }
     }
+
     const maturity =
-      form.policyTerm && form.startDate
-        ? addYears(form.startDate, Number(form.policyTerm))
-        : "";
+      mode.name === "Single"
+        ? form.startDate
+        : (form.policyTerm && form.startDate
+            ? addYears(form.startDate, Number(form.policyTerm))
+            : "");
+
     setForm((prev: any) => ({
       ...prev,
       completionDate: prev.completionDate || form.startDate,
@@ -326,24 +345,29 @@ const PolicyUpsertSheet = ({
       graceDate: grace,
       maturityDate: maturity,
     }));
-  }, [form.startDate, form.premiumMode, form.policyTerm]);
+  }, [form.startDate, form.premiumMode, form.policyTerm, premiumModes]);
 
   useEffect(() => {
-    if (!form.nextPremiumDueDate || form.premiumMode === "S") return;
+    if (!form.nextPremiumDueDate || !premiumModes) return;
+    const mode = premiumModes.find((m: any) => m.id === form.premiumMode);
+    if (!mode || mode.name === "Single") return;
+
     let grace = "";
-    if (form.premiumMode === "Q") {
+    if (mode.name === "Quarterly") {
       grace = form.nextPremiumDueDate;
     } else {
       grace = addMonths(form.nextPremiumDueDate, 1);
     }
     setForm((prev: any) => ({ ...prev, graceDate: grace }));
-  }, [form.nextPremiumDueDate]);
+  }, [form.nextPremiumDueDate, form.premiumMode, premiumModes]);
 
   useEffect(() => {
-    if (form.premiumMode === "S" && form.completionDate) {
+    if (!premiumModes) return;
+    const mode = premiumModes.find((m: any) => m.id === form.premiumMode);
+    if (mode?.name === "Single" && form.completionDate) {
       setForm((prev: any) => ({ ...prev, maturityDate: prev.completionDate }));
     }
-  }, [form.completionDate]);
+  }, [form.completionDate, form.premiumMode, premiumModes]);
 
   useEffect(() => {
     const installment = Number(form.installmentPremium) || 0;
@@ -379,12 +403,13 @@ const PolicyUpsertSheet = ({
       finalInstallmentPremium: Math.round(finalInstallment),
       annualPremium: Math.round(annual)
     }));
-  }, [form.installmentPremium, form.gstPerc, form.premiumIncludingGst, form.premiumMode]);
+  }, [form.installmentPremium, form.gstPerc, form.premiumIncludingGst, form.premiumMode, premiumModes]);
   
   useEffect(() => {
-    if (!form.policyTerm) return;
+    if (!form.policyTerm || !premiumModes) return;
+    const mode = premiumModes.find((m: any) => m.id === form.premiumMode);
     setForm((prev: any) => {
-      if (form.premiumMode === "S") {
+      if (mode?.name === "Single") {
         if (prev.ppt === "1") return prev;
         return { ...prev, ppt: "1" };
       }
@@ -393,7 +418,7 @@ const PolicyUpsertSheet = ({
       }
       return prev;
     });
-  }, [form.policyTerm, form.premiumMode]);
+  }, [form.policyTerm, form.premiumMode, premiumModes]);
 
   const mapCashflows = (cashflows: any[]) =>
     (cashflows || []).map((c) => {
@@ -444,7 +469,7 @@ const PolicyUpsertSheet = ({
     const fieldsToCheck = [
       "customerId", "policyStatusId", "policyTypeId", "dobOfLa", "age",
       "proposerName", "nomineeName", "nomineeType", "relationWithLa",
-      "policyNumber", "baName", "agencyName", "insurerId", "productId",
+      "policyNumber", "baName", "brokerId", "insurerId", "productId",
       "premiumMode", "policyTerm", "ppt", "startDate", "completionDate",
       "nextPremiumDueDate", "graceDate", "maturityDate", "objective",
       "sumAssured", "installmentPremium", "premiumIncludingGst", "basicPremium",
@@ -480,7 +505,7 @@ const PolicyUpsertSheet = ({
           relationWithLA: form.relationWithLa || "",
           policyNumber: form.policyNumber,
           baId: form.baName || null,
-          agencyId: form.agencyName || null,
+          brokerId: Number(form.brokerId) || 0,
           companyId: form.insurerId || null,
           productId: Number(form.productId) || 0,
           premiumMode: form.premiumMode || "",
@@ -504,11 +529,12 @@ const PolicyUpsertSheet = ({
           },
           payment: {
             ecs: form.ecs || "",
-            paymentBy: form.paymentBy || "",
+            paymentBy: Number(form.paymentBy) || 0,
             paymentRefNo: form.payReferenceNo || "",
             paymentDate: toIso(form.paymentDate),
             mandateExpDate: toIso(form.mandateExpDate),
             accountNo: form.accountNo || "",
+            bank: Number(form.bank) || 0,
             bankName: form.bankName || "",
             branchName: form.branchName || "",
             remarks: form.remarks || "",
@@ -527,12 +553,11 @@ const PolicyUpsertSheet = ({
         }
       }
   
-      // ── FIX: no manual setIsUploading — isUploading comes from hook isPending ──
       if (files.length > 0 && policyId) {
         await Promise.all(
           files.map((f) => {
             const formData = new FormData();
-            formData.append("Id", policyId);
+            formData.append("Id", policyId!);
             formData.append("Type", "2");
             formData.append("PolicyType", "1");
             formData.append("DocumentType", f.label);
@@ -781,18 +806,18 @@ const PolicyUpsertSheet = ({
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
                           <SearchableComboBox
-                            label="Agency Name"
+                            label="Broker"
                             required
-                            error={errors.agencyName}
-                            items={(agencies || []).map((a: any) => ({
-                              value: a.id,
-                              label: a.agencyName
+                            error={errors.brokerId}
+                            items={(brokers || []).map((b: any) => ({
+                              value: String(b.id),
+                              label: b.name
                             }))}
-                            value={form.agencyName}
+                            value={form.brokerId ? String(form.brokerId) : undefined}
                             onSelect={(item: any) =>
                               setForm((p: any) => ({
                                 ...p,
-                                agencyName: item?.value || ""
+                                brokerId: item?.value ? Number(item?.value) : undefined
                               }))
                             }
                           />
@@ -837,38 +862,44 @@ const PolicyUpsertSheet = ({
                       {/* ROW 5 */}
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-4">
-                          <Select
+                          <SearchableComboBox
                             label="Premium Mode"
+                            required
+                            error={errors.premiumMode}
+                            items={(premiumModes || []).map((m: any) => ({
+                              value: m.id,
+                              label: m.name
+                            }))}
                             value={form.premiumMode}
-                            options={[
-                              { id: "Y", name: "Yearly" },
-                              { id: "H", name: "Half Yearly" },
-                              { id: "Q", name: "Quarterly" },
-                              { id: "M", name: "Monthly" },
-                              { id: "S", name: "Single" },
-                            ]}
-                            onChange={(v: any) =>
+                            onSelect={(item: any) => {
+                              const isSingle = item?.label === "Single";
                               setForm((prev: any) => ({
                                 ...prev,
-                                premiumMode: v,
-                                ppt: v === "S" ? "1" : prev.policyTerm
-                              }))
-                            }
+                                premiumMode: item?.value || "",
+                                ppt: isSingle ? "1" : prev.policyTerm
+                              }));
+                            }}
                           />
                         </div>
                         <div className="md:col-span-2">
                           <Input
                             label="Policy Term"
+                            required
+                            error={errors.policyTerm}
                             value={form.policyTerm}
                             placeholder="Policy Term"
                             max={999}
                             onChange={(v: any) => {
                               const value = v.slice(0, 3);
-                              setForm((p: any) => ({
-                                ...p,
-                                policyTerm: value,
-                                ppt: p.premiumMode === "S" ? "1" : value
-                              }));
+                              setForm((p: any) => {
+                                const mode = (premiumModes || []).find((m: any) => m.id === p.premiumMode);
+                                const isSingleMode = mode?.name === "Single";
+                                return {
+                                  ...p,
+                                  policyTerm: value,
+                                  ppt: isSingleMode ? "1" : value
+                                };
+                              });
                             }}
                           />
                         </div>
@@ -877,9 +908,10 @@ const PolicyUpsertSheet = ({
                             label="PPT"
                             value={form.ppt}
                             placeholder="PPT"
-                            disabled={form.premiumMode === "S"}
+                            disabled={(premiumModes || []).find((m: any) => m.id === form.premiumMode)?.name === "Single"}
                             onChange={(v: any) => {
-                              if (form.premiumMode === "S") return;
+                              const mode = (premiumModes || []).find((m: any) => m.id === form.premiumMode);
+                              if (mode?.name === "Single") return;
                               const value = v.slice(0, 3);
                               if (Number(value) > Number(form.policyTerm)) {
                                 toast.error("Term should be greater than or equal to PPT.");
@@ -916,7 +948,7 @@ const PolicyUpsertSheet = ({
                             type="date"
                             label="Next Premium Due Date"
                             value={form.nextPremiumDueDate}
-                            disabled={form.premiumMode === "S"}
+                            disabled={(premiumModes || []).find((m: any) => m.id === form.premiumMode)?.name === "Single"}
                             onChange={(v: any) => setForm((p: any) => ({ ...p, nextPremiumDueDate: v }))}
                           />
                         </div>
@@ -925,7 +957,7 @@ const PolicyUpsertSheet = ({
                             type="date"
                             label="Grace Date"
                             value={form.graceDate}
-                            disabled={form.premiumMode === "S"}
+                            disabled={(premiumModes || []).find((m: any) => m.id === form.premiumMode)?.name === "Single"}
                             onChange={(v: any) => setForm(p => ({ ...p, graceDate: v }))}
                           />
                         </div>
@@ -1035,17 +1067,13 @@ const PolicyUpsertSheet = ({
                         <div className="md:col-span-3">
                           <SearchableComboBox
                             label="PAYMENT BY"
-                            value={form.paymentBy}
-                            items={[
-                              { label: "Cash", value: "Cash" },
-                              { label: "Cheque", value: "Cheque" },
-                              { label: "Credit Card", value: "Credit Card" },
-                              { label: "Demand Draft", value: "Demand Draft" },
-                              { label: "ECS", value: "ECS" },
-                              { label: "Online", value: "Online" },
-                            ]}
+                            value={form.paymentBy ? String(form.paymentBy) : undefined}
+                            items={(paymentMethods || []).map((pm: any) => ({
+                              value: String(pm.id),
+                              label: pm.name
+                            }))}
                             onSelect={(item: any) =>
-                              setForm((prev: any) => ({ ...prev, paymentBy: item?.value || "" }))
+                              setForm((prev: any) => ({ ...prev, paymentBy: item?.value ? Number(item.value) : undefined }))
                             }
                           />
                         </div>
@@ -1064,7 +1092,17 @@ const PolicyUpsertSheet = ({
                           <Input label="Account No" value={form.accountNo} placeholder="Account No" onChange={(v: any) => setForm(p => ({ ...p, accountNo: v }))} />
                         </div>
                         <div className="md:col-span-3">
-                          <Input label="Bank Name" value={form.bankName} placeholder="Bank Name" onChange={(v: any) => setForm(p => ({ ...p, bankName: v }))} />
+                          <SearchableComboBox
+                            label="Bank Name"
+                            value={form.bank ? String(form.bank) : undefined}
+                            items={(branches || []).map((b: any) => ({
+                              value: String(b.id),
+                              label: b.name
+                            }))}
+                            onSelect={(item: any) =>
+                              setForm((p: any) => ({ ...p, bank: item?.value ? Number(item.value) : undefined, bankName: item?.label || "" }))
+                            }
+                          />
                         </div>
                         <div className="md:col-span-3">
                           <Input label="Branch Name" value={form.branchName} placeholder="Branch Name" onChange={(v: any) => setForm(p => ({ ...p, branchName: v }))} />

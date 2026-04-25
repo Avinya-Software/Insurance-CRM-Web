@@ -7,35 +7,24 @@ import type {
 } from "../interfaces/claim.interface";
 
 /*   CREATE / UPDATE CLAIM   */
+export const upsertClaimApi = async (data: CreateClaimRequest) => {
+  const { documents, ...payload } = data;
+  if (payload.id) {
+    const res = await api.put("/Claim/update", payload);
+    return res.data;
+  } else {
+    const res = await api.post("/Claim/create", payload);
+    return res.data;
+  }
+};
 
-export const upsertClaimApi = async (
-  data: CreateClaimRequest
-) => {
-  const formData = new FormData();
-
-  Object.entries(data).forEach(([key, value]) => {
-    if (value === undefined || value === null) return;
-
-    if (key === "documents" && Array.isArray(value)) {
-      value.forEach((file) =>
-        formData.append("Documents", file)
-      );
-    }
-    else {
-      formData.append(key, String(value));
-    }
+/*   UPLOAD CLAIM DOCUMENT   */
+export const uploadClaimDocumentApi = async (data: FormData) => {
+  const res = await api.post("/claim/documents", data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
   });
-
-  const res = await api.post<ClaimResponse>(
-    "/claim",
-    formData,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    }
-  );
-
   return res.data;
 };
 
@@ -48,7 +37,7 @@ export const getClaimsApi = async (
     statusCode: number;
     statusMessage: string;
     data: PaginatedClaims;
-  }>("/claim", { params });
+  }>("/Claim/filter", { params });
 
   return res.data.data; 
 };
@@ -90,7 +79,7 @@ export const deleteClaimApi = async (
   claimId: string
 ) => {
   const res = await api.delete(
-    `/claim/${claimId}`
+    `/Claim/delete/${claimId}`
   );
   return res.data;
 };

@@ -1,21 +1,146 @@
-export interface CreateClaimRequest {
-  claimId?: string;
+export interface ClaimFilters {
+  pageNumber: number;
+  pageSize: number;
+  search?: string;
+  divisionType?: number;
+  customerId?: string;
+  claimStatus?: number;
+  claimType?: number;
+}
 
+export interface Claim {
+  claimId: string;
+  claimNumber: string;
+  customerId: string;
+  customerName: string | null;
+  policyId: string;
+  policyNumber: string | null;
+  memberId: string | null;
+  memberName: string | null;
+  divisionType: number;
+  divisionTypeName: string;
+  claimEventType: number;
+  claimEventTypeName: string;
+  claimType: number;
+  claimTypeName: string;
+  claimStatus: number;
+  claimStatusName: string;
+  claimDate: string;
+  incidentDate: string;
+  claimAmount: number;
+  approvedAmount: number;
+  description: string;
+  createdDate: string;
+  survey: {
+    id: string;
+    surveyorName: string;
+    surveyorContact: string;
+    surveyDate: string;
+  } | null;
+  motor: {
+    id: string;
+    vehicleNumber: string;
+    garageName: string;
+    garageAddress: string;
+    accidentDescription: string;
+    isFIRFiled: boolean;
+  } | null;
+  health: {
+    id: string;
+    hospitalName: string;
+    hospitalAddress: string;
+    illnessType: string;
+  } | null;
+  death: {
+    id: string;
+    dateOfDeath: string;
+    causeOfDeath: string;
+    placeOfDeath: string;
+    deathType: number;
+    deathTypeName: string;
+  } | null;
+  risk: {
+    id: string;
+    riskAddress: string;
+    lossAmount: number;
+    damageDescription: string;
+  } | null;
+}
+
+export interface PaginatedClaims {
+  totalRecords: number;
+  pageNumber: number;
+  pageSize: number;
+  data: Claim[];
+}
+
+export interface Survey {
+  id?: string;
+  surveyorName: string;
+  surveyorContact: string;
+  surveyDate: string;
+  remarks: string;
+}
+
+export interface MotorDetail {
+  id?: string;
+  vehicleNumber: string;
+  garageName: string;
+  garageAddress: string;
+  accidentDescription: string;
+  isFIRFiled: boolean;
+  survey?: Survey;
+}
+
+export interface HealthDetail {
+  id?: string;
+  hospitalName: string;
+  hospitalAddress: string;
+  admissionDate: string;
+  dischargeDate: string;
+  illnessType: string;
+  remarks: string;
+}
+
+export interface RiskDetail {
+  id?: string;
+  riskAddress: string;
+  lossAmount: number;
+  damageDescription: string;
+  survey?: Survey;
+}
+
+export interface DeathDetail {
+  id?: string;
+  dateOfDeath: string;
+  deathType: number;
+  causeOfDeath: string;
+  placeOfDeath: string;
+  isPoliceCase: boolean;
+  remarks: string;
+}
+
+export interface CreateClaimRequest {
+  id?: string;
   policyId: string;
   customerId: string;
+  memberId: string;
+  divisionType: number;
+  claimNumber: string;
+  claimDate: string;
+  incidentDate: string;
+  claimEventType: number;
+  claimType: number;
+  claimStatus: number;
+  claimAmount: number;
+  approvedAmount: number;
+  description: string;
 
-  claimTypeId: string;
-  claimStageId: string;
-  claimHandlerId: string;
-
-  incidentDate: string; // yyyy-MM-dd
-  claimAmount: any;
-  approvedAmount?: any;
-
-  tatDays: number;
-  status?: string;
-  notes?: string;
-
+  motorDetail?: MotorDetail;
+  healthDetail?: HealthDetail;
+  riskDetail?: RiskDetail;
+  deathDetail?: DeathDetail;
+  
   documents?: File[];
 }
 
@@ -25,61 +150,7 @@ export interface ClaimResponse {
   documents?: string;
 }
 
-export interface ClaimFilters {
-  page: number;
-  pageSize: number;
-  search?: string;
-  customerId?: string;
-  policyId?: string;
-  status?: string;
-  claimTypeId?: number;
-}
-
-export interface Claim {
-  claimId: string;
-  companyId: string | null;
-  advisorId: string;
-  policyId: string;
-  policy: string | null;
-  policyStatus: string | null;
-  insurers: string | null;
-  product: string | null;
-  customerId: string;
-  customer: string | null;
-  customerEmail: string | null;
-
-  claimTypeId: number;
-  claimStageId: number;
-  claimHandlerId: number;
-
-  incidentDate: string;
-  claimAmount: number;
-  approvedAmount: number | null;
-
-  claimFile: string | null;
-  claimFiles: ClaimFile[] | null;   
-
-  status: string;
-  tatDays: number;
-  notes: string | null;
-
-  createdAt: string;
-  updatedAt: string | null;
-
-  claimType: string | null;
-  claimStage: string | null;
-  claimHandler: string | null;
-}
-
 export interface ClaimFile {
   fileName: string;
   url: string;
-}
-
-export interface PaginatedClaims {
-  totalCount: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-  data: Claim[];
 }

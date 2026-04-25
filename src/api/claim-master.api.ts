@@ -1,19 +1,25 @@
 import api from "./axios";
 
+/*   CLAIM STATUS DROPDOWN   */
+export const getClaimStatusApi = async () => {
+  const res = await api.get("/Claim/dropdown/claim-status");
+  return res.data.data;
+};
+
 /*   CLAIM TYPE DROPDOWN   */
-export const getClaimTypesApi = async () => {
-  const res = await api.get("/claim/claim-types");
+export const getClaimTypeApi = async () => {
+  const res = await api.get("/Claim/claim-type");
   return res.data.data;
 };
 
-/*   CLAIM STAGE DROPDOWN   */
-export const getClaimStagesApi = async () => {
-  const res = await api.get("/claim/claim-stages");
+/*   CLAIM EVENT TYPE DROPDOWN   */
+export const getClaimEventTypeApi = async () => {
+  const res = await api.get("/Claim/claim-event-type");
   return res.data.data;
 };
 
-/*   CLAIM HANDLER DROPDOWN   */
-export const getClaimHandlersApi = async () => {
-  const res = await api.get("/claim/claim-handlers");
+/*   DEATH TYPE DROPDOWN   */
+export const getDeathTypeApi = async () => {
+  const res = await api.get("/Claim/death-type");
   return res.data.data;
 };

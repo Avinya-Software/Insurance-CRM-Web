@@ -9,13 +9,12 @@ import ClaimUpsertSheet from "../components/claims/ClaimUpsertSheet";
 import { ClaimFilters } from "../interfaces/claim.interface";
 
 const DEFAULT_FILTERS: ClaimFilters = {
-  page: 1,
+  pageNumber: 1,
   pageSize: 10,
   search: "",
+  divisionType: undefined,
   customerId: undefined,
-  policyId: undefined,
-  claimTypeId: undefined,
-  status: undefined,
+  claimStatus: undefined,
 };
 
 const Claims = () => {
@@ -35,10 +34,9 @@ const Claims = () => {
 
   const hasActiveFilters =
     filters.search ||
+    filters.divisionType ||
     filters.customerId ||
-    filters.policyId ||
-    filters.claimTypeId ||
-    filters.status;
+    filters.claimStatus;
 
   const clearAllFilters = () => {
     setFilters(DEFAULT_FILTERS);
@@ -58,7 +56,7 @@ const Claims = () => {
                 Claims
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-              {data?.totalCount ?? 0} total claims
+              {data?.totalRecords ?? 0} total claims
               </p>
             </div>
 
@@ -87,7 +85,7 @@ const Claims = () => {
                     setFilters({
                       ...filters,
                       search: e.target.value,
-                      page: 1,
+                      pageNumber: 1,
                     })
                   }
                   className="w-full h-10 pl-10 pr-3 border rounded text-sm"
@@ -133,10 +131,10 @@ const Claims = () => {
 
         {/*   PAGINATION   */}
         <Pagination
-          page={filters.page}
-          totalPages={data?.totalPages ?? 1}
+          page={filters.pageNumber}
+          totalPages={Math.ceil((data?.totalRecords || 0) / (filters.pageSize || 10)) || 1}
           onChange={(page) =>
-            setFilters({ ...filters, page })
+            setFilters({ ...filters, pageNumber: page })
           }
         />
       </div>
@@ -146,9 +144,10 @@ const Claims = () => {
         open={openFilter}
         filters={filters}
         onApply={(f) =>
-          setFilters({ ...f, page: 1  })
+          setFilters({ ...f, pageNumber: 1  })
         }
         onClose={() => setOpenFilter(false)}
+        onClear={clearAllFilters}
       />
 
       {/*   UPSERT SHEET   */}

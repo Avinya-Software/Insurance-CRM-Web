@@ -17,11 +17,10 @@ import {
   ChevronRight,
   ChevronDown,
   Shield,
-  CarFront,
-  Car,
   Layers,
 } from "lucide-react";
 import { useState } from "react";
+
 /* ================= JWT HELPER ================= */
 
 const getUserFromToken = () => {
@@ -42,22 +41,16 @@ const getUserFromToken = () => {
   }
 };
 
-
-
-/*************  ✨ Windsurf Command ⭐  *************/
 /**
  * Sidebar component, displays a collapsible sidebar with navigation links and user information.
  * @returns {JSX.Element} A JSX element representing the Sidebar component.
  */
-
-/*******  71c90cbc-b468-4491-9b2f-c8552fd1dac0  *******/
 const Sidebar = () => {
   const user = getUserFromToken();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [openAgency, setOpenAgency] = useState(false);
   const [openPolicies, setOpenPolicies] = useState(false);
-    const [openMaster, setOpenMaster] = useState(false);
+  const [openMaster, setOpenMaster] = useState(false);
   const isAdmin = user?.role === "SuperAdmin";
 
   /* ================= LOGOUT ================= */
@@ -127,60 +120,6 @@ const Sidebar = () => {
               label="Customers"
               isCollapsed={isCollapsed}
             />
-
-            {/* <NavItem
-              to="/insurer"
-              icon={<Building2 size={18} />}
-              label="Insurers"
-              isCollapsed={isCollapsed}
-            /> */}
-
-            <div>
-              <div
-                onClick={() => setOpenAgency(!openAgency)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
-                  ${isCollapsed ? "justify-center" : ""}
-                  text-slate-300 hover:bg-slate-800`}
-              >
-                <FileText size={18} />
-
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1">Agency</span>
-                    {openAgency ? (
-                      <ChevronDown size={16} />
-                    ) : (
-                      <ChevronRight size={16} />
-                    )}
-                  </>
-                )}
-              </div>
-
-              {openAgency && !isCollapsed && (
-                <div className="ml-6 mt-1 space-y-1">
-                  <NavItem
-                    to="/agency"
-                    label="General Agency"
-                    icon={<FileText size={16} />}
-                    isCollapsed={false}
-                  />
-
-                  <NavItem
-                    to="/lifeagency"
-                    label="Life Agency"
-                    icon={<FileText size={16} />}
-                    isCollapsed={false}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* <NavItem
-              to="/products"
-              icon={<Package size={18} />}
-              label="Products"
-              isCollapsed={isCollapsed}
-            /> */}
 
             {/* ================= POLICIES MENU ================= */}
             <div>

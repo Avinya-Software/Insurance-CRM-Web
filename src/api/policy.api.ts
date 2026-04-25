@@ -1,5 +1,5 @@
 import { CustomerDropdown } from "../interfaces/customer.interface";
-import type { AgencyDropdown, GeneralPolicyFilters, GeneralPolicyResponse, IGeneralPolicy, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UserDropdown } from "../interfaces/policy.interface";
+import type { GeneralPolicyFilters, GeneralPolicyResponse, IGeneralPolicy, InsuranceTypeResponse, LifePolicyPagedResponse, PoliciesResponse, PolicyByCustomerDropdownDto, UpsertLifePolicyPayload, UserDropdown } from "../interfaces/policy.interface";
 import axios from "./axios";
 import api from "./axios";
 
@@ -182,13 +182,15 @@ export const getCustomerDropdownApi = async (): Promise<CustomerDropdown[]> => {
   return res.data?.data || [];
 };
 
-export const getAgencyDropdownApi = async (): Promise<AgencyDropdown[]> => {
-  const res = await api.get("/Agency/Agency-dropdown");
+export const getUserDropdownApi = async (): Promise<UserDropdown[]> => {
+  const res = await api.get("/UserMaster/User-dropdown");
   return res.data?.data || [];
 }
 
-export const getUserDropdownApi = async (): Promise<UserDropdown[]> => {
-  const res = await api.get("/UserMaster/User-dropdown");
+export const getPolicyModeDropdownApi = async (policyType: number) => {
+  const res = await api.get("/policy/policy-mode-dropdown", {
+    params: { policyType }
+  });
   return res.data?.data || [];
 }
 
