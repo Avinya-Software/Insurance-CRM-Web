@@ -1,9 +1,11 @@
+import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { deleteKycFileApi } from "../../api/customer.api";
 
 export const useKycFileActions = (
   onDeleted?: (documentId: string) => void
 ) => {
+  const queryClient = useQueryClient();
   const preview = async (fileUrl: string) => {
     try {
       if (!fileUrl) throw new Error("Invalid file URL");
@@ -48,6 +50,7 @@ export const useKycFileActions = (
   const remove = async (customerId: string, documentId: string) => {
     await deleteKycFileApi(customerId, documentId);
     toast.success("Document deleted");
+    queryClient.invalidateQueries({ queryKey: ["customers"] });
     onDeleted?.(documentId); 
   };
   

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { X, ShieldCheck, Activity, Car, FileText, UploadCloud, UserPlus, Plus, AlertCircle, Trash2, ChevronRight, ChevronDown, Eye } from "lucide-react";
+import { X, ShieldCheck, Activity, Car, FileText, UploadCloud, UserPlus, Plus, AlertCircle, Trash2, ChevronRight, ChevronDown, Eye, Download } from "lucide-react";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useCreateClaim } from "../../hooks/claim/useCreateClaim";
 import { useClaimStatus, useClaimType, useClaimEventType, useDeathType } from "../../hooks/claim/useClaimMasters";
@@ -9,7 +10,7 @@ import { usePoliciesByCustomer } from "../../hooks/policy/usePoliciesByCustomer"
 import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
 import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemberDropdown";
 import { useUploadCustomerDocument } from "../../hooks/customer/useUploadCustomerDocument";
-import { useKycFileActions } from "../../hooks/customer/useKycFileActions";
+import { useClaimFileActions } from "../../hooks/claim/useClaimFileActions";
 import Spinner from "../common/Spinner";
 import SearchableComboBox from "../common/SearchableComboBox";
 
@@ -34,6 +35,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   }, [open]);
 
   /*   API HOOKS   */
+  const queryClient = useQueryClient();
   const { mutateAsync: saveClaim, isPending: isSaving } = useCreateClaim();
   const { data: customers, isLoading: customersLoading } = useCustomerDropdown();
   const { data: divisions, isLoading: divisionLoading } = useDivisionDropdown(0);
@@ -45,8 +47,8 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const { mutateAsync: uploadDocument, isPending: isUploading } = useUploadCustomerDocument();
   const [existingDocuments, setExistingDocuments] = useState<any[]>([]);
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<any>(null);
-
-  const { preview, download, remove } = useKycFileActions(
+  
+  const { preview, download, remove } = useClaimFileActions(
     (deletedId: string) => {
       setExistingDocuments((prev) =>
         prev.filter((f) => f.id !== deletedId)
@@ -209,7 +211,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
       };
       setForm(mappedForm);
       setOriginalForm(mappedForm);
-      setExistingDocuments(claim.claimFiles || []);
+      setExistingDocuments(claim.documents || []);
     } else {
       setForm(initialForm);
       setOriginalForm(null);
@@ -344,6 +346,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
       }
 
       if (files.length > 0 && claimId) {
+        let docToastShown = false;
         await Promise.all(
           files.map((item) => {
             const formData = new FormData();
@@ -353,14 +356,18 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
             formData.append("PolicyType", "0"); 
             formData.append("Files", item.file);
             return uploadDocument(formData).then((docRes: any) => {
-              // Only show document success toast if the claim details weren't updated
-              if (!claimUpdated && docRes?.statusMessage) {
+              // Only show document success toast once if the claim details weren't updated
+              if (!claimUpdated && docRes?.statusMessage && !docToastShown) {
                 toast.success(docRes.statusMessage);
+                docToastShown = true;
               }
               return docRes;
             });
           })
         );
+        if (!claimUpdated) {
+          queryClient.invalidateQueries({ queryKey: ["claims"] });
+        }
       }
 
       onSuccess();
@@ -721,16 +728,28 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                               </div>
                               <div className="min-w-0">
                                 <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
-                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.type}</p>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.documentName}</p>
                               </div>
                             </div>
                             <div className="flex gap-1">
-                              <button onClick={() => preview(file.url)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                              <button 
+                                onClick={() => preview(file.url || form.id!, file.id)} 
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="Preview"
+                              >
                                 <Eye size={16} />
+                              </button>
+                              <button 
+                                onClick={() => download(file.url || form.id!, file.fileName || file.id)} 
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="Download"
+                              >
+                                <Download size={16} />
                               </button>
                               <button 
                                 onClick={() => setConfirmDeleteDoc(file)}
                                 className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                title="Delete"
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -843,13 +862,8 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
               <button
                 onClick={async () => {
                   try {
-                    // Adapt based on user's instruction to use all document references from CustomerUpsertSheet
-                    // But for Claims, we might need a claimId?
-                    // CustomerUpsertSheet uses (customer.customerId, docId)
-                    // If the backend is unified, maybe it's (form.customerId, docId)?
-                    // Actually, the user said "use all document refrence in CustomerUpsertSheet.tsx file only"
-                   
-                    await remove(form.customerId, confirmDeleteDoc.id);
+                    // Use claimId (form.id) and documentId
+                    await remove(form.id!, confirmDeleteDoc.id);
                     setConfirmDeleteDoc(null);
                   } catch (e) {
                     console.error(e);

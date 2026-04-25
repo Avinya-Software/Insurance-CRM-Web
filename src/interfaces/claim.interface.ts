@@ -65,7 +65,13 @@ export interface Claim {
     lossAmount: number;
     damageDescription: string;
   } | null;
-  claimFiles?: ClaimFile[] | null;
+  documents?: {
+    id: string;
+    fileName: string;
+    documentName: string;
+    url: string;
+    uploadedAt?: string;
+  }[] | null;
 }
 
 export interface PaginatedClaims {

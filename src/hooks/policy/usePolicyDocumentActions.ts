@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import api from "../../api/axios";
 import { deletePolicyDocumentApi } from "../../api/policy.api";
 import toast from "react-hot-toast";
@@ -5,6 +6,7 @@ import toast from "react-hot-toast";
 export const usePolicyDocumentActions = (
   onDeleteSuccess?: (documentId: string) => void
 ) => {
+  const queryClient = useQueryClient();
 
   const preview = async (policyId: string, documentId: string) => {
     try {
@@ -65,6 +67,12 @@ export const usePolicyDocumentActions = (
     try {
       await deletePolicyDocumentApi(policyId, documentId);
       toast.success("Policy document deleted");
+
+      // Refresh relevant tables
+      queryClient.invalidateQueries({ queryKey: ["policies"] });
+      queryClient.invalidateQueries({ queryKey: ["general-policies"] });
+      queryClient.invalidateQueries({ queryKey: ["renewals"] });
+
       onDeleteSuccess?.(documentId);
     } catch (error) {
       toast.error("Failed to delete document");

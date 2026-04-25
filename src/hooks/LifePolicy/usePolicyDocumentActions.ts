@@ -1,9 +1,11 @@
+import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { deletePolicyDocumentApi } from "../../api/policy.api"; // ← use policy API
 
 export const usePolicyDocumentActions = (
   onDeleted?: (documentId: string) => void
 ) => {
+  const queryClient = useQueryClient();
 
   /* PREVIEW */
   const preview = async (fileUrl: string) => {
@@ -47,6 +49,7 @@ export const usePolicyDocumentActions = (
   const remove = async (policyId: string, documentId: string) => {
     await deletePolicyDocumentApi(policyId, documentId); 
     toast.success("Document deleted");
+    queryClient.invalidateQueries({ queryKey: ["life-policies"] });
     onDeleted?.(documentId);
   };
 
