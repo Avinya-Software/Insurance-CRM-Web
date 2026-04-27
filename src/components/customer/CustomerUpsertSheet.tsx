@@ -39,7 +39,7 @@ const CustomerUpsertSheet = ({
 
   /*   KYC DOCUMENT ACTIONS   */
   const [existingDocuments, setExistingDocuments] = useState<
-    { fileName: string; url: string; id: string; type: string }[]
+    { fileName: string; url: string; id: string; type?: string; documentName?: string }[]
   >([]);
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<any>(null);
 
@@ -310,7 +310,7 @@ const CustomerUpsertSheet = ({
 
       setForm(mappedForm);
       setOriginalForm(mappedForm);
-      setExistingDocuments(customer.kycFiles || []);
+      setExistingDocuments(customer.documents || customer.kycFiles || []);
       setResStateId(mappedForm.resState || "");
       setOffStateId(mappedForm.offState || "");
       setOsStateId(mappedForm.osState || "");
@@ -448,6 +448,7 @@ const CustomerUpsertSheet = ({
       }
   
       if (files.length > 0 && customerId) {
+        let docToastShown = false;
         await Promise.all(
           files.map((item) => {
             const formData = new FormData();
@@ -455,15 +456,18 @@ const CustomerUpsertSheet = ({
             formData.append("Type", "1");
             formData.append("DocumentType", item.label);
             formData.append("Files", item.file);
-            return uploadDocument(formData); 
+            return uploadDocument(formData).then((res: any) => {
+              // Only show document success toast once if the customer details weren't updated
+              if (!customerUpdated && res?.statusMessage && !docToastShown) {
+                toast.success(res.statusMessage);
+                docToastShown = true;
+              }
+              return res;
+            }); 
           })
         );
   
         documentUploaded = true;
-  
-        if (!customerUpdated) {
-          toast.success("Documents uploaded successfully");
-        }
       }
   
       onSuccess(customerId, form.fullName);
@@ -872,7 +876,6 @@ const CustomerUpsertSheet = ({
                     <div className="lg:col-span-1 space-y-6">
                       <Select
                         label="Select Document"
-                        required
                         value={selectedDocName}
                         options={documentOptions}
                         onChange={(v: string) => setSelectedDocName(v)}
@@ -988,19 +991,28 @@ const CustomerUpsertSheet = ({
                               </div>
                               <div className="min-w-0">
                                 <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
-                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.type}</p>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.documentName || file.type}</p>
                               </div>
                             </div>
                             <div className="flex gap-1">
-                              <button onClick={() => preview(file.url)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                              <button 
+                                onClick={() => preview(file.url)} 
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="Preview"
+                              >
                                 <Eye size={16} />
                               </button>
-                              <button onClick={() => download(file.url, file.fileName)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                              <button 
+                                onClick={() => download(file.url, file.fileName)} 
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="Download"
+                              >
                                 <Download size={16} />
                               </button>
-                               <button 
+                              <button 
                                 onClick={() => setConfirmDeleteDoc(file)}
                                 className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                title="Delete"
                               >
                                 <Trash2 size={16} />
                               </button>

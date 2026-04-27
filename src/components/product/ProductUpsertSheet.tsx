@@ -87,7 +87,7 @@ const ProductUpsertSheet = ({ open, onClose, item, onSuccess }: Props) => {
     setErrors(e);
 
     if (Object.keys(e).length) {
-      toast.error("Please fix validation errors");
+      toast.error("Please fill all required fields");
       return false;
     }
 

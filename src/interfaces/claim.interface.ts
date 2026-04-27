@@ -15,6 +15,8 @@ export interface Claim {
   customerName: string | null;
   policyId: string;
   policyNumber: string | null;
+  policyType: number;
+  policyTypeName: string | null;
   memberId: string | null;
   memberName: string | null;
   divisionType: number;
@@ -65,6 +67,13 @@ export interface Claim {
     lossAmount: number;
     damageDescription: string;
   } | null;
+  documents?: {
+    id: string;
+    fileName: string;
+    documentName: string;
+    url: string;
+    uploadedAt?: string;
+  }[] | null;
 }
 
 export interface PaginatedClaims {

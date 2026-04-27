@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { X, ShieldCheck, Activity, Car, FileText, UploadCloud, UserPlus, Plus, AlertCircle, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import { X, ShieldCheck, Activity, Car, FileText, UploadCloud, UserPlus, Plus, AlertCircle, Trash2, ChevronRight, ChevronDown, Eye, Download } from "lucide-react";
 import toast from "react-hot-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useCreateClaim } from "../../hooks/claim/useCreateClaim";
 import { useClaimStatus, useClaimType, useClaimEventType, useDeathType } from "../../hooks/claim/useClaimMasters";
@@ -8,6 +9,8 @@ import { useCustomerDropdown } from "../../hooks/customer/useCustomerDropdown";
 import { usePoliciesByCustomer } from "../../hooks/policy/usePoliciesByCustomer";
 import { useDivisionDropdown } from "../../hooks/division/useDivisionDropdown";
 import { useFamilyMemberDropdown } from "../../hooks/family-member/useFamilyMemberDropdown";
+import { useUploadCustomerDocument } from "../../hooks/customer/useUploadCustomerDocument";
+import { useClaimFileActions } from "../../hooks/claim/useClaimFileActions";
 import Spinner from "../common/Spinner";
 import SearchableComboBox from "../common/SearchableComboBox";
 
@@ -32,18 +35,32 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   }, [open]);
 
   /*   API HOOKS   */
+  const queryClient = useQueryClient();
   const { mutateAsync: saveClaim, isPending: isSaving } = useCreateClaim();
   const { data: customers, isLoading: customersLoading } = useCustomerDropdown();
-  const { data: divisions, isLoading: divisionLoading } = useDivisionDropdown(0);
+  const { data: divisions, isLoading: divisionLoading } = useDivisionDropdown();
   const { data: claimStatuses, isLoading: statusLoading } = useClaimStatus();
   const { data: claimTypes, isLoading: typeLoading } = useClaimType();
   const { data: eventTypes, isLoading: eventLoading } = useClaimEventType();
   const { data: deathTypes } = useDeathType();
 
+  const { mutateAsync: uploadDocument, isPending: isUploading } = useUploadCustomerDocument();
+  const [existingDocuments, setExistingDocuments] = useState<any[]>([]);
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<any>(null);
+  
+  const { preview, download, remove } = useClaimFileActions(
+    (deletedId: string) => {
+      setExistingDocuments((prev) =>
+        prev.filter((f) => f.id !== deletedId)
+      );
+    }
+  );
+
   /*   FORM STATE   */
   const initialForm = {
     id: null as string | null,
     policyId: "",
+    policyType: 0,
     customerId: "",
     memberId: "",
     divisionType: 0,
@@ -52,7 +69,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     incidentDate: "",
     claimEventType: 0,
     claimType: 0,
-    claimStatus: 0,
+    claimStatus: 1,
     claimAmount: 0,
     approvedAmount: 0,
     description: "",
@@ -101,6 +118,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   };
 
   const [form, setForm] = useState(initialForm);
+  const [originalForm, setOriginalForm] = useState<any>(null);
   const [files, setFiles] = useState<{ file: File; label: string }[]>([]);
   const [selectedDocName, setSelectedDocName] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -118,21 +136,18 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const { data: policies, isLoading: policiesLoading } = usePoliciesByCustomer(form.customerId);
   const { data: members, isLoading: membersLoading } = useFamilyMemberDropdown(form.customerId);
 
-  /*   AUTO-SELECT REGISTERED STATUS   */
   useEffect(() => {
-    if (!open) return;
-    if (claimStatuses?.length && !claim && form.claimStatus === 0) {
-      const registered = claimStatuses.find((s: any) => s.name?.toLowerCase() === "registered");
-      if (registered) {
-        setForm(prev => ({ ...prev, claimStatus: registered.id }));
-      }
+    if (!open || claim) return;
+    if (form.claimStatus === 0) {
+      setForm(prev => ({ ...prev, claimStatus: 1 }));
     }
-  }, [open, claimStatuses, claim]);
+  }, [open, claim, form.claimStatus]);
 
   /*   PREFILL   */
   useEffect(() => {
     if (!open) {
       setForm(initialForm);
+      setOriginalForm(null);
       setFiles([]);
       setErrors({});
       setActiveTab("basic");
@@ -140,10 +155,11 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     }
 
     if (claim) {
-      setForm({
+      const mappedForm = {
         ...initialForm,
         id: claim.id || claim.claimId || null,
         policyId: claim.policyId || "",
+        policyType: claim.policyType || 0,
         customerId: claim.customerId || "",
         memberId: claim.memberId || "",
         divisionType: claim.divisionType || 0,
@@ -183,13 +199,22 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
             surveyDate: (claim.survey?.surveyDate || claim.risk.survey?.surveyDate) ? (claim.survey?.surveyDate || claim.risk.survey?.surveyDate).split("T")[0] : ""
           } : initialForm.riskDetail.survey
         } : initialForm.riskDetail,
-
         deathDetail: claim.death ? {
           ...initialForm.deathDetail,
           ...claim.death,
-          dateOfDeath: claim.death.dateOfDeath ? claim.death.dateOfDeath.split("T")[0] : ""
+          dateOfDeath: claim.death.dateOfDeath ? claim.death.dateOfDeath.split("T")[0] : "",
+          isPoliceCase: claim.death.isPoliceCase || false,
+          remarks: claim.death.remarks || ""
         } : initialForm.deathDetail,
-      });
+      };
+      setForm(mappedForm);
+      setOriginalForm(mappedForm);
+      setExistingDocuments(claim.documents || []);
+    } else {
+      setForm(initialForm);
+      setOriginalForm(null);
+      setFiles([]);
+      setExistingDocuments([]);
     }
   }, [open, claim]);
 
@@ -202,37 +227,31 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     if (!form.claimNumber) e.claimNumber = "Claim number is required";
     if (!form.incidentDate) e.incidentDate = "Incident date is required";
     if (!form.memberId) e.memberId = "Claiming member is required";
-    if (!form.claimType) e.claimType = "Claim type is required";
-    if (!form.claimEventType) e.claimEventType = "Claim event type is required";
     if (form.claimAmount <= 0) e.claimAmount = "Claimed amount must be > 0";
 
-    // DIVISION SPECIFIC VALIDATION
-    if (form.divisionType === 1) { // Health
-      if (!form.healthDetail.hospitalName) e.hospitalName = "Hospital name is required";
-      if (!form.healthDetail.illnessType) e.illnessType = "Illness type is required";
-      if (!form.healthDetail.admissionDate) e.admissionDate = "Admission date is required";
-    }
+    if (showHealth && !form.healthDetail.hospitalName) e.hospitalName = "Hospital name is required";
+    if (showHealth && !form.healthDetail.illnessType) e.illnessType = "Illness type is required";
+    if (showHealth && !form.healthDetail.admissionDate) e.admissionDate = "Admission date is required";
 
-    if (form.divisionType === 5) { // Motor
-      if (!form.motorDetail.vehicleNumber) e.vehicleNumber = "Vehicle number is required";
-      if (!form.motorDetail.garageName) e.garageName = "Garage name is required";
-      if (!form.motorDetail.garageAddress) e.garageAddress = "Garage address is required";
-    }
+    if (showMotor && !form.motorDetail.vehicleNumber) e.vehicleNumber = "Vehicle number is required";
+    if (showMotor && !form.motorDetail.garageName) e.garageName = "Garage name is required";
+    if (showMotor && !form.motorDetail.garageAddress) e.garageAddress = "Garage address is required";
 
-    if (form.divisionType === 2) { // Other/Risk
-      if (!form.riskDetail.riskAddress) e.riskAddress = "Risk address is required";
-      if (form.riskDetail.lossAmount <= 0) e.lossAmount = "Estimated loss amount is required";
-    }
+    if (showRisk && !form.riskDetail.riskAddress) e.riskAddress = "Risk address is required";
+    if (showRisk && form.riskDetail.lossAmount <= 0) e.lossAmount = "Estimated loss amount is required";
 
-    // Death Validation (Only if "Death" event type is selected or any death field is partially filled)
-    const isDeathEvent = eventTypes?.find((t: any) => t.id === form.claimEventType)?.name?.toLowerCase() === "death";
-    const hasDeathInput = !!(form.deathDetail.dateOfDeath || form.deathDetail.causeOfDeath || form.deathDetail.placeOfDeath);
-
-    if (isDeathEvent || hasDeathInput) {
+    // Death Validation (Only if explicitly required by showDeath - i.e., Life Policy Division 4)
+    if (showDeath) {
       if (!form.deathDetail.dateOfDeath) e.dateOfDeath = "Date of death is required";
       if (!form.deathDetail.causeOfDeath) e.causeOfDeath = "Cause of death is required";
       if (!form.deathDetail.placeOfDeath) e.placeOfDeath = "Place of death is required";
     }
+
+    const needsClaimType = [1, 4, 5].includes(form.divisionType);
+    const needsClaimEventType = form.divisionType !== 4; // Hide for Life-Health
+
+    if (needsClaimType && !form.claimType) e.claimType = "Claim type is required";
+    if (needsClaimEventType && !form.claimEventType) e.claimEventType = "Claim event type is required";
 
     setErrors(e);
     if (Object.keys(e).length) {
@@ -243,41 +262,120 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   };
 
   /*   SAVE   */
+  const checkClaimChanges = (current: any, original: any) => {
+    if (!original) return true;
+    
+    // Check top level first
+    const mainFields = [
+      "policyId", "policyType", "customerId", "memberId", "divisionType", "claimNumber",
+      "claimDate", "incidentDate", "claimEventType", "claimType",
+      "claimStatus", "claimAmount", "approvedAmount", "description"
+    ];
+    
+    for (const field of mainFields) {
+      if (current[field] !== original[field]) return true;
+    }
+
+    // Check nested details if applicable
+    if (JSON.stringify(current.motorDetail) !== JSON.stringify(original.motorDetail)) return true;
+    if (JSON.stringify(current.healthDetail) !== JSON.stringify(original.healthDetail)) return true;
+    if (JSON.stringify(current.riskDetail) !== JSON.stringify(original.riskDetail)) return true;
+    if (JSON.stringify(current.deathDetail) !== JSON.stringify(original.deathDetail)) return true;
+
+    return false;
+  };
+
   const handleSave = async () => {
     if (!validate()) return;
     
-    const payload = JSON.parse(JSON.stringify(form));
-    
-    const cleanDate = (d: any) => (d === "" ? null : d);
-    
-    payload.claimDate = cleanDate(payload.claimDate);
-    payload.incidentDate = cleanDate(payload.incidentDate);
-
-    if (form.divisionType === 1) {
-      payload.healthDetail.admissionDate = cleanDate(payload.healthDetail.admissionDate);
-      payload.healthDetail.dischargeDate = cleanDate(payload.healthDetail.dischargeDate);
-      payload.motorDetail = null;
-      payload.riskDetail = null;
-    } else if (form.divisionType === 5) {
-      payload.motorDetail.survey.surveyDate = cleanDate(payload.motorDetail.survey.surveyDate);
-      payload.healthDetail = null;
-      payload.riskDetail = null;
-    } else if (form.divisionType === 2) {
-      payload.riskDetail.survey.surveyDate = cleanDate(payload.riskDetail.survey.surveyDate);
-      payload.healthDetail = null;
-      payload.motorDetail = null;
-    }
-
-    const isDeathEvent = eventTypes?.find((t: any) => t.id === form.claimEventType)?.name?.toLowerCase() === "death";
-    if (isDeathEvent || payload.deathDetail.dateOfDeath) {
-      payload.deathDetail.dateOfDeath = cleanDate(payload.deathDetail.dateOfDeath);
-    } else {
-      payload.deathDetail = null;
-    }
-
     try {
-      const res = await saveClaim(payload);
-      toast.success(res.statusMessage || "Claim saved successfully");
+      let claimId = form.id;
+      let claimUpdated = false;
+
+      const hasClaimChanged = originalForm
+        ? checkClaimChanges(form, originalForm)
+        : true;
+
+      if (hasClaimChanged) {
+        const payload = JSON.parse(JSON.stringify(form));
+        
+        const cleanDate = (d: any) => (d === "" ? null : d);
+        
+        // Clean basic dates and ensure numeric types
+        payload.claimDate = cleanDate(payload.claimDate);
+        payload.incidentDate = cleanDate(payload.incidentDate);
+        payload.divisionType = Number(payload.divisionType);
+        payload.claimEventType = Number(payload.claimEventType);
+        payload.claimType = Number(payload.claimType);
+        payload.claimStatus = Number(payload.claimStatus);
+        payload.policyType = Number(payload.policyType);
+        payload.claimAmount = Number(payload.claimAmount);
+        payload.approvedAmount = Number(payload.approvedAmount);
+
+        // Map specific details based on division, setting others to null
+        payload.healthDetail = showHealth ? {
+          ...form.healthDetail,
+          admissionDate: cleanDate(form.healthDetail.admissionDate),
+          dischargeDate: cleanDate(form.healthDetail.dischargeDate)
+        } : null;
+
+        payload.motorDetail = showMotor ? {
+          ...form.motorDetail,
+          survey: form.motorDetail.survey ? {
+            ...form.motorDetail.survey,
+            surveyDate: cleanDate(form.motorDetail.survey.surveyDate)
+          } : null
+        } : null;
+
+        payload.riskDetail = showRisk ? {
+          ...form.riskDetail,
+          survey: form.riskDetail.survey ? {
+            ...form.riskDetail.survey,
+            surveyDate: cleanDate(form.riskDetail.survey.surveyDate)
+          } : null
+        } : null;
+
+        payload.deathDetail = showDeath ? {
+          ...form.deathDetail,
+          dateOfDeath: cleanDate(form.deathDetail.dateOfDeath)
+        } : null;
+
+        const res = await saveClaim(payload);
+        claimId = res?.claimId || res?.data?.claimId || form.id;
+        claimUpdated = true;
+
+        if (res?.statusMessage) {
+          toast.success(res.statusMessage);
+        } else {
+          toast.success(form.id ? "Claim updated successfully" : "Claim created successfully");
+        }
+      }
+
+      if (files.length > 0 && claimId) {
+        let docToastShown = false;
+        await Promise.all(
+          files.map((item) => {
+            const formData = new FormData();
+            formData.append("Id", claimId); 
+            formData.append("Type", "4");  
+            formData.append("DocumentType", item.label);
+            formData.append("PolicyType", "0"); 
+            formData.append("Files", item.file);
+            return uploadDocument(formData).then((docRes: any) => {
+              // Only show document success toast once if the claim details weren't updated
+              if (!claimUpdated && docRes?.statusMessage && !docToastShown) {
+                toast.success(docRes.statusMessage);
+                docToastShown = true;
+              }
+              return docRes;
+            });
+          })
+        );
+        if (!claimUpdated) {
+          queryClient.invalidateQueries({ queryKey: ["claims"] });
+        }
+      }
+
       onSuccess();
       onClose();
     } catch (error: any) {
@@ -305,9 +403,13 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
   if (!open) return null;
 
-  const isHealth = form.divisionType === 1;
-  const isOther = form.divisionType === 2;
-  const isMotor = form.divisionType === 5;
+  const isGeneral = form.policyType === 2;
+  const isLife = form.policyType === 1;
+
+  const showHealth = isGeneral && form.divisionType === 1;
+  const showRisk = isGeneral && form.divisionType === 2;
+  const showMotor = isGeneral && form.divisionType === 5;
+  const showDeath = isLife && form.divisionType === 4;
   const isLoading = isSaving;
 
   return (
@@ -369,11 +471,21 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                   <SearchableComboBox
                     label="Policy"
                     required
-                    items={(policies || []).map((p: any) => ({ value: p.policyId, label: p.policyNumber, divisionId: p.divisionId }))}
+                    items={(policies || []).map((p: any) => ({ 
+                      value: p.policyId, 
+                      label: `${p.policyNumber} - ${p.policyTypeName}`, 
+                      divisionId: p.divisionId || (Number(p.policyType) === 1 ? 4 : 0), 
+                      policyType: p.policyType 
+                    }))}
                     value={form.policyId}
                     placeholder={policiesLoading ? "Loading..." : "Search policy..."}
                     error={errors.policyId}
-                    onSelect={(item: any) => setForm({ ...form, policyId: item?.value || "", divisionType: item?.divisionId ? Number(item.divisionId) : form.divisionType })}
+                    onSelect={(item: any) => setForm({ 
+                      ...form, 
+                      policyId: item?.value || "", 
+                      policyType: item?.policyType ? Number(item.policyType) : 0, 
+                      divisionType: item?.divisionId ? Number(item.divisionId) : form.divisionType 
+                    })}
                   />
 
                   <SearchableComboBox
@@ -400,9 +512,26 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                   <Input label="Claim Number" required value={form.claimNumber} onChange={(v: any) => setForm({ ...form, claimNumber: v })} error={errors.claimNumber} placeholder="Enter claim number" />
                   <Input label="Incident Date" required type="date" value={form.incidentDate} onChange={(v: any) => setForm({ ...form, incidentDate: v })} error={errors.incidentDate} />
                   <Input label="Claim Date" type="date" value={form.claimDate} onChange={(v: any) => setForm({ ...form, claimDate: v })} />
-                  <Select label="Claim Type" required value={form.claimType} options={claimTypes} onChange={(v: any) => setForm({ ...form, claimType: Number(v) })} error={errors.claimType} />
+                  
+                  {/* Conditionally show Claim Type */}
+                  {[1, 4, 5].includes(form.divisionType) && (
+                    <Select label="Claim Type" required value={form.claimType} options={claimTypes} onChange={(v: any) => setForm({ ...form, claimType: Number(v) })} error={errors.claimType} />
+                  )}
+
                   <Select label="Claim Status" value={form.claimStatus} options={claimStatuses} onChange={(v: any) => setForm({ ...form, claimStatus: Number(v) })} />
-                  <Select label="Claim Event Type" required value={form.claimEventType} options={eventTypes} onChange={(v: any) => setForm({ ...form, claimEventType: Number(v) })} error={errors.claimEventType} />
+                  
+                  {/* Conditionally show Claim Event Type */}
+                  {form.divisionType !== 4 && (
+                    <SearchableComboBox
+                      label="Claim Event Type"
+                      required
+                      items={(eventTypes || []).map((t: any) => ({ value: String(t.id), label: t.name }))}
+                      value={String(form.claimEventType)}
+                      placeholder="Search event type..."
+                      error={errors.claimEventType}
+                      onSelect={(item) => setForm({ ...form, claimEventType: item?.value ? Number(item.value) : 0 })}
+                    />
+                  )}
                   <Input label="Claimed Amount" required type="number" value={form.claimAmount} onChange={(v: any) => setForm({ ...form, claimAmount: Number(v) })} error={errors.claimAmount} placeholder="0.00" />
                   <Input label="Approved Amount" type="number" value={form.approvedAmount} onChange={(v: any) => setForm({ ...form, approvedAmount: Number(v) })} placeholder="0.00" />
 
@@ -422,13 +551,25 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
             {activeTab === "additional" && (
               <div className="space-y-6">
                 {!form.divisionType && (
-                  <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-sm">
-                    <Activity className="mx-auto text-slate-300 mb-4" size={48} />
-                    <h3 className="text-slate-900 font-semibold text-lg">Select a Division First</h3>
+                  <div className="bg-white border border-slate-100 rounded-xl p-20 text-center space-y-4 shadow-sm">
+                    <div className="w-20 h-20 bg-blue-50/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Activity className="text-blue-200" size={40} />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">Select a Division First</h3>
                     <p className="text-slate-500 text-sm max-w-sm mx-auto">Please select a division in the basic information tab to see category-specific fields.</p>
                   </div>
                 )}
-                {isMotor && (
+
+                {form.divisionType > 0 && !form.policyType && (
+                  <div className="bg-white border border-slate-100 rounded-xl p-20 text-center space-y-4 shadow-sm">
+                    <div className="w-20 h-20 bg-amber-50/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <ShieldCheck className="text-amber-200" size={40} />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">Policy Selection Required</h3>
+                    <p className="text-slate-500 text-sm max-w-sm mx-auto">A policy must be selected to determine the correct claim category. Please choose a policy in the basic information tab.</p>
+                  </div>
+                )}
+                {showMotor && (
                    <Section icon={<Car size={16} />} title="Motor claim details">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       <Input label="Vehicle Number" required value={form.motorDetail.vehicleNumber} placeholder="GJ-01-XX-0000" onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, vehicleNumber: v } })} error={errors.vehicleNumber} />
@@ -463,67 +604,65 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                     </div>
                   </Section>
                 )}
-                {isHealth && (
-                  <>
-                    <Section icon={<Activity size={16} />} title="Hospitalization Details">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <Input label="Hospital Name" required value={form.healthDetail.hospitalName} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalName: v } })} error={errors.hospitalName} />
-                        <Input label="Illness Type" required value={form.healthDetail.illnessType} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, illnessType: v } })} error={errors.illnessType} />
-                        <Input label="Hospital Address" value={form.healthDetail.hospitalAddress} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalAddress: v } })} />
-                        <Input label="Admission Date" required type="date" value={form.healthDetail.admissionDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, admissionDate: v } })} error={errors.admissionDate} />
-                        <Input label="Discharge Date" type="date" value={form.healthDetail.dischargeDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, dischargeDate: v } })} />
-                        <Input label="Medical Remarks" value={form.healthDetail.remarks} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, remarks: v } })} />
-                      </div>
-                    </Section>
-                    <DeathSection form={form} setForm={setForm} errors={errors} deathTypes={deathTypes} />
-                  </>
+                {showHealth && (
+                  <Section icon={<Activity size={16} />} title="Hospitalization Details">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <Input label="Hospital Name" required value={form.healthDetail.hospitalName} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalName: v } })} error={errors.hospitalName} />
+                      <Input label="Illness Type" required value={form.healthDetail.illnessType} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, illnessType: v } })} error={errors.illnessType} />
+                      <Input label="Hospital Address" value={form.healthDetail.hospitalAddress} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalAddress: v } })} />
+                      <Input label="Admission Date" required type="date" value={form.healthDetail.admissionDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, admissionDate: v } })} error={errors.admissionDate} />
+                      <Input label="Discharge Date" type="date" value={form.healthDetail.dischargeDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, dischargeDate: v } })} />
+                      <Input label="Medical Remarks" value={form.healthDetail.remarks} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, remarks: v } })} />
+                    </div>
+                  </Section>
                 )}
-                {isOther && (
-                  <>
-                    <Section icon={<ShieldCheck size={16} />} title="Asset / risk loss details">
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2"><Input label="Risk Address" required value={form.riskDetail.riskAddress} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, riskAddress: v } })} error={errors.riskAddress} /></div>
-                        <Input label="Estimated Loss Amount" required type="number" value={form.riskDetail.lossAmount} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, lossAmount: Number(v) } })} error={errors.lossAmount} />
-                        <div className="lg:col-span-3">
-                          <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Damage Description</label>
-                          <textarea 
-                            value={form.riskDetail.damageDescription} 
-                            onChange={(e) => setForm(p => ({ ...p, riskDetail: { ...p.riskDetail, damageDescription: e.target.value } }))}
-                            placeholder="Describe damage..."
-                            className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm h-20 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
-                          />
-                        </div>
+                {showRisk && (
+                  <Section icon={<ShieldCheck size={16} />} title="Asset / risk loss details">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div className="lg:col-span-2"><Input label="Risk Address" required value={form.riskDetail.riskAddress} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, riskAddress: v } })} error={errors.riskAddress} /></div>
+                      <Input label="Estimated Loss Amount" required type="number" value={form.riskDetail.lossAmount} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, lossAmount: Number(v) } })} error={errors.lossAmount} />
+                      <div className="lg:col-span-3">
+                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Damage Description</label>
+                        <textarea 
+                          value={form.riskDetail.damageDescription} 
+                          onChange={(e) => setForm(p => ({ ...p, riskDetail: { ...p.riskDetail, damageDescription: e.target.value } }))}
+                          placeholder="Describe damage..."
+                          className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm h-20 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                        />
                       </div>
-                      <div className="border-t bg-slate-50 -mx-4 -mb-4 px-4 py-4 space-y-4">
-                        <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Surveyor Information</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                          <Input label="Surveyor Name" value={form.riskDetail.survey.surveyorName} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorName: v } } })} />
-                          <Input label="Contact" value={form.riskDetail.survey.surveyorContact} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorContact: v } } })} />
-                          <Input label="Survey Date" type="date" value={form.riskDetail.survey.surveyDate} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyDate: v } } })} />
-                          <Input label="Survey Remarks" value={form.riskDetail.survey.remarks} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, remarks: v } } })} />
-                        </div>
+                    </div>
+                    <div className="border-t bg-slate-50 -mx-4 -mb-4 px-4 py-4 space-y-4">
+                      <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Surveyor Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <Input label="Surveyor Name" value={form.riskDetail.survey.surveyorName} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorName: v } } })} />
+                        <Input label="Contact" value={form.riskDetail.survey.surveyorContact} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorContact: v } } })} />
+                        <Input label="Survey Date" type="date" value={form.riskDetail.survey.surveyDate} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyDate: v } } })} />
+                        <Input label="Survey Remarks" value={form.riskDetail.survey.remarks} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, remarks: v } } })} />
                       </div>
-                    </Section>
-                    <DeathSection form={form} setForm={setForm} errors={errors} deathTypes={deathTypes} />
-                  </>
+                    </div>
+                  </Section>
+                )}
+                {showDeath && (
+                   <DeathSection form={form} setForm={setForm} errors={errors} deathTypes={deathTypes} />
                 )}
               </div>
             )}
 
             {activeTab === "documents" && (
               <div className="space-y-8">
-                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
-                  <AlertCircle size={16} className="text-amber-600 shrink-0" />
-                  <p className="text-xs text-amber-700 leading-relaxed font-medium">Please note that document upload is currently handled separately.</p>
-                </div>
+                {!claim && (
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-center gap-3">
+                    <AlertCircle size={16} className="text-amber-600 shrink-0" />
+                    <p className="text-xs text-amber-700 leading-relaxed font-medium">Documents will be uploaded automatically when you click <strong>SAVE</strong>.</p>
+                  </div>
+                )}
 
-                {/* UPLOAD SECTION UI ONLY */}
+                {/* UPLOAD SECTION */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     <div className="lg:col-span-1 space-y-6">
                       <Select
                         label="Select Document"
-                        required
                         value={selectedDocName}
                         options={documentOptions}
                         onChange={(v: string) => setSelectedDocName(v)}
@@ -548,14 +687,14 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                           multiple
                           accept=".pdf,.jpg,.jpeg,.png"
                           className="hidden"
-                          disabled={!selectedDocName}
+                          disabled={!selectedDocName || isUploading}
                           onChange={handleFileChange}     
                         />
                         <label 
                           htmlFor="kyc-upload"
                           className={`
                             flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl transition-all group
-                            ${!selectedDocName
+                            ${!selectedDocName || isUploading
                               ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-50'
                               : 'bg-white border-blue-200 hover:bg-blue-50/50 hover:border-blue-400 shadow-sm cursor-pointer'
                             }
@@ -578,7 +717,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                   </div>
                 </div>
 
-                {/* FILE LISTS UI ONLY */}
+                {/* FILE LISTS */}
                 <div className="space-y-8">
                   {files.length > 0 && (
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -620,6 +759,52 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                       </div>
                     </div>
                   )}
+
+                  {existingDocuments.length > 0 && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                      <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b pb-4">
+                        <ShieldCheck size={18} className="text-emerald-600" /> Existing Documents
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {existingDocuments.map((file) => (
+                          <div key={file.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="p-2 bg-white rounded-lg text-emerald-600 shadow-sm">
+                                <FileText size={16} />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-slate-700 truncate">{file.fileName}</p>
+                                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">{file.documentName}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button 
+                                onClick={() => preview(file.url || form.id!, file.id)} 
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="Preview"
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button 
+                                onClick={() => download(file.url || form.id!, file.fileName || file.id)} 
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                title="Download"
+                              >
+                                <Download size={16} />
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDeleteDoc(file)}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -630,16 +815,16 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
         <div className="px-8 py-6 bg-white border-t flex justify-between items-center">
           <div className="flex gap-4">
             <button
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
               className="px-8 py-2.5 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               onClick={handleSave}
             >
-              {isLoading ? <Spinner className="text-white" /> : "SAVE"}
+              {isLoading || isUploading ? <Spinner className="text-white" /> : "SAVE"}
             </button>
             <button
               className="px-8 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded flex items-center justify-center gap-2 shadow-lg transition-all"
               onClick={onClose}
-              disabled={isLoading}
+              disabled={isLoading || isUploading}
             >
               CANCEL
             </button>
@@ -677,6 +862,68 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
           </div>
         </div>
       </div>
+
+      {/* CONFIRM DELETE DOCUMENT MODAL */}
+      {confirmDeleteDoc && (
+        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-50 text-red-600 rounded-xl">
+                    <Trash2 size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">Delete Document</h3>
+                </div>
+                <button 
+                  onClick={() => setConfirmDeleteDoc(null)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-slate-600 leading-relaxed">
+                  Are you sure you want to delete <span className="font-bold text-slate-800">"{confirmDeleteDoc.fileName}"</span>? 
+                  This action will permanently remove the file from this claim record.
+                </p>
+                
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
+                  <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 font-medium">
+                    This file will be deleted immediately and cannot be recovered.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeleteDoc(null)}
+                className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    // Use claimId (form.id) and documentId
+                    await remove(form.id!, confirmDeleteDoc.id);
+                    setConfirmDeleteDoc(null);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center gap-2"
+              >
+                <Trash2 size={16} />
+                Delete Document
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

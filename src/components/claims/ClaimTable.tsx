@@ -16,6 +16,21 @@ const typeStyles: Record<string, string> = {
   Reimbursement: "bg-sky-100 text-sky-700 border-sky-200",
 };
 
+const claimStatusStyles: Record<number, string> = {
+  1: "bg-blue-100 text-blue-700 border-blue-200",         // Registered
+  2: "bg-amber-100 text-amber-700 border-amber-200",       // Under Review
+  3: "bg-purple-100 text-purple-700 border-purple-200",    // Survey In Progress
+  4: "bg-emerald-100 text-emerald-700 border-emerald-200", // Approved
+  5: "bg-red-100 text-red-700 border-red-200",             // Rejected
+  6: "bg-indigo-100 text-indigo-700 border-indigo-200",    // Paid
+  7: "bg-slate-100 text-slate-700 border-slate-200",       // Closed
+};
+
+const policyTypeStyles: Record<number, string> = {
+  1: "bg-rose-100 text-rose-700 border-rose-200",   // Life
+  2: "bg-teal-100 text-teal-700 border-teal-200",   // General
+};
+
 interface Props {
   data: Claim[];
   loading?: boolean;
@@ -78,6 +93,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
             <Th>Customer</Th>
             <Th>Division</Th>
             <Th>Policy</Th>
+            <Th>Policy Type</Th>
             <Th>Type</Th>
             <Th>Event</Th>
             <Th>Amount</Th>
@@ -96,7 +112,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={12} className="text-center py-12">
+                <td colSpan={13} className="text-center py-12">
                   No claims found
                 </td>
               </tr>
@@ -117,6 +133,15 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                     </span>
                   </Td>
                   <Td>{claim.policyNumber || "-"}</Td>
+                  <Td>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                        policyTypeStyles[claim.policyType] || "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      {claim.policyTypeName || "-"}
+                    </span>
+                  </Td>
                   <Td>
                     {claim.claimTypeName ? (
                       <span
@@ -142,7 +167,9 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                     </div>
                   </Td>
                   <Td>
-                    <span className="px-2 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${
+                      claimStatusStyles[claim.claimStatus] || "bg-slate-100 text-slate-700 border-slate-200"
+                    }`}>
                       {claim.claimStatusName || "-"}
                     </span>
                   </Td>

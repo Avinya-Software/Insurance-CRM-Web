@@ -68,7 +68,7 @@ export const deleteClaimDocumentApi = async (
   documentId: string
 ) => {
   const res = await api.delete(
-    `/claim/${claimId}/documents/${documentId}`
+    `/Claim/claims/${claimId}/documents/${documentId}`
   );
   return res.data;
 };
