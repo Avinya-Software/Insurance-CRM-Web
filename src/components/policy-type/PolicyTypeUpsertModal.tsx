@@ -73,7 +73,13 @@ const PolicyTypeUpsertModal = ({ isOpen, item, onClose }: Props) => {
     if (!formData.policyTypeName) newErrors.policyTypeName = "Policy Type Name is required";
     
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Please fill all required fields");
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = () => {

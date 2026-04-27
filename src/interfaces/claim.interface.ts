@@ -15,6 +15,8 @@ export interface Claim {
   customerName: string | null;
   policyId: string;
   policyNumber: string | null;
+  policyType: number;
+  policyTypeName: string | null;
   memberId: string | null;
   memberName: string | null;
   divisionType: number;

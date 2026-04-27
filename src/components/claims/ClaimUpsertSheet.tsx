@@ -60,6 +60,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const initialForm = {
     id: null as string | null,
     policyId: "",
+    policyType: 0,
     customerId: "",
     memberId: "",
     divisionType: 0,
@@ -68,7 +69,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     incidentDate: "",
     claimEventType: 0,
     claimType: 0,
-    claimStatus: 0,
+    claimStatus: 1,
     claimAmount: 0,
     approvedAmount: 0,
     description: "",
@@ -135,16 +136,12 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const { data: policies, isLoading: policiesLoading } = usePoliciesByCustomer(form.customerId);
   const { data: members, isLoading: membersLoading } = useFamilyMemberDropdown(form.customerId);
 
-  /*   AUTO-SELECT REGISTERED STATUS   */
   useEffect(() => {
-    if (!open) return;
-    if (claimStatuses?.length && !claim && form.claimStatus === 0) {
-      const registered = claimStatuses.find((s: any) => s.name?.toLowerCase() === "registered");
-      if (registered) {
-        setForm(prev => ({ ...prev, claimStatus: registered.id }));
-      }
+    if (!open || claim) return;
+    if (form.claimStatus === 0) {
+      setForm(prev => ({ ...prev, claimStatus: 1 }));
     }
-  }, [open, claimStatuses, claim]);
+  }, [open, claim, form.claimStatus]);
 
   /*   PREFILL   */
   useEffect(() => {
@@ -162,6 +159,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
         ...initialForm,
         id: claim.id || claim.claimId || null,
         policyId: claim.policyId || "",
+        policyType: claim.policyType || 0,
         customerId: claim.customerId || "",
         memberId: claim.memberId || "",
         divisionType: claim.divisionType || 0,
@@ -275,7 +273,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     
     // Check top level first
     const mainFields = [
-      "policyId", "customerId", "memberId", "divisionType", "claimNumber",
+      "policyId", "policyType", "customerId", "memberId", "divisionType", "claimNumber",
       "claimDate", "incidentDate", "claimEventType", "claimType",
       "claimStatus", "claimAmount", "approvedAmount", "description"
     ];
@@ -461,11 +459,11 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                   <SearchableComboBox
                     label="Policy"
                     required
-                    items={(policies || []).map((p: any) => ({ value: p.policyId, label: p.policyNumber, divisionId: p.divisionId }))}
+                    items={(policies || []).map((p: any) => ({ value: p.policyId, label: `${p.policyNumber} - ${p.policyTypeName}`, divisionId: p.divisionId, policyType: p.policyType }))}
                     value={form.policyId}
                     placeholder={policiesLoading ? "Loading..." : "Search policy..."}
                     error={errors.policyId}
-                    onSelect={(item: any) => setForm({ ...form, policyId: item?.value || "", divisionType: item?.divisionId ? Number(item.divisionId) : form.divisionType })}
+                    onSelect={(item: any) => setForm({ ...form, policyId: item?.value || "", policyType: item?.policyType ? Number(item.policyType) : 0, divisionType: item?.divisionId ? Number(item.divisionId) : form.divisionType })}
                   />
 
                   <SearchableComboBox

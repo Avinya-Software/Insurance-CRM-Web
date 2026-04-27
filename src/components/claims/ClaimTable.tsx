@@ -26,6 +26,11 @@ const claimStatusStyles: Record<number, string> = {
   7: "bg-slate-100 text-slate-700 border-slate-200",       // Closed
 };
 
+const policyTypeStyles: Record<number, string> = {
+  1: "bg-rose-100 text-rose-700 border-rose-200",   // Life
+  2: "bg-teal-100 text-teal-700 border-teal-200",   // General
+};
+
 interface Props {
   data: Claim[];
   loading?: boolean;
@@ -88,6 +93,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
             <Th>Customer</Th>
             <Th>Division</Th>
             <Th>Policy</Th>
+            <Th>Policy Type</Th>
             <Th>Type</Th>
             <Th>Event</Th>
             <Th>Amount</Th>
@@ -106,7 +112,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={12} className="text-center py-12">
+                <td colSpan={13} className="text-center py-12">
                   No claims found
                 </td>
               </tr>
@@ -127,6 +133,15 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                     </span>
                   </Td>
                   <Td>{claim.policyNumber || "-"}</Td>
+                  <Td>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                        policyTypeStyles[claim.policyType] || "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      {claim.policyTypeName || "-"}
+                    </span>
+                  </Td>
                   <Td>
                     {claim.claimTypeName ? (
                       <span

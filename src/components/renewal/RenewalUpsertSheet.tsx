@@ -151,7 +151,7 @@ const RenewalUpsertSheet = ({
 
   const handleSave = async () => {
     if (!validate()) {
-      toast.error("Please fix validation errors");
+      toast.error("Please fill all required fields");
       return;
     }
 
