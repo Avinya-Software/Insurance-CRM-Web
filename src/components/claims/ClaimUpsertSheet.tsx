@@ -38,7 +38,7 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
   const queryClient = useQueryClient();
   const { mutateAsync: saveClaim, isPending: isSaving } = useCreateClaim();
   const { data: customers, isLoading: customersLoading } = useCustomerDropdown();
-  const { data: divisions, isLoading: divisionLoading } = useDivisionDropdown(0);
+  const { data: divisions, isLoading: divisionLoading } = useDivisionDropdown();
   const { data: claimStatuses, isLoading: statusLoading } = useClaimStatus();
   const { data: claimTypes, isLoading: typeLoading } = useClaimType();
   const { data: eventTypes, isLoading: eventLoading } = useClaimEventType();
@@ -227,37 +227,31 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
     if (!form.claimNumber) e.claimNumber = "Claim number is required";
     if (!form.incidentDate) e.incidentDate = "Incident date is required";
     if (!form.memberId) e.memberId = "Claiming member is required";
-    if (!form.claimType) e.claimType = "Claim type is required";
-    if (!form.claimEventType) e.claimEventType = "Claim event type is required";
     if (form.claimAmount <= 0) e.claimAmount = "Claimed amount must be > 0";
 
-    // DIVISION SPECIFIC VALIDATION
-    if (form.divisionType === 1) { // Health
-      if (!form.healthDetail.hospitalName) e.hospitalName = "Hospital name is required";
-      if (!form.healthDetail.illnessType) e.illnessType = "Illness type is required";
-      if (!form.healthDetail.admissionDate) e.admissionDate = "Admission date is required";
-    }
+    if (showHealth && !form.healthDetail.hospitalName) e.hospitalName = "Hospital name is required";
+    if (showHealth && !form.healthDetail.illnessType) e.illnessType = "Illness type is required";
+    if (showHealth && !form.healthDetail.admissionDate) e.admissionDate = "Admission date is required";
 
-    if (form.divisionType === 5) { // Motor
-      if (!form.motorDetail.vehicleNumber) e.vehicleNumber = "Vehicle number is required";
-      if (!form.motorDetail.garageName) e.garageName = "Garage name is required";
-      if (!form.motorDetail.garageAddress) e.garageAddress = "Garage address is required";
-    }
+    if (showMotor && !form.motorDetail.vehicleNumber) e.vehicleNumber = "Vehicle number is required";
+    if (showMotor && !form.motorDetail.garageName) e.garageName = "Garage name is required";
+    if (showMotor && !form.motorDetail.garageAddress) e.garageAddress = "Garage address is required";
 
-    if (form.divisionType === 2) { // Other/Risk
-      if (!form.riskDetail.riskAddress) e.riskAddress = "Risk address is required";
-      if (form.riskDetail.lossAmount <= 0) e.lossAmount = "Estimated loss amount is required";
-    }
+    if (showRisk && !form.riskDetail.riskAddress) e.riskAddress = "Risk address is required";
+    if (showRisk && form.riskDetail.lossAmount <= 0) e.lossAmount = "Estimated loss amount is required";
 
-    // Death Validation (Only if "Death" event type is selected or any death field is partially filled)
-    const isDeathEvent = eventTypes?.find((t: any) => t.id === form.claimEventType)?.name?.toLowerCase() === "death";
-    const hasDeathInput = !!(form.deathDetail.dateOfDeath || form.deathDetail.causeOfDeath || form.deathDetail.placeOfDeath);
-
-    if (isDeathEvent || hasDeathInput) {
+    // Death Validation (Only if explicitly required by showDeath - i.e., Life Policy Division 4)
+    if (showDeath) {
       if (!form.deathDetail.dateOfDeath) e.dateOfDeath = "Date of death is required";
       if (!form.deathDetail.causeOfDeath) e.causeOfDeath = "Cause of death is required";
       if (!form.deathDetail.placeOfDeath) e.placeOfDeath = "Place of death is required";
     }
+
+    const needsClaimType = [1, 4, 5].includes(form.divisionType);
+    const needsClaimEventType = form.divisionType !== 4; // Hide for Life-Health
+
+    if (needsClaimType && !form.claimType) e.claimType = "Claim type is required";
+    if (needsClaimEventType && !form.claimEventType) e.claimEventType = "Claim event type is required";
 
     setErrors(e);
     if (Object.keys(e).length) {
@@ -307,30 +301,44 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
         
         const cleanDate = (d: any) => (d === "" ? null : d);
         
+        // Clean basic dates and ensure numeric types
         payload.claimDate = cleanDate(payload.claimDate);
         payload.incidentDate = cleanDate(payload.incidentDate);
+        payload.divisionType = Number(payload.divisionType);
+        payload.claimEventType = Number(payload.claimEventType);
+        payload.claimType = Number(payload.claimType);
+        payload.claimStatus = Number(payload.claimStatus);
+        payload.policyType = Number(payload.policyType);
+        payload.claimAmount = Number(payload.claimAmount);
+        payload.approvedAmount = Number(payload.approvedAmount);
 
-        if (form.divisionType === 1) {
-          payload.healthDetail.admissionDate = cleanDate(payload.healthDetail.admissionDate);
-          payload.healthDetail.dischargeDate = cleanDate(payload.healthDetail.dischargeDate);
-          payload.motorDetail = null;
-          payload.riskDetail = null;
-        } else if (form.divisionType === 5) {
-          payload.motorDetail.survey.surveyDate = cleanDate(payload.motorDetail.survey.surveyDate);
-          payload.healthDetail = null;
-          payload.riskDetail = null;
-        } else if (form.divisionType === 2) {
-          payload.riskDetail.survey.surveyDate = cleanDate(payload.riskDetail.survey.surveyDate);
-          payload.healthDetail = null;
-          payload.motorDetail = null;
-        }
+        // Map specific details based on division, setting others to null
+        payload.healthDetail = showHealth ? {
+          ...form.healthDetail,
+          admissionDate: cleanDate(form.healthDetail.admissionDate),
+          dischargeDate: cleanDate(form.healthDetail.dischargeDate)
+        } : null;
 
-        const isDeathEvent = eventTypes?.find((t: any) => t.id === form.claimEventType)?.name?.toLowerCase() === "death";
-        if (isDeathEvent || payload.deathDetail.dateOfDeath) {
-          payload.deathDetail.dateOfDeath = cleanDate(payload.deathDetail.dateOfDeath);
-        } else {
-          payload.deathDetail = null;
-        }
+        payload.motorDetail = showMotor ? {
+          ...form.motorDetail,
+          survey: form.motorDetail.survey ? {
+            ...form.motorDetail.survey,
+            surveyDate: cleanDate(form.motorDetail.survey.surveyDate)
+          } : null
+        } : null;
+
+        payload.riskDetail = showRisk ? {
+          ...form.riskDetail,
+          survey: form.riskDetail.survey ? {
+            ...form.riskDetail.survey,
+            surveyDate: cleanDate(form.riskDetail.survey.surveyDate)
+          } : null
+        } : null;
+
+        payload.deathDetail = showDeath ? {
+          ...form.deathDetail,
+          dateOfDeath: cleanDate(form.deathDetail.dateOfDeath)
+        } : null;
 
         const res = await saveClaim(payload);
         claimId = res?.claimId || res?.data?.claimId || form.id;
@@ -395,9 +403,13 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
 
   if (!open) return null;
 
-  const isHealth = form.divisionType === 1;
-  const isOther = form.divisionType === 2;
-  const isMotor = form.divisionType === 5;
+  const isGeneral = form.policyType === 2;
+  const isLife = form.policyType === 1;
+
+  const showHealth = isGeneral && form.divisionType === 1;
+  const showRisk = isGeneral && form.divisionType === 2;
+  const showMotor = isGeneral && form.divisionType === 5;
+  const showDeath = isLife && form.divisionType === 4;
   const isLoading = isSaving;
 
   return (
@@ -459,11 +471,21 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                   <SearchableComboBox
                     label="Policy"
                     required
-                    items={(policies || []).map((p: any) => ({ value: p.policyId, label: `${p.policyNumber} - ${p.policyTypeName}`, divisionId: p.divisionId, policyType: p.policyType }))}
+                    items={(policies || []).map((p: any) => ({ 
+                      value: p.policyId, 
+                      label: `${p.policyNumber} - ${p.policyTypeName}`, 
+                      divisionId: p.divisionId || (Number(p.policyType) === 1 ? 4 : 0), 
+                      policyType: p.policyType 
+                    }))}
                     value={form.policyId}
                     placeholder={policiesLoading ? "Loading..." : "Search policy..."}
                     error={errors.policyId}
-                    onSelect={(item: any) => setForm({ ...form, policyId: item?.value || "", policyType: item?.policyType ? Number(item.policyType) : 0, divisionType: item?.divisionId ? Number(item.divisionId) : form.divisionType })}
+                    onSelect={(item: any) => setForm({ 
+                      ...form, 
+                      policyId: item?.value || "", 
+                      policyType: item?.policyType ? Number(item.policyType) : 0, 
+                      divisionType: item?.divisionId ? Number(item.divisionId) : form.divisionType 
+                    })}
                   />
 
                   <SearchableComboBox
@@ -490,9 +512,26 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                   <Input label="Claim Number" required value={form.claimNumber} onChange={(v: any) => setForm({ ...form, claimNumber: v })} error={errors.claimNumber} placeholder="Enter claim number" />
                   <Input label="Incident Date" required type="date" value={form.incidentDate} onChange={(v: any) => setForm({ ...form, incidentDate: v })} error={errors.incidentDate} />
                   <Input label="Claim Date" type="date" value={form.claimDate} onChange={(v: any) => setForm({ ...form, claimDate: v })} />
-                  <Select label="Claim Type" required value={form.claimType} options={claimTypes} onChange={(v: any) => setForm({ ...form, claimType: Number(v) })} error={errors.claimType} />
+                  
+                  {/* Conditionally show Claim Type */}
+                  {[1, 4, 5].includes(form.divisionType) && (
+                    <Select label="Claim Type" required value={form.claimType} options={claimTypes} onChange={(v: any) => setForm({ ...form, claimType: Number(v) })} error={errors.claimType} />
+                  )}
+
                   <Select label="Claim Status" value={form.claimStatus} options={claimStatuses} onChange={(v: any) => setForm({ ...form, claimStatus: Number(v) })} />
-                  <Select label="Claim Event Type" required value={form.claimEventType} options={eventTypes} onChange={(v: any) => setForm({ ...form, claimEventType: Number(v) })} error={errors.claimEventType} />
+                  
+                  {/* Conditionally show Claim Event Type */}
+                  {form.divisionType !== 4 && (
+                    <SearchableComboBox
+                      label="Claim Event Type"
+                      required
+                      items={(eventTypes || []).map((t: any) => ({ value: String(t.id), label: t.name }))}
+                      value={String(form.claimEventType)}
+                      placeholder="Search event type..."
+                      error={errors.claimEventType}
+                      onSelect={(item) => setForm({ ...form, claimEventType: item?.value ? Number(item.value) : 0 })}
+                    />
+                  )}
                   <Input label="Claimed Amount" required type="number" value={form.claimAmount} onChange={(v: any) => setForm({ ...form, claimAmount: Number(v) })} error={errors.claimAmount} placeholder="0.00" />
                   <Input label="Approved Amount" type="number" value={form.approvedAmount} onChange={(v: any) => setForm({ ...form, approvedAmount: Number(v) })} placeholder="0.00" />
 
@@ -512,13 +551,25 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
             {activeTab === "additional" && (
               <div className="space-y-6">
                 {!form.divisionType && (
-                  <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-sm">
-                    <Activity className="mx-auto text-slate-300 mb-4" size={48} />
-                    <h3 className="text-slate-900 font-semibold text-lg">Select a Division First</h3>
+                  <div className="bg-white border border-slate-100 rounded-xl p-20 text-center space-y-4 shadow-sm">
+                    <div className="w-20 h-20 bg-blue-50/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Activity className="text-blue-200" size={40} />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">Select a Division First</h3>
                     <p className="text-slate-500 text-sm max-w-sm mx-auto">Please select a division in the basic information tab to see category-specific fields.</p>
                   </div>
                 )}
-                {isMotor && (
+
+                {form.divisionType > 0 && !form.policyType && (
+                  <div className="bg-white border border-slate-100 rounded-xl p-20 text-center space-y-4 shadow-sm">
+                    <div className="w-20 h-20 bg-amber-50/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <ShieldCheck className="text-amber-200" size={40} />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">Policy Selection Required</h3>
+                    <p className="text-slate-500 text-sm max-w-sm mx-auto">A policy must be selected to determine the correct claim category. Please choose a policy in the basic information tab.</p>
+                  </div>
+                )}
+                {showMotor && (
                    <Section icon={<Car size={16} />} title="Motor claim details">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       <Input label="Vehicle Number" required value={form.motorDetail.vehicleNumber} placeholder="GJ-01-XX-0000" onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, vehicleNumber: v } })} error={errors.vehicleNumber} />
@@ -553,49 +604,46 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                     </div>
                   </Section>
                 )}
-                {isHealth && (
-                  <>
-                    <Section icon={<Activity size={16} />} title="Hospitalization Details">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <Input label="Hospital Name" required value={form.healthDetail.hospitalName} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalName: v } })} error={errors.hospitalName} />
-                        <Input label="Illness Type" required value={form.healthDetail.illnessType} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, illnessType: v } })} error={errors.illnessType} />
-                        <Input label="Hospital Address" value={form.healthDetail.hospitalAddress} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalAddress: v } })} />
-                        <Input label="Admission Date" required type="date" value={form.healthDetail.admissionDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, admissionDate: v } })} error={errors.admissionDate} />
-                        <Input label="Discharge Date" type="date" value={form.healthDetail.dischargeDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, dischargeDate: v } })} />
-                        <Input label="Medical Remarks" value={form.healthDetail.remarks} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, remarks: v } })} />
-                      </div>
-                    </Section>
-                    <DeathSection form={form} setForm={setForm} errors={errors} deathTypes={deathTypes} />
-                  </>
+                {showHealth && (
+                  <Section icon={<Activity size={16} />} title="Hospitalization Details">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <Input label="Hospital Name" required value={form.healthDetail.hospitalName} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalName: v } })} error={errors.hospitalName} />
+                      <Input label="Illness Type" required value={form.healthDetail.illnessType} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, illnessType: v } })} error={errors.illnessType} />
+                      <Input label="Hospital Address" value={form.healthDetail.hospitalAddress} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, hospitalAddress: v } })} />
+                      <Input label="Admission Date" required type="date" value={form.healthDetail.admissionDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, admissionDate: v } })} error={errors.admissionDate} />
+                      <Input label="Discharge Date" type="date" value={form.healthDetail.dischargeDate} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, dischargeDate: v } })} />
+                      <Input label="Medical Remarks" value={form.healthDetail.remarks} onChange={(v: any) => setForm({ ...form, healthDetail: { ...form.healthDetail, remarks: v } })} />
+                    </div>
+                  </Section>
                 )}
-                {isOther && (
-                  <>
-                    <Section icon={<ShieldCheck size={16} />} title="Asset / risk loss details">
-                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2"><Input label="Risk Address" required value={form.riskDetail.riskAddress} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, riskAddress: v } })} error={errors.riskAddress} /></div>
-                        <Input label="Estimated Loss Amount" required type="number" value={form.riskDetail.lossAmount} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, lossAmount: Number(v) } })} error={errors.lossAmount} />
-                        <div className="lg:col-span-3">
-                          <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Damage Description</label>
-                          <textarea 
-                            value={form.riskDetail.damageDescription} 
-                            onChange={(e) => setForm(p => ({ ...p, riskDetail: { ...p.riskDetail, damageDescription: e.target.value } }))}
-                            placeholder="Describe damage..."
-                            className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm h-20 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
-                          />
-                        </div>
+                {showRisk && (
+                  <Section icon={<ShieldCheck size={16} />} title="Asset / risk loss details">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      <div className="lg:col-span-2"><Input label="Risk Address" required value={form.riskDetail.riskAddress} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, riskAddress: v } })} error={errors.riskAddress} /></div>
+                      <Input label="Estimated Loss Amount" required type="number" value={form.riskDetail.lossAmount} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, lossAmount: Number(v) } })} error={errors.lossAmount} />
+                      <div className="lg:col-span-3">
+                        <label className="text-sm font-bold text-slate-700 uppercase tracking-wider text-[10px]">Damage Description</label>
+                        <textarea 
+                          value={form.riskDetail.damageDescription} 
+                          onChange={(e) => setForm(p => ({ ...p, riskDetail: { ...p.riskDetail, damageDescription: e.target.value } }))}
+                          placeholder="Describe damage..."
+                          className="w-full mt-1.5 px-4 py-2.5 bg-white border border-slate-200 rounded text-sm h-20 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm"
+                        />
                       </div>
-                      <div className="border-t bg-slate-50 -mx-4 -mb-4 px-4 py-4 space-y-4">
-                        <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Surveyor Information</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                          <Input label="Surveyor Name" value={form.riskDetail.survey.surveyorName} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorName: v } } })} />
-                          <Input label="Contact" value={form.riskDetail.survey.surveyorContact} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorContact: v } } })} />
-                          <Input label="Survey Date" type="date" value={form.riskDetail.survey.surveyDate} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyDate: v } } })} />
-                          <Input label="Survey Remarks" value={form.riskDetail.survey.remarks} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, remarks: v } } })} />
-                        </div>
+                    </div>
+                    <div className="border-t bg-slate-50 -mx-4 -mb-4 px-4 py-4 space-y-4">
+                      <h4 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Surveyor Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <Input label="Surveyor Name" value={form.riskDetail.survey.surveyorName} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorName: v } } })} />
+                        <Input label="Contact" value={form.riskDetail.survey.surveyorContact} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyorContact: v } } })} />
+                        <Input label="Survey Date" type="date" value={form.riskDetail.survey.surveyDate} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, surveyDate: v } } })} />
+                        <Input label="Survey Remarks" value={form.riskDetail.survey.remarks} onChange={(v: any) => setForm({ ...form, riskDetail: { ...form.riskDetail, survey: { ...form.riskDetail.survey, remarks: v } } })} />
                       </div>
-                    </Section>
-                    <DeathSection form={form} setForm={setForm} errors={errors} deathTypes={deathTypes} />
-                  </>
+                    </div>
+                  </Section>
+                )}
+                {showDeath && (
+                   <DeathSection form={form} setForm={setForm} errors={errors} deathTypes={deathTypes} />
                 )}
               </div>
             )}
