@@ -110,3 +110,9 @@ export const updateClaimStatusApi = async (data: {
   const res = await api.put("/Claim/update-claim-status", data);
   return res.data;
 };
+
+/*   GET CLAIM HISTORY   */
+export const getClaimHistoryApi = async (claimId: string) => {
+  const res = await api.get(`/Claim/claim-status-history/${claimId}`);
+  return res.data;
+};

@@ -5,6 +5,7 @@ import { useDeleteClaim } from "../../hooks/claim/useDeleteClaim";
 import { useClaimStatus } from "../../hooks/claim/useClaimMasters";
 import { useUpdateClaimStatus } from "../../hooks/claim/useUpdateClaimStatus";
 import TableSkeleton from "../common/TableSkeleton";
+import { ClaimHistoryDialog } from "./ClaimHistoryDialog";
 import type { Claim } from "../../interfaces/claim.interface";
 
 const divisionStyles: Record<number, string> = {
@@ -46,6 +47,8 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
   const [openClaim, setOpenClaim] = useState<Claim | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Claim | null>(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyClaimId, setHistoryClaimId] = useState<string | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -146,9 +149,16 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
               </tr>
             ) : (
               data.map((claim) => (
-                <tr key={claim.claimId} className="border-t hover:bg-slate-50">
+                <tr 
+                  key={claim.claimId} 
+                  className="border-t hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setHistoryClaimId(claim.claimId);
+                    setShowHistory(true);
+                  }}
+                >
                   <Td>
-                    <div className="font-semibold">{claim.claimNumber}</div>
+                    <div className="font-semibold text-blue-600 hover:underline">{claim.claimNumber}</div>
                   </Td>
                   <Td>{claim.customerName || "-"}</Td>
                   <Td>
@@ -240,6 +250,15 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
           />
 
           <MenuItem
+            label="Status history"
+            onClick={() => {
+              setHistoryClaimId(openClaim.claimId);
+              setShowHistory(true);
+              setOpenClaim(null);
+            }}
+          />
+
+          <MenuItem
             label="Delete Claim"
             danger
             onClick={() => setConfirmDelete(openClaim)}
@@ -308,6 +327,13 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
           </div>
         </div>
       )}
+
+      {/*   CLAIM HISTORY DIALOG   */}
+      <ClaimHistoryDialog
+        open={showHistory}
+        onOpenChange={setShowHistory}
+        claimId={historyClaimId}
+      />
     </div>
   );
 };
