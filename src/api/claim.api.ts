@@ -101,3 +101,12 @@ export const updateClaimStageApi = async (
 
   return res.data;
 };
+/*   UPDATE CLAIM STATUS   */
+
+export const updateClaimStatusApi = async (data: {
+  claimId: string;
+  statusId: number;
+}) => {
+  const res = await api.put("/Claim/update-claim-status", data);
+  return res.data;
+};
