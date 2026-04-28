@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
 import { IFamilyMember } from "../../interfaces/family-member.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useUpdateFamilyStatus } from "../../hooks/family-member/useUpdateFamilyStatus";
@@ -191,7 +191,7 @@ const MenuItem = ({
       danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
-    {icon}
+    {danger ? <X size={14} /> : icon}
     {label}
   </button>
 );

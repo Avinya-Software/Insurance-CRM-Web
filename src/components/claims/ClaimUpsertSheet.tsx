@@ -18,7 +18,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   claim?: any;
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 type TabType = "basic" | "additional" | "documents";
@@ -569,10 +569,47 @@ const ClaimUpsertSheet = ({ open, onClose, claim, onSuccess }: Props) => {
                     <p className="text-slate-500 text-sm max-w-sm mx-auto">A policy must be selected to determine the correct claim category. Please choose a policy in the basic information tab.</p>
                   </div>
                 )}
-                {showMotor && (
-                   <Section icon={<Car size={16} />} title="Motor claim details">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      <Input label="Vehicle Number" required value={form.motorDetail.vehicleNumber} placeholder="GJ-01-XX-0000" onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, vehicleNumber: v } })} error={errors.vehicleNumber} />
+                  {showMotor && (
+                    <Section icon={<Car size={16} />} title="Motor claim details">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <Input
+                          label="Vehicle Number"
+                          required
+                          value={form.motorDetail.vehicleNumber}
+                          placeholder="GJ-05-HP-4040"
+                          onChange={(v: string) => {
+                            const raw = v.replace(/-/g, "").toUpperCase();
+                            let clean = "";
+                            for (let i = 0; i < raw.length; i++) {
+                              const char = raw[i];
+                              if (i < 2) {
+                                if (/[A-Z]/.test(char)) clean += char;
+                                else break;
+                              } else if (i < 4) {
+                                if (/[0-9]/.test(char)) clean += char;
+                                else break;
+                              } else if (i < 6) {
+                                if (/[A-Z]/.test(char)) clean += char;
+                                else break;
+                              } else if (i < 10) {
+                                if (/[0-9]/.test(char)) clean += char;
+                                else break;
+                              }
+                            }
+
+                            let formatted = "";
+                            for (let i = 0; i < clean.length; i++) {
+                              if (i === 2 || i === 4 || i === 6) formatted += "-";
+                              formatted += clean[i];
+                            }
+
+                            setForm({
+                              ...form,
+                              motorDetail: { ...form.motorDetail, vehicleNumber: formatted },
+                            });
+                          }}
+                          error={errors.vehicleNumber}
+                        />
                       <Input label="Garage Name" required value={form.motorDetail.garageName} placeholder="Garage name" onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, garageName: v } })} error={errors.garageName} />
                       <Input label="Garage Address" required value={form.motorDetail.garageAddress} placeholder="Address" onChange={(v: any) => setForm({ ...form, motorDetail: { ...form.motorDetail, garageAddress: v } })} error={errors.garageAddress} />
                       <div className="lg:col-span-2">

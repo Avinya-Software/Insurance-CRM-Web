@@ -3,7 +3,6 @@ import { Filter, X } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 
 import { useRenewals } from "../hooks/renewal/useRenewals";
-import { useRenewalStatuses } from "../hooks/renewal/useRenewalStatuses";
 import RenewalTable from "../components/renewal/RenewalTable";
 import Pagination from "../components/leads/Pagination";
 import RenewalFilterSheet from "../components/renewal/RenewalFilterSheet";
@@ -29,7 +28,6 @@ const Renewals = () => {
   /*   API   */
 
   const { data, isLoading, isFetching, refetch } = useRenewals(filters);
-  const { data: statuses = [] } = useRenewalStatuses();   
 
   /*   HELPERS   */
 
@@ -132,14 +130,9 @@ const Renewals = () => {
         <div className="px-4 border-b bg-white flex items-center gap-8 overflow-x-auto no-scrollbar">
           {[
             { id: null, name: "All", count: data?.data?.allCount ?? 0 },
-            ...(statuses || [])
-              .filter((s: any) => [1, 2, 3].includes(s.id))
-              .map((s: any) => ({
-                ...s,
-                count: s.id === 1 ? data?.data?.pendingCount ?? 0 
-                     : s.id === 2 ? data?.data?.renewalCount ?? 0
-                     : s.id === 3 ? data?.data?.overdueCount ?? 0 : 0
-              }))
+            { id: 1, name: "Pending", count: data?.data?.pendingCount ?? 0 },
+            { id: 2, name: "Renew", count: data?.data?.renewalCount ?? 0 },
+            { id: 3, name: "Overdue", count: data?.data?.overdueCount ?? 0 },
           ].map((tab) => (
             <button
               key={tab.name}

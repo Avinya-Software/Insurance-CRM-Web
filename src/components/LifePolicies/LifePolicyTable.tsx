@@ -281,7 +281,7 @@ const MenuItem = ({
       danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
-    {icon}
+    {danger ? <X size={14} /> : icon}
     {label}
   </button>
 );
