@@ -1,8 +1,11 @@
 import { useState, useRef } from "react";
-import { MoreVertical, X } from "lucide-react";
+import { MoreVertical, X, Check } from "lucide-react";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteClaim } from "../../hooks/claim/useDeleteClaim";
+import { useClaimStatus } from "../../hooks/claim/useClaimMasters";
+import { useUpdateClaimStatus } from "../../hooks/claim/useUpdateClaimStatus";
 import TableSkeleton from "../common/TableSkeleton";
+import { ClaimHistoryDialog } from "./ClaimHistoryDialog";
 import type { Claim } from "../../interfaces/claim.interface";
 
 const divisionStyles: Record<number, string> = {
@@ -37,18 +40,25 @@ interface Props {
   onEdit: (claim: Claim) => void;
 }
 
-const DROPDOWN_HEIGHT = 160;
-const DROPDOWN_WIDTH = 180;
+const DROPDOWN_HEIGHT = 280;
+const DROPDOWN_WIDTH = 220;
 
 const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
   const [openClaim, setOpenClaim] = useState<Claim | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Claim | null>(null);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyClaimId, setHistoryClaimId] = useState<string | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   useOutsideClick(dropdownRef, () => {
     setOpenClaim(null);
+    setShowStatusMenu(false);
   });
+
+  const { data: statuses = [] } = useClaimStatus();
+  const { mutate: updateStatus, isPending: updatingStatus } = useUpdateClaimStatus();
 
   const { mutate: deleteClaim, isPending } = useDeleteClaim();
 
@@ -64,6 +74,27 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
       left: rect.right - DROPDOWN_WIDTH,
     });
     setOpenClaim(claim);
+    setShowStatusMenu(false);
+  };
+
+  const handleStatusChange = (statusId: number) => {
+    if (!openClaim) return;
+
+    const statusName = statuses.find((s: any) => s.id === statusId)?.name;
+
+    updateStatus(
+      {
+        claimId: openClaim.claimId,
+        statusId,
+        statusName,
+      },
+      {
+        onSuccess: () => {
+          setOpenClaim(null);
+          setShowStatusMenu(false);
+        },
+      }
+    );
   };
 
   const handleDelete = () => {
@@ -118,9 +149,16 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
               </tr>
             ) : (
               data.map((claim) => (
-                <tr key={claim.claimId} className="border-t hover:bg-slate-50">
+                <tr 
+                  key={claim.claimId} 
+                  className="border-t hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setHistoryClaimId(claim.claimId);
+                    setShowHistory(true);
+                  }}
+                >
                   <Td>
-                    <div className="font-semibold">{claim.claimNumber}</div>
+                    <div className="font-semibold text-blue-600 hover:underline">{claim.claimNumber}</div>
                   </Td>
                   <Td>{claim.customerName || "-"}</Td>
                   <Td>
@@ -196,7 +234,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
         <div
           ref={dropdownRef}
           onClick={(e) => e.stopPropagation()}
-          className="fixed z-50 w-[180px] bg-white border rounded-lg shadow-lg overflow-hidden"
+          className="fixed z-50 w-[220px] bg-white border rounded-lg shadow-lg overflow-hidden"
           style={style}
         >
           <MenuItem
@@ -207,10 +245,43 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
             }}
           />
           <MenuItem
+            label="Change Status"
+            onClick={() => setShowStatusMenu((p) => !p)}
+          />
+
+          <MenuItem
+            label="Status history"
+            onClick={() => {
+              setHistoryClaimId(openClaim.claimId);
+              setShowHistory(true);
+              setOpenClaim(null);
+            }}
+          />
+
+          <MenuItem
             label="Delete Claim"
             danger
             onClick={() => setConfirmDelete(openClaim)}
           />
+
+          {/* STATUS SUBMENU */}
+          {showStatusMenu && (
+            <div className="border-t max-h-[200px] overflow-y-auto">
+              {statuses
+                .filter((s: any) => s.id !== openClaim.claimStatus)
+                .map((status: any) => (
+                  <button
+                    key={`status-${status.id}`}
+                    onClick={() => handleStatusChange(status.id)}
+                    disabled={updatingStatus}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2"
+                  >
+                    <Check size={14} className="text-slate-400" />
+                    {status.name}
+                  </button>
+                ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -256,6 +327,13 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
           </div>
         </div>
       )}
+
+      {/*   CLAIM HISTORY DIALOG   */}
+      <ClaimHistoryDialog
+        open={showHistory}
+        onOpenChange={setShowHistory}
+        claimId={historyClaimId}
+      />
     </div>
   );
 };

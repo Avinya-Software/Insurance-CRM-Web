@@ -177,13 +177,6 @@ const RenewalTable = ({ data = [], loading, statusId, onRenewal, onEdit }: Props
             onClick={() => handleAction(() => onEdit(openRow.policyId))}
           />
 
-          <MenuItem
-            label="Change Status"
-            onClick={() => {
-              // Placeholder for UI completeness
-              alert("Update Status triggered for renewal: " + openRow.renewalNo);
-            }}
-          />
         </div>
       )}
 

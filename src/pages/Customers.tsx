@@ -5,8 +5,6 @@ import { useCustomers } from "../hooks/customer/useCustomers";
 import CustomerTable from "../components/customer/CustomerTable";
 import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
 import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
-import CustomerPolicyBottomSheet from "../components/customer/CustomerPolicyBottomSheet";
-import CustomerClaimBottomSheet from "../components/customer/CustomerClaimBottomSheet";
 import Pagination from "../components/leads/Pagination";
 
 import type { Customer } from "../interfaces/customer.interface";
@@ -23,18 +21,6 @@ const Customers = () => {
 
   /*   POLICY UPSERT   */
   const [openPolicySheet, setOpenPolicySheet] = useState(false);
-
-  /*   VIEW POLICIES (SINGLE CLICK)   */
-  const [viewCustomerPolicies, setViewCustomerPolicies] = useState<{
-    customerId: string;
-    customerName?: string;
-  } | null>(null);
-
-  /*   VIEW CLAIMS (DOUBLE CLICK)   */
-  const [viewCustomerClaims, setViewCustomerClaims] = useState<{
-    customerId: string;
-    customerName?: string;
-  } | null>(null);
 
   /*   API   */
   const {
@@ -59,22 +45,6 @@ const Customers = () => {
   const handleAddPolicy = (customer: Customer) => {
     setSelectedCustomer(customer);
     setOpenPolicySheet(true);
-  };
-
-  /*   SINGLE CLICK → POLICIES   */
-  const openCustomerPolicies = (customer: Customer) => {
-    setViewCustomerPolicies({
-      customerId: customer.customerId,
-      customerName: customer.clientName,
-    });
-  };
-
-  /*   DOUBLE CLICK → CLAIMS   */
-  const openCustomerClaims = (customer: Customer) => {
-    setViewCustomerClaims({
-      customerId: customer.customerId,
-      customerName: customer.clientName,
-    });
   };
 
   const handleCustomerSuccess = () => {
@@ -145,8 +115,6 @@ const Customers = () => {
           loading={isLoading || isFetching}
           onEdit={handleEditCustomer}
           onAddPolicy={handleAddPolicy}
-          onRowClick={openCustomerPolicies}
-          onRowDoubleClick={openCustomerClaims}
         />
 
         {/*   PAGINATION   */}
@@ -174,22 +142,6 @@ const Customers = () => {
           setSelectedCustomer(null);
         }}
         onSuccess={handlePolicySuccess}
-      />
-
-      {/*   POLICIES BOTTOM SHEET   */}
-      <CustomerPolicyBottomSheet
-        open={!!viewCustomerPolicies}
-        customerId={viewCustomerPolicies?.customerId || null}
-        customerName={viewCustomerPolicies?.customerName}
-        onClose={() => setViewCustomerPolicies(null)}
-      />
-
-      {/*   CLAIMS BOTTOM SHEET   */}
-      <CustomerClaimBottomSheet
-        open={!!viewCustomerClaims}
-        customerId={viewCustomerClaims?.customerId || null}
-        customerName={viewCustomerClaims?.customerName}
-        onClose={() => setViewCustomerClaims(null)}
       />
     </>
   );

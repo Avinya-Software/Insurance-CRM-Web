@@ -1,11 +1,9 @@
 import { useState, useRef } from "react";
-import { MoreVertical, X, RefreshCcw, Check } from "lucide-react";
+import { MoreVertical, X, RefreshCcw } from "lucide-react";
 import type { LifePolicy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
-import { useUpdatePolicyStatus } from "../../hooks/policy/useUpdatePolicyStatus";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getPolicyStatusesDropdownApi } from "../../api/policy.api";
+import { useQueryClient } from "@tanstack/react-query";
 import TableSkeleton from "../common/TableSkeleton";
 
 /*   BADGE STYLES   */
@@ -25,7 +23,7 @@ const policyStatusStyles: Record<string, string> = {
 
 /*   CONSTANTS   */
 
-const DROPDOWN_HEIGHT = 260;
+const DROPDOWN_HEIGHT = 160;
 const DROPDOWN_WIDTH = 220;
 
 interface Props {
@@ -45,26 +43,18 @@ const LifePolicyTable = ({
 }: Props) => {
   const [openPolicy, setOpenPolicy] = useState<LifePolicy | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<LifePolicy | null>(null);
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useOutsideClick(dropdownRef, () => {
     setOpenPolicy(null);
-    setShowStatusMenu(false);
   });
 
   const { mutate: deletePolicy, isPending } = useDeletePolicy();
-  const { mutate: updateStatus, isPending: updatingStatus } =
-    useUpdatePolicyStatus();
-    const queryClient = useQueryClient();
-  /* 🔥 Fetch policy statuses */
-const { data: statuses = [] } = useQuery({
-  queryKey: ["policy-statuses"],
-  queryFn: () => getPolicyStatusesDropdownApi(),
-});
-const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" : v);
+  const queryClient = useQueryClient();
+
+  const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" : v);
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
@@ -85,12 +75,10 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
     });
 
     setOpenPolicy(policy);
-    setShowStatusMenu(false);
   };
 
   const handleAction = (cb: () => void) => {
     setOpenPolicy(null);
-    setShowStatusMenu(false);
     setTimeout(cb, 0);
   };
 
@@ -105,23 +93,6 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
         setOpenPolicy(null);
       },
     });
-  };
-
-  const handleStatusChange = (statusId: number) => {
-    if (!openPolicy) return;
-
-    updateStatus(
-      {
-        policyId: openPolicy.policyId,
-        statusId,
-      },
-      {
-        onSuccess: () => {
-          setOpenPolicy(null);
-          setShowStatusMenu(false);
-        },
-      }
-    );
   };
 
   return (
@@ -227,42 +198,10 @@ const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" :
           />
 
           <MenuItem
-            label="Change Status"
-            onClick={() => {
-              console.log("clicked");
-              setShowStatusMenu((p) => !p);
-            }}
-          />
-
-          <MenuItem
             label="Delete Policy"
             danger
             onClick={() => setConfirmDelete(openPolicy)}
           />
-
-          {/* ✅ FIXED STATUS SUBMENU */}
-          {showStatusMenu && (
-            <div className="border-t">
-              {statuses
-            .filter(
-              (s: any) =>
-                s.policyStatusId !== openPolicy.policyStatusId
-            )
-            .map((status: any, index: number) => (
-                  <button
-                    key={`status-${status.policyStatusId}`}
-                    onClick={() =>
-                      handleStatusChange(status.policyStatusId)
-                    }
-                    disabled={updatingStatus}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2"
-                  >
-                    <Check size={14} />
-                    {status.statusName}
-                  </button>
-                ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -342,7 +281,7 @@ const MenuItem = ({
       danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
-    {icon}
+    {danger ? <X size={14} /> : icon}
     {label}
   </button>
 );

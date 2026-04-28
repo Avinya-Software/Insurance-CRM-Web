@@ -14,9 +14,6 @@ interface CustomerTableProps {
   loading?: boolean;
   onEdit: (customer: Customer) => void;
   onAddPolicy: (customer: Customer) => void;
-
-  onRowClick?: (customer: Customer) => void;
-  onRowDoubleClick?: (customer: Customer) => void;
 }
 
 const kycStatusStyles: Record<string, string> = {
@@ -27,15 +24,11 @@ const kycStatusStyles: Record<string, string> = {
 };
 
 
-let clickTimer: any = null;
-
 const CustomerTable = ({
   data = [],
   loading = false,
   onEdit,
   onAddPolicy,
-  onRowClick,
-  onRowDoubleClick,
 }: CustomerTableProps) => {
   const [openCustomer, setOpenCustomer] =
     useState<Customer | null>(null);
@@ -51,21 +44,6 @@ const CustomerTable = ({
 
   const { mutate: deleteCustomer, isPending } =
     useDeleteCustomer();
-
-  /*   ROW CLICK HANDLER   */
-
-  const handleRowClick = (customer: Customer) => {
-    if (clickTimer) {
-      clearTimeout(clickTimer);
-      clickTimer = null;
-      onRowDoubleClick?.(customer);
-    } else {
-      clickTimer = setTimeout(() => {
-        onRowClick?.(customer);
-        clickTimer = null;
-      }, 250);
-    }
-  };
 
   /*   DROPDOWN   */
 
@@ -157,7 +135,6 @@ const CustomerTable = ({
               data.map((c) => (
                 <tr
                   key={c.customerId}
-                  onClick={() => handleRowClick(c)}
                   className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
                 >
                   <Td>{c.clientName}</Td>
