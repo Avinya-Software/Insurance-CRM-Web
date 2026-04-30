@@ -7,6 +7,7 @@ import { useUpdateClaimStatus } from "../../hooks/claim/useUpdateClaimStatus";
 import TableSkeleton from "../common/TableSkeleton";
 import { ClaimHistoryDialog } from "./ClaimHistoryDialog";
 import type { Claim } from "../../interfaces/claim.interface";
+import { PolicyDetailDialog } from "./PolicyDetailDialog";
 
 const divisionStyles: Record<number, string> = {
   1: "bg-blue-100 text-blue-700 border-blue-200", // Health
@@ -29,10 +30,6 @@ const claimStatusStyles: Record<number, string> = {
   7: "bg-slate-100 text-slate-700 border-slate-200",       // Closed
 };
 
-const policyTypeStyles: Record<number, string> = {
-  1: "bg-rose-100 text-rose-700 border-rose-200",   // Life
-  2: "bg-teal-100 text-teal-700 border-teal-200",   // General
-};
 
 interface Props {
   data: Claim[];
@@ -49,6 +46,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [historyClaimId, setHistoryClaimId] = useState<string | null>(null);
+  const [selectedPolicy, setSelectedPolicy] = useState<{ id: string; type: number } | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -107,13 +105,6 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
     });
   };
 
-  const getDivisionDetails = (claim: Claim) => {
-    if (claim.motor) return `Vehicle: ${claim.motor.vehicleNumber}`;
-    if (claim.health) return `Hospital: ${claim.health.hospitalName}`;
-    if (claim.death) return `Death: ${claim.death.deathTypeName}`;
-    if (claim.risk) return `Risk: ${claim.risk.riskAddress}`;
-    return "-";
-  };
 
   return (
     <div className="relative overflow-x-auto">
@@ -124,15 +115,12 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
             <Th>Customer</Th>
             <Th>Division</Th>
             <Th>Policy</Th>
-            <Th>Policy Type</Th>
             <Th>Type</Th>
-            <Th>Event</Th>
-            <Th>Amount</Th>
-            <Th>Details</Th>
+            <Th>Claim Amount</Th>
+            <Th>Approved Amount</Th>
             <Th>Status</Th>
             <Th>Claim Date</Th>
             <Th>Incident Date</Th>
-            <Th>Created Date</Th>
             <Th className="text-left">Actions</Th>
           </tr>
         </thead>
@@ -143,7 +131,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td colSpan={13} className="text-center py-12">
+                <td colSpan={11} className="text-center py-12">
                   No claims found
                 </td>
               </tr>
@@ -158,7 +146,7 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                   }}
                 >
                   <Td>
-                    <div className="font-semibold text-blue-600 hover:underline">{claim.claimNumber}</div>
+                    <div className="font-semibold text-slate-900">{claim.claimNumber}</div>
                   </Td>
                   <Td>{claim.customerName || "-"}</Td>
                   <Td>
@@ -170,15 +158,16 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                       {claim.divisionTypeName || "-"}
                     </span>
                   </Td>
-                  <Td>{claim.policyNumber || "-"}</Td>
                   <Td>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyTypeStyles[claim.policyType] || "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPolicy({ id: claim.policyId, type: claim.policyType });
+                      }}
+                      className="text-blue-600 hover:underline font-medium text-left"
                     >
-                      {claim.policyTypeName || "-"}
-                    </span>
+                      {claim.policyNumber || "-"}
+                    </button>
                   </Td>
                   <Td>
                     {claim.claimTypeName ? (
@@ -193,15 +182,14 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                       "-"
                     )}
                   </Td>
-                  <Td>{claim.claimEventTypeName || "-"}</Td>
                   <Td>
                     <div className="font-medium text-slate-900">
                       ₹ {claim.claimAmount?.toLocaleString() || 0}
                     </div>
                   </Td>
                   <Td>
-                    <div className="text-xs text-slate-600 truncate max-w-[200px]" title={getDivisionDetails(claim)}>
-                      {getDivisionDetails(claim)}
+                    <div className="font-medium text-emerald-600">
+                      ₹ {claim.approvedAmount?.toLocaleString() || 0}
                     </div>
                   </Td>
                   <Td>
@@ -213,7 +201,6 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                   </Td>
                   <Td>{claim.claimDate ? new Date(claim.claimDate).toLocaleDateString() : "-"}</Td>
                   <Td>{claim.incidentDate ? new Date(claim.incidentDate).toLocaleDateString() : "-"}</Td>
-                  <Td>{claim.createdDate ? new Date(claim.createdDate).toLocaleDateString() : "-"}</Td>
                   <Td className="text-left">
                     <button
                       onClick={(e) => openDropdown(e, claim)}
@@ -333,6 +320,14 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
         open={showHistory}
         onOpenChange={setShowHistory}
         claimId={historyClaimId}
+      />
+
+      {/*   POLICY DETAIL DIALOG   */}
+      <PolicyDetailDialog
+        open={!!selectedPolicy}
+        onClose={() => setSelectedPolicy(null)}
+        policyId={selectedPolicy?.id || null}
+        policyType={selectedPolicy?.type || 0}
       />
     </div>
   );

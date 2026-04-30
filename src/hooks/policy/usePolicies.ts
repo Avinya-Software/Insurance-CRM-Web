@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getGeneralPoliciesApi, getPoliciesApi, getGeneralPolicyByIdApi } from "../../api/policy.api";
+import { getGeneralPoliciesApi, getPoliciesApi, getGeneralPolicyByIdApi, getLifePolicyByIdApi } from "../../api/policy.api";
 import type { Policy, PoliciesResponse, GeneralPolicyFilters, GeneralPolicyResponse } from "../../interfaces/policy.interface";
 
 export interface PolicyFilters {
@@ -33,6 +33,18 @@ export const useGeneralPolicyById = (policyId: string | null) => {
     queryFn: async () => {
       if (!policyId) return null;
       const res = await getGeneralPolicyByIdApi(policyId);
+      return res.data;
+    },
+    enabled: !!policyId,
+  });
+};
+
+export const useLifePolicyById = (policyId: string | null) => {
+  return useQuery({
+    queryKey: ["life-policy", policyId],
+    queryFn: async () => {
+      if (!policyId) return null;
+      const res = await getLifePolicyByIdApi(policyId);
       return res.data;
     },
     enabled: !!policyId,
