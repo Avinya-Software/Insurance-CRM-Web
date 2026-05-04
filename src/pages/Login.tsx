@@ -81,7 +81,7 @@ const Login = () => {
             })
           );
 
-          navigate("/");
+          navigate("/redirect");
         }
       }
     );

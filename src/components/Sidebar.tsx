@@ -20,6 +20,7 @@ import {
   Layers,
 } from "lucide-react";
 import { useState } from "react";
+import logo from "@/assets/logo/logo.png";
 
 /* ================= JWT HELPER ================= */
 
@@ -56,7 +57,7 @@ const Sidebar = () => {
   /* ================= LOGOUT ================= */
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (
@@ -68,9 +69,8 @@ const Sidebar = () => {
       {/* ---------- LOGO & TOGGLE ---------- */}
       <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
         {!isCollapsed && (
-          <div>
-            <p className="text-xl font-bold">Avinya</p>
-            <p className="text-xs text-slate-400">INSURANCE CRM</p>
+          <div className="flex items-center gap-2 overflow-hidden">
+            <img src={logo} alt="Insurance CRM Logo" className="h-10 w-auto min-w-[120px] object-contain" />
           </div>
         )}
 
@@ -101,7 +101,7 @@ const Sidebar = () => {
         {!isAdmin && (
           <>
             <NavItem
-              to="/"
+              to="/dashboard"
               icon={<LayoutDashboard size={18} />}
               label="Dashboard"
               isCollapsed={isCollapsed}

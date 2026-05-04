@@ -188,6 +188,7 @@ onClear={clearAllFilters}
         open={openPolicySheet}
         policy={selectedPolicy}
         renewalId={selectedRenewalId}
+        isEdit={!!selectedPolicy && !selectedRenewalId}
         onClose={() => {
           setOpenPolicySheet(false);
           setSelectedPolicy(null);

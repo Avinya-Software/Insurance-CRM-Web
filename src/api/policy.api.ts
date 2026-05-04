@@ -241,3 +241,8 @@ export const getGeneralPolicyByIdApi = async (policyId: string): Promise<{ data:
   const res = await api.get(`/GeneralPolicy/${policyId}`);
   return res.data;
 };
+
+export const getLifePolicyByIdApi = async (policyId: string): Promise<any> => {
+  const res = await api.get(`/policy/life-policy/${policyId}`);
+  return res.data;
+};
