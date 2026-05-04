@@ -4,6 +4,7 @@ import Admin from "./pages/Admin";
 import Register from "./pages/Register";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import AppLayout from "./layout/AppLayout";
+import LandingPage from "./pages/LandingPage";
 
 /* -------- ADVISOR PAGES -------- */
 import Dashboard from "./pages/Dashboard";
@@ -47,6 +48,7 @@ function App() {
 
       <Routes>
         {/* ================= PUBLIC ================= */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/login/admin" element={<Admin />} />
         <Route path="/register" element={<Register />} />
@@ -59,7 +61,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="/" element={<RoleRedirect />} />
+          <Route path="/redirect" element={<RoleRedirect />} />
           <Route path="/dashboard" element={<Dashboard />} />
           
           <Route path="/leads" element={<Lead />} />

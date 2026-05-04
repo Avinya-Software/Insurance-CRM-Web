@@ -1,0 +1,119 @@
+.landing-page {
+  --radius: 0.875rem;
+
+  /* Light theme — clean modern fintech */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 98%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+
+  --primary: 221.2 83.2% 53.3%;            /* #2563eb */
+  --primary-foreground: 210 40% 98%;
+  --primary-glow: 221.2 83.2% 53.3% / 0.3;
+
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  --accent: 262.1 83.3% 57.8%;             /* #7c3aed */
+  --accent-foreground: 210 40% 98%;
+
+  --cyan: 188.7 94.5% 42.7%;               /* #06b6d4 */
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  --gradient-hero: radial-gradient(ellipse at top, rgba(37, 99, 235, 0.18), transparent 60%),
+                   radial-gradient(ellipse at bottom right, rgba(124, 58, 237, 0.15), transparent 60%);
+  --gradient-glow: radial-gradient(circle, rgba(37, 99, 235, 0.4), transparent 70%);
+  --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.4));
+
+  --shadow-soft: 0 4px 20px -4px rgba(37, 99, 235, 0.12);
+  --shadow-glow: 0 0 40px rgba(37, 99, 235, 0.35);
+  --shadow-card: 0 10px 40px -10px rgba(15, 23, 42, 0.12);
+}
+
+.landing-page.dark {
+  /* Dark theme — premium futuristic SaaS */
+  --background: 222.2 84% 4.9%;          /* #0f172a */
+  --foreground: 210 40% 98%;
+
+  --card: 222.2 84% 4.9%;                /* #111827 */
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --primary-glow: 217.2 91.2% 59.8% / 0.4;
+
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --accent: 263.4 70% 50.4%;
+  --accent-foreground: 210 40% 98%;
+
+  --cyan: 188.7 94.5% 42.7%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+
+  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  --gradient-hero: radial-gradient(ellipse at top left, rgba(59, 130, 246, 0.3), transparent 55%),
+                   radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.28), transparent 55%);
+  --gradient-glow: radial-gradient(circle, rgba(59, 130, 246, 0.55), transparent 70%);
+  --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+
+  --shadow-soft: 0 4px 30px -4px rgba(59, 130, 246, 0.4);
+  --shadow-glow: 0 0 60px rgba(59, 130, 246, 0.55);
+  --shadow-card: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Utilities scoped to .landing-page if needed or global if safe */
+.landing-page .gradient-primary { background-image: var(--gradient-primary); }
+.landing-page .gradient-hero { background-image: var(--gradient-hero); }
+.landing-page .gradient-text {
+  background-image: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-page .glass {
+  background: var(--gradient-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--border));
+}
+
+.landing-page .glow-primary { box-shadow: var(--shadow-glow); }
+.landing-page .shadow-soft { box-shadow: var(--shadow-soft); }
+.landing-page .shadow-card { box-shadow: var(--shadow-card); }
+
+.landing-page .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+.landing-page .animate-float { animation: float 6s ease-in-out infinite; }
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-18px); }
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap");
