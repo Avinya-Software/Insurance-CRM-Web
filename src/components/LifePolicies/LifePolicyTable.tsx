@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { MoreVertical, X, RefreshCcw } from "lucide-react";
 import type { LifePolicy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
-import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
+import { useDeleteLifePolicy } from "../../hooks/LifePolicy/useDeleteLifePolicy";
 import { useQueryClient } from "@tanstack/react-query";
 import TableSkeleton from "../common/TableSkeleton";
 
@@ -51,7 +51,7 @@ const LifePolicyTable = ({
     setOpenPolicy(null);
   });
 
-  const { mutate: deletePolicy, isPending } = useDeletePolicy();
+  const { mutate: deletePolicy, isPending } = useDeleteLifePolicy();
   const queryClient = useQueryClient();
 
   const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" : v);

@@ -15,8 +15,10 @@ import { useUpsertLifePolicy } from "../../hooks/LifePolicy/useUpsertLifePolicy"
 import { useUploadPolicyDocument } from "../../hooks/LifePolicy/useUploadPolicyDocument";
 import { usePolicyDocumentActions } from "../../hooks/LifePolicy/usePolicyDocumentActions";
 import { usePaymentMethodDropdown } from "../../hooks/payment/usePaymentMethodDropdown";
-import { useBranchDropdown } from "../../hooks/branch/useBranchDropdown";
+import { useBankDropdown } from "../../hooks/bank/useBankDropdown";
 import { usePolicyModeDropdown } from "../../hooks/policy/usePolicyModeDropdown";
+import { useDeleteLifePolicy } from "../../hooks/LifePolicy/useDeleteLifePolicy";
+
 
 
 interface Props {
@@ -54,6 +56,8 @@ const PolicyUpsertSheet = ({
     {fileName: string; url: string; id: string; type: string}[]
   >([]);
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<any>(null);
+  const [confirmDeletePolicy, setConfirmDeletePolicy] = useState(false);
+
 
   const { preview, download, remove } = usePolicyDocumentActions(
     (deletedId: string) => {
@@ -174,15 +178,17 @@ const PolicyUpsertSheet = ({
   const loadingDropdowns = sLoading || stLoading;
 
   const { mutateAsync: uploadPolicyDocument, isPending: isUploading } = useUploadPolicyDocument();
+  const { mutateAsync: deleteLifePolicy, isPending: isDeleting } = useDeleteLifePolicy();
 
-  const isLoading = isPending || isUploading;
+  const isLoading = isPending || isUploading || isDeleting;
+
 
   const isEditMode = !!policy;
   const { data: customers } = useCustomerDropdown();
   const { data: brokers } = useBrokerDropdown();
   const { data: users } = useUserDropdown();
   const { data: paymentMethods } = usePaymentMethodDropdown();
-  const { data: branches } = useBranchDropdown();
+  const { data: banks } = useBankDropdown();
 
   /*   PREFILL   */
   useEffect(() => {
@@ -579,6 +585,19 @@ const PolicyUpsertSheet = ({
       toast.error(error?.response?.data?.message || "Something went wrong");
     }
   };
+
+  const handleDeletePolicy = async () => {
+    if (!policy?.policyId) return;
+    try {
+      await deleteLifePolicy(policy.policyId);
+      setConfirmDeletePolicy(false);
+      onClose();
+      onSuccess();
+    } catch (error: any) {
+      // toast.error is handled in the hook
+    }
+  };
+
 
   if (!open) return null;
 
@@ -1095,7 +1114,7 @@ const PolicyUpsertSheet = ({
                           <SearchableComboBox
                             label="Bank Name"
                             value={form.bank ? String(form.bank) : undefined}
-                            items={(branches || []).map((b: any) => ({
+                            items={(banks || []).map((b: any) => ({
                               value: String(b.id),
                               label: b.name
                             }))}
@@ -1308,7 +1327,18 @@ const PolicyUpsertSheet = ({
             >
               CANCEL
             </button>
+            {isEditMode && (
+              <button
+                className="px-8 py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded flex items-center justify-center gap-2 border border-red-200 transition-all"
+                onClick={() => setConfirmDeletePolicy(true)}
+                disabled={isLoading}
+              >
+                <Trash2 size={16} />
+                DELETE POLICY
+              </button>
+            )}
           </div>
+
 
           <div className="flex gap-4">
             {activeTab !== "general" && (
@@ -1391,11 +1421,63 @@ const PolicyUpsertSheet = ({
           </div>
         </div>
       )}
+
+      {/* CONFIRM DELETE POLICY MODAL */}
+      {confirmDeletePolicy && (
+        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all animate-in fade-in zoom-in duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-50 text-red-600 rounded-xl">
+                    <Trash2 size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">Delete Policy</h3>
+                </div>
+                <button 
+                  onClick={() => setConfirmDeletePolicy(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <X size={20} className="text-slate-400" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-slate-600 leading-relaxed">
+                  Are you sure you want to delete this policy? 
+                  This action will permanently remove all associated data including documents and cashflows.
+                </p>
+                
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
+                  <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 font-medium">
+                    This action cannot be undone and all data will be lost forever.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 rounded-b-2xl flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeletePolicy(false)}
+                className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeletePolicy}
+                disabled={isLoading}
+                className="px-6 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center gap-2"
+              >
+                {isLoading ? <Spinner className="text-white" /> : <><Trash2 size={16} /> Delete Policy</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
-
-export default PolicyUpsertSheet;
 
 /*   HELPERS   */
 
@@ -1482,3 +1564,5 @@ const Select = ({
     {error && <p className="text-[10px] font-medium text-red-500 mt-1">{error}</p>}
   </div>
 );
+
+export default PolicyUpsertSheet;
