@@ -1,8 +1,9 @@
 import { Shield, Twitter, Linkedin, Github, Facebook, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 import { useState } from "react";
 import { toast } from "sonner";
+import logo from "@/assets/logo/logo.png";
 
 export function Footer() {
   const [email, setEmail] = useState("");
@@ -29,13 +30,8 @@ export function Footer() {
       <div className="relative mx-auto max-w-7xl px-4 py-16 md:px-8">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-6">
           <div className="col-span-2">
-            <a href="#home" className="group flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary transition-all duration-300 group-hover:shadow-glow group-hover:scale-110">
-                <Shield className="h-5 w-5 text-white" />
-              </div>
-              <span className="font-display text-lg font-bold transition-colors group-hover:text-primary">
-                Insurance <span className="gradient-text">CRM</span>
-              </span>
+            <a href="#home" className="group flex items-center">
+              <img src={logo} alt="Insurance CRM Logo" className="h-12 w-auto transition-all duration-300 group-hover:scale-105" />
             </a>
             <p className="mt-4 max-w-xs text-sm text-muted-foreground">
               The smart insurance CRM that automates leads, policies, claims and renewals — with voice AI built in.

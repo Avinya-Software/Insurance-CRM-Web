@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Shield } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
-import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo/logo.png";
+import { Button } from "../ui/button";
 
 const links = [
   { label: "Home", href: "#home" },
@@ -38,13 +39,8 @@ export function Navbar({ onLogin, onRegister }: NavbarProps) {
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
-        <a href="#home" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-soft">
-            <Shield className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-display text-lg font-bold">
-            Insurance <span className="gradient-text">CRM</span>
-          </span>
+        <a href="#home" className="flex items-center">
+          <img src={logo} alt="Insurance CRM Logo" className="h-11 w-auto" />
         </a>
 
         <nav className="hidden items-center gap-8 lg:flex">

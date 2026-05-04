@@ -13,6 +13,7 @@ import { Contact } from "../components/landing/Contact";
 import { Footer } from "../components/landing/Footer";
 import { BackToTop } from "../components/landing/BackToTop";
 import { CursorGlow } from "../components/landing/CursorGlow";
+import { AuthModal } from "../components/landing/AuthModal";
 import { useNavigate } from "react-router-dom";
 import "../landing.css";
 
@@ -27,27 +28,34 @@ export default function LandingPage() {
 function LandingContent() {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const [authMode, setAuthMode] = useState<"login" | "register" | null>(null);
 
   return (
     <div className={`landing-page ${theme === "dark" ? "dark" : ""} relative min-h-screen overflow-x-hidden bg-background text-foreground transition-colors duration-500`}>
       <CursorGlow />
       <Navbar
-        onLogin={() => navigate("/login")}
-        onRegister={() => navigate("/register")}
+        onLogin={() => setAuthMode("login")}
+        onRegister={() => setAuthMode("register")}
       />
       <main>
-        <Hero onTrial={() => navigate("/register")} />
+        <Hero onTrial={() => setAuthMode("register")} />
         <Features />
         <WhyChoose />
         <VoiceAI />
         <FollowUpHistory />
         <Testimonials />
-        <Pricing onSelect={() => navigate("/register")} />
+        <Pricing onSelect={() => setAuthMode("register")} />
         <FAQ />
         <Contact />
       </main>
       <Footer />
       <BackToTop />
+
+      <AuthModal
+        mode={authMode}
+        onClose={() => setAuthMode(null)}
+        onSwitch={(m) => setAuthMode(m)}
+      />
     </div>
   );
 }
