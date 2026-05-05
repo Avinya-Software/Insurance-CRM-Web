@@ -222,8 +222,14 @@ const LeadTable = ({
                       {lead.leadSourceName || "—"}
                     </span>
                   </Td>
-                  <Td>
-                    {new Date(lead.createdDate).toLocaleDateString()}
+                   <Td className="whitespace-nowrap">
+                    {lead.createdDate
+                      ? new Date(lead.createdDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </Td>
 
                   <Td className="text-left">

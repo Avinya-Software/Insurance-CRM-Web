@@ -154,14 +154,38 @@ const LifePolicyTable = ({
                   <Td>{showValue(p.statusName)}</Td>
                   <Td>{showValue(p.premiumModeName || p.premiumMode)}</Td>
                   <Td>{showValue(p.policyTerm)}</Td>
-                  <Td>{p.policyStartDate ? p.policyStartDate.split("T")[0] : "-"}</Td>
-                  <Td>{p.nextPremiumDueDate ? p.nextPremiumDueDate.split("T")[0] : "-"}</Td>
+                  <Td className="whitespace-nowrap">
+                    {p.policyStartDate
+                      ? new Date(p.policyStartDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    {p.nextPremiumDueDate
+                      ? new Date(p.nextPremiumDueDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
                   <Td>{showValue(p.sumAssured)}</Td>
                   <Td>{showValue(p.premiumDetails?.basicPremium)}</Td>
                   <Td>{showValue(p.premiumDetails?.annualPremium)}</Td>
 
                   {/* Created Date */}
-                  <Td>{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}</Td>
+                  <Td className="whitespace-nowrap">
+                    {p.createdAt
+                      ? new Date(p.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
 
                   <Td className="text-center">
                     <button

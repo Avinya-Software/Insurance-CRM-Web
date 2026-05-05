@@ -159,15 +159,33 @@ const PolicyTable = ({
                     ₹{p.premium?.totalPremium?.toLocaleString()}
                   </Td>
 
-                  <Td className="whitespace-nowrap font-medium text-slate-600">
-                    {p.detail?.riskStartDate?.split("T")[0]}
+                  <Td className="whitespace-nowrap">
+                    {p.detail?.riskStartDate
+                      ? new Date(p.detail.riskStartDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </Td>
-                  <Td className="whitespace-nowrap font-medium text-slate-600">
-                    {p.detail?.riskEndDate?.split("T")[0]}
+                  <Td className="whitespace-nowrap">
+                    {p.detail?.riskEndDate
+                      ? new Date(p.detail.riskEndDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </Td>
-                  <Td className="whitespace-nowrap font-medium text-slate-600">
-                    {p.createdat?.split("T")[0] || p.transactionDate?.split("T")[0] || "-"}
-                  </Td>      
+                  <Td className="whitespace-nowrap">
+                    {p.createdat || p.transactionDate
+                      ? new Date(p.createdat || p.transactionDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, p)}

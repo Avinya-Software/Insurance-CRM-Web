@@ -199,8 +199,24 @@ const ClaimTable = ({ data, loading = false, onEdit }: Props) => {
                       {claim.claimStatusName || "-"}
                     </span>
                   </Td>
-                  <Td>{claim.claimDate ? new Date(claim.claimDate).toLocaleDateString() : "-"}</Td>
-                  <Td>{claim.incidentDate ? new Date(claim.incidentDate).toLocaleDateString() : "-"}</Td>
+                  <Td className="whitespace-nowrap">
+                    {claim.claimDate
+                      ? new Date(claim.claimDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    {claim.incidentDate
+                      ? new Date(claim.incidentDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
                   <Td className="text-left">
                     <button
                       onClick={(e) => openDropdown(e, claim)}
