@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { MoreVertical, X, RefreshCcw } from "lucide-react";
+import { MoreVertical, X, RefreshCcw, Eye } from "lucide-react";
 import type { IGeneralPolicy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
@@ -30,6 +30,7 @@ interface Props {
   loading?: boolean;
   onEdit: (policy: IGeneralPolicy) => void;
   onRenewal: (policy: IGeneralPolicy) => void;
+  onView: (policy: IGeneralPolicy) => void;
 }
 
 /*   COMPONENT   */
@@ -39,6 +40,7 @@ const PolicyTable = ({
   loading = false,
   onEdit,
   onRenewal,
+  onView,
 }: Props) => {
   const [openPolicy, setOpenPolicy] = useState<IGeneralPolicy | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<IGeneralPolicy | null>(null);
@@ -128,7 +130,10 @@ const PolicyTable = ({
                   key={p.policyId}
                   className="border-t h-[52px] hover:bg-slate-50"
                 >
-                  <Td className="whitespace-nowrap font-medium text-blue-700">
+                  <Td 
+                    className="whitespace-nowrap font-medium text-blue-700 cursor-pointer hover:underline"
+                    onClick={() => onView(p)}
+                  >
                     {p.documentNumber}
                   </Td>
 
@@ -218,6 +223,11 @@ const PolicyTable = ({
             label="Create Renewal"
             icon={<RefreshCcw size={14} />}
             onClick={() => handleAction(() => onRenewal(openPolicy))}
+          />
+
+          <MenuItem
+            label="View Details"
+            onClick={() => handleAction(() => onView(openPolicy))}
           />
 
           <MenuItem

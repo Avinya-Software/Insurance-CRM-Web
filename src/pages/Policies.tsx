@@ -8,6 +8,7 @@ import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
 import RenewalUpsertSheet from "../components/renewal/RenewalUpsertSheet";
 import PolicyFilterSheet from "../components/policy/PolicyFilterSheet";
 import Pagination from "../components/leads/Pagination";
+import { PolicyDetailDialog } from "../components/claims/PolicyDetailDialog";
 import type { GeneralPolicyFilters, IGeneralPolicy } from "../interfaces/policy.interface";
 
 const DEFAULT_FILTERS: GeneralPolicyFilters = {
@@ -36,6 +37,9 @@ const Policies = () => {
   const { data, isLoading, isFetching } = useGeneralPolicies(filters);
 const [editPolicy, setEditPolicy] = useState<IGeneralPolicy | null>(null);
 const [sheetOpen, setSheetOpen] = useState(false);
+
+const [openDetailDialog, setOpenDetailDialog] = useState(false);
+const [detailPolicyId, setDetailPolicyId] = useState<string | null>(null);
 /*   HELPERS   */
 
 const hasActiveFilters =
@@ -157,6 +161,10 @@ Filters
             setOpenPolicySheet(true);
           }}
           onRenewal={handleCreateRenewal}
+          onView={(p) => {
+            setDetailPolicyId(p.policyId);
+            setOpenDetailDialog(true);
+          }}
         />
 
 {/*   PAGINATION   */}
@@ -195,6 +203,16 @@ onClear={clearAllFilters}
           setSelectedRenewalId(null);
         }}
         onSuccess={handlePolicySuccess}
+      />
+
+      <PolicyDetailDialog
+        open={openDetailDialog}
+        policyId={detailPolicyId}
+        policyType={2}
+        onClose={() => {
+          setOpenDetailDialog(false);
+          setDetailPolicyId(null);
+        }}
       />
 
 </>

@@ -146,8 +146,16 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
         className="bg-slate-50 w-full max-w-5xl max-h-[95vh] overflow-hidden rounded-[2rem] shadow-2xl flex flex-col relative border border-white"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Floating Close Button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 w-10 h-10 bg-white rounded-xl shadow-lg border border-slate-100 flex items-center justify-center text-slate-400 hover:text-red-500 hover:scale-110 active:scale-95 transition-all duration-200 z-[110] group"
+        >
+          <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+        </button>
+
         {/* Header Section */}
-        <div className="bg-white px-8 py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b">
+        <div className="bg-white px-8 py-6 pr-20 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b">
           <div className="flex items-center gap-5">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
               <User size={32} />
@@ -173,15 +181,6 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
 
               </div>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={onClose}
-              className="p-3 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-600 hover:rotate-90"
-            >
-              <X size={24} />
-            </button>
           </div>
         </div>
 
@@ -236,14 +235,14 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                   </CardContent>
                 </Card>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                    <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
                     <CardHeader className="bg-white border-b py-4">
                       <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
                          <Phone size={16} className="text-blue-600" /> Contact Information
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       <DetailItem label="Primary Mobile" value={customer.primaryMobile} icon={Phone} />
                       <DetailItem label="Email" value={customer.email} icon={Mail} />
                        {/* Checking if we have extra contact info in addresses */}
@@ -262,13 +261,11 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                   <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
                     <CardHeader className="bg-white border-b py-4">
                       <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                         <Info size={16} className="text-blue-600" /> Notes & Remarks
+                         <Info size={16} className="text-blue-600" /> Remarks
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-4">
-                      <DetailItem label="Notes" value={customer.notes} />
-                      <Separator />
-                      <DetailItem label="Remarks" value={customer.remarks} />
+                    <CardContent className="p-6">
+                      <DetailItem label="Client Remarks" value={customer.remarks} />
                     </CardContent>
                   </Card>
                 </div>

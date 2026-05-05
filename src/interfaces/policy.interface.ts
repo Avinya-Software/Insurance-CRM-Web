@@ -505,6 +505,13 @@ export interface IGeneralPolicy {
     paidByAgent: string;
     agentAmount: number;
   };
+  documents: {
+    id: string;
+    fileName: string;
+    documentName: string;
+    url: string;
+    uploadedAt: string;
+  }[];
 }
 
 export interface GeneralPolicyResponse {

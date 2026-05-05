@@ -172,9 +172,9 @@ const LifePolicyTable = ({
                         })
                       : "-"}
                   </Td>
-                  <Td>{showValue(p.sumAssured)}</Td>
-                  <Td>{showValue(p.premiumDetails?.basicPremium)}</Td>
-                  <Td>{showValue(p.premiumDetails?.annualPremium)}</Td>
+                  <Td>₹ {showValue(p.sumAssured)}</Td>
+                  <Td>₹ {showValue(p.premiumDetails?.basicPremium)}</Td>
+                  <Td>₹ {showValue(p.premiumDetails?.annualPremium)}</Td>
 
                   {/* Created Date */}
                   <Td className="whitespace-nowrap">
