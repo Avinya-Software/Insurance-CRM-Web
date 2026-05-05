@@ -16,14 +16,6 @@ interface CustomerTableProps {
   onAddPolicy: (customer: Customer) => void;
 }
 
-const kycStatusStyles: Record<string, string> = {
-  Pending: "bg-slate-100 text-slate-700 border-slate-200",
-  "Under Review": "bg-amber-100 text-amber-700 border-amber-200",
-  Verified: "bg-green-100 text-green-700 border-green-200",
-  Rejected: "bg-red-100 text-red-700 border-red-200",
-};
-
-
 const CustomerTable = ({
   data = [],
   loading = false,
@@ -141,10 +133,14 @@ const CustomerTable = ({
                       return (
                         <tr
                           key={c.customerId}
-                          className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
+                          className="border-t h-[52px] hover:bg-slate-50 cursor-pointer group"
+                          onClick={() => {
+                            setSelectedCustomerId(c.customerId);
+                            setShowDetails(true);
+                          }}
                         >
                           <Td>
-                            <div className="font-medium text-slate-900">
+                            <div className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
                               {c.title ? `${c.title} ` : ""}{c.clientName}
                             </div>
                           </Td>
@@ -179,7 +175,7 @@ const CustomerTable = ({
                       year: "numeric",
                     })}
                   </Td>
-                  <Td className="text-center">
+                  <Td className="text-center" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => openDropdown(e, c)}
                       className="p-2 rounded hover:bg-slate-200"

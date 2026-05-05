@@ -113,14 +113,8 @@ export interface Customer {
   kycStatus?: string;
   kycFiles?: KycFile[] | null;
 
-  occupation?: {
-    occupationType?: string;
-    designation?: string;
-    grossIncome?: number;
-    employerName?: string;
-  } | null;
-
-  identityDetails?: any;
+  occupation?: Occupation | null;
+  identityDetails?: IdentityDetails | null;
   addresses?: Address[] | null;
   createdAt: string;
 }
@@ -183,22 +177,53 @@ export interface CustomerDetailsResponse {
 
 export interface CustomerDetails {
   customerId: string;
-  fullName: string;
+  title: string;
+  clientName: string;
+  groupHeadName: string | null;
+  groupCode: string | null;
+  clientCategory: string | null;
+  fatherSpouseCompanyName: string | null;
   primaryMobile: string;
-  secondaryMobile?: string | null;
-  email: string;
-  address?: string | null;
-  leadId?: string | null;
-  companyId: string;
-  advisorId: string;
-  dob?: string | null;
-  anniversary?: string | null;
-  kycUploadedDate?: string | null;
-  kycStatus?: string;
-  kycFiles?: KycFile[];
-  notes?: string | null;
+  email: string | null;
+  dob: string | null;
+  age: number;
+  anniversaryDate: string | null;
+  gender: string | null;
+  maritalStatus: string | null;
+  nationality: string | null;
+  birthPlace: string | null;
+  kycStatusId: string | null;
+  kycStatus: string | null;
+  isPassedAway: boolean;
+  education: string | null;
+  referenceName: string | null;
+  notes: string | null;
+  remarks: string | null;
   createdAt: string;
-  updatedAt?: string | null;
+  updatedAt: string | null;
+  kycFiles: KycFile[];
+  occupation: Occupation;
+  addresses: Address[];
+  identityDetails: IdentityDetails;
+}
+
+export interface IdentityDetails {
+  aadharNumber?: string | null;
+  panNumber?: string | null;
+  gstNumber?: string | null;
+  drivingLicenceNumber?: string | null;
+  drivingLicenceExpDate?: string | null;
+  ckycNumber?: string | null;
+  eInsuranceNumber?: string | null;
+  passportNumber?: string | null;
+  passportExpDate?: string | null;
+}
+
+export interface Occupation {
+  occupationType?: string | null;
+  designation?: string | null;
+  grossIncome?: number | null;
+  employerName?: string | null;
 }
 
 
@@ -207,5 +232,6 @@ export interface KycFile {
   fileName: string;
   url: string;
   uploadedAt?: string;
+  documentName?: string | null;
 }
 
