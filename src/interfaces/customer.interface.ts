@@ -38,9 +38,11 @@ export interface CreateCustomerRequest {
     area?: string;
     landmark?: string;
     city?: string;
+    cityId?: number;
     cityName?: string;
     pincode?: string;
     state?: string;
+    stateId?: number;
     stateName?: string;
     country?: string;
     telephoneResidence?: string;
@@ -131,9 +133,11 @@ export interface Address {
   area?: string | null;
   landmark?: string | null;
   city?: string | null;
+  cityId?: number | null;
   cityName?: string | null;
   pincode?: string | null;
   state?: string | null;
+  stateId?: number | null;
   stateName?: string | null;
   country?: string | null;
 

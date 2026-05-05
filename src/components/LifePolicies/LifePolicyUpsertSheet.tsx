@@ -657,7 +657,7 @@ const PolicyUpsertSheet = ({
               {activeTab === "general" && (
                 <div className="space-y-6">
                   {/* POLICY PERSONAL INFORMATION */}
-                  <section className="bg-white rounded-lg shadow-sm border border-slate-200">
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                     <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
                       <div className="p-1.5 bg-white/10 text-white rounded">
                         <ShieldCheck size={16} />
@@ -1018,7 +1018,7 @@ const PolicyUpsertSheet = ({
                   </section>
 
                   {/* PREMIUM DETAILS */}
-                  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                     <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
                       <div className="p-1.5 bg-white/10 text-white rounded">
                         <CreditCard size={16} />
@@ -1066,7 +1066,7 @@ const PolicyUpsertSheet = ({
                   </section>
 
                   {/* PAYMENT DETAILS */}
-                  <section className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                  <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                     <div className="flex items-center gap-2 bg-slate-800 px-6 py-3 text-white">
                       <div className="p-1.5 bg-white/10 text-white rounded">
                         <CreditCard size={16} />

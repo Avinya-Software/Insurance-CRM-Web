@@ -176,15 +176,20 @@ export default function PolicyFundInfo({
     <div className="w-full space-y-6 p-6 bg-[#f8fafc] min-h-screen font-sans">
       
       {/* CASHFLOW DETAILS */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 flex justify-between items-center border-b border-slate-100">
-          <h3 className="font-bold text-sm text-slate-800 uppercase tracking-widest">Cashflow Details</h3>
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-slate-800 px-6 py-3 flex justify-between items-center text-white">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-white/10 rounded">
+              <Plus size={16} />
+            </div>
+            <h3 className="font-bold text-[10px] uppercase tracking-widest">Cashflow Details</h3>
+          </div>
           {activeSection !== 'cashflows' && (
-                        <button 
-                        onClick={() => setActiveSection('cashflows')}
-                                      className="flex items-center gap-2 px-4 py-1.5 border border-blue-600 text-blue-600 rounded-md text-xs font-bold hover:bg-blue-50 transition-all"
+            <button 
+              onClick={() => setActiveSection('cashflows')}
+              className="flex items-center gap-2 px-4 py-1 border border-white/20 bg-white/10 text-white rounded text-[10px] font-bold hover:bg-white/20 transition-all uppercase tracking-wider"
             >
-              <Plus size={14} /> Add Item
+              Add Item
             </button>
           )}
         </div>
@@ -285,15 +290,20 @@ export default function PolicyFundInfo({
       </div>
 
       {/* RIDER DETAILS */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 flex justify-between items-center border-b border-slate-100">
-          <h3 className="font-bold text-sm text-slate-800 uppercase tracking-widest">Rider Details</h3>
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-slate-800 px-6 py-3 flex justify-between items-center text-white">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-white/10 rounded">
+              <Plus size={16} />
+            </div>
+            <h3 className="font-bold text-[10px] uppercase tracking-widest">Rider Details</h3>
+          </div>
           {activeSection !== 'riders' && (
             <button 
               onClick={() => setActiveSection('riders')}
-              className="flex items-center gap-2 px-4 py-1.5 border border-blue-600 text-blue-600 rounded-md text-xs font-bold hover:bg-blue-50 transition-all"
+              className="flex items-center gap-2 px-4 py-1 border border-white/20 bg-white/10 text-white rounded text-[10px] font-bold hover:bg-white/20 transition-all uppercase tracking-wider"
             >
-              <Plus size={14} /> Add Item
+              Add Item
             </button>
           )}
         </div>
@@ -425,15 +435,20 @@ export default function PolicyFundInfo({
       </div>
 
       {/* FUND DETAILS */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="px-6 py-4 flex justify-between items-center border-b border-slate-100">
-          <h3 className="font-bold text-sm text-slate-800 uppercase tracking-widest">Fund Details</h3>
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-slate-800 px-6 py-3 flex justify-between items-center text-white">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-white/10 rounded">
+              <Plus size={16} />
+            </div>
+            <h3 className="font-bold text-[10px] uppercase tracking-widest">Fund Details</h3>
+          </div>
           {activeSection !== 'funds' && (
             <button 
               onClick={() => setActiveSection('funds')}
-              className="flex items-center gap-2 px-4 py-1.5 border border-blue-600 text-blue-600 rounded-md text-xs font-bold hover:bg-blue-50 transition-all"
+              className="flex items-center gap-2 px-4 py-1 border border-white/20 bg-white/10 text-white rounded text-[10px] font-bold hover:bg-white/20 transition-all uppercase tracking-wider"
             >
-              <Plus size={14} /> Add Item
+              Add Item
             </button>
           )}
         </div>
