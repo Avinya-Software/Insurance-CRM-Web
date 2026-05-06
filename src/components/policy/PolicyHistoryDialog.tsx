@@ -591,9 +591,15 @@ export const PolicyHistoryDialog: React.FC<PolicyHistoryDialogProps> = ({
                        <Clock size={16} className="text-indigo-600" /> System Information (Selected Version)
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
-                    <DetailItem label="Created At" value={formatDate(selectedPolicy.createdAt || selectedPolicy.createdat)} />
-                    <DetailItem label="Updated At" value={formatDate(selectedPolicy.updatedAt || selectedPolicy.updatedat)} />
+                  <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-10">
+                    <DetailItem label="Document No" value={selectedPolicy.documentNumber} icon={FileText} />
+                    <DetailItem label="Transaction Date" value={formatDate(selectedPolicy.transactionDate)} icon={Calendar} />
+                    <DetailItem label="Created At" value={formatDate(selectedPolicy.createdAt || selectedPolicy.createdat)} icon={Clock} />
+                    <DetailItem 
+                        label="Updated At" 
+                        value={formatDate(selectedPolicy.updatedAt || selectedPolicy.updatedat) || <span className="text-slate-300">-</span>} 
+                        icon={Clock} 
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
