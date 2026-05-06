@@ -3,6 +3,7 @@ import { Renewal } from "../../interfaces/renewal.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { RenewalHistoryDialog } from "./RenewalHistoryDialog";
 import { useState, useRef } from "react";
+import TableSkeleton from "../../components/common/TableSkeleton";
 
 interface Props {
   data: Renewal[];
@@ -71,7 +72,6 @@ const RenewalTable = ({ data = [], loading, statusId, onRenewal, onEdit }: Props
   return (
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
-        {/* ... (table head remains same) ... */}
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
             <Th>Client Name</Th>
@@ -91,61 +91,83 @@ const RenewalTable = ({ data = [], loading, statusId, onRenewal, onEdit }: Props
           </tr>
         </thead>
 
-        <tbody>
-          {loading ? (
-            <tr>
-              <td colSpan={isAllTab ? 15 : 14} className="text-center py-12 text-slate-500">Loading...</td>
-            </tr>
-          ) : data.length === 0 ? (
-            <tr>
-              <td colSpan={isAllTab ? 15 : 14} className="text-center py-12 text-slate-500">No renewals found</td>
-            </tr>
-          ) : (
-            data.map((r, index) => (
-              <tr key={index} className="border-t h-[52px] hover:bg-slate-50 transition-colors cursor-default">
-                <Td className="whitespace-nowrap">{showValue(r.title)} {showValue(r.clientName)}</Td>
-                <Td>{r.policyNumber}</Td>
-                <Td>{showValue(r.divisionName)}</Td>
-                <Td>{showValue(r.companyName)}</Td>
-                <Td>{showValue(r.groupHeadName)}</Td>
-                <Td>{showValue(r.groupCode)}</Td>
-                <Td>{showValue(r.email)}</Td>
-                <Td>{showValue(r.primaryMobile)}</Td>
-                <Td>{r.policyStartDate ? r.policyStartDate.split("T")[0] : "-"}</Td>
-                <Td>
-                    {r.nextPremiumDueDate ? r.nextPremiumDueDate.split("T")[0] : "-"}
-                    {getOverdueDays(r.nextPremiumDueDate || r.dueDate) > 0 && (
-                        <div className="text-[10px] text-red-600 font-medium whitespace-nowrap">
-                            {getOverdueDays(r.nextPremiumDueDate || r.dueDate)} days due
-                        </div>
-                    )}
-                </Td>
-                <Td>{r.reminderDate ? r.reminderDate.split("T")[0] : "-"}</Td>
-                <Td>
-                    <div className="flex flex-col whitespace-nowrap">
-                        <span>₹{r.basicPremium}</span>
-                        <span className="text-[10px] text-slate-500">Final: ₹{r.finalInstallmentPremium}</span>
-                    </div>
-                </Td>
-                {isAllTab && (
-                  <Td>
-                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusStyles[r.renewalStatus] || "bg-slate-100 text-slate-600 border-slate-200"}`}>
-                      {r.renewalStatus}
-                    </span>
-                  </Td>
-                )}
-                <Td className="text-left">
-                  <button
-                    onClick={(e) => openDropdown(e, r)}
-                    className="p-2 rounded hover:bg-slate-200 transition-colors"
-                  >
-                    <MoreVertical size={16} />
-                  </button>
-                </Td>
+        {loading ? (
+          <TableSkeleton columns={isAllTab ? 14 : 13} rows={10} />
+        ) : (
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={isAllTab ? 14 : 13} className="text-center py-12 text-slate-500">No renewals found</td>
               </tr>
-            ))
-          )}
-        </tbody>
+            ) : (
+              data.map((r, index) => (
+                <tr key={index} className="border-t h-[52px] hover:bg-slate-50 transition-colors cursor-default">
+                  <Td className="whitespace-nowrap">{showValue(r.title)} {showValue(r.clientName)}</Td>
+                  <Td>{r.policyNumber}</Td>
+                  <Td>{showValue(r.divisionName)}</Td>
+                  <Td>{showValue(r.companyName)}</Td>
+                  <Td>{showValue(r.groupHeadName)}</Td>
+                  <Td>{showValue(r.groupCode)}</Td>
+                  <Td>{showValue(r.email)}</Td>
+                  <Td>{showValue(r.primaryMobile)}</Td>
+                  <Td className="whitespace-nowrap">
+                    {r.policyStartDate
+                      ? new Date(r.policyStartDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                      {r.nextPremiumDueDate
+                        ? new Date(r.nextPremiumDueDate).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "-"}
+                      {getOverdueDays(r.nextPremiumDueDate || r.dueDate) > 0 && (
+                          <div className="text-[10px] text-red-600 font-medium whitespace-nowrap">
+                              {getOverdueDays(r.nextPremiumDueDate || r.dueDate)} days due
+                          </div>
+                      )}
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    {r.reminderDate
+                      ? new Date(r.reminderDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td>
+                      <div className="flex flex-col whitespace-nowrap">
+                          <span>₹{r.basicPremium}</span>
+                          <span className="text-[10px] text-slate-500">Final: ₹{r.finalInstallmentPremium}</span>
+                      </div>
+                  </Td>
+                  {isAllTab && (
+                    <Td>
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusStyles[r.renewalStatus] || "bg-slate-100 text-slate-600 border-slate-200"}`}>
+                        {r.renewalStatus}
+                      </span>
+                    </Td>
+                  )}
+                  <Td className="text-left">
+                    <button
+                      onClick={(e) => openDropdown(e, r)}
+                      className="p-2 rounded hover:bg-slate-200 transition-colors"
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                  </Td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        )}
       </table>
 
       {/* ACTION DROPDOWN */}
@@ -167,7 +189,6 @@ const RenewalTable = ({ data = [], loading, statusId, onRenewal, onEdit }: Props
           {openRow.renewalStatus !== "Renew" && (
             <MenuItem
               label="Create Renewal"
-              icon={<RefreshCcw size={14} />}
               onClick={() => handleAction(() => onRenewal(openRow))}
             />
           )}
@@ -209,12 +230,10 @@ const Td = ({ children, className = "" }: any) => (
 const MenuItem = ({
   label,
   onClick,
-  icon,
   danger = false,
 }: {
   label: string;
   onClick: () => void;
-  icon?: React.ReactNode;
   danger?: boolean;
 }) => (
   <button
@@ -226,7 +245,6 @@ const MenuItem = ({
       danger ? "text-red-600 hover:bg-red-50" : "text-slate-700 hover:text-slate-900"
     }`}
   >
-    {icon}
     <span>{label}</span>
   </button>
 );

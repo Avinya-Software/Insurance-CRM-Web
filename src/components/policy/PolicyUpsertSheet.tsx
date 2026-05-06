@@ -763,6 +763,7 @@ const PolicyUpsertSheet = ({ open, onClose, onSuccess, policy, renewalId, isEdit
 
       const payload: any = {
         policyId: (isEdit || (policy?.policyId && !isRenewalMode)) ? (renewalId || policy.policyId) : undefined,
+        parentPolicyId: isRenewalMode ? renewalId : (currentPolicy?.parentPolicyId || undefined),
         type: form.type,
         transactionDate: form.transactionDate || null,
         documentNumber: form.documentNumber || "",

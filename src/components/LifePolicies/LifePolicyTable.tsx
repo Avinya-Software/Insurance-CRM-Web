@@ -5,6 +5,7 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteLifePolicy } from "../../hooks/LifePolicy/useDeleteLifePolicy";
 import { useQueryClient } from "@tanstack/react-query";
 import TableSkeleton from "../common/TableSkeleton";
+import { LifePolicyDetailDialog } from "./LifePolicyDetailDialog";
 
 /*   BADGE STYLES   */
 
@@ -44,6 +45,8 @@ const LifePolicyTable = ({
   const [openPolicy, setOpenPolicy] = useState<LifePolicy | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<LifePolicy | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -127,9 +130,14 @@ const LifePolicyTable = ({
                 </td>
               </tr>
             ) : (
-              data.map((p: any, index: number) => (<tr
+              data.map((p: any, index: number) => (
+                <tr
                   key={p.policyId ?? `policy-${index}`}
-                  className="border-t h-[52px] hover:bg-slate-50"
+                  className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
+                  onClick={() => {
+                    setSelectedDetailId(p.policyId);
+                    setDetailOpen(true);
+                  }}
                 >                  
                 <Td>{showValue(p.policyNumber)}</Td>
                   {/* Customer Name */}
@@ -154,14 +162,38 @@ const LifePolicyTable = ({
                   <Td>{showValue(p.statusName)}</Td>
                   <Td>{showValue(p.premiumModeName || p.premiumMode)}</Td>
                   <Td>{showValue(p.policyTerm)}</Td>
-                  <Td>{p.policyStartDate ? p.policyStartDate.split("T")[0] : "-"}</Td>
-                  <Td>{p.nextPremiumDueDate ? p.nextPremiumDueDate.split("T")[0] : "-"}</Td>
-                  <Td>{showValue(p.sumAssured)}</Td>
-                  <Td>{showValue(p.premiumDetails?.basicPremium)}</Td>
-                  <Td>{showValue(p.premiumDetails?.annualPremium)}</Td>
+                  <Td className="whitespace-nowrap">
+                    {p.policyStartDate
+                      ? new Date(p.policyStartDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    {p.nextPremiumDueDate
+                      ? new Date(p.nextPremiumDueDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td>₹ {showValue(p.sumAssured)}</Td>
+                  <Td>₹ {showValue(p.premiumDetails?.basicPremium)}</Td>
+                  <Td>₹ {showValue(p.premiumDetails?.annualPremium)}</Td>
 
                   {/* Created Date */}
-                  <Td>{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}</Td>
+                  <Td className="whitespace-nowrap">
+                    {p.createdAt
+                      ? new Date(p.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
 
                   <Td className="text-center">
                     <button
@@ -186,6 +218,7 @@ const LifePolicyTable = ({
           className="fixed z-50 w-[220px] bg-white border rounded-lg shadow-lg overflow-hidden"
           style={style}
         >
+
           <MenuItem
             label="Edit Policy"
             onClick={() => handleAction(() => onEdit(openPolicy))}
@@ -193,10 +226,17 @@ const LifePolicyTable = ({
 
           <MenuItem
             label="Create Renewal"
-            icon={<RefreshCcw size={14} />}
             onClick={() => handleAction(() => onRenewal(openPolicy))}
           />
 
+          <MenuItem
+            label="View Details"
+            onClick={() => handleAction(() => {
+              setSelectedDetailId(openPolicy.policyId);
+              setDetailOpen(true);
+            })}
+          />
+          
           <MenuItem
             label="Delete Policy"
             danger
@@ -243,6 +283,13 @@ const LifePolicyTable = ({
           </div>
         </div>
       )}
+
+      {/* LIFE POLICY DETAIL DIALOG */}
+      <LifePolicyDetailDialog
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        policyId={selectedDetailId}
+      />
     </div>
   );
 };
@@ -264,12 +311,10 @@ const Td = ({ children }: any) => (
 const MenuItem = ({
   label,
   onClick,
-  icon,
   danger = false,
 }: {
   label: string;
   onClick: () => void;
-  icon?: React.ReactNode;
   danger?: boolean;
 }) => (
   <button
@@ -281,7 +326,6 @@ const MenuItem = ({
       danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
-    {danger ? <X size={14} /> : icon}
     {label}
   </button>
 );

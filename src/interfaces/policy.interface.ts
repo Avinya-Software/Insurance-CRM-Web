@@ -78,6 +78,7 @@ export interface IPolicyDetail {
 
 export interface IGeneralPolicyForm {
   type: string;
+  parentPolicyId?: string | null;
   transactionDate: string;
   documentNumber: string;
   familyGroupId: string;
@@ -105,6 +106,7 @@ export interface IGeneralPolicyForm {
 
 export interface Policy {
   policyId: string;
+  parentPolicyId?: string | null;
   policyNumber: string;
 
   customerId: string;
@@ -238,8 +240,9 @@ export interface PolicyDocument {
 }
 
 export interface LifePolicy {
-  policyId: string
-  customerId: string
+  policyId: string;
+  parentPolicyId?: string | null;
+  customerId: string;
 
   proposerName: string
   policyNumber: string
@@ -355,6 +358,7 @@ export interface Fund {
 
 export interface UpsertLifePolicyPayload {
   policyId?: string;
+  parentPolicyId?: string | null;
 
   customerId: string;
   policyStatusId?: number;
@@ -398,6 +402,7 @@ export interface UpsertLifePolicyPayload {
 
 export interface IGeneralPolicy {
   policyId: string;
+  parentPolicyId?: string | null;
   type: string;
   transactionDate: string;
   documentNumber: string;
@@ -505,6 +510,13 @@ export interface IGeneralPolicy {
     paidByAgent: string;
     agentAmount: number;
   };
+  documents: {
+    id: string;
+    fileName: string;
+    documentName: string;
+    url: string;
+    uploadedAt: string;
+  }[];
 }
 
 export interface GeneralPolicyResponse {

@@ -521,9 +521,9 @@ const CustomerUpsertSheet = ({
       resHouseNo: residence.houseFlatNumber || "",
       resStreet: residence.street || "",
       resArea: residence.area || "",
-      resCity: residence.city || "",
+      resCity: residence.cityId ? String(residence.cityId) : residence.city || "",
       resPincode: residence.pincode || "",
-      resState: residence.state || "",
+      resState: residence.stateId ? String(residence.stateId) : residence.state || "",
       resCountry: residence.country || "India",
       resTelR: residence.telephoneResidence || "",
       resTelO: residence.telephoneOffice || "",
@@ -538,16 +538,16 @@ const CustomerUpsertSheet = ({
   
       offStreet: office.street || "",
       offLandmark: office.landmark || "",
-      offCity: office.city || "",
+      offCity: office.cityId ? String(office.cityId) : office.city || "",
       offPincode: office.pincode || "",
-      offState: office.state || "",
+      offState: office.stateId ? String(office.stateId) : office.state || "",
   
       osHouseNo: overseas.houseFlatNumber || "",
       osStreet: overseas.street || "",
       osArea: overseas.area || "",
-      osCity: overseas.city || "",
+      osCity: overseas.cityId ? String(overseas.cityId) : overseas.city || "",
       osPincode: overseas.pincode || "",
-      osState: overseas.state || "",
+      osState: overseas.stateId ? String(overseas.stateId) : overseas.state || "",
       osCountry: overseas.country || "India",
       osTelO: overseas.telephoneOffice || "",
       osMobile: overseas.mobileNumber || "",
@@ -708,7 +708,7 @@ const CustomerUpsertSheet = ({
             {activeTab === "residential" && (
               <div className="space-y-10">
                 {/* RESIDENCE ADDRESS */}
-                <section className="bg-white rounded-2xl shadow-sm border border-slate-100">
+                <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                   <div className="flex items-center justify-between bg-slate-800 px-6 py-3 text-white">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-white/10 text-white rounded">
@@ -757,7 +757,7 @@ const CustomerUpsertSheet = ({
                 </section>
 
                 {/* OFFICE ADDRESS */}
-                <section className="bg-white rounded-2xl shadow-sm border border-slate-100">
+                <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                   <div className="flex items-center justify-between bg-slate-800 px-6 py-3 text-white">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-white/10 text-white rounded">
@@ -806,7 +806,7 @@ const CustomerUpsertSheet = ({
                 </section>
 
                 {/* OVERSEAS */}
-                <section className="bg-white rounded-2xl shadow-sm border border-slate-100">
+                <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                   <div className="flex items-center justify-between bg-slate-800 px-6 py-3 text-white">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 bg-white/10 text-white rounded">

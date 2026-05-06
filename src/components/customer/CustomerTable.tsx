@@ -16,14 +16,6 @@ interface CustomerTableProps {
   onAddPolicy: (customer: Customer) => void;
 }
 
-const kycStatusStyles: Record<string, string> = {
-  Pending: "bg-slate-100 text-slate-700 border-slate-200",
-  "Under Review": "bg-amber-100 text-amber-700 border-amber-200",
-  Verified: "bg-green-100 text-green-700 border-green-200",
-  Rejected: "bg-red-100 text-red-700 border-red-200",
-};
-
-
 const CustomerTable = ({
   data = [],
   loading = false,
@@ -108,55 +100,82 @@ const CustomerTable = ({
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
             <Th>Name</Th>
-            <Th>Email</Th>
+            <Th>ID/Code</Th>
             <Th>Mobile</Th>
-            <Th>GroupHeadName</Th>
-            <Th>GroupCode</Th>
-            <Th>Kyc Status</Th>
+            <Th>Email</Th>
+            <Th>Group Head</Th>
+            <Th>Category</Th>
+            <Th>Gender</Th>
+            <Th>Age</Th>
+            <Th>City/State</Th>
+            <Th>Occupation</Th>
             <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
-          </tr>
-        </thead>
+                </tr>
+              </thead>
 
-        {loading ? (
-          <TableSkeleton rows={6} columns={7} />
-        ) : (
-          <tbody>
-            {data.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="text-center py-12 text-slate-500"
-                >
-                  No customers found
-                </td>
-              </tr>
-            ) : (
-              data.map((c) => (
-                <tr
-                  key={c.customerId}
-                  className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
-                >
-                  <Td>{c.clientName}</Td>
-                  <Td>{c.email || "-"}</Td>
-                  <Td>{c.primaryMobile}</Td>
-                  <Td>{c.groupHeadName || "-"}</Td>
-                  <Td>{c.groupCode || "-"}</Td>
-                  <Td>
-                    {c.kycStatus ? (
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                          kycStatusStyles[c.kycStatus]
-                        }`}
+              {loading ? (
+                <TableSkeleton rows={6} columns={12} />
+              ) : (
+                <tbody>
+                  {data.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={12}
+                        className="text-center py-12 text-slate-500"
                       >
-                        {c.kycStatus}
-                      </span>
-                    ) : (
-                      "-"
-                    )}
+                        No customers found
+                      </td>
+                    </tr>
+                  ) : (
+                    data.map((c) => {
+                      const resAddr = c.addresses?.find((a) => a.addressType === "RESIDENCE");
+                      return (
+                        <tr
+                          key={c.customerId}
+                          className="border-t h-[52px] hover:bg-slate-50 cursor-pointer group"
+                          onClick={() => {
+                            setSelectedCustomerId(c.customerId);
+                            setShowDetails(true);
+                          }}
+                        >
+                          <Td>
+                            <div className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                              {c.title ? `${c.title} ` : ""}{c.clientName}
+                            </div>
+                          </Td>
+                          <Td>
+                            <span className="text-xs font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                              {c.groupCode || c.customerId.slice(-6).toUpperCase()}
+                            </span>
+                          </Td>
+                          <Td>{c.primaryMobile}</Td>
+                          <Td className="max-w-[150px] truncate" title={c.email}>
+                            {c.email || "-"}
+                          </Td>
+                          <Td>{c.groupHeadName || "-"}</Td>
+                          <Td>{c.clientCategory || "-"}</Td>
+                          <Td>{c.gender || "-"}</Td>
+                          <Td>{c.age || "-"}</Td>
+                          <Td>
+                            {resAddr ? (
+                              <div className="flex flex-col">
+                                <span className="text-slate-900">{resAddr.cityName || "-"}</span>
+                                <span className="text-[11px] text-slate-500">{resAddr.stateName || "-"}</span>
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </Td>
+                          <Td>{c.occupation?.occupationType || "-"}</Td>
+                  <Td className="whitespace-nowrap">
+                    {new Date(c.createdAt).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
                   </Td>
-                  <Td>{new Date(c.createdAt).toLocaleDateString()}</Td>
-                  <Td className="text-center">
+                  <Td className="text-center" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => openDropdown(e, c)}
                       className="p-2 rounded hover:bg-slate-200"
@@ -165,8 +184,9 @@ const CustomerTable = ({
                     </button>
                   </Td>
                 </tr>
-              ))
-            )}
+                      );
+                    })
+                  )}
           </tbody>
         )}
       </table>

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { MoreVertical, X, RefreshCcw } from "lucide-react";
+import { MoreVertical, X, RefreshCcw, Eye, History } from "lucide-react";
 import type { IGeneralPolicy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
@@ -30,6 +30,8 @@ interface Props {
   loading?: boolean;
   onEdit: (policy: IGeneralPolicy) => void;
   onRenewal: (policy: IGeneralPolicy) => void;
+  onView: (policy: IGeneralPolicy) => void;
+  onViewHistory?: (policy: IGeneralPolicy) => void;
 }
 
 /*   COMPONENT   */
@@ -39,6 +41,8 @@ const PolicyTable = ({
   loading = false,
   onEdit,
   onRenewal,
+  onView,
+  onViewHistory,
 }: Props) => {
   const [openPolicy, setOpenPolicy] = useState<IGeneralPolicy | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<IGeneralPolicy | null>(null);
@@ -126,9 +130,10 @@ const PolicyTable = ({
               data.map((p) => (
                 <tr
                   key={p.policyId}
-                  className="border-t h-[52px] hover:bg-slate-50"
+                  className="border-t h-[52px] hover:bg-slate-50 cursor-pointer group transition-colors"
+                  onClick={() => onViewHistory ? onViewHistory(p) : onView(p)}
                 >
-                  <Td className="whitespace-nowrap font-medium text-blue-700">
+                  <Td className="whitespace-nowrap font-medium text-blue-700 group-hover:text-blue-900 group-hover:underline transition-colors">
                     {p.documentNumber}
                   </Td>
 
@@ -159,15 +164,33 @@ const PolicyTable = ({
                     ₹{p.premium?.totalPremium?.toLocaleString()}
                   </Td>
 
-                  <Td className="whitespace-nowrap font-medium text-slate-600">
-                    {p.detail?.riskStartDate?.split("T")[0]}
+                  <Td className="whitespace-nowrap">
+                    {p.detail?.riskStartDate
+                      ? new Date(p.detail.riskStartDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </Td>
-                  <Td className="whitespace-nowrap font-medium text-slate-600">
-                    {p.detail?.riskEndDate?.split("T")[0]}
+                  <Td className="whitespace-nowrap">
+                    {p.detail?.riskEndDate
+                      ? new Date(p.detail.riskEndDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </Td>
-                  <Td className="whitespace-nowrap font-medium text-slate-600">
-                    {p.createdat?.split("T")[0] || p.transactionDate?.split("T")[0] || "-"}
-                  </Td>      
+                  <Td className="whitespace-nowrap">
+                    {p.createdat || p.transactionDate
+                      ? new Date(p.createdat || p.transactionDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, p)}
@@ -198,14 +221,25 @@ const PolicyTable = ({
 
           <MenuItem
             label="Create Renewal"
-            icon={<RefreshCcw size={14} />}
             onClick={() => handleAction(() => onRenewal(openPolicy))}
           />
 
           <MenuItem
+            label="View Details"
+            onClick={() => handleAction(() => onView(openPolicy))}
+          />
+
+          {onViewHistory && (
+            <MenuItem
+              label="View History"
+              onClick={() => handleAction(() => onViewHistory(openPolicy))}
+            />
+          )}
+
+          <MenuItem
             label="Delete Policy"
             danger
-            onClick={() => setConfirmDelete(openPolicy)}
+            onClick={() => setConfirmDelete(openPolicy)} 
           />
         </div>
       )}
@@ -269,12 +303,10 @@ const Td = ({ children }: any) => (
 const MenuItem = ({
   label,
   onClick,
-  icon,
   danger = false,
 }: {
   label: string;
   onClick: () => void;
-  icon?: React.ReactNode;
   danger?: boolean;
 }) => (
   <button
@@ -286,7 +318,6 @@ const MenuItem = ({
       danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
-    {danger ? <X size={14} /> : icon}
     {label}
   </button>
 );
