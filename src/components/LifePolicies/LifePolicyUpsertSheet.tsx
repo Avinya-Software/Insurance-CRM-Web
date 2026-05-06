@@ -500,6 +500,7 @@ const PolicyUpsertSheet = ({
       if (hasPolicyChanged) {
         const payload = {
           policyId: form.policyId || undefined,
+          parentPolicyId: policy?.parentPolicyId || undefined,
           customerId: form.customerId,
           policyStatusId: Number(form.policyStatusId) || 0,
           statusId: Number(form.policyTypeId) || 0,
