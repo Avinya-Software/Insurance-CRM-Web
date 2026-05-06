@@ -167,7 +167,6 @@ const RenewalTable = ({ data = [], loading, statusId, onRenewal, onEdit }: Props
           {openRow.renewalStatus !== "Renew" && (
             <MenuItem
               label="Create Renewal"
-              icon={<RefreshCcw size={14} />}
               onClick={() => handleAction(() => onRenewal(openRow))}
             />
           )}
@@ -209,12 +208,10 @@ const Td = ({ children, className = "" }: any) => (
 const MenuItem = ({
   label,
   onClick,
-  icon,
   danger = false,
 }: {
   label: string;
   onClick: () => void;
-  icon?: React.ReactNode;
   danger?: boolean;
 }) => (
   <button
@@ -226,7 +223,6 @@ const MenuItem = ({
       danger ? "text-red-600 hover:bg-red-50" : "text-slate-700 hover:text-slate-900"
     }`}
   >
-    {icon}
     <span>{label}</span>
   </button>
 );

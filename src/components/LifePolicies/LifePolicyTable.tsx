@@ -217,7 +217,6 @@ const LifePolicyTable = ({
 
           <MenuItem
             label="Create Renewal"
-            icon={<RefreshCcw size={14} />}
             onClick={() => handleAction(() => onRenewal(openPolicy))}
           />
 
@@ -288,12 +287,10 @@ const Td = ({ children }: any) => (
 const MenuItem = ({
   label,
   onClick,
-  icon,
   danger = false,
 }: {
   label: string;
   onClick: () => void;
-  icon?: React.ReactNode;
   danger?: boolean;
 }) => (
   <button
@@ -305,7 +302,6 @@ const MenuItem = ({
       danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
-    {danger ? <X size={14} /> : icon}
     {label}
   </button>
 );
