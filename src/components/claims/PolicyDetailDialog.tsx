@@ -289,7 +289,7 @@ export const PolicyDetailDialog = ({ open, onClose, policyId, policyType }: Prop
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {data.members.map((member: any) => (
+                        {data.members?.map((member: any) => (
                           <tr key={member.id} className="hover:bg-slate-50 transition-none">
                             <td className="px-6 py-4 font-medium">{member.memberName}</td>
                             <td className="px-6 py-4">{formatDate(member.dob)}</td>
@@ -320,7 +320,7 @@ export const PolicyDetailDialog = ({ open, onClose, policyId, policyType }: Prop
                           </tr>
                         </thead>
                         <tbody className="divide-y">
-                          {data.riskLocations.map((loc: any, index: number) => (
+                          {data.riskLocations?.map((loc: any, index: number) => (
                             <tr key={loc.id}>
                               <td className="px-6 py-4 font-medium text-slate-500">{index + 1}</td>
                               <td className="px-6 py-4 font-medium">{loc.riskAddress}</td>
