@@ -1,22 +1,36 @@
 import { useState, useRef } from "react";
 import { MoreVertical, X, Check } from "lucide-react";
-import type { Lead } from "../../interfaces/lead.interface";
+import type { Lead, LeadDetails } from "../../interfaces/lead.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteLead } from "../../hooks/lead/useDeleteLead";
 import { useUpdateLeadStatus } from "../../hooks/lead/useUpdateLeadStatus";
 import { useQuery } from "@tanstack/react-query";
-import { getLeadStatusesApi } from "../../api/lead.api";
+import { getLeadByIdApi, getLeadStatusesApi } from "../../api/lead.api";
 import TableSkeleton from "../common/TableSkeleton";
+import { Dialog, DialogContent, DialogTitle } from "@radix-ui/react-dialog";
+import { DialogHeader } from "../ui/dialog";
+import { useNavigate } from "react-router-dom";
+import { useLeadStatuses } from "../../hooks/lead/useLeadStatuses";
+
 
 /*   STATUS BADGE STYLES   */
 
 const leadStatusStyles: Record<string, string> = {
   New: "bg-slate-100 text-slate-700 border-slate-200",
-  Contacted: "bg-blue-100 text-blue-700 border-blue-200",
-  Qualified: "bg-purple-100 text-purple-700 border-purple-200",
-  "Follow Up": "bg-amber-100 text-amber-700 border-amber-200",
+  "Quotation Sent": "bg-blue-100 text-blue-700 border-blue-200",
   Converted: "bg-green-100 text-green-700 border-green-200",
+  "JobWork In Process": "bg-purple-100 text-purple-700 border-purple-200",
+  "Dispatched To Customer": "bg-indigo-100 text-indigo-700 border-indigo-200",
+  "Delivered/Done": "bg-emerald-100 text-emerald-700 border-emerald-200",
   Lost: "bg-red-100 text-red-700 border-red-200",
+};
+
+const leadSourceStyles: Record<string, string> = {
+  Call: "bg-blue-100 text-blue-700 border-blue-200",
+  "Walk-in": "bg-green-100 text-green-700 border-green-200",
+  WhatsApp: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Referral: "bg-purple-100 text-purple-700 border-purple-200",
+  "Other Sources": "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 /*   TYPES   */
@@ -33,6 +47,7 @@ interface LeadTableProps {
   onViewFollowUps?: (lead: Lead) => void;
   onRowClick?: (lead: Lead) => void;
   onAddCustomer?: (lead: Lead) => void;
+  onViewDetails?: (lead: Lead) => void;
 }
 
 /*   COMPONENT   */
@@ -49,6 +64,15 @@ const LeadTable = ({
   const [openLead, setOpenLead] = useState<Lead | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Lead | null>(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+  const { data: leadDetails, isLoading: loadingLeadDetails } = useQuery<LeadDetails | null>({
+    queryKey: ["lead-details", selectedLeadId],
+    queryFn: () => (selectedLeadId ? getLeadByIdApi(selectedLeadId) : Promise.resolve(null)),
+    enabled: !!selectedLeadId && isViewOpen,
+  });
+  
 
   const [style, setStyle] = useState<{ top: number; left: number }>({
     top: 0,
@@ -64,12 +88,17 @@ const LeadTable = ({
   const { mutate: deleteLead, isPending } = useDeleteLead();
   const { mutate: updateStatus, isPending: updatingStatus } =
     useUpdateLeadStatus();
+  const navigate = useNavigate();
+  const { data: statuses = [] } = useLeadStatuses();
 
   /* 🔥 Fetch statuses */
-  const { data: statuses = [] } = useQuery({
-    queryKey: ["lead-statuses"],
-    queryFn: getLeadStatusesApi,
-  });
+  // const { data: statuses = [] } = useQuery({
+  //   queryKey: ["lead-statuses"],
+  //   queryFn: getLeadStatusesApi,
+  // });
+
+// console.log(statuses) 
+
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
     lead: Lead
@@ -98,10 +127,17 @@ const LeadTable = ({
     setTimeout(cb, 0);
   };
 
+  const handleViewDetails = () => {
+    if (!openLead) return;
+  
+    onRowClick?.(openLead);
+    setOpenLead(null);
+  };
+
   const handleDelete = () => {
     if (!confirmDelete) return;
 
-    deleteLead(confirmDelete.leadId, {
+    deleteLead(confirmDelete.leadID, {
       onSuccess: () => {
         setConfirmDelete(null);
         setOpenLead(null);
@@ -109,13 +145,13 @@ const LeadTable = ({
     });
   };
 
-  const handleStatusChange = (statusId: number) => {
+  const handleStatusChange = (statusId: string) => {
     if (!openLead) return;
-
+  
     updateStatus(
       {
-        leadId: openLead.leadId,
-        statusId,
+        leadId: openLead.leadID,
+        statusId, 
       },
       {
         onSuccess: () => {
@@ -130,16 +166,16 @@ const LeadTable = ({
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
-          <tr>
-            <Th>Lead No</Th>
-            <Th>Name</Th>
-            <Th>Email</Th>
-            <Th>Mobile</Th>
-            <Th>Status</Th>
-            <Th>Source</Th>
-            <Th>Created</Th>
-            <Th className="text-left">Actions</Th>
-          </tr>
+        <tr>
+          <Th>Lead No</Th>
+          <Th>Name</Th>
+          <Th>Email</Th>
+          <Th>Mobile</Th>
+          <Th>Status</Th>
+          <Th>Source</Th>
+          <Th>Created Date</Th> {/* updated */}
+          <Th className="text-left">Actions</Th>
+        </tr>
         </thead>
 
         {loading ? (
@@ -155,7 +191,7 @@ const LeadTable = ({
             ) : (
               data.map((lead) => (
                 <tr
-                  key={lead.leadId}
+                  key={lead.leadID}
                   onClick={() =>
                     onRowClick
                       ? onRowClick(lead)
@@ -164,24 +200,36 @@ const LeadTable = ({
                   className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
                 >
                   <Td>{lead.leadNo}</Td>
-                  <Td>{lead.fullName}</Td>
+                  <Td>{lead.contactPerson}</Td>
                   <Td>{lead.email}</Td>
                   <Td>{lead.mobile}</Td>
 
                   <Td>
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        leadStatusStyles[lead.leadStatusName]
+                        leadStatusStyles[lead.statusName]
                       }`}
                     >
-                      {lead.leadStatusName}
+                      {lead.statusName}
                     </span>
                   </Td>
 
-                  <Td>{lead.leadSourceName}</Td>
-
                   <Td>
-                    {new Date(lead.createdAt).toLocaleDateString()}
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${leadSourceStyles[lead.leadSourceName]
+                        }`}
+                    >
+                      {lead.leadSourceName || "—"}
+                    </span>
+                  </Td>
+                   <Td className="whitespace-nowrap">
+                    {lead.createdDate
+                      ? new Date(lead.createdDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
                   </Td>
 
                   <Td className="text-left">
@@ -207,22 +255,22 @@ const LeadTable = ({
           className="fixed z-50 w-[230px] bg-white border rounded-lg shadow-lg overflow-hidden"
           style={{ top: style.top, left: style.left }}
         >
-          {openLead.leadStatusName !== "Lost" &&
-            openLead.leadStatusName !== "Converted" && (
+          {openLead.statusName !== "Lost" &&
+            openLead.statusName !== "Converted" && (
               <>
                 <MenuItem
                   label="Edit Lead"
                   onClick={() => handleAction(() => onEdit(openLead))}
                 />
 
-                <MenuItem
+                {/* <MenuItem
                   label="Create Follow Up"
                   onClick={() =>
                     handleAction(() =>
                       onCreateFollowUp?.(openLead)
                     )
                   }
-                />
+                /> */}
 
                 <MenuItem
                   label="Change Status"
@@ -230,13 +278,7 @@ const LeadTable = ({
                 />
               </>
             )}
-
-          <MenuItem
-            label="View Follow Ups"
-            onClick={() =>
-              handleAction(() => onViewFollowUps?.(openLead))
-            }
-          />
+          <MenuItem label="View Details" onClick={handleViewDetails} />
 
           <MenuItem
             label="Delete Lead"
@@ -244,17 +286,17 @@ const LeadTable = ({
             onClick={() => setConfirmDelete(openLead)}
           />
 
+
+
           {/* 🔥 STATUS SUBMENU */}
           {showStatusMenu && (
             <div className="border-t mt-1">
               {statuses
-                .filter((s) => s.name !== openLead.leadStatusName)
+                .filter((s) => s.name !== openLead.statusName)
                 .map((status) => (
                   <button
                     key={status.id}
-                    onClick={() =>
-                      handleStatusChange(status.id)
-                    }
+                    onClick={() => handleStatusChange(status.id)}
                     disabled={updatingStatus}
                     className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2"
                   >
@@ -307,6 +349,64 @@ const LeadTable = ({
           </div>
         </div>
       )}
+
+     {/* VIEW DETAILS DIALOG */}
+        {isViewOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+              <DialogContent className="relative w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 bg-white rounded-lg shadow-lg">
+                <DialogHeader>
+                  <DialogTitle>
+                  <strong> Lead No: </strong> {leadDetails?.leadNo || "..."} | <strong>Status: </strong> {leadDetails?.leadStatusName || "..."}
+                  </DialogTitle>
+                  <button
+                    className="absolute right-4 top-4 p-1 rounded hover:bg-slate-200"
+                    onClick={() => setIsViewOpen(false)}
+                  >
+                    <X size={18} />
+                  </button>
+                </DialogHeader>
+
+                {loadingLeadDetails ? (
+                  <div className="py-10 text-center text-gray-500">Loading...</div>
+                ) : leadDetails ? (
+                  <div className="mt-4 space-y-4 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <strong>Full Name:</strong> {leadDetails.fullName}
+                      </div>
+                      <div>
+                        <strong>Mobile:</strong> {leadDetails.mobile || "N/A"}
+                      </div>
+                      <div>
+                        <strong>Email:</strong> {leadDetails.email || "N/A"}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <strong>Address:</strong>
+                        <p className="mt-1 bg-muted/40 rounded-md p-2">{leadDetails.address || "N/A"}</p>
+                      </div>
+                      <div>
+                        <strong>Lead Source:</strong> {leadDetails.leadSourceName}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <strong>Notes:</strong>
+                        <p className="mt-1 bg-muted/40 rounded-md p-2">{leadDetails.notes || "N/A"}</p>
+                      </div>
+                      <div>
+                        <strong>Created At:</strong>{" "}
+                        {leadDetails.createdAt
+                          ? new Date(leadDetails.createdAt).toLocaleString()
+                          : "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-10 text-center text-red-500">Failed to load lead details.</div>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
     </div>
   );
 };

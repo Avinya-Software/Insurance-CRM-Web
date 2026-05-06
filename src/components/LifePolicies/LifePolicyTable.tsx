@@ -1,0 +1,307 @@
+import { useState, useRef } from "react";
+import { MoreVertical, X, RefreshCcw } from "lucide-react";
+import type { LifePolicy } from "../../interfaces/policy.interface";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { useDeleteLifePolicy } from "../../hooks/LifePolicy/useDeleteLifePolicy";
+import { useQueryClient } from "@tanstack/react-query";
+import TableSkeleton from "../common/TableSkeleton";
+
+/*   BADGE STYLES   */
+
+const policyTypeStyles: Record<string, string> = {
+  Fresh: "bg-blue-100 text-blue-700 border-blue-200",
+  Renewal: "bg-green-100 text-green-700 border-green-200",
+  Lost: "bg-red-100 text-red-700 border-red-200",
+};
+
+const policyStatusStyles: Record<string, string> = {
+  Active: "bg-green-100 text-green-700 border-green-200",
+  Pending: "bg-amber-100 text-amber-700 border-amber-200",
+  Lapsed: "bg-slate-100 text-slate-600 border-slate-200",
+  Cancelled: "bg-red-100 text-red-700 border-red-200",
+};
+
+/*   CONSTANTS   */
+
+const DROPDOWN_HEIGHT = 160;
+const DROPDOWN_WIDTH = 220;
+
+interface Props {
+  data: LifePolicy[];
+  loading?: boolean;
+  onEdit: (policy: LifePolicy) => void;
+  onRenewal: (policy: LifePolicy) => void;
+}
+
+/*   COMPONENT   */
+
+const LifePolicyTable = ({
+  data = [],
+  loading = false,
+  onEdit,
+  onRenewal,
+}: Props) => {
+  const [openPolicy, setOpenPolicy] = useState<LifePolicy | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<LifePolicy | null>(null);
+  const [style, setStyle] = useState({ top: 0, left: 0 });
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useOutsideClick(dropdownRef, () => {
+    setOpenPolicy(null);
+  });
+
+  const { mutate: deletePolicy, isPending } = useDeleteLifePolicy();
+  const queryClient = useQueryClient();
+
+  const showValue = (v: any) => (v === null || v === undefined || v === "" ? "-" : v);
+
+  const openDropdown = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    policy: LifePolicy
+    ) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    const spaceBelow = viewportHeight - rect.bottom;
+    const openUpwards = spaceBelow < DROPDOWN_HEIGHT;
+
+    setStyle({
+      top: openUpwards
+        ? rect.top - DROPDOWN_HEIGHT - 6
+        : rect.bottom + 6,
+      left: rect.right - DROPDOWN_WIDTH,
+    });
+
+    setOpenPolicy(policy);
+  };
+
+  const handleAction = (cb: () => void) => {
+    setOpenPolicy(null);
+    setTimeout(cb, 0);
+  };
+
+  const handleDelete = () => {
+    if (!confirmDelete) return;
+
+    deletePolicy(confirmDelete.policyId, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["life-policies"] });
+    
+        setConfirmDelete(null);
+        setOpenPolicy(null);
+      },
+    });
+  };
+
+  return (
+    <div className="relative overflow-x-auto">
+      <table className="w-full text-sm border-collapse">
+        <thead className="bg-slate-100 sticky top-0 z-10">
+        <tr>
+        <Th>Policy Number</Th>
+        <Th>Customer Name</Th>
+        <Th>Policy Status</Th>
+        <Th>Status</Th>
+        <Th>Premium Mode</Th>
+        <Th>Policy Term</Th>
+        <Th>Policy Start Date</Th>
+        <Th>Next Premium Due</Th>
+        <Th>Sum Assured</Th>
+        <Th>Net Premium</Th>
+        <Th>Gross Premium</Th>
+        <Th>Created Date</Th>
+        <Th className="text-center">Actions</Th>
+      </tr>
+        </thead>
+
+        {loading ? (
+          <TableSkeleton rows={6} columns={13} />
+        ) : (
+          <tbody>
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={13} className="text-center py-12 text-slate-500">
+                  No policies found
+                </td>
+              </tr>
+            ) : (
+              data.map((p: any, index: number) => (<tr
+                  key={p.policyId ?? `policy-${index}`}
+                  className="border-t h-[52px] hover:bg-slate-50"
+                >                  
+                <Td>{showValue(p.policyNumber)}</Td>
+                  {/* Customer Name */}
+                  <Td>{showValue(p.customerName)}</Td>
+
+                  {/* Policy Status */}
+                  <Td>
+                    {p.policyStatusName ? (
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
+                          policyStatusStyles[p.policyStatusName] ??
+                          "bg-gray-100 text-gray-600 border-gray-200"
+                        }`}
+                      >
+                        {p.policyStatusName}
+                      </span>
+                    ) : (
+                      "-"
+                    )}
+                  </Td>
+
+                  <Td>{showValue(p.statusName)}</Td>
+                  <Td>{showValue(p.premiumModeName || p.premiumMode)}</Td>
+                  <Td>{showValue(p.policyTerm)}</Td>
+                  <Td className="whitespace-nowrap">
+                    {p.policyStartDate
+                      ? new Date(p.policyStartDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    {p.nextPremiumDueDate
+                      ? new Date(p.nextPremiumDueDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td>₹ {showValue(p.sumAssured)}</Td>
+                  <Td>₹ {showValue(p.premiumDetails?.basicPremium)}</Td>
+                  <Td>₹ {showValue(p.premiumDetails?.annualPremium)}</Td>
+
+                  {/* Created Date */}
+                  <Td className="whitespace-nowrap">
+                    {p.createdAt
+                      ? new Date(p.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+
+                  <Td className="text-center">
+                    <button
+                      onClick={(e) => openDropdown(e, p)}
+                      className="p-2 rounded hover:bg-slate-200"
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                  </Td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        )}
+      </table>
+
+      {/* ACTION DROPDOWN */}
+      {openPolicy && (
+        <div
+          ref={dropdownRef}
+          onClick={(e) => e.stopPropagation()}
+          className="fixed z-50 w-[220px] bg-white border rounded-lg shadow-lg overflow-hidden"
+          style={style}
+        >
+          <MenuItem
+            label="Edit Policy"
+            onClick={() => handleAction(() => onEdit(openPolicy))}
+          />
+
+          <MenuItem
+            label="Create Renewal"
+            onClick={() => handleAction(() => onRenewal(openPolicy))}
+          />
+
+          <MenuItem
+            label="Delete Policy"
+            danger
+            onClick={() => setConfirmDelete(openPolicy)}
+          />
+        </div>
+      )}
+
+      {/* CONFIRM DELETE */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Delete Policy</h3>
+              <button onClick={() => setConfirmDelete(null)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this policy?
+              <br />
+              <span className="text-red-600 font-medium">
+                This action cannot be undone.
+              </span>
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 border rounded hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                disabled={isPending}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                {isPending ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LifePolicyTable;
+
+/*   HELPERS   */
+
+const Th = ({ children }: any) => (
+  <th className="px-4 py-3 text-left font-semibold">
+    {children}
+  </th>
+);
+
+const Td = ({ children }: any) => (
+  <td className="px-4 py-3">{children}</td>
+);
+
+const MenuItem = ({
+  label,
+  onClick,
+  danger = false,
+}: {
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) => (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-slate-100 ${
+      danger ? "text-red-600 hover:bg-red-50" : ""
+    }`}
+  >
+    {label}
+  </button>
+);

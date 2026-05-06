@@ -77,61 +77,63 @@ const CampaignUpsertSheet = ({
 
   /*   RESET / PREFILL   */
 
-  useEffect(() => {
-    if (!open) {
-      setErrors({});
-      return;
-    }
+  // useEffect(() => {
+  //   if (!open) {
+  //     setErrors({});
+  //     return;
+  //   }
 
-    if (selectedCampaign) {
-      //  EDIT MODE 
-      setCampaign({
-        name: selectedCampaign.name || "",
-        campaignTypeId: selectedCampaign.campaignTypeId,
-        channel: selectedCampaign.channel || "Email",
-        applyToAllCustomers: selectedCampaign.applyToAllCustomers ?? true,
-        advisorId,
-        isActive: selectedCampaign.isActive ?? true,
-      });
+  //   if (selectedCampaign) {
+  //     //  EDIT MODE 
+  //     setCampaign({
+  //       name: selectedCampaign.name || "",
+  //       campaignTypeId: selectedCampaign.campaignTypeId,
+  //       channel: selectedCampaign.channel || "Email",
+  //       applyToAllCustomers: selectedCampaign.applyToAllCustomers ?? true,
+  //       advisorId,
+  //       isActive: selectedCampaign.isActive ?? true,
+  //     });
 
-      setSelectedCustomerIds(
-        selectedCampaign.applyToAllCustomers
-          ? customers.map((c) => c.customerId)
-          : selectedCampaign.campaignCustomers?.map(
-              (cc: any) => cc.customerId
-            ) || []
-      );
+  //     setSelectedCustomerIds(
+  //       selectedCampaign.applyToAllCustomers
+  //         ? customers.map((c) => c.customerId)
+  //         : selectedCampaign.campaignCustomers?.map(
+  //             (cc: any) => cc.customerId
+  //           ) || []
+  //     );
 
-      if (selectedCampaign.templates?.[0]) {
-        setTemplate({
-          subject: selectedCampaign.templates[0].subject || "",
-          body: selectedCampaign.templates[0].body || "",
-          channel: selectedCampaign.templates[0].channel || "Email",
-        });
-      }
+  //     if (selectedCampaign.templates?.[0]) {
+  //       setTemplate({
+  //         subject: selectedCampaign.templates[0].subject || "",
+  //         body: selectedCampaign.templates[0].body || "",
+  //         channel: selectedCampaign.templates[0].channel || "Email",
+  //       });
+  //     }
 
-      if (selectedCampaign.rules?.[0]) {
-        const r = selectedCampaign.rules[0];
+  //     if (selectedCampaign.rules?.[0]) {
+  //       const r = selectedCampaign.rules[0];
 
-        if (r.operator === "FixedDate") {
-          setRuleType("FixedDate");
-          setFixedDate(r.ruleValue);
-        } else {
-          setRuleType("OffsetDays");
-          const offset = Number(r.ruleValue);
-          setOffsetRule({
-            field: r.ruleField,
-            direction:
-              offset === 0 ? "On" : offset < 0 ? "Before" : "After",
-            days: Math.abs(offset),
-          });
-        }
-      }
-    } else {
-      //  CREATE MODE 
-      resetForm();
-    }
-  }, [open, selectedCampaign, customers]);
+  //       if (r.operator === "FixedDate") {
+  //         setRuleType("FixedDate");
+  //         setFixedDate(r.ruleValue);
+  //       } else {
+  //         setRuleType("OffsetDays");
+  //         const offset = Number(r.ruleValue);
+  //         setOffsetRule({
+  //           field: r.ruleField,
+  //           direction:
+  //             offset === 0 ? "On" : offset < 0 ? "Before" : "After",
+  //           days: Math.abs(offset),
+  //         });
+  //       }
+  //     }
+  //   } else {
+  //     //  CREATE MODE 
+  //     resetForm();
+  //   }
+  // }, [open, selectedCampaign, customers]);
+
+  
 
   /*   RESET FORM   */
   const resetForm = () => {
@@ -373,7 +375,7 @@ const CampaignUpsertSheet = ({
                 <MultiSelectDropdown
                   items={customers.map((c) => ({
                     value: c.customerId,
-                    label: c.fullName,
+                    label: c.clientName,
                   }))}
                   selectedValues={selectedCustomerIds}
                   onChange={(ids) => {

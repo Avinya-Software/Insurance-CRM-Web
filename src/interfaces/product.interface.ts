@@ -1,23 +1,18 @@
 export interface Product {
-  productId: string;
-  insurerId: string;
-  insurerName?: string;
-  productCategoryId: number;
-  productCategory?: string;
+  id: number;
+  productId?: number; // For backward compatibility
   productName: string;
-  productCode: string;
-  defaultReminderDays: number;
-  commissionRules: string;
-  isActive: boolean;
-}
-
-export interface ProductDropdown {
-  productId: string;
-  productName: string;
-}
-
-export interface ProductDropdownResponse {
-  statusCode: number;
-  statusMessage: string;
-  data: ProductDropdown[];
+  companyId: string;
+  companyName?: string;
+  insurance?: number;
+  insuranceName?: string | null;
+  insuranceTypeId?: number;
+  insuranceType?: string | null;
+  divisionId?: number;
+  divisionName?: string | null;
+  segmentId?: number;
+  segmentName?: string | null;
+  createdDate?: string;
+  status?: boolean;
+  policyType: boolean;
 }

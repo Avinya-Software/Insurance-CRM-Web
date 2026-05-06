@@ -2,215 +2,238 @@ import { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { Filter, X } from "lucide-react";
 
-import { usePolicies } from "../hooks/policy/usePolicies";
+import { useGeneralPolicies } from "../hooks/policy/usePolicies";
 import PolicyTable from "../components/policy/PolicyTable";
 import PolicyUpsertSheet from "../components/policy/PolicyUpsertSheet";
 import RenewalUpsertSheet from "../components/renewal/RenewalUpsertSheet";
 import PolicyFilterSheet from "../components/policy/PolicyFilterSheet";
 import Pagination from "../components/leads/Pagination";
+import { PolicyDetailDialog } from "../components/claims/PolicyDetailDialog";
+import { PolicyHistoryDialog } from "../components/policy/PolicyHistoryDialog";
+import type { GeneralPolicyFilters, IGeneralPolicy } from "../interfaces/policy.interface";
 
-const DEFAULT_FILTERS = {
-  pageNumber: 1,
+const DEFAULT_FILTERS: GeneralPolicyFilters = {
+  page: 1,
   pageSize: 10,
   search: "",
-  policyStatusId: null as number | null,
-  policyTypeId: null as number | null,
-  customerId: null as string | null,
-  insurerId: null as string | null,
-  productId: null as string | null,
+  type: "",
+  startDate: "",
+  endDate: "",
 };
 
 const Policies = () => {
   /*   STATE   */
 
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<GeneralPolicyFilters>(DEFAULT_FILTERS);
 
   const [openPolicySheet, setOpenPolicySheet] = useState(false);
   const [selectedPolicy, setSelectedPolicy] = useState<any>(null);
 
   // 🔥 RENEWAL STATE
   const [openRenewalSheet, setOpenRenewalSheet] = useState(false);
-  const [selectedRenewal, setSelectedRenewal] = useState<any>(null);
+  const [selectedRenewalId, setSelectedRenewalId] = useState<string | null>(null);
 
   const [openFilterSheet, setOpenFilterSheet] = useState(false);
 
-  const { data, isLoading, isFetching } = usePolicies(filters);
+  const { data, isLoading, isFetching } = useGeneralPolicies(filters);
+const [editPolicy, setEditPolicy] = useState<IGeneralPolicy | null>(null);
+const [sheetOpen, setSheetOpen] = useState(false);
 
-  /*   HELPERS   */
+const [openDetailDialog, setOpenDetailDialog] = useState(false);
+const [detailPolicyId, setDetailPolicyId] = useState<string | null>(null);
 
-  const hasActiveFilters =
-    filters.search ||
-    filters.policyStatusId ||
-    filters.policyTypeId ||
-    filters.customerId ||
-    filters.insurerId ||
-    filters.productId;
+const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
+const [historyPolicyId, setHistoryPolicyId] = useState<string | null>(null);
+/*   HELPERS   */
 
-  const clearAllFilters = () => {
-    setFilters(DEFAULT_FILTERS);
-    toast.success("Filters cleared");
-  };
+const hasActiveFilters =
+  filters.search ||
+  filters.type ||
+  filters.startDate ||
+  filters.endDate;
 
-  /*   HANDLERS   */
+const clearAllFilters = () => {
+setFilters(DEFAULT_FILTERS);
+toast.success("Filters cleared");
+};
 
-  const handleAddPolicy = () => {
-    setSelectedPolicy(null);
-    setOpenPolicySheet(true);
-  };
+/*   HANDLERS   */
 
-  const handleEditPolicy = (policy: any) => {
+const handleAddPolicy = () => {
+setSelectedPolicy(null);
+setOpenPolicySheet(true);
+};
+
+const handleEditPolicy = (policy: any) => {
+setSelectedPolicy(policy);
+setOpenPolicySheet(true);
+};
+
+  const handleCreateRenewal = (policy: any) => {
+    setSelectedRenewalId(policy.policyId);
     setSelectedPolicy(policy);
     setOpenPolicySheet(true);
   };
 
-  const handleCreateRenewal = (policy: any) => {
-    setSelectedRenewal({
-      policyId: policy.policyId,
-      customerId: policy.customerId,
-      renewalDate: policy.renewalDate
-        ? policy.renewalDate.split("T")[0]
-        : "",
-    });
-    setOpenRenewalSheet(true);
-  };
-
-  const handlePolicySuccess = () => {
-    setOpenPolicySheet(false);
-    setSelectedPolicy(null);
-    toast.success("Policy saved successfully!");
-  };
+const handlePolicySuccess = () => {
+setOpenPolicySheet(false);
+setSelectedPolicy(null);
+};
 
   const handleRenewalSuccess = () => {
     setOpenRenewalSheet(false);
-    setSelectedRenewal(null);
+    setSelectedRenewalId(null);
     toast.success("Renewal saved successfully!");
   };
 
-  return (
-    <>
-      <Toaster position="top-right" />
+return (
+<>
+<Toaster position="top-right" />
 
-      <div className="bg-white rounded-lg border">
-        {/*   HEADER   */}
-        <div className="px-4 py-5 border-b bg-gray-100">
-          <div className="grid grid-cols-2 gap-y-4 items-start">
-            <div>
-              <h1 className="text-4xl font-serif font-semibold">
-                Policies
-              </h1>
-              <p className="mt-1 text-sm text-slate-600">
-                {data?.totalRecords ?? 0} total policies
-              </p>
-            </div>
+<div className="bg-white rounded-lg border">
+{/*   HEADER   */}
+<div className="px-4 py-5 border-b bg-gray-100">
+<div className="grid grid-cols-2 gap-y-4 items-start">
+<div>
+<h1 className="text-4xl font-serif font-semibold">
+General Policies
+</h1>
+<p className="mt-1 text-sm text-slate-600">
+  {data?.totalCount ?? 0} total policies
+</p>
+</div>
 
-            <div className="text-right">
-              <button
-                className="bg-blue-900 text-white px-4 py-2 rounded text-sm"
-                onClick={handleAddPolicy}
-              >
-                + Add Policy
-              </button>
-            </div>
+<div className="text-right">
+<button
+className="bg-blue-900 text-white px-4 py-2 rounded text-sm"
+onClick={handleAddPolicy}
+>
++ Add GI Policy
+</button>
+</div>
 
-            {/* 🔍 SEARCH */}
-            <div>
-              <div className="relative w-[360px]">
-                <input
-                  placeholder="Search by policy number..."
-                  value={filters.search}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      search: e.target.value,
-                      pageNumber: 1,
-                    })
-                  }
-                  className="w-full h-10 pl-10 border rounded"
-                />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2">
-                  🔍
-                </span>
-              </div>
-            </div>
+{/* 🔍 SEARCH */}
+<div>
+<div className="relative w-[360px]">
+<input
+placeholder="Search by policy number..."
+value={filters.search}
+onChange={(e) =>
+  setFilters({
+    ...filters,
+    search: e.target.value,
+    page: 1,
+  })
+}
+className="w-full h-10 pl-10 border rounded"
+/>
+<span className="absolute left-3 top-1/2 -translate-y-1/2">
+🔍
+</span>
+</div>
+</div>
 
-            {/* 🎯 FILTER + CLEAR */}
-            <div className="flex justify-end gap-2">
-              {hasActiveFilters && (
-                <button
-                  onClick={clearAllFilters}
-                  className="inline-flex items-center gap-2 border border-red-300 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-50"
-                >
-                  <X size={14} />
-                  Clear FIl
-                </button>
-              )}
+{/* 🎯 FILTER + CLEAR */}
+<div className="flex justify-end gap-2">
+{hasActiveFilters && (
+<button
+onClick={clearAllFilters}
+className="inline-flex items-center gap-2 border border-red-300 text-red-600 px-3 py-2 rounded-lg text-sm hover:bg-red-50"
+>
+<X size={14} />
+Clear FIl
+</button>
+)}
 
-              <button
-                onClick={() => setOpenFilterSheet(true)}
-                className="inline-flex items-center gap-2 border px-4 py-2 rounded"
-              >
-                <Filter size={16} />
-                Filters
-              </button>
-            </div>
-          </div>
-        </div>
+<button
+onClick={() => setOpenFilterSheet(true)}
+className="inline-flex items-center gap-2 border px-4 py-2 rounded"
+>
+<Filter size={16} />
+Filters
+</button>
+</div>
+</div>
+</div>
 
-        {/*   TABLE   */}
+{/*   TABLE   */}
         <PolicyTable
           data={data?.data ?? []}
           loading={isLoading || isFetching}
-          onEdit={handleEditPolicy}
+          onEdit={(p) => {
+            setSelectedPolicy(p);
+            setOpenPolicySheet(true);
+          }}
           onRenewal={handleCreateRenewal}
+          onView={(p) => {
+            setDetailPolicyId(p.policyId);
+            setOpenDetailDialog(true);
+          }}
+          onViewHistory={(p) => {
+            setHistoryPolicyId(p.parentPolicyId || p.policyId);
+            setOpenHistoryDialog(true);
+          }}
         />
 
-        {/*   PAGINATION   */}
-        <div className="border-t px-4 py-3">
-          <Pagination
-            page={filters.pageNumber}
-            totalPages={data?.totalPages || 1}
-            onChange={(page) =>
-              setFilters({ ...filters, pageNumber: page })
-            }
-          />
-        </div>
-      </div>
+{/*   PAGINATION   */}
+<div className="border-t px-4 py-3">
+<Pagination
+  page={filters.page}
+  totalPages={data?.totalPages || Math.ceil((data?.totalCount || 0) / filters.pageSize) || 1}
+  onChange={(page) =>
+    setFilters({ ...filters, page: page })
+  }
+/>
+</div>
+</div>
 
-      {/*   FILTER SHEET   */}
-      <PolicyFilterSheet
-        open={openFilterSheet}
-        filters={filters}
-        onClose={() => setOpenFilterSheet(false)}
-        onApply={(f) => {
-          setFilters({ ...f, pageNumber: 1 });
-          toast.success("Filters applied");
-        }}
-        onClear={clearAllFilters}
-      />
+{/*   FILTER SHEET   */}
+<PolicyFilterSheet
+open={openFilterSheet}
+filters={filters}
+onClose={() => setOpenFilterSheet(false)}
+onApply={(f) => {
+  setFilters({ ...f, page: 1 });
+  toast.success("Filters applied");
+}}
+onClear={clearAllFilters}
+/>
 
-      {/*   POLICY UPSERT   */}
+{/*   POLICY UPSERT   */}
       <PolicyUpsertSheet
         open={openPolicySheet}
         policy={selectedPolicy}
+        renewalId={selectedRenewalId}
+        isEdit={!!selectedPolicy && !selectedRenewalId}
         onClose={() => {
           setOpenPolicySheet(false);
           setSelectedPolicy(null);
+          setSelectedRenewalId(null);
         }}
         onSuccess={handlePolicySuccess}
       />
 
-      {/*   RENEWAL UPSERT   */}
-      <RenewalUpsertSheet
-        open={openRenewalSheet}
-        renewal={selectedRenewal}
+      <PolicyDetailDialog
+        open={openDetailDialog}
+        policyId={detailPolicyId}
+        policyType={2}
         onClose={() => {
-          setOpenRenewalSheet(false);
-          setSelectedRenewal(null);
+          setOpenDetailDialog(false);
+          setDetailPolicyId(null);
         }}
-        onSuccess={handleRenewalSuccess}
       />
-    </>
-  );
+
+      <PolicyHistoryDialog
+        open={openHistoryDialog}
+        policyId={historyPolicyId}
+        onClose={() => {
+          setOpenHistoryDialog(false);
+          setHistoryPolicyId(null);
+        }}
+      />
+
+</>
+);
 };
 
 export default Policies;

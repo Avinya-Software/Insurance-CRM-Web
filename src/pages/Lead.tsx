@@ -8,21 +8,19 @@ import LeadTable from "../components/leads/LeadTable";
 import Pagination from "../components/leads/Pagination";
 import LeadFilterSheet from "../components/leads/LeadFilterSheet";
 import LeadUpsertSheet from "../components/leads/LeadUpsertSheet";
-import LeadFollowUpBottomSheet from "../components/followups/LeadFollowUpBottomSheet";
 import LeadFollowUpCreateSheet from "../components/followups/LeadFollowUpCreateSheet";
 import CustomerUpsertSheet from "../components/customer/CustomerUpsertSheet";
 
 import type { RootState } from "../store";
+import LeadDetailSheet from "../components/leads/LeadDetailsModal";
 
 const DEFAULT_FILTERS = {
-  pageNumber: 1,
+  page: 1,
   pageSize: 10,
   search: "",
-  fullName: "",
-  email: "",
-  mobile: "",
-  leadStatusId: null as number | null,
-  leadSourceId: null as number | null,
+  status: "",
+  startDate: "",
+  endDate: "",
 };
 
 const Leads = () => {
@@ -48,24 +46,28 @@ const Leads = () => {
   // 🔥 ADD CUSTOMER FROM LEAD
   const [openCustomerSheet, setOpenCustomerSheet] = useState(false);
   const [leadForCustomer, setLeadForCustomer] = useState<any>(null);
-
+  const [viewLeadDetails, setViewLeadDetails] = useState<any | null>(null);
   const advisorId = useSelector(
     (state: RootState) => state.auth.advisorId
   );
 
+  const [editFollowUp, setEditFollowUp] = useState<{
+    leadId: string;
+    leadName?: string;
+    followUp: any;
+  } | null>(null);
+  
   /*   API   */
 
-  const { data, isLoading, isFetching } = useLeads(filters);
+  const { data, isLoading, isFetching, refetch } = useLeads(filters);
 
   /*   HELPERS   */
 
   const hasActiveFilters =
     filters.search ||
-    filters.fullName ||
-    filters.email ||
-    filters.mobile ||
-    filters.leadStatusId ||
-    filters.leadSourceId;
+    filters.status ||
+    filters.startDate ||
+    filters.endDate;
 
   const clearAllFilters = () => {
     setFilters(DEFAULT_FILTERS);
@@ -82,6 +84,10 @@ const Leads = () => {
       leadId: lead.leadId,
       leadName: lead.fullName,
     });
+  };
+
+  const handleViewLeadDetails = (lead: any) => {
+    setViewLeadDetails(lead);
   };
 
   const handleAddLead = () => {
@@ -115,7 +121,7 @@ const Leads = () => {
                 Leads
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-                {data?.totalRecords ?? 0} total leads
+                {data?.totalCount ?? 0} total leads
               </p>
             </div>
 
@@ -140,7 +146,7 @@ const Leads = () => {
                     setFilters({
                       ...filters,
                       search: e.target.value,
-                      pageNumber: 1,
+                      page: 1,
                     })
                   }
                   className="w-full h-10 pl-10 pr-3 border rounded text-sm"
@@ -180,13 +186,14 @@ const Leads = () => {
           loading={isLoading || isFetching}
           onAdd={handleAddLead}
           onEdit={handleEditLead}
-          onRowClick={openViewFollowUps}
+          onRowClick={handleViewLeadDetails}
           onViewFollowUps={openViewFollowUps}
+          onViewDetails={handleViewLeadDetails}
           onCreateFollowUp={(lead) => {
             closeAllSheets();
             setCreateFollowUpLead({
-              leadId: lead.leadId,
-              leadName: lead.fullName,
+              leadId: lead.leadID,
+              leadName: lead.contactPerson,
             });
           }}
           onAddCustomer={handleAddCustomerFromLead}
@@ -195,10 +202,10 @@ const Leads = () => {
         {/*   PAGINATION   */}
         <div className="border-t px-4 py-3">
           <Pagination
-            page={filters.pageNumber}
+            page={filters.page}
             totalPages={data?.totalPages || 1}
             onChange={(page) =>
-              setFilters({ ...filters, pageNumber: page })
+              setFilters({ ...filters, page })
             }
           />
         </div>
@@ -209,7 +216,7 @@ const Leads = () => {
         open={openFilterSheet}
         onClose={() => setOpenFilterSheet(false)}
         filters={filters}
-        onApply={(f) => setFilters({ ...f, pageNumber: 1 })}
+        onApply={(f) => setFilters({ ...f, page: 1 })}
         onClear={clearAllFilters}
       />
 
@@ -220,6 +227,7 @@ const Leads = () => {
           setOpenLeadSheet(false);
           setSelectedLead(null);
         }}
+        onSuccess={() => refetch()}
         lead={selectedLead}
         advisorId={advisorId}
       />
@@ -237,23 +245,46 @@ const Leads = () => {
         }}
       />
 
-      <LeadFollowUpBottomSheet
-        open={!!viewFollowUpLead}
-        leadId={viewFollowUpLead?.leadId || null}
-        leadName={viewFollowUpLead?.leadName}
-        onClose={() => setViewFollowUpLead(null)}
-      />
 
-      <LeadFollowUpCreateSheet
-        open={!!createFollowUpLead}
-        leadId={createFollowUpLead?.leadId || null}
-        leadName={createFollowUpLead?.leadName}
-        onClose={() => setCreateFollowUpLead(null)}
-        onSuccess={() => {
-          setCreateFollowUpLead(null);
-          setViewFollowUpLead(createFollowUpLead);
-        }}
-      />
+        <LeadFollowUpCreateSheet
+          open={!!createFollowUpLead || !!editFollowUp}
+          leadId={
+            createFollowUpLead?.leadId ||
+            editFollowUp?.leadId ||
+            null
+          }
+          leadName={
+            createFollowUpLead?.leadName ||
+            editFollowUp?.leadName
+          }
+
+
+          editData={editFollowUp?.followUp}
+          mode={editFollowUp ? "edit" : "create"}
+          onClose={() => {
+            setCreateFollowUpLead(null);
+            setEditFollowUp(null);
+          }}
+          onSuccess={() => {
+            setCreateFollowUpLead(null);
+            setEditFollowUp(null);
+
+            refetch();
+          }}
+        />
+
+        {viewLeadDetails && (
+          <LeadDetailSheet
+            lead={viewLeadDetails}
+            onClose={() => setViewLeadDetails(null)}
+            onEditLead={handleEditLead}
+            onCreateQuotation={(lead) => {
+              setViewLeadDetails(null);
+              setLeadForCustomer(null); 
+            }}
+          />
+        )}
+
     </>
   );
 };

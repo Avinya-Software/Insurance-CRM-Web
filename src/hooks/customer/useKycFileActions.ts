@@ -1,42 +1,58 @@
-import api from "../../api/axios";
-import { deleteKycFileApi } from "../../api/customer.api";
+import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { deleteKycFileApi } from "../../api/customer.api";
 
 export const useKycFileActions = (
   onDeleted?: (documentId: string) => void
 ) => {
-  const preview = async (customerId: string, documentId: string) => {
-    const res = await api.get(
-      `/Customer/${customerId}/kyc/${documentId}/preview`,
-      { responseType: "blob" }
-    );
-
-    const url = URL.createObjectURL(res.data);
-    window.open(url, "_blank");
+  const queryClient = useQueryClient();
+  const preview = async (fileUrl: string) => {
+    try {
+      if (!fileUrl) throw new Error("Invalid file URL");
+  
+      window.open(fileUrl, "_blank", "noopener,noreferrer");
+  
+    } catch (err) {
+      console.error("Preview failed:", err);
+      toast.error("Preview failed");
+    }
   };
-
-  const download = async (customerId: string, documentId: string) => {
-    const res = await api.get(
-      `/Customer/${customerId}/kyc/${documentId}/download`,
-      { responseType: "blob" }
-    );
-
-    const blob = new Blob([res.data]);
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "document";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  
+  const download = (fileUrl: string, fileName?: string) => {
+    try {
+      if (!fileUrl) throw new Error("Invalid file URL");
+  
+      const name = fileName ?? fileUrl.split("/").pop() ?? "document";
+  
+      fetch(fileUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+  
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = name;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+  
+          setTimeout(() => URL.revokeObjectURL(url), 3000);
+  
+          toast.success("Download Successfully");
+        });
+  
+    } catch (err) {
+      console.error("Download failed:", err);
+      toast.error("Download failed");
+    }
   };
-
+  
   const remove = async (customerId: string, documentId: string) => {
     await deleteKycFileApi(customerId, documentId);
     toast.success("Document deleted");
-    onDeleted?.(documentId); // 🔥 KEY LINE
+    queryClient.invalidateQueries({ queryKey: ["customers"] });
+    onDeleted?.(documentId); 
   };
-
+  
   return { preview, download, remove };
 };

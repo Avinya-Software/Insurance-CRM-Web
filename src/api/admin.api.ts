@@ -11,7 +11,7 @@ export const loginAdminApi = async (
   data: AdminLoginRequest
 ) => {
   const res = await api.post<ApiWrapper<AdminLoginResponse>>(
-    "/admin/login",
+    "/Auth/login",
     data
   );
   return res.data;

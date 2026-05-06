@@ -20,6 +20,7 @@ export const getRenewalsApi = async (params: {
   pageSize: number;
   search?: string;
   renewalStatusId?: number;
+  customerId?: string;
 }) => {
   const res = await api.get("/renewals", { params });
   return res.data;
@@ -27,16 +28,14 @@ export const getRenewalsApi = async (params: {
 
 /*   STATUS DROPDOWN   */
 export const getRenewalStatusesApi = async () => {
-  const res = await api.get("/renewals/statuses");
-  return res.data;
+  const res = await api.get("/renewals/renewal-status-dropdown");
+  return res.data?.data || [];
 };
 
-export const updateRenewalStatusApi = async (
-  renewalId: string,
-  statusId: number
-) => {
-  const res = await api.patch(
-    `/renewals/${renewalId}/status/${statusId}`
-  );
+export const updateRenewalStatusApi = async (payload: {
+  id: string;
+  renewalStatusId: number;
+}) => {
+  const res = await api.put("/renewals/update-status", payload);
   return res.data;
 };

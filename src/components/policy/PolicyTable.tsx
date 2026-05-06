@@ -1,11 +1,8 @@
 import { useState, useRef } from "react";
-import { MoreVertical, X, RefreshCcw, Check } from "lucide-react";
-import type { Policy } from "../../interfaces/policy.interface";
+import { MoreVertical, X, RefreshCcw, Eye, History } from "lucide-react";
+import type { IGeneralPolicy } from "../../interfaces/policy.interface";
 import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeletePolicy } from "../../hooks/policy/useDeletePolicy";
-import { useUpdatePolicyStatus } from "../../hooks/policy/useUpdatePolicyStatus";
-import { useQuery } from "@tanstack/react-query";
-import { getPolicyStatusesDropdownApi } from "../../api/policy.api";
 import TableSkeleton from "../common/TableSkeleton";
 
 /*   BADGE STYLES   */
@@ -25,14 +22,16 @@ const policyStatusStyles: Record<string, string> = {
 
 /*   CONSTANTS   */
 
-const DROPDOWN_HEIGHT = 260;
+const DROPDOWN_HEIGHT = 160;
 const DROPDOWN_WIDTH = 220;
 
 interface Props {
-  data: Policy[];
+  data: IGeneralPolicy[];
   loading?: boolean;
-  onEdit: (policy: Policy) => void;
-  onRenewal: (policy: Policy) => void;
+  onEdit: (policy: IGeneralPolicy) => void;
+  onRenewal: (policy: IGeneralPolicy) => void;
+  onView: (policy: IGeneralPolicy) => void;
+  onViewHistory?: (policy: IGeneralPolicy) => void;
 }
 
 /*   COMPONENT   */
@@ -42,35 +41,24 @@ const PolicyTable = ({
   loading = false,
   onEdit,
   onRenewal,
+  onView,
+  onViewHistory,
 }: Props) => {
-  const [openPolicy, setOpenPolicy] = useState<Policy | null>(null);
-  const [confirmDelete, setConfirmDelete] =
-    useState<Policy | null>(null);
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
-
+  const [openPolicy, setOpenPolicy] = useState<IGeneralPolicy | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<IGeneralPolicy | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+
   useOutsideClick(dropdownRef, () => {
     setOpenPolicy(null);
-    setShowStatusMenu(false);
   });
 
-  const { mutate: deletePolicy, isPending } =
-    useDeletePolicy();
-
-  const { mutate: updateStatus, isPending: updatingStatus } =
-    useUpdatePolicyStatus();
-
-  /* 🔥 Fetch policy statuses */
-  const { data: statuses = [] } = useQuery({
-    queryKey: ["policy-statuses"],
-    queryFn: getPolicyStatusesDropdownApi,
-  });
+  const { mutate: deletePolicy, isPending } = useDeletePolicy();
 
   const openDropdown = (
     e: React.MouseEvent<HTMLButtonElement>,
-    policy: Policy
+    policy: IGeneralPolicy
   ) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -87,12 +75,10 @@ const PolicyTable = ({
     });
 
     setOpenPolicy(policy);
-    setShowStatusMenu(false);
   };
 
   const handleAction = (cb: () => void) => {
     setOpenPolicy(null);
-    setShowStatusMenu(false);
     setTimeout(cb, 0);
   };
 
@@ -107,52 +93,36 @@ const PolicyTable = ({
     });
   };
 
-  const handleStatusChange = (statusId: number) => {
-    if (!openPolicy) return;
-
-    updateStatus(
-      {
-        policyId: openPolicy.policyId,
-        statusId,
-      },
-      {
-        onSuccess: () => {
-          setOpenPolicy(null);
-          setShowStatusMenu(false);
-        },
-      }
-    );
-  };
-
   return (
     <div className="relative overflow-x-auto">
       <table className="w-full text-sm border-collapse">
         <thead className="bg-slate-100 sticky top-0 z-10">
           <tr>
             <Th>Policy Number</Th>
-            <Th>Customer</Th>
+            <Th>Type</Th>
+            <Th>Policy Holder</Th>
+            <Th>Mobile</Th>
+            <Th>Gender</Th>
+            <Th>Relation</Th>
+            <Th>Family Group</Th>
+            <Th>Division</Th>
+            <Th>Segment</Th>
             <Th>Policy Type</Th>
-            <Th>Insurer</Th>
-            <Th>Product</Th>
-            <Th>Policy Status</Th>
-            <Th>Start</Th>
-            <Th>End</Th>
-            <Th>Net Premium</Th>
-            <Th>Gross Premium</Th>
+            <Th>Premium</Th>
+            <Th>Risk Start</Th>
+            <Th>Risk End</Th>
+            <Th>Created Date</Th>
             <Th className="text-center">Actions</Th>
           </tr>
         </thead>
 
         {loading ? (
-          <TableSkeleton rows={6} columns={10} />
+          <TableSkeleton rows={6} columns={15} />
         ) : (
           <tbody>
             {data.length === 0 ? (
               <tr>
-                <td
-                  colSpan={10}
-                  className="text-center py-12 text-slate-500"
-                >
+                <td colSpan={15} className="text-center py-12 text-slate-500">
                   No policies found
                 </td>
               </tr>
@@ -160,37 +130,67 @@ const PolicyTable = ({
               data.map((p) => (
                 <tr
                   key={p.policyId}
-                  className="border-t h-[52px] hover:bg-slate-50"
+                  className="border-t h-[52px] hover:bg-slate-50 cursor-pointer group transition-colors"
+                  onClick={() => onViewHistory ? onViewHistory(p) : onView(p)}
                 >
-                  <Td>{p.policyNumber}</Td>
-                  <Td>{p.customerName}</Td>    
-                  <Td>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyTypeStyles[p.policyTypeName]
-                      }`}
-                    >
-                      {p.policyTypeName}
-                    </span>
+                  <Td className="whitespace-nowrap font-medium text-blue-700 group-hover:text-blue-900 group-hover:underline transition-colors">
+                    {p.documentNumber}
                   </Td>
-                  <Td>{p.insurerName}</Td>
-                  <Td>{p.productName}</Td>
 
                   <Td>
                     <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        policyStatusStyles[p.policyStatusName]
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                        policyTypeStyles[p.type] ??
+                        "bg-gray-100 text-gray-600 border-gray-200"
                       }`}
                     >
-                      {p.policyStatusName}
+                      {p.type}
                     </span>
                   </Td>
 
-                  <Td>{p.startDate?.split("T")[0]}</Td>
-                  <Td>{p.endDate?.split("T")[0]}</Td>
-                  <Td>{p.premiumNet}</Td>
-                  <Td>{p.premiumGross}</Td>
+                  <Td className="whitespace-nowrap font-medium text-slate-900">
+                    {p.policyHolderName || "-"}
+                  </Td>
 
+                  <Td>{p.mobileNumber}</Td>
+                  <Td>{p.gender}</Td>
+                  <Td>{p.relationWithHead}</Td>
+                  <Td className="whitespace-nowrap">{p.familyGroupName || "-"}</Td>
+                  <Td className="whitespace-nowrap">{p.detail?.divisionTypeName || "-"}</Td>
+                  <Td className="whitespace-nowrap">{p.detail?.segmentName || "-"}</Td>
+                  <Td className="whitespace-nowrap">{p.detail?.policyTypeName || "-"}</Td>
+
+                  <Td className="font-semibold text-green-700 text-right">
+                    ₹{p.premium?.totalPremium?.toLocaleString()}
+                  </Td>
+
+                  <Td className="whitespace-nowrap">
+                    {p.detail?.riskStartDate
+                      ? new Date(p.detail.riskStartDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    {p.detail?.riskEndDate
+                      ? new Date(p.detail.riskEndDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    {p.createdat || p.transactionDate
+                      ? new Date(p.createdat || p.transactionDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "-"}
+                  </Td>
                   <Td className="text-center">
                     <button
                       onClick={(e) => openDropdown(e, p)}
@@ -206,7 +206,7 @@ const PolicyTable = ({
         )}
       </table>
 
-      {/*   ACTION DROPDOWN   */}
+      {/* ACTION DROPDOWN */}
       {openPolicy && (
         <div
           ref={dropdownRef}
@@ -221,57 +221,35 @@ const PolicyTable = ({
 
           <MenuItem
             label="Create Renewal"
-            icon={<RefreshCcw size={14} />}
-            onClick={() =>
-              handleAction(() => onRenewal(openPolicy))
-            }
+            onClick={() => handleAction(() => onRenewal(openPolicy))}
           />
 
           <MenuItem
-            label="Change Status"
-            onClick={() => setShowStatusMenu((p) => !p)}
+            label="View Details"
+            onClick={() => handleAction(() => onView(openPolicy))}
           />
+
+          {onViewHistory && (
+            <MenuItem
+              label="View History"
+              onClick={() => handleAction(() => onViewHistory(openPolicy))}
+            />
+          )}
 
           <MenuItem
             label="Delete Policy"
             danger
-            onClick={() => setConfirmDelete(openPolicy)}
+            onClick={() => setConfirmDelete(openPolicy)} 
           />
-
-          {/* 🔥 STATUS SUBMENU */}
-          {showStatusMenu && (
-            <div className="border-t">
-              {statuses
-                .filter(
-                  (s) =>
-                    s.name !== openPolicy.policyStatusName
-                )
-                .map((status) => (
-                  <button
-                    key={status.id}
-                    onClick={() =>
-                      handleStatusChange(status.id)
-                    }
-                    disabled={updatingStatus}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2"
-                  >
-                    <Check size={14} />
-                    {status.name}
-                  </button>
-                ))}
-            </div>
-          )}
         </div>
       )}
 
-      {/*   CONFIRM DELETE   */}
+      {/* CONFIRM DELETE */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg w-[420px] p-6 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">
-                Delete Policy
-              </h3>
+              <h3 className="text-lg font-semibold">Delete Policy</h3>
               <button onClick={() => setConfirmDelete(null)}>
                 <X size={18} />
               </button>
@@ -325,12 +303,10 @@ const Td = ({ children }: any) => (
 const MenuItem = ({
   label,
   onClick,
-  icon,
   danger = false,
 }: {
   label: string;
   onClick: () => void;
-  icon?: React.ReactNode;
   danger?: boolean;
 }) => (
   <button
@@ -342,7 +318,6 @@ const MenuItem = ({
       danger ? "text-red-600 hover:bg-red-50" : ""
     }`}
   >
-    {icon}
     {label}
   </button>
 );

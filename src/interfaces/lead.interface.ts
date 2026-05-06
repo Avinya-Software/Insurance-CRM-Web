@@ -23,41 +23,29 @@ export interface LeadResponse {
 // src/interfaces/lead.interface.ts
 
 export interface Lead {
-  leadId: string;
+  leadID: string;
   leadNo: string;
-  fullName: string;
+  contactPerson: string;
   email: string;
   mobile: string;
-  address: string;
-  leadStatusId: number;
-  leadStatusName: string;
-  leadSourceId: number;
-  leadSourceName: string;
-  leadSourceDescription: string;
-  companyId: string | null;
-  advisorId: string;
-  isConverted: boolean;
   customerId: string | null;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string | null;
-  followUps: FollowUp[];
+  statusName: string;
+  leadSourceName: string;
+  createdDate: string;
 }
 
 export interface LeadFilters {
-  pageNumber: number;
+  page: number;
   pageSize: number;
   search?: string;
-  fullName?: string;
-  email?: string;
-  mobile?: string;
-  leadStatusId?: number;
-  leadSourceId?: number;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface LeadListResponse {
-  totalRecords: number;
-  pageNumber: number;
+  totalCount: number;
+  page: number;
   pageSize: number;
   totalPages: number;
   data: Lead[];
@@ -67,4 +55,84 @@ export interface FollowUp {
   followUpId: string;
   nextFollowUpDate: string;
   createdAt: string;
+}
+
+export interface LeadDetails {
+  leadId: string;
+  leadNo: string;
+  fullName: string;
+  email: string | null;
+  mobile: string | null;
+  address: string | null;
+
+  leadStatusId: number;
+  leadStatusName: string;
+
+  leadSourceId: number;
+  leadSourceName: string;
+  leadSourceDescription: string | null;
+
+  isConverted: boolean;
+  notes: string | null;
+
+  createdAt: string;
+  updatedAt: string | null;
+
+  followUps: {
+    followUpId: string;
+    nextFollowUpDate: string;
+    createdAt: string;
+    remark: string | null;
+    status: number;
+    statusName: string;
+  }[];
+}
+
+
+export interface LeadDetail {
+  leadID: string;
+  leadNo: string;
+  clientID: string;
+  contactPerson: string;
+  mobile: string;
+  email: string;
+  stateID: number;
+  cityID: number;
+  date: string;
+  requirementDetails: string;
+  leadSourceID: string | null;
+  leadSourceName: string | null;
+  otherSources: string | null;
+  status: string;
+  statusName: string;
+  notes: string;
+  links: string;
+  createdBy: string;
+  createdbyName: string;
+  assignedTo: string | null;
+  assignToName: string | null;
+  createdDate: string;
+  clientType: number;
+  clientTypeName: string;
+  companyName: string;
+  gstNo: string;
+  billingAddress: string;
+  followupCount: number;
+  latestLeadFollowupId: string | null;
+  latestFollowupStatus: string | null;
+  nextFollowupDate: string | null;
+  followups: LeadFollowUp[];
+}
+
+export interface LeadFollowUp {
+  followUpID: string;
+  leadID: string;
+  notes: string;
+  nextFollowupDate: string | null;
+  status: number;
+  statusName: string;
+  followUpBy: string | null;
+  followUpByName: string | null;
+  createdDate: string;
+  updatedDate: string | null;
 }

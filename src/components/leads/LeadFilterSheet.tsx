@@ -1,78 +1,52 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
-
+import { X, ChevronDown } from "lucide-react";
 import { useLeadStatuses } from "../../hooks/lead/useLeadStatuses";
-import { useLeadSources } from "../../hooks/lead/useLeadSources";
 import Spinner from "../common/Spinner";
 
 interface Props {
   open: boolean;
-  onClose: () => void;
   filters: any;
-  onApply: (filters: any) => void;
+  onApply: (f: any) => void;
   onClear: () => void;
+  onClose: () => void;
 }
 
-const LeadFilterSheet = ({
-  open,
-  onClose,
-  filters,
-  onApply,
-  onClear,
-}: Props) => {
-  const {
-    data: statuses,
-    isLoading: statusLoading,
-  } = useLeadStatuses();
-
-  const {
-    data: sources,
-    isLoading: sourceLoading,
-  } = useLeadSources();
-
-  const loading = statusLoading || sourceLoading;
-
-  const [localFilters, setLocalFilters] = useState(filters);
+const LeadFilterSheet = ({ open, filters, onApply, onClear, onClose }: Props) => {
+  const { data: statuses, isLoading: statusLoading } = useLeadStatuses();
+  const loading = statusLoading;
+  const [local, setLocal] = useState(filters);
 
   useEffect(() => {
-    setLocalFilters(filters);
+    setLocal(filters);
   }, [filters]);
 
   if (!open) return null;
 
   const handleApply = () => {
-    onApply(localFilters);
+    onApply(local);
     onClose();
   };
 
   const handleClear = () => {
+    setLocal({});
     onClear();
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div
-        className="flex-1 bg-black/30"
-        onClick={onClose}
-      />
-
+      <div className="flex-1 bg-black/30" onClick={onClose} />
       <div className="w-96 bg-white h-full shadow-xl flex flex-col">
-        {/*   HEADER   */}
+        {/* HEADER */}
         <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="font-semibold text-lg">
-            Filter Leads
-          </h2>
-          <button
-            onClick={onClose}
-            className="hover:bg-gray-100 p-1 rounded"
-          >
-            <X size={20} />
+          <h2 className="font-semibold text-lg">Filter Leads</h2>
+          <button onClick={onClose} className="hover:bg-gray-100 p-1 rounded">
+            <X />
           </button>
         </div>
 
-        {/*   BODY   */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        {/* BODY */}
+        <div className="flex-1 px-6 py-4 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <Spinner />
@@ -80,118 +54,66 @@ const LeadFilterSheet = ({
           ) : (
             <div className="space-y-4">
               <Input
-                label="Full Name"
-                value={localFilters.fullName || ""}
-                onChange={(v) =>
-                  setLocalFilters({
-                    ...localFilters,
-                    fullName: v,
-                  })
-                }
-                placeholder="Search by name"
+                label="Search"
+                value={local.search || ""}
+                onChange={(v) => setLocal({ ...local, search: v })}
+                placeholder="Search by name, email, or phone..."
               />
-
-              <Input
-                label="Email"
-                value={localFilters.email || ""}
-                onChange={(v) =>
-                  setLocalFilters({
-                    ...localFilters,
-                    email: v,
-                  })
-                }
-                placeholder="Search by email..."
-              />
-
-              <Input
-                label="Mobile"
-                value={localFilters.mobile || ""}
-                onChange={(v) =>
-                  setLocalFilters({
-                    ...localFilters,
-                    mobile: v,
-                  })
-                }
-                placeholder="Search by mobile..."
-              />
-
               <Select
                 label="Lead Status"
-                value={localFilters.leadStatusId || ""}
+                value={local.status}
                 options={statuses}
-                onChange={(v) =>
-                  setLocalFilters({
-                    ...localFilters,
-                    leadStatusId: v
-                      ? Number(v)
-                      : null,
-                  })
-                }
+                valueKey="id"
+                labelKey="name"
+                onChange={(v) => setLocal({ ...local, status: v || "" })}
               />
-
+              <Input
+                label="Start Date"
+                type="date"
+                value={local.startDate || ""}
+                onChange={(v) => setLocal({ ...local, startDate: v })}
+              />
+              <Input
+                label="End Date"
+                type="date"
+                value={local.endDate || ""}
+                onChange={(v) => setLocal({ ...local, endDate: v })}
+              />
               <Select
-                label="Lead Source"
-                value={localFilters.leadSourceId || ""}
-                options={sources}
-                onChange={(v) =>
-                  setLocalFilters({
-                    ...localFilters,
-                    leadSourceId: v
-                      ? Number(v)
-                      : null,
-                  })
-                }
+                label="Page Size"
+                value={local.pageSize || 10}
+                options={[
+                  { id: 10, name: "10 per page" },
+                  { id: 25, name: "25 per page" },
+                  { id: 50, name: "50 per page" },
+                  { id: 100, name: "100 per page" },
+                ]}
+                onChange={(v) => setLocal({ ...local, pageSize: Number(v) })}
               />
-
-              <div className="space-y-1">
-                <label className="text-sm font-medium">
-                  Page Size
-                </label>
-                <select
-                  className="input"
-                  value={localFilters.pageSize || 10}
-                  onChange={(e) =>
-                    setLocalFilters({
-                      ...localFilters,
-                      pageSize: Number(
-                        e.target.value
-                      ),
-                    })
-                  }
-                >
-                  <option value={10}>
-                    10 per page
-                  </option>
-                  <option value={25}>
-                    25 per page
-                  </option>
-                  <option value={50}>
-                    50 per page
-                  </option>
-                  <option value={100}>
-                    100 per page
-                  </option>
-                </select>
-              </div>
             </div>
           )}
         </div>
 
-        {/*   FOOTER   */}
-        <div className="px-6 py-4 border-t flex gap-3">
+        {/* FOOTER */}
+        <div className="px-8 py-6 bg-white border-t flex gap-4 justify-end">
           <button
-            className="flex-1 border rounded-lg py-2 hover:bg-gray-50"
-            onClick={handleClear}
-            disabled={loading}
-          >
-            Clear All
-          </button>
-          <button
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700"
             onClick={handleApply}
             disabled={loading}
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded flex items-center gap-2 transition-colors duration-200"
           >
-            Apply Filters
+            {loading ? <Spinner className="text-white w-4 h-4" /> : "APPLY"}
+          </button>
+          <button
+            onClick={handleClear}
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors duration-200"
+          >
+            CLEAR
+          </button>
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded transition-colors duration-200"
+          >
+            CANCEL
           </button>
         </div>
       </div>
@@ -201,20 +123,13 @@ const LeadFilterSheet = ({
 
 export default LeadFilterSheet;
 
-/*  Helpers  */
-
-const Input = ({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: any) => (
+/* Helper Components */
+const Input = ({ label, value, onChange, placeholder, type = "text" }: any) => (
   <div className="space-y-1">
-    <label className="text-sm font-medium">
-      {label}
-    </label>
+    <label className="text-sm font-medium">{label}</label>
     <input
-      className="input w-full"
+      type={type}
+      className="input w-full px-4 py-2 border rounded outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
@@ -222,27 +137,23 @@ const Input = ({
   </div>
 );
 
-const Select = ({
-  label,
-  value,
-  options,
-  onChange,
-}: any) => (
-  <div className="space-y-1">
-    <label className="text-sm font-medium">
-      {label}
-    </label>
-    <select
-      className="input w-full"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">All</option>
-      {options?.map((o: any) => (
-        <option key={o.id} value={o.id}>
-          {o.name}
-        </option>
-      ))}
-    </select>
+const Select = ({ label, value, options, onChange, valueKey = "id", labelKey = "name" }: any) => (
+  <div className="space-y-1.5 relative">
+    <label className="text-sm font-medium">{label}</label>
+    <div className="relative">
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-4 py-2 border rounded appearance-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400"
+      >
+        <option value="">Select</option>
+        {options?.map((o: any) => (
+          <option key={o[valueKey]} value={o[valueKey]}>
+            {o[labelKey]}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+    </div>
   </div>
 );

@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { getProductDropdownApi } from "../../api/product.api";
-import { ProductDropdown } from "../../interfaces/product.interface";
 
-export const useProductDropdown = (insurerId?: string) => {
-  return useQuery<ProductDropdown[]>({
-    queryKey: ["product-dropdown", insurerId],
-    queryFn: () => getProductDropdownApi(insurerId),
-    enabled: !!insurerId, // ✅ runs only when insurerId exists
+export const useProductDropdown = (
+  divisionId?: string | number,
+  companyId?: string,
+  segmentId?: string | number
+) => {
+  return useQuery({
+    queryKey: ["productDropdown", divisionId, companyId, segmentId],
+    queryFn: () => getProductDropdownApi(divisionId, companyId, segmentId),
+    enabled: !!divisionId && !!companyId && !!segmentId,
   });
 };
-

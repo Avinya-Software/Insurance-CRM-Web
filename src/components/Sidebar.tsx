@@ -15,8 +15,12 @@ import {
   ListTodo,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Shield,
+  Layers,
 } from "lucide-react";
 import { useState } from "react";
+import logo from "@/assets/logo/logo.png";
 
 /* ================= JWT HELPER ================= */
 
@@ -30,28 +34,30 @@ const getUserFromToken = () => {
 
     return {
       fullName: decoded.FullName,
-      email: decoded.email,
-      role:
-        decoded[
-          "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
-        ],
+      email: decoded.email || "",
+      role: decoded.Role,
     };
   } catch {
     return null;
   }
 };
 
+/**
+ * Sidebar component, displays a collapsible sidebar with navigation links and user information.
+ * @returns {JSX.Element} A JSX element representing the Sidebar component.
+ */
 const Sidebar = () => {
   const user = getUserFromToken();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
-
+  const [openPolicies, setOpenPolicies] = useState(false);
+  const [openMaster, setOpenMaster] = useState(false);
   const isAdmin = user?.role === "SuperAdmin";
 
   /* ================= LOGOUT ================= */
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   return (
@@ -63,9 +69,8 @@ const Sidebar = () => {
       {/* ---------- LOGO & TOGGLE ---------- */}
       <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
         {!isCollapsed && (
-          <div>
-            <p className="text-xl font-bold">Avinya</p>
-            <p className="text-xs text-slate-400">INSURANCE CRM</p>
+          <div className="flex items-center gap-2 overflow-hidden">
+            <img src={logo} alt="Insurance CRM Logo" className="h-10 w-auto min-w-[120px] object-contain" />
           </div>
         )}
 
@@ -90,14 +95,13 @@ const Sidebar = () => {
           </button>
         </div>
       </div>
-
       {/* ---------- NAV ---------- */}
       <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {/* ================= ADVISOR MENU ================= */}
         {!isAdmin && (
           <>
             <NavItem
-              to="/"
+              to="/dashboard"
               icon={<LayoutDashboard size={18} />}
               label="Dashboard"
               isCollapsed={isCollapsed}
@@ -117,31 +121,58 @@ const Sidebar = () => {
               isCollapsed={isCollapsed}
             />
 
-            <NavItem
-              to="/insurer"
-              icon={<Building2 size={18} />}
-              label="Insurers"
-              isCollapsed={isCollapsed}
-            />
+            {/* ================= POLICIES MENU ================= */}
+            <div>
+                <div
+                  onClick={() => setOpenPolicies(!openPolicies)}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
+                    ${isCollapsed ? "justify-center" : ""}
+                    text-slate-300 hover:bg-slate-800`}
+                >
+                  <FileText size={18} />
 
-            <NavItem
-              to="/products"
-              icon={<Package size={18} />}
-              label="Products"
-              isCollapsed={isCollapsed}
-            />
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1">Policies</span>
+                      {openPolicies ? (
+                        <ChevronDown size={16} />
+                      ) : (
+                        <ChevronRight size={16} />
+                      )}
+                    </>
+                  )}
+                </div>
 
-            <NavItem
-              to="/policies"
-              icon={<FileText size={18} />}
-              label="Policies"
-              isCollapsed={isCollapsed}
-            />
+                {openPolicies && !isCollapsed && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    <NavItem
+                      to="/policies"
+                      label="General Policy"
+                      icon={<FileText size={16} />}
+                      isCollapsed={false}
+                    />
+
+                    <NavItem
+                      to="/lifepolicies"
+                      label="Life Policy"
+                      icon={<FileText size={16} />}
+                      isCollapsed={false}
+                    />
+                  </div>
+                )}
+              </div>
 
             <NavItem
               to="/claims"
               icon={<AlertTriangle size={18} />}
               label="Claims"
+              isCollapsed={isCollapsed}
+            />
+
+            <NavItem
+              to="/tasks"
+              icon={<AlertTriangle size={18} />}
+              label="Task"
               isCollapsed={isCollapsed}
             />
 
@@ -159,6 +190,97 @@ const Sidebar = () => {
               isCollapsed={isCollapsed}
             />
 
+          <div>
+
+            <div
+              onClick={() => setOpenMaster(!openMaster)}
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer
+                ${isCollapsed ? "justify-center" : ""}
+                text-slate-300 hover:bg-slate-800`}
+            >
+              <Layers size={18} />
+
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1">Master Details</span>
+                  {openMaster ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
+                </>
+              )}
+            </div>
+
+            {openMaster && !isCollapsed && (
+              <div className="ml-6 mt-1 space-y-1">
+
+                <NavItem
+                  to="/familymembers"
+                  label="Family Member"
+                  icon={<Users size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/usertermmaster"
+                  label="User Master"
+                  icon={<ListTodo size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/policy-type"
+                  label="Policy Type"
+                  icon={<Package size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/segment"
+                  label="Segment"
+                  icon={<Layers size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/branch"
+                  label="Branch"
+                  icon={<Building2 size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/bank"
+                  label="Bank"
+                  icon={<Building2 size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/product"
+                  label="Product"
+                  icon={<Package size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/broker"
+                  label="Broker"
+                  icon={<Building2 size={16} />}
+                  isCollapsed={false}
+                />
+
+                <NavItem
+                  to="/payment-method"
+                  label="Payment Method"
+                  icon={<Shield size={16} />}
+                  isCollapsed={false}
+                />
+              </div>
+            )}
+            </div>
+
             <NavItem
               to="/settings"
               icon={<Settings size={18} />}
@@ -172,15 +294,9 @@ const Sidebar = () => {
         {isAdmin && (
           <>
             <NavItem
-              to="/admin"
+              to="/company"
               icon={<History size={18} />}
-              label="Dashboard"
-              isCollapsed={isCollapsed}
-            />
-            <NavItem
-              to="/admin/history"
-              icon={<History size={18} />}
-              label="History"
+              label="Company"
               isCollapsed={isCollapsed}
             />
           </>
@@ -237,7 +353,6 @@ const NavItem = ({
 }) => (
   <NavLink
     to={to}
-    end
     title={isCollapsed ? label : ""}
     className={({ isActive }) =>
       `flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition
