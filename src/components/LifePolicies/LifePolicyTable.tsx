@@ -5,6 +5,7 @@ import { useOutsideClick } from "../../hooks/useOutsideClick";
 import { useDeleteLifePolicy } from "../../hooks/LifePolicy/useDeleteLifePolicy";
 import { useQueryClient } from "@tanstack/react-query";
 import TableSkeleton from "../common/TableSkeleton";
+import { LifePolicyDetailDialog } from "./LifePolicyDetailDialog";
 
 /*   BADGE STYLES   */
 
@@ -44,6 +45,8 @@ const LifePolicyTable = ({
   const [openPolicy, setOpenPolicy] = useState<LifePolicy | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<LifePolicy | null>(null);
   const [style, setStyle] = useState({ top: 0, left: 0 });
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -127,9 +130,14 @@ const LifePolicyTable = ({
                 </td>
               </tr>
             ) : (
-              data.map((p: any, index: number) => (<tr
+              data.map((p: any, index: number) => (
+                <tr
                   key={p.policyId ?? `policy-${index}`}
-                  className="border-t h-[52px] hover:bg-slate-50"
+                  className="border-t h-[52px] hover:bg-slate-50 cursor-pointer"
+                  onClick={() => {
+                    setSelectedDetailId(p.policyId);
+                    setDetailOpen(true);
+                  }}
                 >                  
                 <Td>{showValue(p.policyNumber)}</Td>
                   {/* Customer Name */}
@@ -210,6 +218,7 @@ const LifePolicyTable = ({
           className="fixed z-50 w-[220px] bg-white border rounded-lg shadow-lg overflow-hidden"
           style={style}
         >
+
           <MenuItem
             label="Edit Policy"
             onClick={() => handleAction(() => onEdit(openPolicy))}
@@ -220,6 +229,14 @@ const LifePolicyTable = ({
             onClick={() => handleAction(() => onRenewal(openPolicy))}
           />
 
+          <MenuItem
+            label="View Details"
+            onClick={() => handleAction(() => {
+              setSelectedDetailId(openPolicy.policyId);
+              setDetailOpen(true);
+            })}
+          />
+          
           <MenuItem
             label="Delete Policy"
             danger
@@ -266,6 +283,13 @@ const LifePolicyTable = ({
           </div>
         </div>
       )}
+
+      {/* LIFE POLICY DETAIL DIALOG */}
+      <LifePolicyDetailDialog
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        policyId={selectedDetailId}
+      />
     </div>
   );
 };
